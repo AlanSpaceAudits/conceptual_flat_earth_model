@@ -17,8 +17,9 @@ export class Demos {
     this.animator.stop();
     this.currentIndex = index;
     const d = this.list[index];
-    this.model.setState(d.intro);
-    this.animator.play(d.tasks());
+    const introState = typeof d.intro === 'function' ? d.intro(this.model) : d.intro;
+    this.model.setState(introState);
+    this.animator.play(d.tasks(this.model));
     this._refreshPanel();
   }
 

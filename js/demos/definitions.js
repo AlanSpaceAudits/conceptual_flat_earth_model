@@ -2,8 +2,15 @@
 // values are in the modular unit-FE frame.
 
 import { Tpse, Ttxt, Tval } from './animation.js';
+import { findNextEclipses, sunEquatorial, greenwichSiderealDeg } from '../core/ephemeris.js';
+import { TIME_ORIGIN } from '../core/constants.js';
+import { dateTimeToDate } from '../core/time.js';
 
 const T1 = 1000, T2 = 2000, T3 = 3000, T5 = 5000, T8 = 8000;
+
+// Shared between the eclipse demo's intro() and tasks() so the task list
+// can target the same eclipse the intro located.
+let _eclipseDT = null;
 
 export const DEMOS = [
   {
@@ -78,5 +85,50 @@ export const DEMOS = [
       Ttxt('78°N on summer solstice — 24-hour daylight.'),
       Tval('Time', 24, 2 * T8, 0, 'linear'),
     ],
+  },
+  {
+    name: 'Solar eclipse — optical vault',
+    intro: (model) => {
+      // Search for the next solar eclipse starting 1 day before the model's
+      // current DateTime so "replay" of the same demo keeps targeting the
+      // same upcoming event rather than jumping past it.
+      const curDate = dateTimeToDate(model.state.DateTime - 1);
+      const { nextSolar } = findNextEclipses(curDate);
+      if (!nextSolar) { _eclipseDT = null; return {}; }
+      _eclipseDT = nextSolar.getTime() / TIME_ORIGIN.msPerDay - TIME_ORIGIN.ZeroDate;
+
+      // Subsolar point at eclipse maximum: where the sun sits at the zenith.
+      // Stand 45° of arc to the north of it so the sun is due south at
+      // ~45° altitude; heading 180° points the observer straight at it.
+      const eq = sunEquatorial(nextSolar);
+      const gmstDeg = greenwichSiderealDeg(nextSolar);
+      const raDeg  = eq.ra  * 180 / Math.PI;
+      const decDeg = eq.dec * 180 / Math.PI;
+      const subLong = ((raDeg - gmstDeg + 540) % 360) - 180;
+      const obsLat  = Math.max(-85, Math.min(85, decDeg + 45));
+      return {
+        DateTime:          _eclipseDT - 5 / 24,
+        ObserverLat:       obsLat,
+        ObserverLong:      subLong,
+        ObserverHeading:   180,
+        InsideVault:       true,
+        ShowOpticalVault:  true,
+        ShowTruePositions: false,
+        ShowFacingVector:  true,
+      };
+    },
+    tasks: () => {
+      if (_eclipseDT == null) {
+        return [ Ttxt('No solar eclipse found within the search window.') ];
+      }
+      // -5h → +5h of sim time over 10 wall-clock seconds = 1 h/s. Total
+      // partial phases span ≈ 3h around maximum, leaving roughly 5 real
+      // seconds of post-eclipse sky before the demo ends.
+      return [
+        Ttxt('Solar eclipse — sun at ~45° altitude, optical-vault view. Starting 5 h before maximum, playing at 1 h / real-second.'),
+        Tval('DateTime', _eclipseDT + 5 / 24, 10000, 0, 'linear'),
+        Ttxt('Moon has cleared the sun — eclipse past.', 500),
+      ];
+    },
   },
 ];

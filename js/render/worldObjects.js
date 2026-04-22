@@ -1703,35 +1703,16 @@ export class CelestialPoles {
 
     const mk = (color) => {
       const g = new THREE.Group();
-      // Small "pole star" sphere — anchors the apparent rotation pattern
-      // without a glowing halo around it.
       const dot = new THREE.Mesh(
-        new THREE.SphereGeometry(0.006, 16, 12),
+        new THREE.SphereGeometry(0.0025, 16, 12),
         new THREE.MeshBasicMaterial({
           color, transparent: true, opacity: 1,
           depthTest: false, depthWrite: false,
         }),
       );
       dot.renderOrder = 67;
-      const crossGeo = new THREE.BufferGeometry();
-      const s = 0.018;
-      crossGeo.setAttribute('position', new THREE.Float32BufferAttribute([
-        -s, 0, 0,  s, 0, 0,
-         0, -s, 0, 0, s, 0,
-         0, 0, -s, 0, 0, s,
-      ], 3));
-      const cross = new THREE.LineSegments(
-        crossGeo,
-        new THREE.LineBasicMaterial({
-          color, transparent: true, opacity: 0.85,
-          depthTest: false, depthWrite: false,
-          clippingPlanes,
-        }),
-      );
-      cross.renderOrder = 68;
       g.add(dot);
-      g.add(cross);
-      return { group: g, dot, cross };
+      return { group: g, dot };
     };
 
     this.ncpSphere = mk(0xff4040);   // NCP red (Polaris-side)

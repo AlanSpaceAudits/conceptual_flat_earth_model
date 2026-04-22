@@ -439,7 +439,8 @@ export class VaultOfHeavens {
     const domeRadius = s.VaultSize * FE_RADIUS;
     this.shell.scale.set(domeRadius, domeRadius, s.VaultHeight);
     this._rebuildGrid(s.VaultSize, s.VaultHeight);
-    this.grid.visible = s.ShowVaultGrid;
+    this.shell.visible = s.ShowVault !== false;
+    this.grid.visible = s.ShowVaultGrid && (s.ShowVault !== false);
   }
 }
 

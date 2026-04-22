@@ -85,6 +85,7 @@ function defaultState() {
     // visibility toggles
     ShowFeGrid:     true,
     ShowShadow:     true,
+    ShowVault:      true,
     ShowVaultGrid:   false,
     ShowSunTrack:   false,
     ShowMoonTrack:  false,

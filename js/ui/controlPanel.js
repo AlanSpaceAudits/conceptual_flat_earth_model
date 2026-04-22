@@ -191,6 +191,7 @@ const FIELD_GROUPS = [
         { key: 'ShowFeGrid',          label: 'FE Grid',            bool: true },
         { key: 'ShowLatitudeLines',   label: 'Tropics / Polar',    bool: true },
         { key: 'ShowGroundPoints',    label: 'Sun / Moon GP',      bool: true },
+        { key: 'ShowVault',           label: 'Heavenly Vault',     bool: true },
         { key: 'ShowVaultGrid',       label: 'Vault Grid',         bool: true },
         { key: 'ShowShadow',          label: 'Shadow',             bool: true },
         { key: 'ShowSunTrack',        label: 'Sun Track',          bool: true },

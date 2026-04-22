@@ -7,7 +7,7 @@ const PERSISTED_KEYS = [
   'DateTime', 'VaultSize', 'VaultHeight',
   'OpticalVaultSize', 'OpticalVaultHeight',
   'RayParameter',
-  'ShowFeGrid', 'ShowShadow', 'ShowVaultGrid', 'ShowSunTrack',
+  'ShowFeGrid', 'ShowShadow', 'ShowVault', 'ShowVaultGrid', 'ShowSunTrack',
   'ShowMoonTrack', 'ShowOpticalVault', 'ShowStars', 'ShowVaultRays',
   'ShowOpticalVaultRays', 'ShowManyRays',
   'ShowLatitudeLines', 'ShowGroundPoints', 'ShowPlanets',

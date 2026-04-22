@@ -2,7 +2,7 @@
 // values are in the modular unit-FE frame.
 
 import { Tpse, Ttxt, Tval } from './animation.js';
-import { findNextEclipses, sunEquatorial, greenwichSiderealDeg } from '../core/ephemeris.js';
+import { findNextEclipses, sunEquatorial, moonEquatorial, greenwichSiderealDeg } from '../core/ephemeris.js';
 import { TIME_ORIGIN } from '../core/constants.js';
 import { dateTimeToDate } from '../core/time.js';
 
@@ -11,6 +11,72 @@ const T1 = 1000, T2 = 2000, T3 = 3000, T5 = 5000, T8 = 8000;
 // Shared between the eclipse demo's intro() and tasks() so the task list
 // can target the same eclipse the intro located.
 let _eclipseDT = null;
+
+// Refine a known eclipse time by scanning ±2 h around it in 1-minute steps
+// and picking the instant when this model's sun-moon angular separation is
+// minimised. Lets us land exactly on the moment of closest approach the
+// *model* can deliver, even when the model's lunar theory is off by a few
+// tenths of a degree from the true ephemeris.
+function refineEclipseMinSeparation(approxDate) {
+  const stepMs = 60 * 1000;             // 1 minute
+  const range  = 2 * 60;                // ±2 hours in minutes
+  let bestT = approxDate.getTime();
+  let bestSep = Infinity;
+  for (let k = -range; k <= range; k++) {
+    const t = approxDate.getTime() + k * stepMs;
+    const d = new Date(t);
+    const sun  = sunEquatorial(d);
+    const moon = moonEquatorial(d);
+    const dot = Math.cos(sun.dec) * Math.cos(moon.dec) *
+                  Math.cos(sun.ra - moon.ra)
+              + Math.sin(sun.dec) * Math.sin(moon.dec);
+    const sep = Math.acos(Math.max(-1, Math.min(1, dot)));
+    if (sep < bestSep) { bestSep = sep; bestT = t; }
+  }
+  return new Date(bestT);
+}
+
+// Build the intro / tasks pair for an eclipse demo given a fixed Date for
+// the eclipse maximum. Observer is planted at the subsolar point at that
+// moment, camera points straight up, and the animation sweeps ±1 h
+// (5 real seconds on each side of maximum).
+function buildEclipseDemo(fixedDate) {
+  return {
+    intro: () => {
+      if (!fixedDate) { _eclipseDT = null; return {}; }
+      const refined = refineEclipseMinSeparation(fixedDate);
+      _eclipseDT = refined.getTime() / TIME_ORIGIN.msPerDay - TIME_ORIGIN.ZeroDate;
+      const eq = sunEquatorial(refined);
+      const gmstDeg = greenwichSiderealDeg(refined);
+      const raDeg  = eq.ra  * 180 / Math.PI;
+      const decDeg = eq.dec * 180 / Math.PI;
+      const subLong = ((raDeg - gmstDeg + 540) % 360) - 180;
+      return {
+        DateTime:          _eclipseDT - 1 / 24,
+        ObserverLat:       Math.max(-85, Math.min(85, decDeg)),
+        ObserverLong:      subLong,
+        ObserverHeading:   0,
+        CameraHeight:      89.9,
+        InsideVault:       true,
+        ShowOpticalVault:  true,
+        ShowTruePositions: false,
+        ShowFacingVector:  false,
+      };
+    },
+    tasks: () => {
+      if (_eclipseDT == null) {
+        return [ Ttxt('Eclipse date not configured for this demo.') ];
+      }
+      return [
+        Ttxt('Solar eclipse — starting 1 h before maximum. Observer at the subsolar point looking straight up.'),
+        Tval('DateTime', _eclipseDT, 5000, 0, 'linear'),
+        Ttxt('Maximum eclipse — sun and moon should coincide here. Any visible offset is the ephemeris gap to calibrate.'),
+        Tval('DateTime', _eclipseDT + 1 / 24, 5000, 0, 'linear'),
+        Ttxt('Moon past the sun — eclipse over.'),
+      ];
+    },
+  };
+}
 
 export const DEMOS = [
   {
@@ -87,48 +153,21 @@ export const DEMOS = [
     ],
   },
   {
-    name: 'Solar eclipse — optical vault',
-    intro: (model) => {
-      // Search for the next solar eclipse starting 1 day before the model's
-      // current DateTime so "replay" of the same demo keeps targeting the
-      // same upcoming event rather than jumping past it.
-      const curDate = dateTimeToDate(model.state.DateTime - 1);
-      const { nextSolar } = findNextEclipses(curDate);
-      if (!nextSolar) { _eclipseDT = null; return {}; }
-      _eclipseDT = nextSolar.getTime() / TIME_ORIGIN.msPerDay - TIME_ORIGIN.ZeroDate;
-
-      // Subsolar point at eclipse maximum: where the sun sits at the zenith.
-      // Stand 45° of arc to the north of it so the sun is due south at
-      // ~45° altitude; heading 180° points the observer straight at it.
-      const eq = sunEquatorial(nextSolar);
-      const gmstDeg = greenwichSiderealDeg(nextSolar);
-      const raDeg  = eq.ra  * 180 / Math.PI;
-      const decDeg = eq.dec * 180 / Math.PI;
-      const subLong = ((raDeg - gmstDeg + 540) % 360) - 180;
-      const obsLat  = Math.max(-85, Math.min(85, decDeg + 45));
-      return {
-        DateTime:          _eclipseDT - 5 / 24,
-        ObserverLat:       obsLat,
-        ObserverLong:      subLong,
-        ObserverHeading:   180,
-        InsideVault:       true,
-        ShowOpticalVault:  true,
-        ShowTruePositions: false,
-        ShowFacingVector:  true,
-      };
+    name: 'Solar Eclipse (Partial)',
+    intro: () => {
+      // Find the next solar conjunction from the current real-world time
+      // (not the model DateTime) so running the Total demo first doesn't
+      // leave the Partial search stuck near April 2024.
+      const { nextSolar } = findNextEclipses(new Date());
+      return buildEclipseDemo(nextSolar).intro();
     },
-    tasks: () => {
-      if (_eclipseDT == null) {
-        return [ Ttxt('No solar eclipse found within the search window.') ];
-      }
-      // -5h → +5h of sim time over 10 wall-clock seconds = 1 h/s. Total
-      // partial phases span ≈ 3h around maximum, leaving roughly 5 real
-      // seconds of post-eclipse sky before the demo ends.
-      return [
-        Ttxt('Solar eclipse — sun at ~45° altitude, optical-vault view. Starting 5 h before maximum, playing at 1 h / real-second.'),
-        Tval('DateTime', _eclipseDT + 5 / 24, 10000, 0, 'linear'),
-        Ttxt('Moon has cleared the sun — eclipse past.', 500),
-      ];
-    },
+    tasks: () => buildEclipseDemo(null).tasks(),
+  },
+  {
+    name: 'Solar Eclipse (Total) — 2024-04-08',
+    intro: () => buildEclipseDemo(
+      new Date(Date.UTC(2024, 3, 8, 18, 17, 0)),   // April = month 3
+    ).intro(),
+    tasks: () => buildEclipseDemo(null).tasks(),
   },
 ];

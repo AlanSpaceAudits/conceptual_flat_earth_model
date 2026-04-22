@@ -1364,31 +1364,32 @@ export class MtMeru {
   }
 }
 
-// Toroidal vortex — an axis-mundi rendered as a recirculating "field" that
-// emerges from the disc centre (north pole), fans out at the top, descends
-// along the outside, passes under the disc, and rises back through the axis.
-// Built from N spiral field lines (closed curves that pass through both
-// poles on the z-axis), plus a bright axial beam that traces the upward
-// leg. An animated pulse travels along each curve to suggest flow
-// direction — convergence at the pole below, divergence at the pole above.
+// Toroidal vortex — axis-mundi rendered as a dense cyclonic field inspired
+// by the Parker spiral / drain-vortex look. 40 field lines each close into
+// a recirculating loop that passes through both poles on the z-axis; each
+// line wraps four times around the axis per traversal so the collective
+// pattern from above reads as a tight inner cluster bleeding out into a
+// spiraling skirt. A subtle poloidal z-wave (like a heliospheric current
+// sheet) adds the folded-surface quality. The whole group rotates slowly
+// around the z-axis so the cyclonic flow is visually obvious.
 //
 // Curve parametrization (θ ∈ [0, 2π]):
-//   ρ(θ) = R·sin(θ)               (cylindrical radius)
-//   φ(θ) = φ₀ + Ω·θ               (azimuth — Ω=1 gives a single spiral turn)
-//   z(θ) = H·cos(θ)               (height)
-// θ=0 → north pole (0, 0, +H), θ=π/2 → equator, θ=π → south pole, and
-// θ=3π/2 → equator on the opposite azimuth. Each loop therefore wraps
-// once through the axis at both top and bottom.
+//   ρ(θ) = R·|sin(θ)|                               (cylindrical radius)
+//   φ(θ) = φ₀ + Ω·θ                                 (azimuth — Ω integer)
+//   z(θ) = H·cos(θ) + A·sin(θ)·sin(k·φ(θ))          (wavy sheet fold)
+// θ=0 → NP, θ=π/2 → equator, θ=π → SP, θ=3π/2 → opposite equator.
 export class ToroidalVortex {
   constructor() {
     this.group = new THREE.Group();
     this.group.name = 'toroidal-vortex';
 
-    const N_AZ   = 18;      // number of spiral field lines
-    const N_STEP = 120;     // vertices per line
-    const R      = 0.38;    // outer radius at the equator
-    const H      = 0.7;     // top/bottom axial extent (scales with VaultHeight)
-    const OMEGA  = 1;       // integer — ensures loops close
+    const N_AZ   = 40;     // number of spiral field lines — denser skirt
+    const N_STEP = 180;    // vertices per line
+    const R      = 0.42;   // outer radius at the equator
+    const H      = 0.7;    // top/bottom axial extent (scales with VaultHeight)
+    const OMEGA  = 4;      // integer — four spiral wraps per closed loop
+    const WAVE_AMP = 0.12; // poloidal z-wave amplitude (sheet fold)
+    const WAVE_K   = 2;    // number of folds around the azimuth
 
     this._nAz   = N_AZ;
     this._nStep = N_STEP;
@@ -1403,16 +1404,17 @@ export class ToroidalVortex {
         const th = (k / N_STEP) * Math.PI * 2;
         const ph = phi0 + OMEGA * th;
         const rho = R * Math.sin(th);
+        const fold = WAVE_AMP * Math.sin(th) * Math.sin(WAVE_K * ph);
         positions[k * 3 + 0] = rho * Math.cos(ph);
         positions[k * 3 + 1] = rho * Math.sin(ph);
-        positions[k * 3 + 2] = H   * Math.cos(th);
-        thetas[k] = k / N_STEP;  // 0..1 along the curve
+        positions[k * 3 + 2] = H * Math.cos(th) + fold;
+        thetas[k] = k / N_STEP;
       }
       const geo = new THREE.BufferGeometry();
       geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
       geo.setAttribute('color',    new THREE.BufferAttribute(colors, 3));
       const mat = new THREE.LineBasicMaterial({
-        vertexColors: true, transparent: true, opacity: 0.85,
+        vertexColors: true, transparent: true, opacity: 0.78,
         depthTest: false, depthWrite: false,
       });
       const line = new THREE.Line(geo, mat);
@@ -1421,9 +1423,9 @@ export class ToroidalVortex {
       this._lines.push({ colors, thetas, line });
     }
 
-    // Axial beam — a bright line along the z-axis from -H to +H. Emphasizes
-    // the "up through the pole" leg that's otherwise collapsed to a point
-    // in each individual spiral curve.
+    // Axial beam — faint bright line along z. Marks the convergence /
+    // divergence column through the axis that the dense spiral pattern
+    // otherwise only touches at single points.
     const axisPts = new Float32Array([0, 0, -H, 0, 0, H]);
     const axisCols = new Float32Array(6);
     const axisGeo = new THREE.BufferGeometry();
@@ -1432,7 +1434,7 @@ export class ToroidalVortex {
     this._axisLine = new THREE.Line(
       axisGeo,
       new THREE.LineBasicMaterial({
-        vertexColors: true, transparent: true, opacity: 0.95,
+        vertexColors: true, transparent: true, opacity: 0.75,
         depthTest: false, depthWrite: false,
       }),
     );
@@ -1442,24 +1444,30 @@ export class ToroidalVortex {
 
     this.group.visible = false;
     this._time = 0;
+    this._rotate = 0;
   }
 
-  // Per-frame animation. Shifts the vertex-colour pattern along each curve
-  // so pulses appear to flow around the loop in the direction of increasing
-  // θ (NP → outside → SP → under → back to NP), and up the axial beam.
+  // Per-frame tick: rotates the whole group slowly around z (the cyclonic
+  // circulation) and runs a subtle brightness pulse along each curve so
+  // the convergence/divergence direction is readable. Base colour is a
+  // royal blue that matches the reference aesthetic.
   tick(dt) {
     if (!this.group.visible) return;
     this._time += dt;
-    const flowPhase = this._time * 0.25;     // loops per second
-    const N_PULSES  = 2;
-    const BASE_R = 0.40, BASE_G = 0.85, BASE_B = 1.00;  // cyan field tint
+    this._rotate += dt * 0.25;             // ~14° / sec cyclonic spin
+    this.group.rotation.z = this._rotate;
+
+    const flowPhase = this._time * 0.22;
+    const N_PULSES  = 3;
+    const BASE_R = 0.28, BASE_G = 0.50, BASE_B = 1.00;   // royal blue
 
     for (let i = 0; i < this._nAz; i++) {
       const { colors, thetas, line } = this._lines[i];
       for (let k = 0; k < thetas.length; k++) {
         const t = ((thetas[k] - flowPhase) % 1 + 1) % 1;
+        // Keep a bright baseline so lines read as solid even between pulses.
         const pulse = 0.5 * (1 + Math.sin(t * N_PULSES * 2 * Math.PI));
-        const v = 0.18 + 0.82 * pulse;
+        const v = 0.55 + 0.45 * pulse;
         colors[k * 3 + 0] = BASE_R * v;
         colors[k * 3 + 1] = BASE_G * v;
         colors[k * 3 + 2] = BASE_B * v;
@@ -1467,14 +1475,14 @@ export class ToroidalVortex {
       line.geometry.getAttribute('color').needsUpdate = true;
     }
 
-    // Axial beam: upward-flowing pulse (0 at bottom, 1 at top).
+    // Axial beam — upward-moving brightness pulse.
     for (let k = 0; k < 2; k++) {
       const t = ((k - flowPhase) % 1 + 1) % 1;
       const pulse = 0.5 * (1 + Math.sin(t * 2 * Math.PI));
-      const v = 0.35 + 0.65 * pulse;
-      this._axisColors[k * 3 + 0] = 0.75 * v;
-      this._axisColors[k * 3 + 1] = 0.98 * v;
-      this._axisColors[k * 3 + 2] = 1.00 * v;
+      const v = 0.4 + 0.6 * pulse;
+      this._axisColors[k * 3 + 0] = 0.6 * v;
+      this._axisColors[k * 3 + 1] = 0.8 * v;
+      this._axisColors[k * 3 + 2] = 1.0 * v;
     }
     this._axisLine.geometry.getAttribute('color').needsUpdate = true;
   }

@@ -932,7 +932,9 @@ export class Stars {
     const nightAlpha = s.DynamicStars ? c.NightFactor : 1.0;
     const visibilityGate = s.DynamicStars ? nightAlpha > 0.01 : true;
     const showStars = s.ShowStars && visibilityGate;
-    this.domePoints.visible   = showStars;
+    // Dome starfield is a true-source mimic — gate it on ShowTruePositions
+    // so toggling "True Positions" off also hides the heavenly starfield.
+    this.domePoints.visible   = showStars && (s.ShowTruePositions !== false);
     this.domePoints.material.opacity   = nightAlpha;
     // Optical-vault star projection: each above-horizon star is placed on
     // the observer's optical hemisphere (radius OpticalVaultRadius), the

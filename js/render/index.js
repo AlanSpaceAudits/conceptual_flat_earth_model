@@ -206,9 +206,14 @@ export class Renderer {
     this.moonGP.updateAt(moonLat, moonLon, FE_RADIUS, s.ShowGroundPoints);
 
     // Vertical dashed line from each body's sub-point on its vault down
-    // to its ground point on the disc.
-    this.sunGPLine.visible  = s.ShowGroundPoints;
-    this.moonGPLine.visible = s.ShowGroundPoints;
+    // to its ground point on the disc. Hidden when the true-source end is
+    // hidden (InsideVault mode or ShowTruePositions off) since the line
+    // would dangle with nothing at its top.
+    const showGPLine = s.ShowGroundPoints
+                     && !s.InsideVault
+                     && (s.ShowTruePositions !== false);
+    this.sunGPLine.visible  = showGPLine;
+    this.moonGPLine.visible = showGPLine;
     if (s.ShowGroundPoints) {
       this._updateDashedLine(this.sunGPLine,  c.SunVaultCoord);
       this._updateDashedLine(this.moonGPLine, c.MoonVaultCoord);
@@ -229,7 +234,9 @@ export class Renderer {
     // heavenly vault must not render — the observer is supposed to see only
     // what's projected into their optical vault. `showVault` on the
     // CelestialMarker controls just those true-source dots and halos.
-    const showTrueVault = !s.InsideVault;
+    // `ShowTruePositions` is the explicit user toggle for the same effect
+    // without entering first-person mode.
+    const showTrueVault = !s.InsideVault && (s.ShowTruePositions !== false);
     this.sunMarker.update(
       c.SunVaultCoord, c.SunOpticalVaultCoord, showTrueVault, s.ShowOpticalVault,
       c.SunAnglesGlobe.elevation,

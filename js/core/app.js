@@ -87,6 +87,11 @@ function defaultState() {
     ShowShadow:     true,
     ShowVault:      true,
     ShowVaultGrid:   false,
+    // True-source positions on the heavenly vault (sun/moon/planet dots
+    // and halos). When off, only the projected optical-vault markers
+    // remain — the observer sees their hemisphere of vision without the
+    // underlying "real" sources above it.
+    ShowTruePositions: true,
     ShowSunTrack:   false,
     ShowMoonTrack:  false,
     ShowOpticalVault:     true,

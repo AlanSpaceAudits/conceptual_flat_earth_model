@@ -197,6 +197,7 @@ const FIELD_GROUPS = [
         { key: 'ShowSunTrack',        label: 'Sun Track',          bool: true },
         { key: 'ShowMoonTrack',       label: 'Moon Track',         bool: true },
         { key: 'ShowOpticalVault',    label: 'Optical Vault',      bool: true },
+        { key: 'ShowTruePositions',   label: 'True Positions',     bool: true },
         { key: 'ShowFacingVector',    label: 'Facing Vector / N-S-E-W', bool: true },
         { key: 'ShowDecCircles',      label: 'Declination Circles',     bool: true },
         { key: 'ShowStars',           label: 'Stars',              bool: true },

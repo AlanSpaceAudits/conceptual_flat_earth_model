@@ -9,7 +9,7 @@ const PERSISTED_KEYS = [
   'RayParameter',
   'ShowFeGrid', 'ShowShadow', 'ShowVault', 'ShowVaultGrid', 'ShowSunTrack',
   'ShowMoonTrack', 'ShowOpticalVault', 'ShowStars', 'ShowVaultRays',
-  'ShowOpticalVaultRays', 'ShowManyRays',
+  'ShowOpticalVaultRays', 'ShowManyRays', 'ShowTruePositions',
   'ShowLatitudeLines', 'ShowGroundPoints', 'ShowPlanets',
   'DynamicStars',
   'TimezoneOffsetMinutes',

@@ -38,9 +38,11 @@ model.dispatchEvent(new CustomEvent('update'));
 const descDynamicEl = document.querySelector('#desc .desc-dynamic');
 
 // Default footer status — observer latitude plus the current sun
-// condition (day / twilight band / night), with a 24h annotation when
-// the observer's latitude is polar enough that the sun never sets or
-// never rises at the current declination.
+// condition, framed in terms of whether the sun is inside or outside
+// the observer's optical vault rather than above/below any horizon.
+// The 24h annotation applies when the observer's latitude is polar
+// enough that the sun never leaves (or never enters) the optical vault
+// at the current declination.
 //   sun elev at anti-transit = −(90 − |lat + dec|)  → 24h day when |lat+dec| > 90
 //   sun elev at transit      =  (90 − |lat − dec|)  → 24h night when |lat−dec| > 90
 function defaultStatus(s, c) {
@@ -50,14 +52,14 @@ function defaultStatus(s, c) {
   const latStr = `${Math.abs(lat).toFixed(1)}°${lat >= 0 ? 'N' : 'S'}`;
 
   let sun;
-  if (elev > 0) sun = `sun ${elev.toFixed(1)}° above horizon — daylight`;
-  else if (elev > -6)  sun = `sun ${(-elev).toFixed(1)}° below horizon — civil twilight`;
-  else if (elev > -12) sun = `sun ${(-elev).toFixed(1)}° below horizon — nautical twilight`;
-  else if (elev > -18) sun = `sun ${(-elev).toFixed(1)}° below horizon — astronomical twilight`;
-  else sun = `sun ${(-elev).toFixed(1)}° below horizon — night`;
+  if (elev > 0)        sun = 'sun within observer’s optical vault — daylight';
+  else if (elev > -6)  sun = 'sun beyond observer’s optical vault — civil twilight';
+  else if (elev > -12) sun = 'sun beyond observer’s optical vault — nautical twilight';
+  else if (elev > -18) sun = 'sun beyond observer’s optical vault — astronomical twilight';
+  else                 sun = 'sun beyond observer’s optical vault — night';
 
-  if (Math.abs(lat + dec) > 90) return `${latStr} — ${sun} (24-hour daylight).`;
-  if (Math.abs(lat - dec) > 90) return `${latStr} — ${sun} (24-hour night).`;
+  if (Math.abs(lat + dec) > 90) return `${latStr} — ${sun} (sun never leaves optical vault).`;
+  if (Math.abs(lat - dec) > 90) return `${latStr} — ${sun} (sun never enters optical vault).`;
   return `${latStr} — ${sun}.`;
 }
 

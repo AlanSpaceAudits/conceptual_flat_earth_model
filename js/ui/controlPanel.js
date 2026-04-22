@@ -209,7 +209,7 @@ const FIELD_GROUPS = [
       ]},
       { title: 'Cosmology', rows: [
         { key: 'Cosmology', label: 'Axis Mundi',
-          select: ['none', 'yggdrasil', 'meru'] },
+          select: ['none', 'yggdrasil', 'meru', 'vortex'] },
       ]},
     ],
   },

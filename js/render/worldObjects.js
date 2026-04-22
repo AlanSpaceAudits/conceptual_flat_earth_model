@@ -1363,3 +1363,128 @@ export class MtMeru {
     this.group.scale.set(1, 1, k);
   }
 }
+
+// Toroidal vortex — an axis-mundi rendered as a recirculating "field" that
+// emerges from the disc centre (north pole), fans out at the top, descends
+// along the outside, passes under the disc, and rises back through the axis.
+// Built from N spiral field lines (closed curves that pass through both
+// poles on the z-axis), plus a bright axial beam that traces the upward
+// leg. An animated pulse travels along each curve to suggest flow
+// direction — convergence at the pole below, divergence at the pole above.
+//
+// Curve parametrization (θ ∈ [0, 2π]):
+//   ρ(θ) = R·sin(θ)               (cylindrical radius)
+//   φ(θ) = φ₀ + Ω·θ               (azimuth — Ω=1 gives a single spiral turn)
+//   z(θ) = H·cos(θ)               (height)
+// θ=0 → north pole (0, 0, +H), θ=π/2 → equator, θ=π → south pole, and
+// θ=3π/2 → equator on the opposite azimuth. Each loop therefore wraps
+// once through the axis at both top and bottom.
+export class ToroidalVortex {
+  constructor() {
+    this.group = new THREE.Group();
+    this.group.name = 'toroidal-vortex';
+
+    const N_AZ   = 18;      // number of spiral field lines
+    const N_STEP = 120;     // vertices per line
+    const R      = 0.38;    // outer radius at the equator
+    const H      = 0.7;     // top/bottom axial extent (scales with VaultHeight)
+    const OMEGA  = 1;       // integer — ensures loops close
+
+    this._nAz   = N_AZ;
+    this._nStep = N_STEP;
+    this._lines = [];
+
+    for (let i = 0; i < N_AZ; i++) {
+      const phi0 = (i / N_AZ) * Math.PI * 2;
+      const positions = new Float32Array((N_STEP + 1) * 3);
+      const colors    = new Float32Array((N_STEP + 1) * 3);
+      const thetas    = new Float32Array(N_STEP + 1);
+      for (let k = 0; k <= N_STEP; k++) {
+        const th = (k / N_STEP) * Math.PI * 2;
+        const ph = phi0 + OMEGA * th;
+        const rho = R * Math.sin(th);
+        positions[k * 3 + 0] = rho * Math.cos(ph);
+        positions[k * 3 + 1] = rho * Math.sin(ph);
+        positions[k * 3 + 2] = H   * Math.cos(th);
+        thetas[k] = k / N_STEP;  // 0..1 along the curve
+      }
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+      geo.setAttribute('color',    new THREE.BufferAttribute(colors, 3));
+      const mat = new THREE.LineBasicMaterial({
+        vertexColors: true, transparent: true, opacity: 0.85,
+        depthTest: false, depthWrite: false,
+      });
+      const line = new THREE.Line(geo, mat);
+      line.renderOrder = 48;
+      this.group.add(line);
+      this._lines.push({ colors, thetas, line });
+    }
+
+    // Axial beam — a bright line along the z-axis from -H to +H. Emphasizes
+    // the "up through the pole" leg that's otherwise collapsed to a point
+    // in each individual spiral curve.
+    const axisPts = new Float32Array([0, 0, -H, 0, 0, H]);
+    const axisCols = new Float32Array(6);
+    const axisGeo = new THREE.BufferGeometry();
+    axisGeo.setAttribute('position', new THREE.BufferAttribute(axisPts, 3));
+    axisGeo.setAttribute('color',    new THREE.BufferAttribute(axisCols, 3));
+    this._axisLine = new THREE.Line(
+      axisGeo,
+      new THREE.LineBasicMaterial({
+        vertexColors: true, transparent: true, opacity: 0.95,
+        depthTest: false, depthWrite: false,
+      }),
+    );
+    this._axisLine.renderOrder = 49;
+    this._axisColors = axisCols;
+    this.group.add(this._axisLine);
+
+    this.group.visible = false;
+    this._time = 0;
+  }
+
+  // Per-frame animation. Shifts the vertex-colour pattern along each curve
+  // so pulses appear to flow around the loop in the direction of increasing
+  // θ (NP → outside → SP → under → back to NP), and up the axial beam.
+  tick(dt) {
+    if (!this.group.visible) return;
+    this._time += dt;
+    const flowPhase = this._time * 0.25;     // loops per second
+    const N_PULSES  = 2;
+    const BASE_R = 0.40, BASE_G = 0.85, BASE_B = 1.00;  // cyan field tint
+
+    for (let i = 0; i < this._nAz; i++) {
+      const { colors, thetas, line } = this._lines[i];
+      for (let k = 0; k < thetas.length; k++) {
+        const t = ((thetas[k] - flowPhase) % 1 + 1) % 1;
+        const pulse = 0.5 * (1 + Math.sin(t * N_PULSES * 2 * Math.PI));
+        const v = 0.18 + 0.82 * pulse;
+        colors[k * 3 + 0] = BASE_R * v;
+        colors[k * 3 + 1] = BASE_G * v;
+        colors[k * 3 + 2] = BASE_B * v;
+      }
+      line.geometry.getAttribute('color').needsUpdate = true;
+    }
+
+    // Axial beam: upward-flowing pulse (0 at bottom, 1 at top).
+    for (let k = 0; k < 2; k++) {
+      const t = ((k - flowPhase) % 1 + 1) % 1;
+      const pulse = 0.5 * (1 + Math.sin(t * 2 * Math.PI));
+      const v = 0.35 + 0.65 * pulse;
+      this._axisColors[k * 3 + 0] = 0.75 * v;
+      this._axisColors[k * 3 + 1] = 0.98 * v;
+      this._axisColors[k * 3 + 2] = 1.00 * v;
+    }
+    this._axisLine.geometry.getAttribute('color').needsUpdate = true;
+  }
+
+  update(model) {
+    const on = model.state.Cosmology === 'vortex';
+    this.group.visible = on;
+    if (!on) return;
+    const k = (model.state.VaultHeight || COSMOLOGY_DEFAULT_VAULT_H)
+            / COSMOLOGY_DEFAULT_VAULT_H;
+    this.group.scale.set(1, 1, k);
+  }
+}

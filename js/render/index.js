@@ -6,7 +6,7 @@ import { SceneManager } from './scene.js';
 import {
   DiscBase, DiscGrid, Shadow, VaultOfHeavens, ObserversOpticalVault,
   CelestialMarker, Observer, Stars, LatitudeLines, GroundPoint,
-  CelestialPoles, DeclinationCircles, Yggdrasil, MtMeru,
+  CelestialPoles, DeclinationCircles, Yggdrasil, MtMeru, ToroidalVortex,
 } from './worldObjects.js';
 import { loadLandGeo, buildLandMesh } from './earthMap.js';
 import { FE_RADIUS } from '../core/constants.js';
@@ -72,8 +72,10 @@ export class Renderer {
     // shown at a time, driven by state.Cosmology.
     this.yggdrasil = new Yggdrasil();
     this.mtMeru    = new MtMeru();
+    this.toroidalVortex = new ToroidalVortex();
     this.sm.world.add(this.yggdrasil.group);
     this.sm.world.add(this.mtMeru.group);
+    this.sm.world.add(this.toroidalVortex.group);
 
     // Sun and moon markers. Vault-of-heavens dots stay large-ish so they're
     // findable against the starfield; the optical-vault dots are tiny points
@@ -217,6 +219,7 @@ export class Renderer {
     this.decCircles.update(m);
     this.yggdrasil.update(m);
     this.mtMeru.update(m);
+    this.toroidalVortex.update(m);
     this.observer.update(m);
 
     // In first-person (InsideVault) mode the true-source markers on the
@@ -356,7 +359,17 @@ export class Renderer {
     }
   }
 
-  _raf() {
+  _raf(ts) {
+    // Per-frame tick for features that animate independently of model
+    // state changes (the toroidal vortex colour flow is the only one
+    // right now). dt in seconds, clamped to avoid jumps from background
+    // tabs.
+    const now = typeof ts === 'number' ? ts : performance.now();
+    const dt = this._lastRafTs
+      ? Math.max(0, Math.min(0.1, (now - this._lastRafTs) / 1000))
+      : 0;
+    this._lastRafTs = now;
+    this.toroidalVortex?.tick(dt);
     this.sm.render();
     requestAnimationFrame(this._raf);
   }

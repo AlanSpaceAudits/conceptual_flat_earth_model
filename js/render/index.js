@@ -252,11 +252,13 @@ export class Renderer {
     this.stars.update(m);
     this.starfieldChart.update(m);
     this.constellations.update(m);
-    // Random star cloud on the heavenly vault is hidden when a chart is
-    // active so it doesn't peek through the texture. The optical-vault
-    // cloud stays as-is so the observer still has stars around them.
+    // When a chart starfield is active, hide both the heavenly-vault and
+    // the optical-vault random clouds so the chart is the sole sky source.
+    // Constellations are auto-unchecked by the chart-transition handler in
+    // main.js, so no extra suppression needed here.
     if ((m.state.StarfieldType || 'random') !== 'random') {
-      this.stars.domePoints.visible = false;
+      this.stars.domePoints.visible   = false;
+      this.stars.spherePoints.visible = false;
     }
     this.celestialPoles.update(m);
     this.decCircles.update(m);

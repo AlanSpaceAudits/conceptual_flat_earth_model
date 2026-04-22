@@ -78,6 +78,23 @@ if (logoEl) {
   syncLogo();
 }
 
+// When the user switches the starfield from random to a chart, auto-
+// uncheck the constellation overlays so they don't fight with the chart's
+// own built-in constellation art. We only act on the transition — if the
+// user manually re-enables them while a chart is active, we leave them.
+let _prevStarfieldType = model.state.StarfieldType || 'random';
+model.addEventListener('update', () => {
+  const st = model.state.StarfieldType || 'random';
+  if (st !== _prevStarfieldType) {
+    const movingToChart = _prevStarfieldType === 'random' && st !== 'random';
+    _prevStarfieldType = st;
+    if (movingToChart
+        && (model.state.ShowConstellations || model.state.ShowConstellationLines)) {
+      model.setState({ ShowConstellations: false, ShowConstellationLines: false });
+    }
+  }
+});
+
 // Header info button: toggle the conceptual-model description popup.
 const infoBtn   = document.querySelector('header .info-btn');
 const infoPopup = document.querySelector('header .info-popup');

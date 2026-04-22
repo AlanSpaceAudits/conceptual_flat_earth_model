@@ -44,12 +44,10 @@ export class StarfieldChart {
     const type = s.StarfieldType || 'random';
     const isChart = type === 'chart-dark' || type === 'chart-light';
 
-    // Stars must be enabled overall, and the heavenly vault must be on
-    // (ShowTruePositions / not first-person) for the chart to appear.
-    const showTrueVault = s.ShowStars !== false
-                        && (s.ShowTruePositions !== false)
-                        && !s.InsideVault;
-    this.group.visible = isChart && showTrueVault;
+    // Visible whenever the chart option is active and stars aren't globally
+    // disabled. Stays visible in first-person too — the observer looking up
+    // sees the chart directly overhead at the starfield altitude.
+    this.group.visible = isChart && (s.ShowStars !== false);
     if (!this.group.visible) return;
 
     const tex = type === 'chart-light' ? this.texLight : this.texDark;

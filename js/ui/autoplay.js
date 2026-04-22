@@ -12,7 +12,7 @@ export class Autoplay {
   constructor(model) {
     this.model = model;
     this.playing = false;
-    this.speed = PRESETS[1].days_per_sec;   // default: "Week"
+    this.speed = PRESETS[0].days_per_sec;   // default: "Day"
     this._last = 0;
     this._tick = this._tick.bind(this);
     this._listeners = new Set();

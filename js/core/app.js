@@ -61,10 +61,10 @@ function defaultState() {
     CameraDistance:  GEOMETRY.CameraDistanceDefault,
     Zoom:             1.4,
 
-    // time
-    DateTime:    82.5,   // days since 2017-01-01
-    DayOfYear:   82,
-    Time:        12.0,   // decimal hours
+    // time — defaults to 2017-08-21 22:41 UTC (total solar eclipse reference).
+    DateTime:    232.9454, // days since 2017-01-01
+    DayOfYear:   232,
+    Time:        22.69,    // decimal hours
 
     // geometry
     VaultSize:   GEOMETRY.VaultSizeDefault,

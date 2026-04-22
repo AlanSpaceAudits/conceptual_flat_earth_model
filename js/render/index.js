@@ -6,7 +6,7 @@ import { SceneManager } from './scene.js';
 import {
   DiscBase, DiscGrid, Shadow, VaultOfHeavens, ObserversOpticalVault,
   CelestialMarker, Observer, Stars, LatitudeLines, GroundPoint,
-  CelestialPoles, DeclinationCircles,
+  CelestialPoles, DeclinationCircles, Yggdrasil, MtMeru,
 } from './worldObjects.js';
 import { loadLandGeo, buildLandMesh } from './earthMap.js';
 import { FE_RADIUS } from '../core/constants.js';
@@ -67,6 +67,13 @@ export class Renderer {
 
     this.decCircles = new DeclinationCircles(clipPlanes);
     this.sm.world.add(this.decCircles.group);
+
+    // Mythic axis-mundi centerpieces at the disc centre. Only one is
+    // shown at a time, driven by state.Cosmology.
+    this.yggdrasil = new Yggdrasil();
+    this.mtMeru    = new MtMeru();
+    this.sm.world.add(this.yggdrasil.group);
+    this.sm.world.add(this.mtMeru.group);
 
     // Sun and moon markers. Vault-of-heavens dots stay large-ish so they're
     // findable against the starfield; the optical-vault dots are tiny points
@@ -208,6 +215,8 @@ export class Renderer {
     this.stars.update(m);
     this.celestialPoles.update(m);
     this.decCircles.update(m);
+    this.yggdrasil.update(m);
+    this.mtMeru.update(m);
     this.observer.update(m);
 
     // In first-person (InsideVault) mode the true-source markers on the

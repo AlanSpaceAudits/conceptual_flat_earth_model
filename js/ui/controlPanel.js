@@ -206,6 +206,10 @@ const FIELD_GROUPS = [
         { key: 'ShowManyRays',        label: 'Many Rays',          bool: true },
         { key: 'ShowPlanets',         label: 'Planets',            bool: true },
       ]},
+      { title: 'Cosmology', rows: [
+        { key: 'Cosmology', label: 'Axis Mundi',
+          select: ['none', 'yggdrasil', 'meru'] },
+      ]},
     ],
   },
 ];

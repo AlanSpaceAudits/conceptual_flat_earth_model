@@ -1193,3 +1193,172 @@ export class CelestialPoles {
     place(this.scpSphere, [0, 0, -1]);
   }
 }
+
+// --- Cosmology centerpieces ------------------------------------------------
+//
+// Mythic axis-mundi features for the center of the disc. In this model the
+// disc centre (r = 0 on the AE projection) corresponds to the geographic
+// north pole — the classical location of the world axis in both Norse and
+// Dharmic cosmologies. Each class renders a THREE.Group that is shown only
+// when `state.Cosmology` matches its key; both auto-scale with VaultHeight
+// so the top of the tree / mountain always kisses the heavenly dome.
+
+const COSMOLOGY_DEFAULT_VAULT_H = 0.75;  // matches GEOMETRY.VaultHeightDefault
+
+// Yggdrasil — Norse world-tree. A tapered trunk rising from a web of
+// spreading roots, crowned by a cluster of leafy spheres that brush the
+// underside of the dome. The roots fan out across the disc hinting at the
+// three realms they reach in the myth.
+export class Yggdrasil {
+  constructor() {
+    this.group = new THREE.Group();
+    this.group.name = 'yggdrasil';
+
+    const trunkH = 0.65;
+    const trunkMat = new THREE.MeshBasicMaterial({ color: 0x6b4423 });
+
+    // Tapered trunk — wider at the base, narrower where the canopy sits.
+    const trunkGeo = new THREE.CylinderGeometry(0.014, 0.028, trunkH, 20);
+    trunkGeo.rotateX(Math.PI / 2);
+    const trunk = new THREE.Mesh(trunkGeo, trunkMat);
+    trunk.position.z = trunkH / 2;
+    this.group.add(trunk);
+
+    // Canopy — a cluster of leafy orbs at the top. One central orb plus six
+    // satellite orbs at varying heights gives a fuller, asymmetric silhouette.
+    const leaf = new THREE.MeshBasicMaterial({
+      color: 0x3e8e41, transparent: true, opacity: 0.9,
+    });
+    const canopy = new THREE.Group();
+    canopy.position.z = trunkH;
+    canopy.add(new THREE.Mesh(new THREE.SphereGeometry(0.085, 22, 16), leaf));
+    for (let i = 0; i < 6; i++) {
+      const a = (i / 6) * Math.PI * 2;
+      const orb = new THREE.Mesh(new THREE.SphereGeometry(0.045, 16, 12), leaf);
+      orb.position.set(Math.cos(a) * 0.07, Math.sin(a) * 0.07,
+                       0.025 + (i % 2) * 0.025);
+      canopy.add(orb);
+    }
+    // Highlight orb — slightly brighter to catch the eye at the crown.
+    const crown = new THREE.Mesh(
+      new THREE.SphereGeometry(0.03, 16, 12),
+      new THREE.MeshBasicMaterial({ color: 0x6ec77a, transparent: true, opacity: 0.95 }),
+    );
+    crown.position.z = 0.06;
+    canopy.add(crown);
+    this.group.add(canopy);
+
+    // Roots — thick line segments radiating across the disc. Three long
+    // "named" roots (Urðarbrunnr / Hvergelmir / Mímisbrunnr in myth) plus
+    // smaller tendrils filling the space between.
+    const rootPts = [];
+    const big = 3;
+    const total = 12;
+    for (let i = 0; i < total; i++) {
+      const a = (i / total) * Math.PI * 2;
+      const len = (i % (total / big) === 0) ? 0.22 : 0.09;
+      rootPts.push(0, 0, 0.003);
+      rootPts.push(Math.cos(a) * len, Math.sin(a) * len, 0.003);
+    }
+    const rootGeo = new THREE.BufferGeometry();
+    rootGeo.setAttribute('position', new THREE.Float32BufferAttribute(rootPts, 3));
+    const roots = new THREE.LineSegments(
+      rootGeo,
+      new THREE.LineBasicMaterial({ color: 0x5a3a1c, transparent: true, opacity: 0.85 }),
+    );
+    this.group.add(roots);
+
+    this.group.visible = false;
+  }
+
+  update(model) {
+    const on = model.state.Cosmology === 'yggdrasil';
+    this.group.visible = on;
+    if (!on) return;
+    // Scale vertically with the heavenly vault height so the crown always
+    // just reaches the dome interior regardless of the VaultHeight slider.
+    const k = (model.state.VaultHeight || COSMOLOGY_DEFAULT_VAULT_H)
+            / COSMOLOGY_DEFAULT_VAULT_H;
+    this.group.scale.set(1, 1, k);
+  }
+}
+
+// Mt Meru — Hindu / Buddhist / Jain cosmic mountain. Stepped terraces of
+// alternating stone tones rising to a gilded spire. Four-sided frustums
+// give the faceted look traditional iconography uses; a rotation of 45°
+// orients two faces to each cardinal axis. Surrounded by a pair of faint
+// rings representing the concentric cosmic oceans that circle it.
+export class MtMeru {
+  constructor() {
+    this.group = new THREE.Group();
+    this.group.name = 'mt-meru';
+
+    const topZ = 0.7;
+    const baseR = 0.13;
+    const topR  = 0.022;
+    const levels = 6;
+    // Warm earth → gold gradient up the terraces.
+    const palette = [0x6e4a2a, 0x8a5a34, 0xa6703e, 0xc38a4a, 0xdca85a, 0xf0c768];
+
+    for (let i = 0; i < levels; i++) {
+      const t0 = i / levels;
+      const t1 = (i + 1) / levels;
+      const r0 = baseR + (topR - baseR) * t0;
+      const r1 = baseR + (topR - baseR) * t1;
+      const z0 = topZ * t0;
+      const z1 = topZ * t1;
+      // Four-sided frustum — reads as a pyramidal terrace from any angle.
+      const geo = new THREE.CylinderGeometry(r1, r0, z1 - z0, 4, 1);
+      geo.rotateX(Math.PI / 2);
+      const mesh = new THREE.Mesh(
+        geo,
+        new THREE.MeshBasicMaterial({ color: palette[i] }),
+      );
+      mesh.position.z = (z0 + z1) / 2;
+      mesh.rotation.z = Math.PI / 4;   // faces toward cardinals
+      this.group.add(mesh);
+    }
+
+    // Gilded spire at the summit — the brahmaloka crowning the axis.
+    const spireGeo = new THREE.ConeGeometry(0.012, 0.07, 16);
+    spireGeo.rotateX(-Math.PI / 2);
+    const spire = new THREE.Mesh(
+      spireGeo,
+      new THREE.MeshBasicMaterial({ color: 0xffdf6a }),
+    );
+    spire.position.z = topZ + 0.035;
+    this.group.add(spire);
+
+    // Two concentric sea rings around the base — the cosmological oceans.
+    for (const [radius, opacity] of [[0.18, 0.55], [0.26, 0.35]]) {
+      const N = 96;
+      const pts = new Float32Array(N * 3);
+      for (let k = 0; k < N; k++) {
+        const a = (k / N) * Math.PI * 2;
+        pts[k * 3 + 0] = Math.cos(a) * radius;
+        pts[k * 3 + 1] = Math.sin(a) * radius;
+        pts[k * 3 + 2] = 0.003;
+      }
+      const g = new THREE.BufferGeometry();
+      g.setAttribute('position', new THREE.BufferAttribute(pts, 3));
+      const ring = new THREE.LineLoop(
+        g,
+        new THREE.LineBasicMaterial({
+          color: 0x7aa6c2, transparent: true, opacity,
+        }),
+      );
+      this.group.add(ring);
+    }
+
+    this.group.visible = false;
+  }
+
+  update(model) {
+    const on = model.state.Cosmology === 'meru';
+    this.group.visible = on;
+    if (!on) return;
+    const k = (model.state.VaultHeight || COSMOLOGY_DEFAULT_VAULT_H)
+            / COSMOLOGY_DEFAULT_VAULT_H;
+    this.group.scale.set(1, 1, k);
+  }
+}

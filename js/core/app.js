@@ -137,6 +137,10 @@ function defaultState() {
     // regardless of the sun — useful for inspecting the disk structure.
     DynamicStars: true,
 
+    // Mythic axis-mundi feature at the disc centre (which is the geographic
+    // north pole in this model). 'none' | 'yggdrasil' | 'meru'.
+    Cosmology: 'none',
+
     // description / pointer
     Description: '',
     PointerFrom: [0, 0],

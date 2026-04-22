@@ -147,10 +147,26 @@ export class Renderer {
   }
 
   async loadLand() {
-    const gj = await loadLandGeo();
-    this.land = buildLandMesh(gj, { feRadius: FE_RADIUS });
-    this.sm.world.add(this.land);
+    this._landGeo = await loadLandGeo();
+    this._rebuildLand(this.model.state.MapProjection || 'ae');
     this.frame();
+  }
+
+  _rebuildLand(projection) {
+    if (!this._landGeo) return;
+    if (this.land) {
+      this.sm.world.remove(this.land);
+      this.land.traverse((o) => {
+        o.geometry?.dispose();
+        if (o.material) {
+          const mats = Array.isArray(o.material) ? o.material : [o.material];
+          mats.forEach((m) => m.dispose());
+        }
+      });
+    }
+    this.land = buildLandMesh(this._landGeo, { feRadius: FE_RADIUS, projection });
+    this.sm.world.add(this.land);
+    this._landProjection = projection;
   }
 
   _blankLine(color, opacity, clippingPlanes = []) {
@@ -188,6 +204,10 @@ export class Renderer {
 
   frame() {
     const m = this.model;
+    const proj = m.state.MapProjection || 'ae';
+    if (this._landGeo && proj !== this._landProjection) {
+      this._rebuildLand(proj);
+    }
     this.discGrid.update(m);
     this.shadow.update(m);
     this.latLines.update(m);

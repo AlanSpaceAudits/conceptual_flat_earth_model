@@ -226,6 +226,12 @@ const FIELD_GROUPS = [
         { key: 'Cosmology', label: 'Axis Mundi',
           select: ['none', 'yggdrasil', 'meru', 'vortex', 'vortex2'] },
       ]},
+      { title: 'Map Projection', rows: [
+        { key: 'MapProjection', label: 'Projection', select: [
+          { value: 'ae',        label: 'Default (AE)' },
+          { value: 'hellerick', label: 'Hellerick boreal' },
+        ]},
+      ]},
     ],
   },
 ];

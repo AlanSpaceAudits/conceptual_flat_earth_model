@@ -16,6 +16,25 @@ export function pointOnFE(latDeg, longDeg, feRadius = 1) {
   return [r * Math.cos(lo), r * Math.sin(lo), 0];
 }
 
+// Visual-only alternative radial mappings for the disc. The AE map is still
+// the model's internal frame — these only affect how continents, graticule,
+// and latitude circles are painted on the disc surface. Supported values:
+//   'ae'        — azimuthal-equidistant (the model's native mapping).
+//   'hellerick' — Lambert azimuthal equal-area (polar aspect) normalised so
+//                 the southern pole lands on the rim. Used as a visual
+//                 stand-in for Hellerick's boreal look until an
+//                 authoritative formula is available.
+export function pointOnFeMap(latDeg, longDeg, feRadius = 1, projection = 'ae') {
+  const lo = ToRad(longDeg);
+  let r;
+  if (projection === 'hellerick') {
+    r = feRadius * Math.sin((90 - latDeg) * Math.PI / 360);
+  } else {
+    r = feRadius * (90 - latDeg) / 180;
+  }
+  return [r * Math.cos(lo), r * Math.sin(lo), 0];
+}
+
 // Global FE coord for a fe-style lat/long (i.e. the disc position of a
 // geographical point).
 export function feLatLongToGlobalFeCoord(latDeg, longDeg, feRadius = 1) {

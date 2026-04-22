@@ -148,6 +148,13 @@ function defaultState() {
     // north pole in this model). 'none' | 'yggdrasil' | 'meru'.
     Cosmology: 'none',
 
+    // Visual map projection used for land + graticule + latitude circles
+    // only. 'ae' preserves the model's native azimuthal-equidistant layout;
+    // 'hellerick' swaps in a Lambert equal-area polar aspect for the
+    // Hellerick boreal look. All physics / ray / vault math still runs in
+    // the AE frame.
+    MapProjection: 'ae',
+
     // description / pointer
     Description: '',
     PointerFrom: [0, 0],

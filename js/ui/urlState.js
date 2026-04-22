@@ -18,9 +18,10 @@ const PERSISTED_KEYS = [
   'JupiterVaultHeight', 'SaturnVaultHeight',
   'ObserverFigure',
   'Cosmology',
+  'MapProjection',
 ];
 
-const STRING_KEYS = new Set(['ObserverFigure', 'Cosmology']);
+const STRING_KEYS = new Set(['ObserverFigure', 'Cosmology', 'MapProjection']);
 
 function stateToParams(state) {
   const p = new URLSearchParams();

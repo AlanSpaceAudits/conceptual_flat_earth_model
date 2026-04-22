@@ -7,7 +7,7 @@ import { M } from '../math/mat3.js';
 import { ToRad } from '../math/utils.js';
 import { FE_RADIUS, GEOMETRY } from '../core/constants.js';
 import {
-  pointOnFE, celestLatLongToVaultCoord, feLatLongToGlobalFeCoord,
+  pointOnFE, pointOnFeMap, celestLatLongToVaultCoord, feLatLongToGlobalFeCoord,
 } from '../core/feGeometry.js';
 import {
   latLongToCoord, coordToLatLong, vaultCoordToGlobalFeCoord,
@@ -150,26 +150,32 @@ export class LatitudeLines {
   constructor(feRadius = FE_RADIUS) {
     this.group = new THREE.Group();
     this.group.name = 'latitude-lines';
-    const circles = [
+    this.feRadius = feRadius;
+    this._circles = [
       { lat:  66.5636, color: 0x66ccff, label: 'Arctic Circle' },
       { lat:  23.4392, color: 0xffc844, label: 'Tropic of Cancer' },
       { lat:   0.0,    color: 0xff4040, label: 'Equator' },
       { lat: -23.4392, color: 0xffc844, label: 'Tropic of Capricorn' },
       { lat: -66.5636, color: 0x66ccff, label: 'Antarctic Circle' },
     ];
-    for (const c of circles) {
+    this._lastProjection = null;
+    this._rebuild('ae');
+  }
+  _rebuild(projection) {
+    while (this.group.children.length) {
+      const c = this.group.children.pop();
+      c.geometry?.dispose();
+      c.material?.dispose();
+    }
+    for (const c of this._circles) {
       const pts = [];
       for (let k = 0; k <= 256; k++) {
         const lon = -180 + k * (360 / 256);
-        const p = pointOnFE(c.lat, lon, feRadius);
+        const p = pointOnFeMap(c.lat, lon, this.feRadius, projection);
         pts.push(p[0], p[1], 8e-4);
       }
       const geo = new THREE.BufferGeometry();
       geo.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
-      // depthTest off + high renderOrder so the shadow / land can't wash
-      // the colours out. LineBasicMaterial is limited to 1px line width in
-      // most WebGL browsers, so saturating the colours and drawing on top
-      // is the reliable way to make them read as "Equator / Tropic / Polar".
       const mat = new THREE.LineBasicMaterial({
         color: c.color,
         transparent: true, opacity: 1.0,
@@ -180,8 +186,11 @@ export class LatitudeLines {
       line.name = c.label;
       this.group.add(line);
     }
+    this._lastProjection = projection;
   }
   update(model) {
+    const proj = model.state.MapProjection || 'ae';
+    if (proj !== this._lastProjection) this._rebuild(proj);
     this.group.visible = !!model.state.ShowLatitudeLines;
   }
 }
@@ -348,14 +357,22 @@ export class DiscGrid {
   constructor(feRadius = FE_RADIUS) {
     this.group = new THREE.Group();
     this.group.name = 'disc-grid';
-
+    this.feRadius = feRadius;
+    this._lastProjection = null;
+    this._rebuild('ae');
+  }
+  _rebuild(projection) {
+    while (this.group.children.length) {
+      const c = this.group.children.pop();
+      c.geometry?.dispose();
+      c.material?.dispose();
+    }
     const segs = [];
-    // Lat circles every 15deg (lat from -90 to +75).
     for (let lat = -90 + 15; lat <= 75; lat += 15) {
       const ringPts = [];
       for (let k = 0; k <= 120; k++) {
         const lon = -180 + k * 3;
-        const p = pointOnFE(lat, lon, feRadius);
+        const p = pointOnFeMap(lat, lon, this.feRadius, projection);
         ringPts.push(p[0], p[1], 2e-4);
       }
       for (let k = 0; k < ringPts.length - 3; k += 3) {
@@ -363,16 +380,18 @@ export class DiscGrid {
                   ringPts[k + 3], ringPts[k + 4], ringPts[k + 5]);
       }
     }
-    // Lon radii every 15deg.
     for (let lon = 0; lon < 360; lon += 15) {
-      const a = pointOnFE(90, lon, feRadius);
-      const b = pointOnFE(-90, lon, feRadius);
+      const a = pointOnFeMap(90, lon, this.feRadius, projection);
+      const b = pointOnFeMap(-90, lon, this.feRadius, projection);
       segs.push(a[0], a[1], 2e-4, b[0], b[1], 2e-4);
     }
     this.lines = makeLineSegments(segs, 0x556677, { opacity: 0.4 });
     this.group.add(this.lines);
+    this._lastProjection = projection;
   }
   update(model) {
+    const proj = model.state.MapProjection || 'ae';
+    if (proj !== this._lastProjection) this._rebuild(proj);
     this.group.visible = model.state.ShowFeGrid;
   }
 }

@@ -781,9 +781,12 @@ export class Observer {
       this.figureGroup.add(mesh);
     };
 
-    // Head (both variants)
-    const head = new THREE.Mesh(new THREE.SphereGeometry(0.005, 16, 12), skin);
-    add(head, 0, 0, 0.035);
+    // Human head — only for the male / female variants. The other
+    // characters build their own heads in their branches.
+    if (kind === 'male' || kind === 'female') {
+      const head = new THREE.Mesh(new THREE.SphereGeometry(0.005, 16, 12), skin);
+      add(head, 0, 0, 0.035);
+    }
 
     if (kind === 'male') {
       // Torso: a slightly tapered box approximated with a short cylinder

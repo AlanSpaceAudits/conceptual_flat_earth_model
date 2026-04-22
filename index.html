@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FE CONCEPTUAL MODEL</title>
+<link rel="stylesheet" href="css/styles.css">
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.162.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.162.0/examples/jsm/"
+  }
+}
+</script>
+</head>
+<body>
+
+<div id="app">
+  <header>
+    <h1>FE CONCEPTUAL MODEL</h1>
+    <p class="sub">Modular port. All distances are unitless (FE radius = 1).</p>
+    <div class="info-box">
+      <button class="info-btn" type="button" aria-label="About this model">ⓘ About</button>
+      <div class="info-popup" hidden>
+        <p>This is a conceptual model. The positions of the stars are based purely on kinematics; the observer's optical vault defines the limit of vision onto which the starfield is projected.</p>
+        <p>Any conceptual model that uses the lat/long graticule is no better or worse than any other projection. The graticule is internally consistent and self-referential to a fictitious observer at the center of the earth — it is that fictitious observer that binds the 60 NMi / 1° relationship to the ground positions of the stars.</p>
+        <p>"Fictitious observer" is not mutually exclusive with the conceptual model: every such model is ultimately grounded in what a single real observer sees in their own hemisphere of vision, and the graticule is simply one bookkeeping convention on top of that.</p>
+      </div>
+    </div>
+  </header>
+
+  <div id="view">
+    <canvas id="feCanvas"></canvas>
+    <div id="hud"></div>
+  </div>
+
+  <aside id="panel">
+    <div class="tabs" role="tablist"></div>
+    <div class="tab-body"></div>
+  </aside>
+
+  <footer id="desc">
+    <p class="desc-dynamic"></p>
+  </footer>
+</div>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>

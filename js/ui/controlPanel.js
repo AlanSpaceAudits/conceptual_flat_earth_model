@@ -142,7 +142,17 @@ const FIELD_GROUPS = [
         { key: 'ObserverLat',  label: 'ObserverLat',  unit: '°', min: -90,  max:  90,  step: 0.1 },
         { key: 'ObserverLong', label: 'ObserverLong', unit: '°', min: -180, max: 180,  step: 0.1 },
         { key: 'ObserverHeading', label: 'Facing',    unit: '°', min: 0,    max: 360,  step: 1, cardinal: true },
-        { key: 'ObserverFigure', label: 'Figure', select: ['male', 'female', 'none'] },
+        { key: 'ObserverFigure', label: 'Figure', select: [
+          { value: 'male',    label: 'Male' },
+          { value: 'female',  label: 'Female' },
+          { value: 'turtle',  label: 'Shane St. Pierre (Turtle)' },
+          { value: 'bear',    label: 'Space Audits (Bear)' },
+          { value: 'llama',   label: 'Llamazing (Llama)' },
+          { value: 'goose',   label: 'Goose (French Beret)' },
+          { value: 'cat',     label: 'Black Cat' },
+          { value: 'drmike',  label: 'Dr Mike (Great Pyrenees)' },
+          { value: 'none',    label: 'None' },
+        ]},
         { key: 'InsideVault', label: '', action: {
           enterLabel: 'Heavenly Vault', exitLabel: 'Optical Vault',
         } },
@@ -259,7 +269,12 @@ function numericRow(model, row) {
 function selectRow(model, row) {
   const el = document.createElement('div');
   el.className = 'row bool';
-  const opts = row.select.map(o => `<option value="${o}">${o}</option>`).join('');
+  // Each option can be a plain string (value == label) or { value, label }.
+  const opts = row.select.map((o) => {
+    const value = typeof o === 'string' ? o : o.value;
+    const label = typeof o === 'string' ? o : (o.label ?? o.value);
+    return `<option value="${value}">${label}</option>`;
+  }).join('');
   el.innerHTML = `<label>${row.label}</label><select class="sel">${opts}</select>`;
   const sel = el.querySelector('select');
   function refresh() { sel.value = String(model.state[row.key]); }

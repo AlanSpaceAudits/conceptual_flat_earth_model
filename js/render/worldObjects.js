@@ -816,7 +816,342 @@ export class Observer {
       const legGeo = vertCyl(0.0016, 0.0016, 0.006);
       add(new THREE.Mesh(legGeo, skin), -0.0025, 0, 0.003);
       add(new THREE.Mesh(legGeo, skin),  0.0025, 0, 0.003);
+    } else if (kind === 'turtle') {
+      // Shane St. Pierre — turtle. Flattened dome shell, stretched neck
+      // with a small round head, four short legs, short tail. +x is
+      // "forward" (same convention as the human figures).
+      const shell    = new THREE.MeshBasicMaterial({ color: 0x4a7030 });
+      const shellRim = new THREE.MeshBasicMaterial({ color: 0x3a5722 });
+      const hide     = new THREE.MeshBasicMaterial({ color: 0x7ea350 });
+      const eyeMat   = new THREE.MeshBasicMaterial({ color: 0x0c0c0c });
+
+      // Shell: half-sphere flattened vertically.
+      const shellGeo = new THREE.SphereGeometry(
+        0.011, 24, 16, 0, Math.PI * 2, 0, Math.PI / 2,
+      );
+      shellGeo.rotateX(Math.PI / 2);
+      const shellMesh = new THREE.Mesh(shellGeo, shell);
+      shellMesh.scale.set(1.15, 1.0, 0.65);
+      add(shellMesh, 0, 0, 0.005);
+      // Thin rim ring along the shell's lower edge.
+      const rimGeo = new THREE.TorusGeometry(0.0125, 0.0011, 8, 32);
+      add(new THREE.Mesh(rimGeo, shellRim), 0, 0, 0.005);
+
+      // Neck + head out the front.
+      const neck = new THREE.Mesh(horzCyl(0.0028, 0.007, 'x'), hide);
+      add(neck, 0.0135, 0, 0.010);
+      add(new THREE.Mesh(new THREE.SphereGeometry(0.0045, 14, 10), hide),
+          0.0185, 0, 0.011);
+      // Eyes
+      add(new THREE.Mesh(new THREE.SphereGeometry(0.00075, 8, 6), eyeMat),
+          0.0215, -0.0022, 0.0125);
+      add(new THREE.Mesh(new THREE.SphereGeometry(0.00075, 8, 6), eyeMat),
+          0.0215,  0.0022, 0.0125);
+
+      // Four short legs at shell corners.
+      const legGeo = vertCyl(0.0022, 0.0022, 0.006);
+      const legs = [
+        [ 0.0075,  0.0075], [ 0.0075, -0.0075],
+        [-0.0075,  0.0075], [-0.0075, -0.0075],
+      ];
+      for (const [x, y] of legs) add(new THREE.Mesh(legGeo, hide), x, y, 0.003);
+
+      // Short tail out the back.
+      const tail = new THREE.Mesh(horzCyl(0.0013, 0.004, 'x'), hide);
+      add(tail, -0.013, 0, 0.009);
+    } else if (kind === 'bear') {
+      // Space Audits — brown bear. Barrel torso, round head with a
+      // pronounced snout and rounded ears, four stout legs.
+      const fur     = new THREE.MeshBasicMaterial({ color: 0x6b3e22 });
+      const furDark = new THREE.MeshBasicMaterial({ color: 0x4a2a14 });
+      const muzzle  = new THREE.MeshBasicMaterial({ color: 0x8a5a32 });
+      const nose    = new THREE.MeshBasicMaterial({ color: 0x141414 });
+      const eyeMat  = new THREE.MeshBasicMaterial({ color: 0x141414 });
+
+      // Torso — scaled sphere to elongate fore/aft.
+      const body = new THREE.Mesh(new THREE.SphereGeometry(0.013, 22, 16), fur);
+      body.scale.set(1.25, 0.95, 0.95);
+      add(body, 0, 0, 0.024);
+
+      // Head + snout + nose.
+      const headMesh = new THREE.Mesh(
+        new THREE.SphereGeometry(0.009, 20, 14), fur,
+      );
+      add(headMesh, 0.012, 0, 0.040);
+      const snoutMesh = new THREE.Mesh(
+        new THREE.SphereGeometry(0.0045, 14, 10), muzzle,
+      );
+      snoutMesh.scale.set(1.4, 1.0, 0.85);
+      add(snoutMesh, 0.020, 0, 0.038);
+      add(new THREE.Mesh(new THREE.SphereGeometry(0.0013, 10, 8), nose),
+          0.0245, 0, 0.040);
+
+      // Ears (rounded buttons on top of head).
+      const earGeo = new THREE.SphereGeometry(0.0028, 12, 8);
+      add(new THREE.Mesh(earGeo, fur),  0.009, -0.0065, 0.048);
+      add(new THREE.Mesh(earGeo, fur),  0.009,  0.0065, 0.048);
+
+      // Eyes.
+      const eyeGeo = new THREE.SphereGeometry(0.001, 8, 6);
+      add(new THREE.Mesh(eyeGeo, eyeMat), 0.017, -0.003, 0.043);
+      add(new THREE.Mesh(eyeGeo, eyeMat), 0.017,  0.003, 0.043);
+
+      // Four stout legs.
+      const legGeo = vertCyl(0.004, 0.004, 0.014);
+      const legs = [
+        [ 0.010,  0.008], [ 0.010, -0.008],
+        [-0.010,  0.008], [-0.010, -0.008],
+      ];
+      for (const [x, y] of legs) add(new THREE.Mesh(legGeo, furDark), x, y, 0.009);
+
+      // Small stub tail at the back.
+      add(new THREE.Mesh(new THREE.SphereGeometry(0.0025, 10, 8), fur),
+          -0.015, 0, 0.028);
+    } else if (kind === 'llama') {
+      // Llamazing — white llama. Long-legged body, long curving neck,
+      // small head with tall ears, tiny dark eyes and nose.
+      const wool  = new THREE.MeshBasicMaterial({ color: 0xf4f0e8 });
+      const muz   = new THREE.MeshBasicMaterial({ color: 0xd0b090 });
+      const eyeMt = new THREE.MeshBasicMaterial({ color: 0x141414 });
+
+      // Torso.
+      const body = new THREE.Mesh(new THREE.SphereGeometry(0.011, 20, 14), wool);
+      body.scale.set(1.3, 0.9, 0.85);
+      add(body, -0.002, 0, 0.034);
+
+      // Neck: rising from front of torso, leaning forward.
+      const neckGeo = new THREE.CylinderGeometry(0.0028, 0.004, 0.022, 12);
+      const neck = new THREE.Mesh(neckGeo, wool);
+      neck.rotation.x = Math.PI / 2;
+      neck.rotation.z = -0.4;                 // tilt forward (+x)
+      add(neck, 0.010, 0, 0.048);
+
+      // Head.
+      const head = new THREE.Mesh(new THREE.SphereGeometry(0.005, 16, 12), wool);
+      add(head, 0.018, 0, 0.058);
+      // Muzzle.
+      const muzzleMesh = new THREE.Mesh(
+        new THREE.SphereGeometry(0.0028, 12, 9), muz,
+      );
+      muzzleMesh.scale.set(1.2, 1.0, 0.8);
+      add(muzzleMesh, 0.022, 0, 0.056);
+
+      // Tall pointy ears.
+      const earGeo = new THREE.ConeGeometry(0.0012, 0.006, 8);
+      earGeo.rotateX(Math.PI / 2);
+      const earL = new THREE.Mesh(earGeo, wool);
+      const earR = new THREE.Mesh(earGeo, wool);
+      earL.rotation.z = -0.3;
+      earR.rotation.z =  0.3;
+      add(earL, 0.017, -0.002, 0.063);
+      add(earR, 0.017,  0.002, 0.063);
+
+      // Eyes.
+      const eyeGeo = new THREE.SphereGeometry(0.00085, 8, 6);
+      add(new THREE.Mesh(eyeGeo, eyeMt), 0.020, -0.003, 0.060);
+      add(new THREE.Mesh(eyeGeo, eyeMt), 0.020,  0.003, 0.060);
+
+      // Long legs.
+      const legGeo = vertCyl(0.0018, 0.0018, 0.022);
+      const legs = [
+        [ 0.008,  0.006], [ 0.008, -0.006],
+        [-0.010,  0.006], [-0.010, -0.006],
+      ];
+      for (const [x, y] of legs) add(new THREE.Mesh(legGeo, wool), x, y, 0.013);
+
+      // Short fluffy tail.
+      add(new THREE.Mesh(new THREE.SphereGeometry(0.003, 10, 8), wool),
+          -0.016, 0, 0.034);
+    } else if (kind === 'goose') {
+      // Goose with a French beret. White plump body, long curved neck,
+      // orange beak, orange webbed feet, and a tilted black beret.
+      const feather = new THREE.MeshBasicMaterial({ color: 0xf8f8f4 });
+      const beak    = new THREE.MeshBasicMaterial({ color: 0xff9a20 });
+      const feet    = new THREE.MeshBasicMaterial({ color: 0xe07a10 });
+      const beret   = new THREE.MeshBasicMaterial({ color: 0x181820 });
+      const eyeMt   = new THREE.MeshBasicMaterial({ color: 0x0c0c0c });
+
+      // Plump teardrop body.
+      const body = new THREE.Mesh(new THREE.SphereGeometry(0.013, 22, 16), feather);
+      body.scale.set(1.2, 0.95, 0.9);
+      add(body, -0.004, 0, 0.016);
+
+      // Neck — arched cylinder.
+      const neckGeo = new THREE.CylinderGeometry(0.0028, 0.0035, 0.020, 12);
+      const neck = new THREE.Mesh(neckGeo, feather);
+      neck.rotation.x = Math.PI / 2;
+      neck.rotation.z = -0.7;
+      add(neck, 0.007, 0, 0.030);
+
+      // Head.
+      const head = new THREE.Mesh(new THREE.SphereGeometry(0.0055, 16, 12), feather);
+      add(head, 0.018, 0, 0.038);
+
+      // Beak — pointed cone extending forward.
+      const beakGeo = new THREE.ConeGeometry(0.0018, 0.008, 10);
+      beakGeo.rotateZ(-Math.PI / 2);
+      add(new THREE.Mesh(beakGeo, beak), 0.025, 0, 0.037);
+
+      // Eyes.
+      const eyeGeo = new THREE.SphereGeometry(0.0009, 8, 6);
+      add(new THREE.Mesh(eyeGeo, eyeMt), 0.019, -0.0038, 0.040);
+      add(new THREE.Mesh(eyeGeo, eyeMt), 0.019,  0.0038, 0.040);
+
+      // Beret — flat-ish disc perched on top of the head, tilted a bit.
+      const beretGeo = new THREE.CylinderGeometry(0.0055, 0.0055, 0.0014, 24);
+      const beretMesh = new THREE.Mesh(beretGeo, beret);
+      beretMesh.rotation.x = Math.PI / 2;
+      beretMesh.rotation.y = 0.15;
+      beretMesh.position.set(0.017, 0, 0.0435);
+      this.figureGroup.add(beretMesh);
+      // Beret stem — the little cloth button.
+      add(new THREE.Mesh(new THREE.SphereGeometry(0.0008, 8, 6), beret),
+          0.015, 0, 0.045);
+
+      // Webbed feet (short flat ovals).
+      const footGeo = new THREE.SphereGeometry(0.0022, 10, 6);
+      const footL = new THREE.Mesh(footGeo, feet);
+      const footR = new THREE.Mesh(footGeo, feet);
+      footL.scale.set(1.4, 0.9, 0.4);
+      footR.scale.set(1.4, 0.9, 0.4);
+      add(footL, -0.002, -0.003, 0.003);
+      add(footR, -0.002,  0.003, 0.003);
+
+      // Short pointed tail.
+      add(new THREE.Mesh(new THREE.SphereGeometry(0.002, 8, 6), feather),
+          -0.016, 0, 0.018);
+    } else if (kind === 'cat') {
+      // Black cat. Sleek body, pointy ears, arched tail curling up.
+      const inky   = new THREE.MeshBasicMaterial({ color: 0x0a0a0d });
+      const eyeMt  = new THREE.MeshBasicMaterial({ color: 0xa0cf40 });
+      const noseMt = new THREE.MeshBasicMaterial({ color: 0x4a2028 });
+
+      // Elongated body.
+      const body = new THREE.Mesh(new THREE.SphereGeometry(0.010, 20, 14), inky);
+      body.scale.set(1.5, 0.85, 0.80);
+      add(body, -0.002, 0, 0.012);
+
+      // Head.
+      const head = new THREE.Mesh(new THREE.SphereGeometry(0.007, 18, 14), inky);
+      add(head, 0.012, 0, 0.020);
+
+      // Pointy ears (cones).
+      const earGeo = new THREE.ConeGeometry(0.0022, 0.005, 8);
+      earGeo.rotateX(Math.PI / 2);
+      const earL = new THREE.Mesh(earGeo, inky);
+      const earR = new THREE.Mesh(earGeo, inky);
+      add(earL, 0.010, -0.004, 0.026);
+      add(earR, 0.010,  0.004, 0.026);
+
+      // Eyes — yellow-green slits.
+      const eyeGeo = new THREE.SphereGeometry(0.0011, 10, 8);
+      const eyeL = new THREE.Mesh(eyeGeo, eyeMt);
+      const eyeR = new THREE.Mesh(eyeGeo, eyeMt);
+      eyeL.scale.set(1.2, 0.5, 1.0);
+      eyeR.scale.set(1.2, 0.5, 1.0);
+      add(eyeL, 0.017, -0.003, 0.022);
+      add(eyeR, 0.017,  0.003, 0.022);
+
+      // Tiny nose.
+      add(new THREE.Mesh(new THREE.SphereGeometry(0.0008, 8, 6), noseMt),
+          0.019, 0, 0.019);
+
+      // Four thin legs.
+      const legGeo = vertCyl(0.0017, 0.0017, 0.011);
+      const legs = [
+        [ 0.008,  0.006], [ 0.008, -0.006],
+        [-0.008,  0.006], [-0.008, -0.006],
+      ];
+      for (const [x, y] of legs) add(new THREE.Mesh(legGeo, inky), x, y, 0.006);
+
+      // Curving tail — approximated by three small cylinders rising up.
+      const tailSegs = [
+        [[-0.012, 0, 0.012], [-0.018, 0, 0.018]],
+        [[-0.018, 0, 0.018], [-0.018, 0, 0.026]],
+        [[-0.018, 0, 0.026], [-0.014, 0, 0.030]],
+      ];
+      for (const [a, b] of tailSegs) {
+        const dx = b[0] - a[0], dy = b[1] - a[1], dz = b[2] - a[2];
+        const L = Math.hypot(dx, dy, dz);
+        const g = new THREE.CylinderGeometry(0.0013, 0.0013, L, 8);
+        const m = new THREE.Mesh(g, inky);
+        m.quaternion.setFromUnitVectors(
+          new THREE.Vector3(0, 1, 0),
+          new THREE.Vector3(dx / L, dy / L, dz / L),
+        );
+        m.position.set((a[0]+b[0])/2, (a[1]+b[1])/2, (a[2]+b[2])/2);
+        this.figureGroup.add(m);
+      }
+    } else if (kind === 'drmike') {
+      // Dr Mike — Great Pyrenees. Big fluffy white dog with a heavy
+      // coat, broad chest, floppy ears, and a thick plumed tail.
+      const coat    = new THREE.MeshBasicMaterial({ color: 0xf6f3ec });
+      const offWhite = new THREE.MeshBasicMaterial({ color: 0xe7e1d2 });
+      const nose    = new THREE.MeshBasicMaterial({ color: 0x141414 });
+      const eyeMt   = new THREE.MeshBasicMaterial({ color: 0x2a1a0c });
+
+      // Deep barrel chest + body.
+      const body = new THREE.Mesh(new THREE.SphereGeometry(0.014, 22, 16), coat);
+      body.scale.set(1.4, 1.0, 0.95);
+      add(body, -0.002, 0, 0.028);
+
+      // Shoulder / chest puff — extra fluff at the front.
+      const ruff = new THREE.Mesh(new THREE.SphereGeometry(0.010, 18, 14), offWhite);
+      ruff.scale.set(1.1, 1.15, 0.9);
+      add(ruff, 0.011, 0, 0.030);
+
+      // Head — broad, rounded.
+      const head = new THREE.Mesh(new THREE.SphereGeometry(0.010, 20, 14), coat);
+      head.scale.set(1.15, 1.0, 0.95);
+      add(head, 0.021, 0, 0.042);
+
+      // Muzzle.
+      const muzzleGeo = new THREE.SphereGeometry(0.0052, 14, 10);
+      const muzzle = new THREE.Mesh(muzzleGeo, coat);
+      muzzle.scale.set(1.3, 0.9, 0.85);
+      add(muzzle, 0.030, 0, 0.040);
+      // Black nose.
+      add(new THREE.Mesh(new THREE.SphereGeometry(0.0016, 10, 8), nose),
+          0.0355, 0, 0.041);
+
+      // Floppy triangular ears hanging down beside the head.
+      const earGeo = new THREE.ConeGeometry(0.0035, 0.009, 10);
+      const earL = new THREE.Mesh(earGeo, coat);
+      const earR = new THREE.Mesh(earGeo, coat);
+      earL.rotation.x = Math.PI;           // point down
+      earR.rotation.x = Math.PI;
+      earL.rotation.z = -0.15;
+      earR.rotation.z =  0.15;
+      add(earL, 0.019, -0.0095, 0.044);
+      add(earR, 0.019,  0.0095, 0.044);
+
+      // Dark button eyes.
+      const eyeGeo = new THREE.SphereGeometry(0.0011, 10, 8);
+      add(new THREE.Mesh(eyeGeo, eyeMt), 0.027, -0.004, 0.045);
+      add(new THREE.Mesh(eyeGeo, eyeMt), 0.027,  0.004, 0.045);
+
+      // Sturdy legs.
+      const legGeo = vertCyl(0.003, 0.003, 0.016);
+      const legs = [
+        [ 0.010,  0.009], [ 0.010, -0.009],
+        [-0.012,  0.009], [-0.012, -0.009],
+      ];
+      for (const [x, y] of legs) add(new THREE.Mesh(legGeo, coat), x, y, 0.010);
+
+      // Plumed tail — a large fluffy sphere trailing behind, lifted a bit.
+      const tail = new THREE.Mesh(new THREE.SphereGeometry(0.006, 14, 10), offWhite);
+      tail.scale.set(1.3, 0.9, 1.1);
+      add(tail, -0.019, 0, 0.034);
     }
+
+    // Paint the figure after the celestial markers (sun/moon/planet dots
+    // and their halos sit at renderOrder ≤ 100 with depthTest: false, so
+    // they leak through any figure at the default renderOrder of 0). A
+    // high renderOrder combined with normal depth testing makes the
+    // figure occlude markers that happen to overlap it in screen space.
+    this.figureGroup.traverse((o) => {
+      if (o.isMesh) o.renderOrder = 110;
+    });
 
     this._currentFigure = kind;
   }
@@ -827,6 +1162,9 @@ export class Observer {
 
     const kind = model.state.ObserverFigure || 'male';
     if (kind !== this._currentFigure) this._buildFigure(kind);
+    // Red ground-point marker is only useful when no figure is drawn —
+    // otherwise it reads as a stray red dot next to the figure.
+    this.marker.visible = kind === 'none';
     // Keep the figure facing "outward" from disc centre so the observer's
     // body orientation feels stable as lat/long changes. We rotate about z
     // to point the figure's +x (forward) along the observer's radial direction.
@@ -1218,17 +1556,14 @@ export class Yggdrasil {
     this.group = new THREE.Group();
     this.group.name = 'yggdrasil';
 
-    const bark     = new THREE.MeshBasicMaterial({ color: 0x6b4423 });
-    const darkBark = new THREE.MeshBasicMaterial({ color: 0x4e2f17 });
-    const leaf     = new THREE.MeshBasicMaterial({
-      color: 0x3e8e41, transparent: true, opacity: 0.92,
-    });
-    const leafBright = new THREE.MeshBasicMaterial({
-      color: 0x6ec77a, transparent: true, opacity: 0.95,
-    });
-    const leafDeep   = new THREE.MeshBasicMaterial({
-      color: 0x2a6d33, transparent: true, opacity: 0.9,
-    });
+    // Solid materials throughout — the tree is a physical occluder. Leaves
+    // are opaque (no alpha blending) so they write to the depth buffer and
+    // hide any celestial marker that ends up behind them.
+    const bark       = new THREE.MeshBasicMaterial({ color: 0x6b4423 });
+    const darkBark   = new THREE.MeshBasicMaterial({ color: 0x4e2f17 });
+    const leaf       = new THREE.MeshBasicMaterial({ color: 0x3e8e41 });
+    const leafBright = new THREE.MeshBasicMaterial({ color: 0x6ec77a });
+    const leafDeep   = new THREE.MeshBasicMaterial({ color: 0x2a6d33 });
 
     // Helper: place an oriented cylinder from point a to point b with
     // radii (rA at a, rB at b). Three.js cylinder defaults to the +y
@@ -1344,6 +1679,13 @@ export class Yggdrasil {
     crown.add(crownTop);
     this.group.add(crown);
 
+    // Render the tree after the celestial markers (which use depthTest:
+    // false and renderOrder up to 100) so it paints over any sun/moon/
+    // planet marker that would otherwise show through the trunk or canopy.
+    this.group.traverse((o) => {
+      if (o.isMesh) o.renderOrder = 110;
+    });
+
     this.group.visible = false;
   }
 
@@ -1426,6 +1768,13 @@ export class MtMeru {
       this.group.add(ring);
     }
 
+    // Solid terraces and spire render after celestial markers so they
+    // occlude any sun/moon/planet that would otherwise show through the
+    // mountain. Decorative ocean rings keep their default order.
+    this.group.traverse((o) => {
+      if (o.isMesh) o.renderOrder = 110;
+    });
+
     this.group.visible = false;
   }
 
@@ -1497,9 +1846,13 @@ export class ToroidalVortex {
         ];
 
     for (const t of tori) {
+      // depthTest enabled so the opaque disc occludes the below-disc half
+      // of the torus when the camera is above the disc plane. depthWrite
+      // stays off so line pixels don't leave z-fighting artefacts against
+      // later overlapping torus segments.
       const mat = new THREE.LineBasicMaterial({
         color: t.color, transparent: true, opacity: t.opacity,
-        depthTest: false, depthWrite: false,
+        depthTest: true, depthWrite: false,
       });
       this._materials.push(mat);
 
@@ -1561,7 +1914,7 @@ export class ToroidalVortex {
       g.setAttribute('position', new THREE.BufferAttribute(pts, 3));
       const ringMat = new THREE.LineBasicMaterial({
         color: 0x4fc0ff, transparent: true, opacity: 0.9,
-        depthTest: false, depthWrite: false,
+        depthTest: true, depthWrite: false,
       });
       this._materials.push(ringMat);
       const ring = new THREE.Line(g, ringMat);

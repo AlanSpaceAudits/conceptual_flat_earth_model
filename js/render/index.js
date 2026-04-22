@@ -11,6 +11,7 @@ import {
 import { loadLandGeo, buildLandMesh } from './earthMap.js';
 import { Constellations } from './constellations.js';
 import { StarfieldChart } from './starfieldChart.js';
+import { pointOnFeMap } from '../core/feGeometry.js';
 import { FE_RADIUS } from '../core/constants.js';
 import { ToRad } from '../math/utils.js';
 import { V } from '../math/vect3.js';
@@ -225,13 +226,24 @@ export class Renderer {
     // [-180, 180]. These are the disc-surface projections of the true
     // sources on the vault of the heavens.
     const c = m.computed, s = m.state;
+    const proj = s.MapProjection || 'ae';
     const wrapLon = (x) => ((x + 180) % 360 + 360) % 360 - 180;
     const sunLat  = c.SunDec * 180 / Math.PI;
     const sunLon  = wrapLon(c.SunRA * 180 / Math.PI - c.SkyRotAngle);
     const moonLat = c.MoonDec * 180 / Math.PI;
     const moonLon = wrapLon(c.MoonRA * 180 / Math.PI - c.SkyRotAngle);
-    this.sunGP.updateAt(sunLat,  sunLon,  FE_RADIUS, s.ShowGroundPoints);
-    this.moonGP.updateAt(moonLat, moonLon, FE_RADIUS, s.ShowGroundPoints);
+    this.sunGP.updateAt(sunLat,  sunLon,  FE_RADIUS, s.ShowGroundPoints, proj);
+    this.moonGP.updateAt(moonLat, moonLon, FE_RADIUS, s.ShowGroundPoints, proj);
+
+    // Re-project visual vault coords (x, y only — keep z from model) so
+    // each body's dome marker sits over its own projected GP instead of
+    // drifting away when a non-AE projection is active.
+    const projXY = (lat, lon, z) => {
+      const p = pointOnFeMap(lat, lon, FE_RADIUS, proj);
+      return [p[0], p[1], z];
+    };
+    const sunVaultVis  = proj === 'ae' ? c.SunVaultCoord  : projXY(sunLat,  sunLon,  c.SunVaultCoord[2]);
+    const moonVaultVis = proj === 'ae' ? c.MoonVaultCoord : projXY(moonLat, moonLon, c.MoonVaultCoord[2]);
 
     // Vertical dashed line from each body's sub-point on its vault down
     // to its ground point on the disc. Hidden when the true-source end is
@@ -243,8 +255,8 @@ export class Renderer {
     this.sunGPLine.visible  = showGPLine;
     this.moonGPLine.visible = showGPLine;
     if (s.ShowGroundPoints) {
-      this._updateDashedLine(this.sunGPLine,  c.SunVaultCoord);
-      this._updateDashedLine(this.moonGPLine, c.MoonVaultCoord);
+      this._updateDashedLine(this.sunGPLine,  sunVaultVis);
+      this._updateDashedLine(this.moonGPLine, moonVaultVis);
     }
 
     this.vaultOfHeavens.update(m);
@@ -276,11 +288,11 @@ export class Renderer {
     // without entering first-person mode.
     const showTrueVault = !s.InsideVault && (s.ShowTruePositions !== false);
     this.sunMarker.update(
-      c.SunVaultCoord, c.SunOpticalVaultCoord, showTrueVault, s.ShowOpticalVault,
+      sunVaultVis, c.SunOpticalVaultCoord, showTrueVault, s.ShowOpticalVault,
       c.SunAnglesGlobe.elevation,
     );
     this.moonMarker.update(
-      c.MoonVaultCoord, c.MoonOpticalVaultCoord, showTrueVault, s.ShowOpticalVault,
+      moonVaultVis, c.MoonOpticalVaultCoord, showTrueVault, s.ShowOpticalVault,
       c.MoonAnglesGlobe.elevation,
     );
 
@@ -288,15 +300,20 @@ export class Renderer {
     // height so they're layered above the starfield. Optical-vault dots
     // are gated on NightFactor so planets only appear in the observer's
     // sky once the sun has dropped far enough for them to be visible.
-    for (const [name, m] of Object.entries(this.planetMarkers)) {
+    for (const [name, mk] of Object.entries(this.planetMarkers)) {
       const p = c.Planets[name];
       if (!p || !s.ShowPlanets) {
-        m.group.visible = false;
+        mk.group.visible = false;
         continue;
       }
-      m.group.visible = true;
-      m.update(p.vaultCoord, p.opticalVaultCoord, showTrueVault, s.ShowOpticalVault,
-               p.anglesGlobe.elevation, c.NightFactor);
+      mk.group.visible = true;
+      let vaultVis = p.vaultCoord;
+      if (proj !== 'ae') {
+        const planetLon = wrapLon(p.ra * 180 / Math.PI - c.SkyRotAngle);
+        vaultVis = projXY(p.celestLatLong.lat, planetLon, p.vaultCoord[2]);
+      }
+      mk.update(vaultVis, p.opticalVaultCoord, showTrueVault, s.ShowOpticalVault,
+                p.anglesGlobe.elevation, c.NightFactor);
     }
 
     this._updateTracks();
@@ -335,12 +352,19 @@ export class Renderer {
   _updateTracks() {
     const s = this.model.state;
     const c = this.model.computed;
+    const proj = s.MapProjection || 'ae';
     const trackPts = (lat) => {
       const pts = [];
       for (let lon = -180; lon <= 180; lon += 3) {
         const local = celestLatLongToVaultCoord(lat, lon, s.VaultSize, s.VaultHeight);
         const p = vaultCoordToGlobalFeCoord(local, c.TransMatVaultToFe);
-        pts.push(p[0], p[1], p[2]);
+        if (proj === 'ae') {
+          pts.push(p[0], p[1], p[2]);
+        } else {
+          const discLon = lon - c.SkyRotAngle;
+          const pr = pointOnFeMap(lat, discLon, FE_RADIUS, proj);
+          pts.push(pr[0], pr[1], p[2]);
+        }
       }
       return pts;
     };

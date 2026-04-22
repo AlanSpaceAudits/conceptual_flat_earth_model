@@ -10,7 +10,7 @@ const PERSISTED_KEYS = [
   'ShowFeGrid', 'ShowShadow', 'ShowVault', 'ShowVaultGrid', 'ShowSunTrack',
   'ShowMoonTrack', 'ShowOpticalVault', 'ShowStars', 'ShowVaultRays',
   'ShowOpticalVaultRays', 'ShowManyRays', 'ShowTruePositions',
-  'ShowLatitudeLines', 'ShowGroundPoints', 'ShowPlanets',
+  'ShowLatitudeLines', 'ShowGroundPoints', 'ShowPlanets', 'ShowLogo',
   'DynamicStars',
   'TimezoneOffsetMinutes',
   'StarfieldVaultHeight', 'MoonVaultHeight', 'SunVaultHeight',

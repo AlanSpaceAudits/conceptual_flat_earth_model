@@ -220,6 +220,7 @@ const FIELD_GROUPS = [
         { key: 'ShowOpticalVaultRays', label: 'Optical Vault Rays', bool: true },
         { key: 'ShowManyRays',        label: 'Many Rays',          bool: true },
         { key: 'ShowPlanets',         label: 'Planets',            bool: true },
+        { key: 'ShowLogo',            label: 'Logo',               bool: true },
       ]},
       { title: 'Cosmology', rows: [
         { key: 'Cosmology', label: 'Axis Mundi',

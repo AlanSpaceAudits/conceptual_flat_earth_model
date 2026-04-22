@@ -71,6 +71,13 @@ model.addEventListener('update', () => {
     model.state.Description || defaultStatus(model.state, model.computed);
 });
 
+const logoEl = document.getElementById('logo');
+if (logoEl) {
+  const syncLogo = () => { logoEl.style.display = model.state.ShowLogo === false ? 'none' : ''; };
+  model.addEventListener('update', syncLogo);
+  syncLogo();
+}
+
 // Header info button: toggle the conceptual-model description popup.
 const infoBtn   = document.querySelector('header .info-btn');
 const infoPopup = document.querySelector('header .info-popup');

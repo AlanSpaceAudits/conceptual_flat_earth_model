@@ -103,6 +103,7 @@ function defaultState() {
     ShowGroundPoints:  true,
     ShowFacingVector:  false,
     ShowDecCircles:    true,
+    ShowLogo:          true,
 
     // First-person camera mode: place the camera at the observer's position
     // looking along their heading, and hide everything a real observer in

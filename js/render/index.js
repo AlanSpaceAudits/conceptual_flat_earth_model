@@ -72,8 +72,8 @@ export class Renderer {
     // shown at a time, driven by state.Cosmology.
     this.yggdrasil = new Yggdrasil();
     this.mtMeru    = new MtMeru();
-    this.toroidalVortex     = new ToroidalVortex('single');
-    this.toroidalVortexDual = new ToroidalVortex('dual');
+    this.toroidalVortex     = new ToroidalVortex('single', clipPlanes);
+    this.toroidalVortexDual = new ToroidalVortex('dual',   clipPlanes);
     this.sm.world.add(this.yggdrasil.group);
     this.sm.world.add(this.mtMeru.group);
     this.sm.world.add(this.toroidalVortex.group);

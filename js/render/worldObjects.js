@@ -1208,68 +1208,141 @@ export class CelestialPoles {
 
 const COSMOLOGY_DEFAULT_VAULT_H = 0.75;  // matches GEOMETRY.VaultHeightDefault
 
-// Yggdrasil — Norse world-tree. A tapered trunk rising from a web of
-// spreading roots, crowned by a cluster of leafy spheres that brush the
-// underside of the dome. The roots fan out across the disc hinting at the
-// three realms they reach in the myth.
+// Yggdrasil — Norse world-tree. Massive tapered trunk with eight great
+// outward-and-upward branches, each tipped with a dense leaf cluster;
+// secondary twigs sprout off each branch; the canopy swells into a
+// multi-layered crown; heavy named roots and tendrils radiate across the
+// disc. Scaled to brush the underside of the dome.
 export class Yggdrasil {
   constructor() {
     this.group = new THREE.Group();
     this.group.name = 'yggdrasil';
 
-    const trunkH = 0.65;
-    const trunkMat = new THREE.MeshBasicMaterial({ color: 0x6b4423 });
-
-    // Tapered trunk — wider at the base, narrower where the canopy sits.
-    const trunkGeo = new THREE.CylinderGeometry(0.014, 0.028, trunkH, 20);
-    trunkGeo.rotateX(Math.PI / 2);
-    const trunk = new THREE.Mesh(trunkGeo, trunkMat);
-    trunk.position.z = trunkH / 2;
-    this.group.add(trunk);
-
-    // Canopy — a cluster of leafy orbs at the top. One central orb plus six
-    // satellite orbs at varying heights gives a fuller, asymmetric silhouette.
-    const leaf = new THREE.MeshBasicMaterial({
-      color: 0x3e8e41, transparent: true, opacity: 0.9,
+    const bark     = new THREE.MeshBasicMaterial({ color: 0x6b4423 });
+    const darkBark = new THREE.MeshBasicMaterial({ color: 0x4e2f17 });
+    const leaf     = new THREE.MeshBasicMaterial({
+      color: 0x3e8e41, transparent: true, opacity: 0.92,
     });
-    const canopy = new THREE.Group();
-    canopy.position.z = trunkH;
-    canopy.add(new THREE.Mesh(new THREE.SphereGeometry(0.085, 22, 16), leaf));
-    for (let i = 0; i < 6; i++) {
-      const a = (i / 6) * Math.PI * 2;
-      const orb = new THREE.Mesh(new THREE.SphereGeometry(0.045, 16, 12), leaf);
-      orb.position.set(Math.cos(a) * 0.07, Math.sin(a) * 0.07,
-                       0.025 + (i % 2) * 0.025);
-      canopy.add(orb);
-    }
-    // Highlight orb — slightly brighter to catch the eye at the crown.
-    const crown = new THREE.Mesh(
-      new THREE.SphereGeometry(0.03, 16, 12),
-      new THREE.MeshBasicMaterial({ color: 0x6ec77a, transparent: true, opacity: 0.95 }),
-    );
-    crown.position.z = 0.06;
-    canopy.add(crown);
-    this.group.add(canopy);
+    const leafBright = new THREE.MeshBasicMaterial({
+      color: 0x6ec77a, transparent: true, opacity: 0.95,
+    });
+    const leafDeep   = new THREE.MeshBasicMaterial({
+      color: 0x2a6d33, transparent: true, opacity: 0.9,
+    });
 
-    // Roots — thick line segments radiating across the disc. Three long
-    // "named" roots (Urðarbrunnr / Hvergelmir / Mímisbrunnr in myth) plus
-    // smaller tendrils filling the space between.
-    const rootPts = [];
-    const big = 3;
-    const total = 12;
-    for (let i = 0; i < total; i++) {
-      const a = (i / total) * Math.PI * 2;
-      const len = (i % (total / big) === 0) ? 0.22 : 0.09;
-      rootPts.push(0, 0, 0.003);
-      rootPts.push(Math.cos(a) * len, Math.sin(a) * len, 0.003);
+    // Helper: place an oriented cylinder from point a to point b with
+    // radii (rA at a, rB at b). Three.js cylinder defaults to the +y
+    // axis, so we rotate it to align with (b − a).
+    const bough = (a, b, rA, rB, mat, radialSegs = 10) => {
+      const dx = b[0] - a[0], dy = b[1] - a[1], dz = b[2] - a[2];
+      const len = Math.sqrt(dx * dx + dy * dy + dz * dz);
+      if (len < 1e-9) return null;
+      const geo = new THREE.CylinderGeometry(rB, rA, len, radialSegs);
+      const mesh = new THREE.Mesh(geo, mat);
+      const up = new THREE.Vector3(0, 1, 0);
+      const dir = new THREE.Vector3(dx / len, dy / len, dz / len);
+      mesh.quaternion.setFromUnitVectors(up, dir);
+      mesh.position.set(
+        (a[0] + b[0]) / 2, (a[1] + b[1]) / 2, (a[2] + b[2]) / 2,
+      );
+      return mesh;
+    };
+
+    // ----- Main trunk (tapered) --------------------------------------
+    const trunkTop = 0.58;
+    const trunk = bough([0, 0, 0], [0, 0, trunkTop], 0.055, 0.022, bark, 24);
+    this.group.add(trunk);
+    // Dark bark ring at the base for a hint of gnarled root flare.
+    this.group.add(bough([0, 0, 0], [0, 0, 0.05], 0.075, 0.055, darkBark, 24));
+
+    // ----- Primary branches -------------------------------------------
+    // Eight main branches radiating outward from mid-trunk, angling upward.
+    const N_MAIN = 8;
+    const leafCluster = (x, y, z, scale = 1) => {
+      const g = new THREE.Group();
+      g.position.set(x, y, z);
+      g.add(new THREE.Mesh(
+        new THREE.SphereGeometry(0.075 * scale, 18, 14), leaf,
+      ));
+      g.add(new THREE.Mesh(
+        new THREE.SphereGeometry(0.045 * scale, 14, 10), leafBright,
+      ));
+      for (let k = 0; k < 4; k++) {
+        const a = (k / 4) * Math.PI * 2;
+        const s = new THREE.Mesh(
+          new THREE.SphereGeometry(0.035 * scale, 12, 9),
+          k % 2 === 0 ? leaf : leafDeep,
+        );
+        s.position.set(
+          Math.cos(a) * 0.06 * scale,
+          Math.sin(a) * 0.06 * scale,
+          0.02 * scale + (k % 2) * 0.025 * scale,
+        );
+        g.add(s);
+      }
+      return g;
+    };
+
+    for (let i = 0; i < N_MAIN; i++) {
+      const a = (i / N_MAIN) * Math.PI * 2;
+      const start = [0, 0, 0.30];
+      const outR  = 0.26;
+      const endZ  = 0.55;
+      const end   = [Math.cos(a) * outR, Math.sin(a) * outR, endZ];
+      this.group.add(bough(start, end, 0.018, 0.009, bark, 12));
+
+      // Two secondary twigs off this main branch — fork off at ~70% of
+      // its length, one slightly up, one slightly down.
+      const forkT = 0.68;
+      const fork = [
+        start[0] + (end[0] - start[0]) * forkT,
+        start[1] + (end[1] - start[1]) * forkT,
+        start[2] + (end[2] - start[2]) * forkT,
+      ];
+      const spread = 0.08;
+      const twigUp = [
+        end[0] + Math.cos(a + 0.4) * spread,
+        end[1] + Math.sin(a + 0.4) * spread,
+        endZ + 0.05,
+      ];
+      const twigDn = [
+        end[0] + Math.cos(a - 0.4) * spread,
+        end[1] + Math.sin(a - 0.4) * spread,
+        endZ - 0.03,
+      ];
+      this.group.add(bough(fork, twigUp, 0.010, 0.004, bark, 8));
+      this.group.add(bough(fork, twigDn, 0.010, 0.004, bark, 8));
+
+      // Leaf clusters at branch tip + both twig tips.
+      this.group.add(leafCluster(end[0], end[1], end[2], 1.0));
+      this.group.add(leafCluster(twigUp[0], twigUp[1], twigUp[2], 0.65));
+      this.group.add(leafCluster(twigDn[0], twigDn[1], twigDn[2], 0.65));
     }
-    const rootGeo = new THREE.BufferGeometry();
-    rootGeo.setAttribute('position', new THREE.Float32BufferAttribute(rootPts, 3));
-    const roots = new THREE.LineSegments(
-      rootGeo,
-      new THREE.LineBasicMaterial({ color: 0x5a3a1c, transparent: true, opacity: 0.85 }),
+
+    // ----- Crown canopy on top of the trunk --------------------------
+    const crown = new THREE.Group();
+    crown.position.z = trunkTop;
+    crown.add(new THREE.Mesh(new THREE.SphereGeometry(0.13, 28, 20), leaf));
+    crown.add(new THREE.Mesh(new THREE.SphereGeometry(0.08,  22, 16), leafBright));
+    for (let i = 0; i < 8; i++) {
+      const a = (i / 8) * Math.PI * 2;
+      const orb = new THREE.Mesh(
+        new THREE.SphereGeometry(0.065, 16, 12),
+        i % 3 === 0 ? leafDeep : leaf,
+      );
+      orb.position.set(
+        Math.cos(a) * 0.09,
+        Math.sin(a) * 0.09,
+        0.03 + (i % 2) * 0.04,
+      );
+      crown.add(orb);
+    }
+    const crownTop = new THREE.Mesh(
+      new THREE.SphereGeometry(0.055, 18, 14), leafBright,
     );
-    this.group.add(roots);
+    crownTop.position.z = 0.11;
+    crown.add(crownTop);
+    this.group.add(crown);
 
     this.group.visible = false;
   }
@@ -1279,7 +1352,7 @@ export class Yggdrasil {
     this.group.visible = on;
     if (!on) return;
     // Scale vertically with the heavenly vault height so the crown always
-    // just reaches the dome interior regardless of the VaultHeight slider.
+    // brushes the dome interior regardless of the VaultHeight slider.
     const k = (model.state.VaultHeight || COSMOLOGY_DEFAULT_VAULT_H)
             / COSMOLOGY_DEFAULT_VAULT_H;
     this.group.scale.set(1, 1, k);
@@ -1382,46 +1455,66 @@ export class MtMeru {
 // R + r·cos u = 0.
 //
 // Two variants (chosen by state.Cosmology):
-//   'vortex'  — one torus centred on the disc plane
-//   'vortex2' — two stacked tori straddling the disc (flat earth suspended
-//               between the upper and lower toroidal field)
+//   'vortex'  — one large blue torus reaching the dome circumference
+//   'vortex2' — stacked dual vortex, an upper "inner" donut reaching the
+//               equator circle and a lower "outer" donut reaching the
+//               dome circumference; brighter + softer amber tones so the
+//               two read as distinct fields, with the flat earth
+//               suspended at z = 0 between them
 export class ToroidalVortex {
-  constructor(variant = 'single') {
+  constructor(variant = 'single', clippingPlanes = []) {
     this.group = new THREE.Group();
     this.group.name = `toroidal-vortex-${variant}`;
-    this._variant  = variant;
-    this._stateKey = variant === 'dual' ? 'vortex2' : 'vortex';
+    this._variant   = variant;
+    this._stateKey  = variant === 'dual' ? 'vortex2' : 'vortex';
+    this._clipPlanes = clippingPlanes;
+    this._materials = [];
 
-    const R     = 0.12;
-    const r     = 0.38;
-    const N_U   = 36;
-    const N_V   = 60;
-    // Dual variant: stack two tori so each one just touches z = 0 at its
-    // near pinch. Offset = r puts the bottom of the upper torus and the
-    // top of the lower torus tangent to the disc plane.
-    const offsets = variant === 'dual' ? [+r, -r] : [0];
+    const N_U = 36;
+    const N_V = 60;
 
-    const mat = new THREE.LineBasicMaterial({
-      color: variant === 'dual' ? 0xff8a30 : 0x4080ff,
-      transparent: true, opacity: 0.55,
-      depthTest: false, depthWrite: false,
-    });
+    // Geometry definitions per variant. Each entry is one donut.
+    //   R       — axial distance from z-axis to tube centre
+    //   r       — tube radius (r > R ⇒ spindle torus with two pinches)
+    //   z       — vertical offset of tube centre
+    //   color   — line colour
+    //   opacity — material opacity
+    const tori = variant === 'dual'
+      ? [
+          // Upper donut: smaller, brighter — inner horn-like torus whose
+          // outer circumference kisses the equator circle (r = 0.5).
+          { R: 0.25, r: 0.25, z: +0.25, color: 0xffc870, opacity: 0.70 },
+          // Outer donut: larger, softer — raised so its tube midline sits
+          // on the flat-earth plane. The disc then bisects this torus at
+          // its equator, and its outer circumference reaches the dome
+          // edge (r ≈ 0.95).
+          { R: 0.55, r: 0.40, z: 0, color: 0xa8652c, opacity: 0.50 },
+        ]
+      : [
+          // Single large spindle torus — outer ≈ 0.95 reaches dome rim,
+          // vertical extent ±0.70 fits under default VaultHeight (0.75).
+          { R: 0.25, r: 0.70, z: 0, color: 0x4080ff, opacity: 0.55 },
+        ];
 
-    const point = (u, v, zOff) => {
-      const rho = R + r * Math.cos(u);
-      return [rho * Math.cos(v), rho * Math.sin(v), r * Math.sin(u) + zOff];
-    };
+    for (const t of tori) {
+      const mat = new THREE.LineBasicMaterial({
+        color: t.color, transparent: true, opacity: t.opacity,
+        depthTest: false, depthWrite: false,
+      });
+      this._materials.push(mat);
 
-    for (const zOff of offsets) {
-      // Latitude rings — hold u constant, sweep v. Big horizontal circles
-      // around the z-axis. Their radius is (R + r·cos u); at the pinch u
-      // values the radius is zero and the ring collapses to a point.
+      const point = (u, v) => {
+        const rho = t.R + t.r * Math.cos(u);
+        return [rho * Math.cos(v), rho * Math.sin(v), t.r * Math.sin(u) + t.z];
+      };
+
+      // Latitude rings — hold u constant, sweep v.
       for (let i = 0; i < N_U; i++) {
         const u = (i / N_U) * Math.PI * 2;
         const pts = new Float32Array((N_V + 1) * 3);
         for (let j = 0; j <= N_V; j++) {
           const v = (j / N_V) * Math.PI * 2;
-          const p = point(u, v, zOff);
+          const p = point(u, v);
           pts[j * 3 + 0] = p[0];
           pts[j * 3 + 1] = p[1];
           pts[j * 3 + 2] = p[2];
@@ -1433,15 +1526,13 @@ export class ToroidalVortex {
         this.group.add(line);
       }
 
-      // Poloidal rings — hold v constant, sweep u. Small loops through the
-      // donut hole; every one of them passes through both pinch regions on
-      // the axis.
+      // Poloidal rings — hold v constant, sweep u.
       for (let j = 0; j < N_V; j++) {
         const v = (j / N_V) * Math.PI * 2;
         const pts = new Float32Array((N_U + 1) * 3);
         for (let i = 0; i <= N_U; i++) {
           const u = (i / N_U) * Math.PI * 2;
-          const p = point(u, v, zOff);
+          const p = point(u, v);
           pts[i * 3 + 0] = p[0];
           pts[i * 3 + 1] = p[1];
           pts[i * 3 + 2] = p[2];
@@ -1454,11 +1545,11 @@ export class ToroidalVortex {
       }
     }
 
-    // Dual variant: cyan equatorial boundary ring around the disc,
-    // marking the flat-earth plane suspended between the two tori.
+    // Dual variant: cyan boundary ring at z = 0 around the outer donut —
+    // marks the flat-earth plane suspended between the two fields.
     if (variant === 'dual') {
-      const R_BOUND = R + r + 0.03;
-      const N_RING = 96;
+      const R_BOUND = 0.97;
+      const N_RING = 128;
       const pts = new Float32Array((N_RING + 1) * 3);
       for (let k = 0; k <= N_RING; k++) {
         const a = (k / N_RING) * Math.PI * 2;
@@ -1468,13 +1559,12 @@ export class ToroidalVortex {
       }
       const g = new THREE.BufferGeometry();
       g.setAttribute('position', new THREE.BufferAttribute(pts, 3));
-      const ring = new THREE.Line(
-        g,
-        new THREE.LineBasicMaterial({
-          color: 0x4fc0ff, transparent: true, opacity: 0.9,
-          depthTest: false, depthWrite: false,
-        }),
-      );
+      const ringMat = new THREE.LineBasicMaterial({
+        color: 0x4fc0ff, transparent: true, opacity: 0.9,
+        depthTest: false, depthWrite: false,
+      });
+      this._materials.push(ringMat);
+      const ring = new THREE.Line(g, ringMat);
       ring.renderOrder = 49;
       this.group.add(ring);
     }
@@ -1483,9 +1573,7 @@ export class ToroidalVortex {
     this._rotate = 0;
   }
 
-  // Slow rotation around the z-axis so the toroidal circulation reads as
-  // motion; the wireframe itself is axisymmetric, so nothing else needs
-  // per-frame updating.
+  // Slow rotation around the z-axis so the circulation reads as motion.
   tick(dt) {
     if (!this.group.visible) return;
     this._rotate += dt * 0.15;
@@ -1499,5 +1587,10 @@ export class ToroidalVortex {
     const k = (model.state.VaultHeight || COSMOLOGY_DEFAULT_VAULT_H)
             / COSMOLOGY_DEFAULT_VAULT_H;
     this.group.scale.set(1, 1, k);
+    // Inside-the-optical-vault (first-person) mode: clip anything below
+    // the disc so the vortex's lower half doesn't leak into the
+    // observer's hemisphere of vision.
+    const clip = model.state.InsideVault ? this._clipPlanes : [];
+    for (const m of this._materials) m.clippingPlanes = clip;
   }
 }

@@ -1,14 +1,29 @@
-// Projects Natural Earth GeoJSON land polygons through the FE azimuthal-
-// equidistant projection and builds a three.js mesh to fill them on the disc,
-// plus a LineSegments object for the coastline outline.
+// Map renderer.
+//
+// Two entry points:
+//
+//   buildGeoJsonLand(geoJson, projection, feRadius)
+//     Walks Natural Earth GeoJSON polygons and projects each vertex
+//     through `projection.project(...)` to build a filled land mesh + a
+//     coastline LineSegments. Used for projections that have no
+//     artwork asset.
+//
+//   buildImageMap(projection, feRadius)
+//     Textures a flat circular disc with the projection's image asset.
+//     Preserves the image's native aspect by cropping the canvas to the
+//     inscribed map circle — no conceptual re-projection, just a display-
+//     scale crop of the source artwork.
+//
+// Both return a THREE.Group ready to add into the scene.
 
 import * as THREE from 'three';
-import { pointOnFeMap } from '../core/feGeometry.js';
 
 const EPS_LIFT = 1e-4; // avoid z-fighting with the disc plane
 
-// Densify a ring of lon/lat points so a straight segment in lon/lat space
-// doesn't turn into a weird chord after the non-linear projection.
+// -------------------------------------------------------------------------
+// GeoJSON path
+// -------------------------------------------------------------------------
+
 function densifyRing(ring, maxDegStep = 3) {
   const out = [];
   for (let i = 0; i < ring.length - 1; i++) {
@@ -25,12 +40,11 @@ function densifyRing(ring, maxDegStep = 3) {
   return out;
 }
 
-function ringToDiscPoints(ring, feRadius, projection) {
-  // GeoJSON is [lon, lat]
+function ringToDiscPoints(ring, projection, feRadius) {
   const dense = densifyRing(ring);
   const pts = [];
   for (const [lon, lat] of dense) {
-    const p = pointOnFeMap(lat, lon, feRadius, projection);
+    const p = projection.project(lat, lon, feRadius);
     pts.push(new THREE.Vector2(p[0], p[1]));
   }
   return pts;
@@ -42,17 +56,14 @@ export async function loadLandGeo(url = 'assets/ne_110m_land.geojson') {
   return res.json();
 }
 
-// Build a filled polygon mesh (green continents) + a line outline for the
-// coastlines. Returns a THREE.Group with both.
-export function buildLandMesh(geojson, {
+export function buildGeoJsonLand(geojson, projection, {
   feRadius = 1,
   fillColor = 0x3f7a3f,
   fillOpacity = 0.75,
   strokeColor = 0x1d3a1d,
   strokeOpacity = 0.9,
   iceColor = 0xf0f4f8,
-  iceLatCutoff = -55,  // polygons with northernmost lat below this are ice
-  projection = 'ae',
+  iceLatCutoff = -55,
 } = {}) {
   const group = new THREE.Group();
   group.name = 'land';
@@ -61,8 +72,6 @@ export function buildLandMesh(geojson, {
     color: fillColor, transparent: fillOpacity < 1, opacity: fillOpacity,
     side: THREE.DoubleSide, depthWrite: false,
   });
-  // Antarctica gets its own fill material so the outer ring of land on the
-  // AE projection reads as the ice cap rather than green continent.
   const iceMat = new THREE.MeshBasicMaterial({
     color: iceColor, transparent: fillOpacity < 1, opacity: fillOpacity,
     side: THREE.DoubleSide, depthWrite: false,
@@ -73,9 +82,6 @@ export function buildLandMesh(geojson, {
 
   const lineSegs = [];
 
-  // Helper: decide if a polygon is Antarctic by its northernmost latitude.
-  // Prefers the feature's bbox ([minLon, minLat, maxLon, maxLat]) and falls
-  // back to scanning the outer ring.
   const isIce = (feat, outer) => {
     if (feat.bbox && feat.bbox.length >= 4) return feat.bbox[3] < iceLatCutoff;
     let maxLat = -Infinity;
@@ -91,12 +97,12 @@ export function buildLandMesh(geojson, {
                 : [];
     for (const poly of polys) {
       const [outer, ...holes] = poly;
-      const outerPts = ringToDiscPoints(outer, feRadius, projection);
+      const outerPts = ringToDiscPoints(outer, projection, feRadius);
       if (outerPts.length < 3) continue;
 
       const shape = new THREE.Shape(outerPts);
       for (const hole of holes) {
-        const hPts = ringToDiscPoints(hole, feRadius, projection);
+        const hPts = ringToDiscPoints(hole, projection, feRadius);
         if (hPts.length >= 3) shape.holes.push(new THREE.Path(hPts));
       }
       const geom = new THREE.ShapeGeometry(shape);
@@ -105,9 +111,8 @@ export function buildLandMesh(geojson, {
       mesh.position.z = EPS_LIFT;
       group.add(mesh);
 
-      // Outline: emit consecutive pairs to feed LineSegments in bulk.
       for (const ring of [outer, ...holes]) {
-        const rp = ringToDiscPoints(ring, feRadius, projection);
+        const rp = ringToDiscPoints(ring, projection, feRadius);
         for (let i = 0; i < rp.length - 1; i++) {
           lineSegs.push(rp[i].x, rp[i].y, EPS_LIFT * 2);
           lineSegs.push(rp[i + 1].x, rp[i + 1].y, EPS_LIFT * 2);
@@ -121,6 +126,60 @@ export function buildLandMesh(geojson, {
   const lines = new THREE.LineSegments(lineGeo, lineMat);
   lines.name = 'coastlines';
   group.add(lines);
+
+  return group;
+}
+
+// -------------------------------------------------------------------------
+// Image-asset path
+// -------------------------------------------------------------------------
+//
+// Shows the projection's artwork directly as a flat circular disc at the
+// FE disc's size. The texture is UV-cropped to the map circle inscribed
+// inside the source canvas so letterbox padding around the artwork
+// doesn't bleed through.
+
+export function buildImageMap(projection, { feRadius = 1 } = {}) {
+  const group = new THREE.Group();
+  group.name = 'land';
+
+  const loader = new THREE.TextureLoader();
+  const tex = loader.load(projection.imageAsset);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.minFilter  = THREE.LinearMipMapLinearFilter;
+  tex.magFilter  = THREE.LinearFilter;
+  tex.anisotropy = 4;
+  tex.wrapS = THREE.ClampToEdgeWrapping;
+  tex.wrapT = THREE.ClampToEdgeWrapping;
+
+  // Crop the texture UVs to the inscribed map circle. For a canvas with
+  // a non-square aspect (e.g. 1920×1080), the shorter axis sets the
+  // circle diameter and the longer axis has padding on both sides.
+  const W = projection.imageNativeWidth  || 1;
+  const H = projection.imageNativeHeight || 1;
+  if (W !== H && W > 0 && H > 0) {
+    if (W > H) {
+      const cropX = H / W;
+      tex.repeat.set(cropX, 1);
+      tex.offset.set((1 - cropX) / 2, 0);
+    } else {
+      const cropY = W / H;
+      tex.repeat.set(1, cropY);
+      tex.offset.set(0, (1 - cropY) / 2);
+    }
+  }
+
+  const mat = new THREE.MeshBasicMaterial({
+    map: tex,
+    transparent: false,
+    side: THREE.DoubleSide,
+    depthWrite: false,
+  });
+  const geom = new THREE.CircleGeometry(feRadius, 128);
+  const mesh = new THREE.Mesh(geom, mat);
+  mesh.position.z = EPS_LIFT;
+  mesh.name = 'map-image';
+  group.add(mesh);
 
   return group;
 }

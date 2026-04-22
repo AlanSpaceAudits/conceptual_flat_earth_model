@@ -16,28 +16,14 @@ export function pointOnFE(latDeg, longDeg, feRadius = 1) {
   return [r * Math.cos(lo), r * Math.sin(lo), 0];
 }
 
-// Visual-only alternative radial mappings for the disc. The AE map is still
-// the model's internal frame — these only affect how continents, graticule,
-// and latitude circles are painted on the disc surface. Supported values:
-//   'ae'           — azimuthal-equidistant (the model's native mapping).
-//   'hellerick'    — Lambert azimuthal equal-area (polar aspect), normalised
-//                    so the southern pole lands on the rim. Stand-in for
-//                    Hellerick's boreal look.
-//   'proportional' — power-law radial adjustment of AE that pushes the
-//                    equator ring outward to ≈60% radius so northern
-//                    continents take up less of the disc and the southern
-//                    ocean reads proportionally larger. Exponent 0.75.
-export function pointOnFeMap(latDeg, longDeg, feRadius = 1, projection = 'ae') {
-  const lo = ToRad(longDeg);
-  let r;
-  if (projection === 'hellerick') {
-    r = feRadius * Math.sin((90 - latDeg) * Math.PI / 360);
-  } else if (projection === 'proportional') {
-    r = feRadius * Math.pow((90 - latDeg) / 180, 0.75);
-  } else {
-    r = feRadius * (90 - latDeg) / 180;
-  }
-  return [r * Math.cos(lo), r * Math.sin(lo), 0];
+// Compatibility shim. The canonical home of every projection's
+// coordinate transform is now `js/core/projections.js`. Callers should
+// prefer `getProjection(id).project(lat, lon, feRadius)` directly; this
+// shim exists so any lingering call sites keep working during the
+// transition.
+import { getProjection } from './projections.js';
+export function pointOnFeMap(latDeg, longDeg, feRadius = 1, projectionId = 'ae') {
+  return getProjection(projectionId).project(latDeg, longDeg, feRadius);
 }
 
 // Global FE coord for a fe-style lat/long (i.e. the disc position of a

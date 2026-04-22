@@ -4,6 +4,7 @@
 import { dateTimeToString, dateTimeToDate } from '../core/time.js';
 import { TIME_ORIGIN } from '../core/constants.js';
 import { findNextEclipses } from '../core/ephemeris.js';
+import { listProjections } from '../core/projections.js';
 import { Autoplay } from './autoplay.js';
 
 // Eclipse cache: the search costs ~10ms worst case, so we memoise until the
@@ -229,11 +230,7 @@ const FIELD_GROUPS = [
           select: ['none', 'yggdrasil', 'meru', 'vortex', 'vortex2'] },
       ]},
       { title: 'Map Projection', rows: [
-        { key: 'MapProjection', label: 'Projection', select: [
-          { value: 'ae',           label: 'Default (AE)' },
-          { value: 'hellerick',    label: 'Hellerick boreal' },
-          { value: 'proportional', label: 'Proportional AE Map' },
-        ]},
+        { key: 'MapProjection', label: 'Projection', select: listProjections() },
       ]},
       { title: 'Starfield', rows: [
         { key: 'StarfieldType', label: 'Starfield', select: [

@@ -8,10 +8,10 @@ import {
   CelestialMarker, Observer, Stars, LatitudeLines, GroundPoint,
   CelestialPoles, DeclinationCircles, Yggdrasil, MtMeru, ToroidalVortex,
 } from './worldObjects.js';
-import { loadLandGeo, buildLandMesh } from './earthMap.js';
+import { loadLandGeo, buildGeoJsonLand, buildImageMap } from './earthMap.js';
 import { Constellations } from './constellations.js';
 import { StarfieldChart } from './starfieldChart.js';
-import { pointOnFeMap } from '../core/feGeometry.js';
+import { getProjection } from '../core/projections.js';
 import { FE_RADIUS } from '../core/constants.js';
 import { ToRad } from '../math/utils.js';
 import { V } from '../math/vect3.js';
@@ -161,8 +161,9 @@ export class Renderer {
     this.frame();
   }
 
-  _rebuildLand(projection) {
-    if (!this._landGeo) return;
+  _rebuildLand(projectionId) {
+    const projection = getProjection(projectionId);
+    if (!this._landGeo && !projection.imageAsset) return;
     if (this.land) {
       this.sm.world.remove(this.land);
       this.land.traverse((o) => {
@@ -173,9 +174,11 @@ export class Renderer {
         }
       });
     }
-    this.land = buildLandMesh(this._landGeo, { feRadius: FE_RADIUS, projection });
+    this.land = projection.imageAsset
+      ? buildImageMap(projection, { feRadius: FE_RADIUS })
+      : buildGeoJsonLand(this._landGeo, projection, { feRadius: FE_RADIUS });
     this.sm.world.add(this.land);
-    this._landProjection = projection;
+    this._landProjection = projectionId;
   }
 
   _blankLine(color, opacity, clippingPlanes = []) {
@@ -214,9 +217,10 @@ export class Renderer {
   frame() {
     const m = this.model;
     const c = m.computed, s = m.state;
-    const proj = s.MapProjection || 'ae';
-    if (this._landGeo && proj !== this._landProjection) {
-      this._rebuildLand(proj);
+    const projId = s.MapProjection || 'ae';
+    const projection = getProjection(projId);
+    if (projId !== this._landProjection) {
+      this._rebuildLand(projId);
     }
     this.discGrid.update(m);
     this.shadow.update(m);
@@ -231,18 +235,18 @@ export class Renderer {
     const sunLon  = wrapLon(c.SunRA * 180 / Math.PI - c.SkyRotAngle);
     const moonLat = c.MoonDec * 180 / Math.PI;
     const moonLon = wrapLon(c.MoonRA * 180 / Math.PI - c.SkyRotAngle);
-    this.sunGP.updateAt(sunLat,  sunLon,  FE_RADIUS, s.ShowGroundPoints, proj);
-    this.moonGP.updateAt(moonLat, moonLon, FE_RADIUS, s.ShowGroundPoints, proj);
+    this.sunGP.updateAt(sunLat,  sunLon,  FE_RADIUS, s.ShowGroundPoints, projection);
+    this.moonGP.updateAt(moonLat, moonLon, FE_RADIUS, s.ShowGroundPoints, projection);
 
     // Re-project visual vault coords (x, y only — keep z from model) so
     // each body's dome marker sits over its own projected GP instead of
     // drifting away when a non-AE projection is active.
     const projXY = (lat, lon, z) => {
-      const p = pointOnFeMap(lat, lon, FE_RADIUS, proj);
+      const p = projection.project(lat, lon, FE_RADIUS);
       return [p[0], p[1], z];
     };
-    const sunVaultVis  = proj === 'ae' ? c.SunVaultCoord  : projXY(sunLat,  sunLon,  c.SunVaultCoord[2]);
-    const moonVaultVis = proj === 'ae' ? c.MoonVaultCoord : projXY(moonLat, moonLon, c.MoonVaultCoord[2]);
+    const sunVaultVis  = projId === 'ae' ? c.SunVaultCoord  : projXY(sunLat,  sunLon,  c.SunVaultCoord[2]);
+    const moonVaultVis = projId === 'ae' ? c.MoonVaultCoord : projXY(moonLat, moonLon, c.MoonVaultCoord[2]);
 
     // Vertical dashed line from each body's sub-point on its vault down
     // to its ground point on the disc. Hidden when the true-source end is
@@ -307,7 +311,7 @@ export class Renderer {
       }
       mk.group.visible = true;
       let vaultVis = p.vaultCoord;
-      if (proj !== 'ae') {
+      if (projId !== 'ae') {
         const planetLon = wrapLon(p.ra * 180 / Math.PI - c.SkyRotAngle);
         vaultVis = projXY(p.celestLatLong.lat, planetLon, p.vaultCoord[2]);
       }
@@ -351,17 +355,18 @@ export class Renderer {
   _updateTracks() {
     const s = this.model.state;
     const c = this.model.computed;
-    const proj = s.MapProjection || 'ae';
+    const projId = s.MapProjection || 'ae';
+    const projection = getProjection(projId);
     const trackPts = (lat) => {
       const pts = [];
       for (let lon = -180; lon <= 180; lon += 3) {
         const local = celestLatLongToVaultCoord(lat, lon, s.VaultSize, s.VaultHeight);
         const p = vaultCoordToGlobalFeCoord(local, c.TransMatVaultToFe);
-        if (proj === 'ae') {
+        if (projId === 'ae') {
           pts.push(p[0], p[1], p[2]);
         } else {
           const discLon = lon - c.SkyRotAngle;
-          const pr = pointOnFeMap(lat, discLon, FE_RADIUS, proj);
+          const pr = projection.project(lat, discLon, FE_RADIUS);
           pts.push(pr[0], pr[1], p[2]);
         }
       }

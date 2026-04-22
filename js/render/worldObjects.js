@@ -7,8 +7,9 @@ import { M } from '../math/mat3.js';
 import { ToRad } from '../math/utils.js';
 import { FE_RADIUS, GEOMETRY } from '../core/constants.js';
 import {
-  pointOnFE, pointOnFeMap, celestLatLongToVaultCoord, feLatLongToGlobalFeCoord,
+  pointOnFE, celestLatLongToVaultCoord, feLatLongToGlobalFeCoord,
 } from '../core/feGeometry.js';
+import { getProjection } from '../core/projections.js';
 import {
   latLongToCoord, coordToLatLong, vaultCoordToGlobalFeCoord,
 } from '../core/transforms.js';
@@ -158,8 +159,8 @@ export class LatitudeLines {
       { lat: -23.4392, color: 0xffc844, label: 'Tropic of Capricorn' },
       { lat: -66.5636, color: 0x66ccff, label: 'Antarctic Circle' },
     ];
-    this._lastProjection = null;
-    this._rebuild('ae');
+    this._lastProjectionId = null;
+    this._rebuild(getProjection('ae'));
   }
   _rebuild(projection) {
     while (this.group.children.length) {
@@ -171,7 +172,7 @@ export class LatitudeLines {
       const pts = [];
       for (let k = 0; k <= 256; k++) {
         const lon = -180 + k * (360 / 256);
-        const p = pointOnFeMap(c.lat, lon, this.feRadius, projection);
+        const p = projection.project(c.lat, lon, this.feRadius);
         pts.push(p[0], p[1], 8e-4);
       }
       const geo = new THREE.BufferGeometry();
@@ -186,11 +187,11 @@ export class LatitudeLines {
       line.name = c.label;
       this.group.add(line);
     }
-    this._lastProjection = projection;
+    this._lastProjectionId = projection.id;
   }
   update(model) {
-    const proj = model.state.MapProjection || 'ae';
-    if (proj !== this._lastProjection) this._rebuild(proj);
+    const projId = model.state.MapProjection || 'ae';
+    if (projId !== this._lastProjectionId) this._rebuild(getProjection(projId));
     this.group.visible = !!model.state.ShowLatitudeLines;
   }
 }
@@ -221,10 +222,11 @@ export class GroundPoint {
     this.dot.renderOrder = 40;
     this.group.add(this.dot);
   }
-  updateAt(latDeg, lonDeg, feRadius = FE_RADIUS, visible = true, projection = 'ae') {
+  updateAt(latDeg, lonDeg, feRadius = FE_RADIUS, visible = true, projection = null) {
     this.group.visible = visible;
     if (!visible) return;
-    const p = pointOnFeMap(latDeg, lonDeg, feRadius, projection);
+    const proj = projection || getProjection('ae');
+    const p = proj.project(latDeg, lonDeg, feRadius);
     this.dot.position.set(p[0], p[1], 1e-3);
   }
 }
@@ -358,8 +360,8 @@ export class DiscGrid {
     this.group = new THREE.Group();
     this.group.name = 'disc-grid';
     this.feRadius = feRadius;
-    this._lastProjection = null;
-    this._rebuild('ae');
+    this._lastProjectionId = null;
+    this._rebuild(getProjection('ae'));
   }
   _rebuild(projection) {
     while (this.group.children.length) {
@@ -372,7 +374,7 @@ export class DiscGrid {
       const ringPts = [];
       for (let k = 0; k <= 120; k++) {
         const lon = -180 + k * 3;
-        const p = pointOnFeMap(lat, lon, this.feRadius, projection);
+        const p = projection.project(lat, lon, this.feRadius);
         ringPts.push(p[0], p[1], 2e-4);
       }
       for (let k = 0; k < ringPts.length - 3; k += 3) {
@@ -381,17 +383,17 @@ export class DiscGrid {
       }
     }
     for (let lon = 0; lon < 360; lon += 15) {
-      const a = pointOnFeMap(90, lon, this.feRadius, projection);
-      const b = pointOnFeMap(-90, lon, this.feRadius, projection);
+      const a = projection.project(90, lon, this.feRadius);
+      const b = projection.project(-90, lon, this.feRadius);
       segs.push(a[0], a[1], 2e-4, b[0], b[1], 2e-4);
     }
     this.lines = makeLineSegments(segs, 0x556677, { opacity: 0.4 });
     this.group.add(this.lines);
-    this._lastProjection = projection;
+    this._lastProjectionId = projection.id;
   }
   update(model) {
-    const proj = model.state.MapProjection || 'ae';
-    if (proj !== this._lastProjection) this._rebuild(proj);
+    const projId = model.state.MapProjection || 'ae';
+    if (projId !== this._lastProjectionId) this._rebuild(getProjection(projId));
     this.group.visible = model.state.ShowFeGrid;
   }
 }

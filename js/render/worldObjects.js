@@ -1149,6 +1149,232 @@ export class Observer {
       const tail = new THREE.Mesh(new THREE.SphereGeometry(0.006, 14, 10), offWhite);
       tail.scale.set(1.3, 0.9, 1.1);
       add(tail, -0.019, 0, 0.034);
+    } else if (kind === 'owl') {
+      // Owl — plump round body with a big flat face, tufted ears, large
+      // yellow eyes, a curved beak, and a white chest.
+      const featherT = new THREE.MeshBasicMaterial({ color: 0x7e5838 });
+      const featherD = new THREE.MeshBasicMaterial({ color: 0x5a3e22 });
+      const chest    = new THREE.MeshBasicMaterial({ color: 0xe8d8bc });
+      const beak     = new THREE.MeshBasicMaterial({ color: 0xc08430 });
+      const eyeBig   = new THREE.MeshBasicMaterial({ color: 0xf6c020 });
+      const pupil    = new THREE.MeshBasicMaterial({ color: 0x141414 });
+
+      // Barrel body.
+      const body = new THREE.Mesh(new THREE.SphereGeometry(0.013, 22, 16), featherT);
+      body.scale.set(1.0, 1.0, 1.2);
+      add(body, 0, 0, 0.020);
+      // Pale chest patch.
+      const chestMesh = new THREE.Mesh(
+        new THREE.SphereGeometry(0.010, 16, 12), chest,
+      );
+      chestMesh.scale.set(0.8, 0.4, 1.1);
+      add(chestMesh, 0.006, 0, 0.020);
+
+      // Head — big round sphere sitting atop.
+      const head = new THREE.Mesh(new THREE.SphereGeometry(0.011, 20, 14), featherT);
+      add(head, 0, 0, 0.038);
+
+      // Flat face disc.
+      const face = new THREE.Mesh(
+        new THREE.SphereGeometry(0.009, 18, 12), chest,
+      );
+      face.scale.set(0.4, 1.0, 1.0);
+      add(face, 0.007, 0, 0.038);
+
+      // Tufted ears — small cones on top of the head.
+      const tuftGeo = new THREE.ConeGeometry(0.0018, 0.005, 8);
+      tuftGeo.rotateX(Math.PI / 2);
+      const tuftL = new THREE.Mesh(tuftGeo, featherT);
+      const tuftR = new THREE.Mesh(tuftGeo, featherT);
+      tuftL.rotation.z = -0.3;
+      tuftR.rotation.z =  0.3;
+      add(tuftL, -0.002, -0.006, 0.046);
+      add(tuftR, -0.002,  0.006, 0.046);
+
+      // Big round yellow eyes with black pupils.
+      const eyeGeo = new THREE.SphereGeometry(0.0032, 14, 10);
+      add(new THREE.Mesh(eyeGeo, eyeBig), 0.008, -0.0045, 0.040);
+      add(new THREE.Mesh(eyeGeo, eyeBig), 0.008,  0.0045, 0.040);
+      const pupilGeo = new THREE.SphereGeometry(0.0014, 10, 8);
+      add(new THREE.Mesh(pupilGeo, pupil), 0.0103, -0.0045, 0.040);
+      add(new THREE.Mesh(pupilGeo, pupil), 0.0103,  0.0045, 0.040);
+
+      // Curved beak (cone pointing forward).
+      const beakGeo = new THREE.ConeGeometry(0.0016, 0.005, 8);
+      beakGeo.rotateZ(-Math.PI / 2);
+      add(new THREE.Mesh(beakGeo, beak), 0.013, 0, 0.037);
+
+      // Wings — two darker flattened spheres at the sides, tucked in.
+      const wingGeo = new THREE.SphereGeometry(0.007, 14, 10);
+      const wingL = new THREE.Mesh(wingGeo, featherD);
+      const wingR = new THREE.Mesh(wingGeo, featherD);
+      wingL.scale.set(0.5, 0.4, 1.3);
+      wingR.scale.set(0.5, 0.4, 1.3);
+      add(wingL, 0, -0.010, 0.020);
+      add(wingR, 0,  0.010, 0.020);
+
+      // Small feet.
+      const footGeo = new THREE.SphereGeometry(0.0022, 10, 6);
+      const footL = new THREE.Mesh(footGeo, beak);
+      const footR = new THREE.Mesh(footGeo, beak);
+      footL.scale.set(1.2, 0.9, 0.4);
+      footR.scale.set(1.2, 0.9, 0.4);
+      add(footL, 0.001, -0.004, 0.003);
+      add(footR, 0.001,  0.004, 0.003);
+    } else if (kind === 'frog') {
+      // Frog — wide low body squatting on the ground with bulging eyes,
+      // a broad mouth, short forelegs and long folded hind legs.
+      const skinG   = new THREE.MeshBasicMaterial({ color: 0x3fa04a });
+      const skinD   = new THREE.MeshBasicMaterial({ color: 0x2a7033 });
+      const belly   = new THREE.MeshBasicMaterial({ color: 0xd8e8a8 });
+      const pupil   = new THREE.MeshBasicMaterial({ color: 0x141414 });
+      const mouthM  = new THREE.MeshBasicMaterial({ color: 0x4a2028 });
+
+      // Wide squat body.
+      const body = new THREE.Mesh(new THREE.SphereGeometry(0.014, 22, 16), skinG);
+      body.scale.set(1.1, 1.15, 0.6);
+      add(body, 0, 0, 0.008);
+      // Pale belly beneath.
+      const bellyMesh = new THREE.Mesh(
+        new THREE.SphereGeometry(0.012, 16, 12), belly,
+      );
+      bellyMesh.scale.set(1.0, 1.0, 0.3);
+      add(bellyMesh, 0, 0, 0.004);
+
+      // Eye bumps — bulge out of the top of the head.
+      const eyeBase = new THREE.SphereGeometry(0.0035, 14, 10);
+      add(new THREE.Mesh(eyeBase, skinG), 0.008, -0.006, 0.016);
+      add(new THREE.Mesh(eyeBase, skinG), 0.008,  0.006, 0.016);
+      // Pupil domes.
+      const pupilGeo = new THREE.SphereGeometry(0.0016, 10, 8);
+      add(new THREE.Mesh(pupilGeo, pupil), 0.010, -0.006, 0.018);
+      add(new THREE.Mesh(pupilGeo, pupil), 0.010,  0.006, 0.018);
+
+      // Wide closed-mouth line — a thin darker strip across the front.
+      const mouthGeo = new THREE.BoxGeometry(0.001, 0.012, 0.0008);
+      add(new THREE.Mesh(mouthGeo, mouthM), 0.013, 0, 0.008);
+
+      // Short forelegs under the chest.
+      const foreGeo = new THREE.CylinderGeometry(0.0018, 0.0018, 0.005, 10);
+      foreGeo.rotateX(Math.PI / 2);
+      add(new THREE.Mesh(foreGeo, skinG),  0.009, -0.008, 0.004);
+      add(new THREE.Mesh(foreGeo, skinG),  0.009,  0.008, 0.004);
+
+      // Long folded hind legs — approximate with an L-shape of two
+      // scaled spheres (thigh + shin) on each side.
+      const thighGeo = new THREE.SphereGeometry(0.004, 12, 10);
+      const thighL = new THREE.Mesh(thighGeo, skinD);
+      const thighR = new THREE.Mesh(thighGeo, skinD);
+      thighL.scale.set(1.2, 0.7, 0.7);
+      thighR.scale.set(1.2, 0.7, 0.7);
+      add(thighL, -0.008, -0.010, 0.006);
+      add(thighR, -0.008,  0.010, 0.006);
+      const shinGeo = new THREE.SphereGeometry(0.003, 12, 10);
+      const shinL = new THREE.Mesh(shinGeo, skinG);
+      const shinR = new THREE.Mesh(shinGeo, skinG);
+      shinL.scale.set(1.4, 0.7, 0.5);
+      shinR.scale.set(1.4, 0.7, 0.5);
+      add(shinL, -0.002, -0.013, 0.003);
+      add(shinR, -0.002,  0.013, 0.003);
+    } else if (kind === 'kangaroo') {
+      // Kangaroo — upright stance, big rear legs and tail, small fore
+      // arms, long ears on a narrow head.
+      const fur    = new THREE.MeshBasicMaterial({ color: 0x8b6a4a });
+      const fawn   = new THREE.MeshBasicMaterial({ color: 0xc2a079 });
+      const nose   = new THREE.MeshBasicMaterial({ color: 0x141414 });
+      const eyeMt  = new THREE.MeshBasicMaterial({ color: 0x141414 });
+
+      // Upright body — elongated vertically.
+      const body = new THREE.Mesh(new THREE.SphereGeometry(0.012, 20, 14), fur);
+      body.scale.set(0.95, 0.85, 1.6);
+      add(body, 0, 0, 0.028);
+      // Pale belly stripe.
+      const bellyMesh = new THREE.Mesh(new THREE.SphereGeometry(0.010, 16, 12), fawn);
+      bellyMesh.scale.set(0.45, 0.75, 1.6);
+      add(bellyMesh, 0.006, 0, 0.028);
+
+      // Neck + head — head leans forward.
+      const neckGeo = new THREE.CylinderGeometry(0.0035, 0.0045, 0.010, 12);
+      const neck = new THREE.Mesh(neckGeo, fur);
+      neck.rotation.x = Math.PI / 2;
+      neck.rotation.z = -0.4;
+      add(neck, 0.006, 0, 0.048);
+      const head = new THREE.Mesh(new THREE.SphereGeometry(0.006, 16, 12), fur);
+      head.scale.set(1.6, 1.0, 1.0);
+      add(head, 0.014, 0, 0.054);
+
+      // Nose tip.
+      add(new THREE.Mesh(new THREE.SphereGeometry(0.0013, 10, 8), nose),
+          0.0205, 0, 0.053);
+
+      // Tall pointed ears.
+      const earGeo = new THREE.ConeGeometry(0.0015, 0.008, 8);
+      earGeo.rotateX(Math.PI / 2);
+      const earL = new THREE.Mesh(earGeo, fur);
+      const earR = new THREE.Mesh(earGeo, fur);
+      earL.rotation.z = -0.2;
+      earR.rotation.z =  0.2;
+      add(earL, 0.010, -0.003, 0.062);
+      add(earR, 0.010,  0.003, 0.062);
+
+      // Small dark eyes.
+      const eyeGeo = new THREE.SphereGeometry(0.0009, 8, 6);
+      add(new THREE.Mesh(eyeGeo, eyeMt), 0.0155, -0.0035, 0.055);
+      add(new THREE.Mesh(eyeGeo, eyeMt), 0.0155,  0.0035, 0.055);
+
+      // Boxing stance: upper arms slope out and down from the shoulders,
+      // forearms angle up and forward into a guard, with red gloves at
+      // the fists. Built by orienting two cylinder segments per arm.
+      const segment = (a, b, r, mat) => {
+        const dx = b[0] - a[0], dy = b[1] - a[1], dz = b[2] - a[2];
+        const L = Math.hypot(dx, dy, dz);
+        const g = new THREE.CylinderGeometry(r, r, L, 10);
+        const m = new THREE.Mesh(g, mat);
+        m.quaternion.setFromUnitVectors(
+          new THREE.Vector3(0, 1, 0),
+          new THREE.Vector3(dx / L, dy / L, dz / L),
+        );
+        m.position.set((a[0] + b[0]) / 2, (a[1] + b[1]) / 2, (a[2] + b[2]) / 2);
+        return m;
+      };
+      const shL = [0.004, -0.007, 0.042];
+      const shR = [0.004,  0.007, 0.042];
+      const elL = [0.011, -0.009, 0.036];
+      const elR = [0.011,  0.009, 0.036];
+      const fistL = [0.018, -0.005, 0.050];
+      const fistR = [0.018,  0.005, 0.050];
+      this.figureGroup.add(segment(shL, elL, 0.0022, fur));   // upper arm L
+      this.figureGroup.add(segment(shR, elR, 0.0022, fur));   // upper arm R
+      this.figureGroup.add(segment(elL, fistL, 0.002,  fur)); // forearm L
+      this.figureGroup.add(segment(elR, fistR, 0.002,  fur)); // forearm R
+      // Red boxing gloves at the fists.
+      const glove = new THREE.MeshBasicMaterial({ color: 0xc22020 });
+      const gloveGeo = new THREE.SphereGeometry(0.0038, 14, 10);
+      add(new THREE.Mesh(gloveGeo, glove), fistL[0], fistL[1], fistL[2]);
+      add(new THREE.Mesh(gloveGeo, glove), fistR[0], fistR[1], fistR[2]);
+
+      // Big powerful hind legs — oriented thighs, diagonal feet.
+      const thighGeo = new THREE.CylinderGeometry(0.0045, 0.0055, 0.016, 12);
+      thighGeo.rotateX(Math.PI / 2);
+      const thighL = new THREE.Mesh(thighGeo, fur);
+      const thighR = new THREE.Mesh(thighGeo, fur);
+      thighL.rotation.y = -0.3;
+      thighR.rotation.y = -0.3;
+      add(thighL, -0.004, -0.006, 0.018);
+      add(thighR, -0.004,  0.006, 0.018);
+      // Long flat feet.
+      const footGeo = new THREE.BoxGeometry(0.014, 0.004, 0.003);
+      const footL = new THREE.Mesh(footGeo, fur);
+      const footR = new THREE.Mesh(footGeo, fur);
+      add(footL, 0.002, -0.006, 0.0025);
+      add(footR, 0.002,  0.006, 0.0025);
+
+      // Thick tapered tail lying on the ground behind.
+      const tailGeo = new THREE.CylinderGeometry(0.0045, 0.0015, 0.026, 12);
+      tailGeo.rotateZ(Math.PI / 2);
+      const tail = new THREE.Mesh(tailGeo, fur);
+      tail.rotation.y = 0.25;
+      add(tail, -0.018, 0, 0.008);
     }
 
     // Paint the figure after the celestial markers (sun/moon/planet dots

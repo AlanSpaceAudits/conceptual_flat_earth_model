@@ -230,8 +230,16 @@ const FIELD_GROUPS = [
       ]},
       { title: 'Map Projection', rows: [
         { key: 'MapProjection', label: 'Projection', select: [
-          { value: 'ae',        label: 'Default (AE)' },
-          { value: 'hellerick', label: 'Hellerick boreal' },
+          { value: 'ae',           label: 'Default (AE)' },
+          { value: 'hellerick',    label: 'Hellerick boreal' },
+          { value: 'proportional', label: 'Proportional AE Map' },
+        ]},
+      ]},
+      { title: 'Starfield', rows: [
+        { key: 'StarfieldType', label: 'Starfield', select: [
+          { value: 'random',      label: 'Default (random)' },
+          { value: 'chart-dark',  label: 'Chart (dark)' },
+          { value: 'chart-light', label: 'Chart (light)' },
         ]},
       ]},
     ],

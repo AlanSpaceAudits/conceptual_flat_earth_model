@@ -20,9 +20,10 @@ const PERSISTED_KEYS = [
   'ObserverFigure',
   'Cosmology',
   'MapProjection',
+  'StarfieldType',
 ];
 
-const STRING_KEYS = new Set(['ObserverFigure', 'Cosmology', 'MapProjection']);
+const STRING_KEYS = new Set(['ObserverFigure', 'Cosmology', 'MapProjection', 'StarfieldType']);
 
 function stateToParams(state) {
   const p = new URLSearchParams();

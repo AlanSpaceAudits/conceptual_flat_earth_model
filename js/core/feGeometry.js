@@ -19,16 +19,21 @@ export function pointOnFE(latDeg, longDeg, feRadius = 1) {
 // Visual-only alternative radial mappings for the disc. The AE map is still
 // the model's internal frame — these only affect how continents, graticule,
 // and latitude circles are painted on the disc surface. Supported values:
-//   'ae'        — azimuthal-equidistant (the model's native mapping).
-//   'hellerick' — Lambert azimuthal equal-area (polar aspect) normalised so
-//                 the southern pole lands on the rim. Used as a visual
-//                 stand-in for Hellerick's boreal look until an
-//                 authoritative formula is available.
+//   'ae'           — azimuthal-equidistant (the model's native mapping).
+//   'hellerick'    — Lambert azimuthal equal-area (polar aspect), normalised
+//                    so the southern pole lands on the rim. Stand-in for
+//                    Hellerick's boreal look.
+//   'proportional' — power-law radial adjustment of AE that pushes the
+//                    equator ring outward to ≈60% radius so northern
+//                    continents take up less of the disc and the southern
+//                    ocean reads proportionally larger. Exponent 0.75.
 export function pointOnFeMap(latDeg, longDeg, feRadius = 1, projection = 'ae') {
   const lo = ToRad(longDeg);
   let r;
   if (projection === 'hellerick') {
     r = feRadius * Math.sin((90 - latDeg) * Math.PI / 360);
+  } else if (projection === 'proportional') {
+    r = feRadius * Math.pow((90 - latDeg) / 180, 0.75);
   } else {
     r = feRadius * (90 - latDeg) / 180;
   }

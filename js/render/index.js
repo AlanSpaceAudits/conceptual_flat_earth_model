@@ -10,6 +10,7 @@ import {
 } from './worldObjects.js';
 import { loadLandGeo, buildLandMesh } from './earthMap.js';
 import { Constellations } from './constellations.js';
+import { StarfieldChart } from './starfieldChart.js';
 import { FE_RADIUS } from '../core/constants.js';
 import { ToRad } from '../math/utils.js';
 import { V } from '../math/vect3.js';
@@ -65,6 +66,9 @@ export class Renderer {
 
     this.constellations = new Constellations(clipPlanes);
     this.sm.world.add(this.constellations.group);
+
+    this.starfieldChart = new StarfieldChart(clipPlanes);
+    this.sm.world.add(this.starfieldChart.group);
 
     this.celestialPoles = new CelestialPoles(clipPlanes);
     this.sm.world.add(this.celestialPoles.group);
@@ -246,7 +250,14 @@ export class Renderer {
     this.vaultOfHeavens.update(m);
     this.observersOpticalVault.update(m);
     this.stars.update(m);
+    this.starfieldChart.update(m);
     this.constellations.update(m);
+    // Random star cloud on the heavenly vault is hidden when a chart is
+    // active so it doesn't peek through the texture. The optical-vault
+    // cloud stays as-is so the observer still has stars around them.
+    if ((m.state.StarfieldType || 'random') !== 'random') {
+      this.stars.domePoints.visible = false;
+    }
     this.celestialPoles.update(m);
     this.decCircles.update(m);
     this.yggdrasil.update(m);

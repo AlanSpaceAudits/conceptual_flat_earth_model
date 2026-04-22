@@ -157,6 +157,11 @@ function defaultState() {
     // the AE frame.
     MapProjection: 'ae',
 
+    // Starfield type for the heavenly-vault disc. 'random' uses the
+    // procedural point cloud; 'chart-dark' / 'chart-light' swap in a polar
+    // star-chart texture (dark- vs light-background variants).
+    StarfieldType: 'random',
+
     // description / pointer
     Description: '',
     PointerFrom: [0, 0],

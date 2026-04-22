@@ -1,0 +1,204 @@
+// Constellation renderer. Draws the catalogued bright stars (larger,
+// brighter points than the random starfield) and an optional stick-figure
+// outline connecting them. Every star and every line is drawn twice: once
+// on the heavenly vault (AE-projected at the starfield altitude) and once
+// on the observer's optical vault hemisphere, with horizon culling so
+// below-horizon pieces don't leak across.
+
+import * as THREE from 'three';
+import { M } from '../math/mat3.js';
+import { latLongToCoord, vaultCoordToGlobalFeCoord } from '../core/transforms.js';
+import { FE_RADIUS } from '../core/constants.js';
+import { CONSTELLATIONS } from '../core/constellations.js';
+
+export class Constellations {
+  constructor(clippingPlanes = []) {
+    this.group = new THREE.Group();
+    this.group.name = 'constellations';
+
+    // Flatten every star in every constellation into one array. Track the
+    // (constellation, local index) so the line list can resolve to global
+    // star indices.
+    this._stars = [];       // [lat, lon]
+    this._starVect = [];    // unit celestial direction
+    this._lines = [];       // [globalIdxA, globalIdxB]
+
+    for (const con of CONSTELLATIONS) {
+      const offset = this._stars.length;
+      for (const s of con.stars) {
+        this._stars.push([s.dec, s.ra]);
+        this._starVect.push(latLongToCoord(s.dec, s.ra, 1));
+      }
+      for (const [a, b] of con.lines) {
+        this._lines.push([offset + a, offset + b]);
+      }
+    }
+    this._nStars = this._stars.length;
+    this._nLines = this._lines.length;
+
+    // Dome (heavenly-vault) star points.
+    this._domeStarPos = new Float32Array(this._nStars * 3);
+    const domeStarGeom = new THREE.BufferGeometry();
+    domeStarGeom.setAttribute('position', new THREE.BufferAttribute(this._domeStarPos, 3));
+    this.domeStars = new THREE.Points(
+      domeStarGeom,
+      new THREE.PointsMaterial({
+        color: 0xffe8a0, size: 4, sizeAttenuation: false,
+        transparent: true, opacity: 1,
+        clippingPlanes,
+      }),
+    );
+    this.domeStars.renderOrder = 56;
+    this.group.add(this.domeStars);
+
+    // Optical-vault star points.
+    this._sphStarPos = new Float32Array(this._nStars * 3);
+    const sphStarGeom = new THREE.BufferGeometry();
+    sphStarGeom.setAttribute('position', new THREE.BufferAttribute(this._sphStarPos, 3));
+    this.sphereStars = new THREE.Points(
+      sphStarGeom,
+      new THREE.PointsMaterial({
+        color: 0xffe8a0, size: 3, sizeAttenuation: false,
+        transparent: true, opacity: 1,
+        depthTest: false, depthWrite: false,
+        clippingPlanes,
+      }),
+    );
+    this.sphereStars.renderOrder = 57;
+    this.group.add(this.sphereStars);
+
+    // Dome outline LineSegments — 6 floats per segment.
+    this._domeLinePos = new Float32Array(this._nLines * 6);
+    const domeLineGeom = new THREE.BufferGeometry();
+    domeLineGeom.setAttribute('position', new THREE.BufferAttribute(this._domeLinePos, 3));
+    this.domeLines = new THREE.LineSegments(
+      domeLineGeom,
+      new THREE.LineBasicMaterial({
+        color: 0x88ccff, transparent: true, opacity: 0.7,
+        clippingPlanes,
+      }),
+    );
+    this.domeLines.renderOrder = 55;
+    this.group.add(this.domeLines);
+
+    // Optical-vault outline LineSegments.
+    this._sphLinePos = new Float32Array(this._nLines * 6);
+    const sphLineGeom = new THREE.BufferGeometry();
+    sphLineGeom.setAttribute('position', new THREE.BufferAttribute(this._sphLinePos, 3));
+    this.sphereLines = new THREE.LineSegments(
+      sphLineGeom,
+      new THREE.LineBasicMaterial({
+        color: 0x88ccff, transparent: true, opacity: 0.75,
+        depthTest: false, depthWrite: false,
+        clippingPlanes,
+      }),
+    );
+    this.sphereLines.renderOrder = 56;
+    this.group.add(this.sphereLines);
+  }
+
+  update(model) {
+    const s = model.state;
+    const c = model.computed;
+    const showStars = !!s.ShowConstellations;
+    const showLines = !!s.ShowConstellationLines && showStars;
+
+    // Honour the same DynamicStars / day-night fade the random starfield
+    // uses so the constellations emerge smoothly at twilight instead of
+    // popping on.
+    const nightAlpha = s.DynamicStars ? c.NightFactor : 1.0;
+    const canShow = s.DynamicStars ? nightAlpha > 0.01 : true;
+    const showTrueVault = showStars && canShow && (s.ShowTruePositions !== false);
+    const showOptical   = showStars && canShow && s.ShowOpticalVault;
+
+    this.domeStars.visible   = showTrueVault;
+    this.sphereStars.visible = showOptical;
+    this.domeLines.visible   = showLines && (s.ShowTruePositions !== false);
+    this.sphereLines.visible = showLines && s.ShowOpticalVault;
+
+    this.domeStars.material.opacity   = nightAlpha;
+    this.sphereStars.material.opacity = nightAlpha;
+    this.domeLines.material.opacity   = nightAlpha * 0.75;
+    this.sphereLines.material.opacity = nightAlpha * 0.85;
+
+    if (!showStars || !canShow) return;
+
+    const opticalR = c.OpticalVaultRadius;
+    const opticalH = c.OpticalVaultHeight;
+
+    // Cache per-star projections for use by the line builder.
+    const domePos = new Array(this._nStars);
+    const sphPos  = new Array(this._nStars);
+    const aboveHorizon = new Array(this._nStars);
+
+    for (let i = 0; i < this._nStars; i++) {
+      const [lat, lon] = this._stars[i];
+      const vect = this._starVect[i];
+
+      // Heavenly-vault (AE disk).
+      const discR = FE_RADIUS * (90 - lat) / 180;
+      const lo = lon * Math.PI / 180;
+      const diskLocal = [discR * Math.cos(lo), discR * Math.sin(lo), s.StarfieldVaultHeight];
+      const gd = vaultCoordToGlobalFeCoord(diskLocal, c.TransMatVaultToFe);
+      domePos[i] = gd;
+      this._domeStarPos[i * 3]     = gd[0];
+      this._domeStarPos[i * 3 + 1] = gd[1];
+      this._domeStarPos[i * 3 + 2] = gd[2];
+
+      // Optical vault.
+      const localGlobe = M.Trans(c.TransMatCelestToGlobe, vect);
+      if (localGlobe[0] <= 0) {
+        aboveHorizon[i] = false;
+        sphPos[i] = [0, 0, -1000];
+        this._sphStarPos[i * 3]     = 0;
+        this._sphStarPos[i * 3 + 1] = 0;
+        this._sphStarPos[i * 3 + 2] = -1000;
+      } else {
+        aboveHorizon[i] = true;
+        const feLocal = [-localGlobe[2] * opticalR, localGlobe[1] * opticalR, localGlobe[0] * opticalH];
+        const gs = M.Trans(c.TransMatLocalFeToGlobalFe, feLocal);
+        sphPos[i] = gs;
+        this._sphStarPos[i * 3]     = gs[0];
+        this._sphStarPos[i * 3 + 1] = gs[1];
+        this._sphStarPos[i * 3 + 2] = gs[2];
+      }
+    }
+    this.domeStars.geometry.attributes.position.needsUpdate   = true;
+    this.sphereStars.geometry.attributes.position.needsUpdate = true;
+
+    if (showLines) {
+      for (let k = 0; k < this._nLines; k++) {
+        const [a, b] = this._lines[k];
+        const o = k * 6;
+
+        const da = domePos[a], db = domePos[b];
+        this._domeLinePos[o]     = da[0];
+        this._domeLinePos[o + 1] = da[1];
+        this._domeLinePos[o + 2] = da[2];
+        this._domeLinePos[o + 3] = db[0];
+        this._domeLinePos[o + 4] = db[1];
+        this._domeLinePos[o + 5] = db[2];
+
+        // Hide optical-vault line segments where either endpoint is below
+        // the observer's horizon — collapse to a single point so the
+        // segment doesn't shoot off to the parked -1000 position.
+        if (!aboveHorizon[a] || !aboveHorizon[b]) {
+          for (let j = 0; j < 6; j++) this._sphLinePos[o + j] = 0;
+          // park the segment below the clip plane
+          this._sphLinePos[o + 2] = -1000;
+          this._sphLinePos[o + 5] = -1000;
+          continue;
+        }
+        const sa = sphPos[a], sb = sphPos[b];
+        this._sphLinePos[o]     = sa[0];
+        this._sphLinePos[o + 1] = sa[1];
+        this._sphLinePos[o + 2] = sa[2];
+        this._sphLinePos[o + 3] = sb[0];
+        this._sphLinePos[o + 4] = sb[1];
+        this._sphLinePos[o + 5] = sb[2];
+      }
+      this.domeLines.geometry.attributes.position.needsUpdate   = true;
+      this.sphereLines.geometry.attributes.position.needsUpdate = true;
+    }
+  }
+}

@@ -11,6 +11,7 @@ const PERSISTED_KEYS = [
   'ShowMoonTrack', 'ShowOpticalVault', 'ShowStars', 'ShowVaultRays',
   'ShowOpticalVaultRays', 'ShowManyRays', 'ShowTruePositions',
   'ShowLatitudeLines', 'ShowGroundPoints', 'ShowPlanets', 'ShowLogo',
+  'ShowConstellations', 'ShowConstellationLines',
   'DynamicStars',
   'TimezoneOffsetMinutes',
   'StarfieldVaultHeight', 'MoonVaultHeight', 'SunVaultHeight',

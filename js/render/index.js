@@ -9,6 +9,7 @@ import {
   CelestialPoles, DeclinationCircles, Yggdrasil, MtMeru, ToroidalVortex,
 } from './worldObjects.js';
 import { loadLandGeo, buildLandMesh } from './earthMap.js';
+import { Constellations } from './constellations.js';
 import { FE_RADIUS } from '../core/constants.js';
 import { ToRad } from '../math/utils.js';
 import { V } from '../math/vect3.js';
@@ -61,6 +62,9 @@ export class Renderer {
 
     this.stars = new Stars(2000, clipPlanes);
     this.sm.world.add(this.stars.group);
+
+    this.constellations = new Constellations(clipPlanes);
+    this.sm.world.add(this.constellations.group);
 
     this.celestialPoles = new CelestialPoles(clipPlanes);
     this.sm.world.add(this.celestialPoles.group);
@@ -242,6 +246,7 @@ export class Renderer {
     this.vaultOfHeavens.update(m);
     this.observersOpticalVault.update(m);
     this.stars.update(m);
+    this.constellations.update(m);
     this.celestialPoles.update(m);
     this.decCircles.update(m);
     this.yggdrasil.update(m);
@@ -291,6 +296,8 @@ export class Renderer {
     if (s.InsideVault) {
       this.vaultOfHeavens.group.visible = false;
       this.stars.domePoints.visible = false;
+      this.constellations.domeStars.visible = false;
+      this.constellations.domeLines.visible = false;
       this.sunGP.group.visible  = false;
       this.moonGP.group.visible = false;
       this.sunGPLine.visible    = false;

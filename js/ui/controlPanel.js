@@ -214,6 +214,8 @@ const FIELD_GROUPS = [
         { key: 'ShowFacingVector',    label: 'Facing Vector / N-S-E-W', bool: true },
         { key: 'ShowDecCircles',      label: 'Declination Circles',     bool: true },
         { key: 'ShowStars',           label: 'Stars',              bool: true },
+        { key: 'ShowConstellations',      label: 'Constellations',        bool: true },
+        { key: 'ShowConstellationLines',  label: 'Constellation outlines', bool: true },
         { key: 'DynamicStars',        label: 'Starfield Mode',
           boolSelect: { trueLabel: 'Dynamic (fade w/ day)', falseLabel: 'Static (always visible)' } },
         { key: 'ShowVaultRays',       label: 'Vault Rays',         bool: true },

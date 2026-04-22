@@ -50,6 +50,8 @@ export function buildLandMesh(geojson, {
   fillOpacity = 0.75,
   strokeColor = 0x1d3a1d,
   strokeOpacity = 0.9,
+  iceColor = 0xf0f4f8,
+  iceLatCutoff = -55,  // polygons with northernmost lat below this are ice
 } = {}) {
   const group = new THREE.Group();
   group.name = 'land';
@@ -58,11 +60,27 @@ export function buildLandMesh(geojson, {
     color: fillColor, transparent: fillOpacity < 1, opacity: fillOpacity,
     side: THREE.DoubleSide, depthWrite: false,
   });
+  // Antarctica gets its own fill material so the outer ring of land on the
+  // AE projection reads as the ice cap rather than green continent.
+  const iceMat = new THREE.MeshBasicMaterial({
+    color: iceColor, transparent: fillOpacity < 1, opacity: fillOpacity,
+    side: THREE.DoubleSide, depthWrite: false,
+  });
   const lineMat = new THREE.LineBasicMaterial({
     color: strokeColor, transparent: strokeOpacity < 1, opacity: strokeOpacity,
   });
 
   const lineSegs = [];
+
+  // Helper: decide if a polygon is Antarctic by its northernmost latitude.
+  // Prefers the feature's bbox ([minLon, minLat, maxLon, maxLat]) and falls
+  // back to scanning the outer ring.
+  const isIce = (feat, outer) => {
+    if (feat.bbox && feat.bbox.length >= 4) return feat.bbox[3] < iceLatCutoff;
+    let maxLat = -Infinity;
+    for (const [, lat] of outer) if (lat > maxLat) maxLat = lat;
+    return maxLat < iceLatCutoff;
+  };
 
   for (const feat of geojson.features || []) {
     const g = feat.geometry;
@@ -81,7 +99,8 @@ export function buildLandMesh(geojson, {
         if (hPts.length >= 3) shape.holes.push(new THREE.Path(hPts));
       }
       const geom = new THREE.ShapeGeometry(shape);
-      const mesh = new THREE.Mesh(geom, fillMat);
+      const mat  = isIce(feat, outer) ? iceMat : fillMat;
+      const mesh = new THREE.Mesh(geom, mat);
       mesh.position.z = EPS_LIFT;
       group.add(mesh);
 

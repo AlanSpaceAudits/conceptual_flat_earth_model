@@ -1364,131 +1364,134 @@ export class MtMeru {
   }
 }
 
-// Toroidal vortex — axis-mundi rendered as a dense cyclonic field inspired
-// by the Parker spiral / drain-vortex look. 40 field lines each close into
-// a recirculating loop that passes through both poles on the z-axis; each
-// line wraps four times around the axis per traversal so the collective
-// pattern from above reads as a tight inner cluster bleeding out into a
-// spiraling skirt. A subtle poloidal z-wave (like a heliospheric current
-// sheet) adds the folded-surface quality. The whole group rotates slowly
-// around the z-axis so the cyclonic flow is visually obvious.
+// Toroidal vortex — a proper donut-shaped wireframe of a toroidal field,
+// centered on the disc axis. Built as a spindle torus (tube radius r >
+// axial distance R) so the inner hole pinches down to two points on the
+// z-axis near the top and bottom, matching the classic "toroidal field"
+// diagram. Drawn as a dense grid of latitude rings (constant u, big
+// circles around the z-axis) and poloidal rings (constant v, small
+// circles through the hole).
 //
-// Curve parametrization (θ ∈ [0, 2π]):
-//   ρ(θ) = R·|sin(θ)|                               (cylindrical radius)
-//   φ(θ) = φ₀ + Ω·θ                                 (azimuth — Ω integer)
-//   z(θ) = H·cos(θ) + A·sin(θ)·sin(k·φ(θ))          (wavy sheet fold)
-// θ=0 → NP, θ=π/2 → equator, θ=π → SP, θ=3π/2 → opposite equator.
+// Parametrization:
+//   x(u, v) = (R + r·cos u) · cos v
+//   y(u, v) = (R + r·cos u) · sin v
+//   z(u, v) = r · sin u + zOffset
+// Pinch points sit on the z-axis at z = zOffset ± √(r² − R²) where
+// R + r·cos u = 0.
+//
+// Two variants (chosen by state.Cosmology):
+//   'vortex'  — one torus centred on the disc plane
+//   'vortex2' — two stacked tori straddling the disc (flat earth suspended
+//               between the upper and lower toroidal field)
 export class ToroidalVortex {
-  constructor() {
+  constructor(variant = 'single') {
     this.group = new THREE.Group();
-    this.group.name = 'toroidal-vortex';
+    this.group.name = `toroidal-vortex-${variant}`;
+    this._variant  = variant;
+    this._stateKey = variant === 'dual' ? 'vortex2' : 'vortex';
 
-    const N_AZ   = 40;     // number of spiral field lines — denser skirt
-    const N_STEP = 180;    // vertices per line
-    const R      = 0.42;   // outer radius at the equator
-    const H      = 0.7;    // top/bottom axial extent (scales with VaultHeight)
-    const OMEGA  = 4;      // integer — four spiral wraps per closed loop
-    const WAVE_AMP = 0.12; // poloidal z-wave amplitude (sheet fold)
-    const WAVE_K   = 2;    // number of folds around the azimuth
+    const R     = 0.12;
+    const r     = 0.38;
+    const N_U   = 36;
+    const N_V   = 60;
+    // Dual variant: stack two tori so each one just touches z = 0 at its
+    // near pinch. Offset = r puts the bottom of the upper torus and the
+    // top of the lower torus tangent to the disc plane.
+    const offsets = variant === 'dual' ? [+r, -r] : [0];
 
-    this._nAz   = N_AZ;
-    this._nStep = N_STEP;
-    this._lines = [];
+    const mat = new THREE.LineBasicMaterial({
+      color: variant === 'dual' ? 0xff8a30 : 0x4080ff,
+      transparent: true, opacity: 0.55,
+      depthTest: false, depthWrite: false,
+    });
 
-    for (let i = 0; i < N_AZ; i++) {
-      const phi0 = (i / N_AZ) * Math.PI * 2;
-      const positions = new Float32Array((N_STEP + 1) * 3);
-      const colors    = new Float32Array((N_STEP + 1) * 3);
-      const thetas    = new Float32Array(N_STEP + 1);
-      for (let k = 0; k <= N_STEP; k++) {
-        const th = (k / N_STEP) * Math.PI * 2;
-        const ph = phi0 + OMEGA * th;
-        const rho = R * Math.sin(th);
-        const fold = WAVE_AMP * Math.sin(th) * Math.sin(WAVE_K * ph);
-        positions[k * 3 + 0] = rho * Math.cos(ph);
-        positions[k * 3 + 1] = rho * Math.sin(ph);
-        positions[k * 3 + 2] = H * Math.cos(th) + fold;
-        thetas[k] = k / N_STEP;
+    const point = (u, v, zOff) => {
+      const rho = R + r * Math.cos(u);
+      return [rho * Math.cos(v), rho * Math.sin(v), r * Math.sin(u) + zOff];
+    };
+
+    for (const zOff of offsets) {
+      // Latitude rings — hold u constant, sweep v. Big horizontal circles
+      // around the z-axis. Their radius is (R + r·cos u); at the pinch u
+      // values the radius is zero and the ring collapses to a point.
+      for (let i = 0; i < N_U; i++) {
+        const u = (i / N_U) * Math.PI * 2;
+        const pts = new Float32Array((N_V + 1) * 3);
+        for (let j = 0; j <= N_V; j++) {
+          const v = (j / N_V) * Math.PI * 2;
+          const p = point(u, v, zOff);
+          pts[j * 3 + 0] = p[0];
+          pts[j * 3 + 1] = p[1];
+          pts[j * 3 + 2] = p[2];
+        }
+        const g = new THREE.BufferGeometry();
+        g.setAttribute('position', new THREE.BufferAttribute(pts, 3));
+        const line = new THREE.Line(g, mat);
+        line.renderOrder = 48;
+        this.group.add(line);
       }
-      const geo = new THREE.BufferGeometry();
-      geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-      geo.setAttribute('color',    new THREE.BufferAttribute(colors, 3));
-      const mat = new THREE.LineBasicMaterial({
-        vertexColors: true, transparent: true, opacity: 0.78,
-        depthTest: false, depthWrite: false,
-      });
-      const line = new THREE.Line(geo, mat);
-      line.renderOrder = 48;
-      this.group.add(line);
-      this._lines.push({ colors, thetas, line });
+
+      // Poloidal rings — hold v constant, sweep u. Small loops through the
+      // donut hole; every one of them passes through both pinch regions on
+      // the axis.
+      for (let j = 0; j < N_V; j++) {
+        const v = (j / N_V) * Math.PI * 2;
+        const pts = new Float32Array((N_U + 1) * 3);
+        for (let i = 0; i <= N_U; i++) {
+          const u = (i / N_U) * Math.PI * 2;
+          const p = point(u, v, zOff);
+          pts[i * 3 + 0] = p[0];
+          pts[i * 3 + 1] = p[1];
+          pts[i * 3 + 2] = p[2];
+        }
+        const g = new THREE.BufferGeometry();
+        g.setAttribute('position', new THREE.BufferAttribute(pts, 3));
+        const line = new THREE.Line(g, mat);
+        line.renderOrder = 48;
+        this.group.add(line);
+      }
     }
 
-    // Axial beam — faint bright line along z. Marks the convergence /
-    // divergence column through the axis that the dense spiral pattern
-    // otherwise only touches at single points.
-    const axisPts = new Float32Array([0, 0, -H, 0, 0, H]);
-    const axisCols = new Float32Array(6);
-    const axisGeo = new THREE.BufferGeometry();
-    axisGeo.setAttribute('position', new THREE.BufferAttribute(axisPts, 3));
-    axisGeo.setAttribute('color',    new THREE.BufferAttribute(axisCols, 3));
-    this._axisLine = new THREE.Line(
-      axisGeo,
-      new THREE.LineBasicMaterial({
-        vertexColors: true, transparent: true, opacity: 0.75,
-        depthTest: false, depthWrite: false,
-      }),
-    );
-    this._axisLine.renderOrder = 49;
-    this._axisColors = axisCols;
-    this.group.add(this._axisLine);
+    // Dual variant: cyan equatorial boundary ring around the disc,
+    // marking the flat-earth plane suspended between the two tori.
+    if (variant === 'dual') {
+      const R_BOUND = R + r + 0.03;
+      const N_RING = 96;
+      const pts = new Float32Array((N_RING + 1) * 3);
+      for (let k = 0; k <= N_RING; k++) {
+        const a = (k / N_RING) * Math.PI * 2;
+        pts[k * 3 + 0] = R_BOUND * Math.cos(a);
+        pts[k * 3 + 1] = R_BOUND * Math.sin(a);
+        pts[k * 3 + 2] = 0;
+      }
+      const g = new THREE.BufferGeometry();
+      g.setAttribute('position', new THREE.BufferAttribute(pts, 3));
+      const ring = new THREE.Line(
+        g,
+        new THREE.LineBasicMaterial({
+          color: 0x4fc0ff, transparent: true, opacity: 0.9,
+          depthTest: false, depthWrite: false,
+        }),
+      );
+      ring.renderOrder = 49;
+      this.group.add(ring);
+    }
 
     this.group.visible = false;
-    this._time = 0;
     this._rotate = 0;
   }
 
-  // Per-frame tick: rotates the whole group slowly around z (the cyclonic
-  // circulation) and runs a subtle brightness pulse along each curve so
-  // the convergence/divergence direction is readable. Base colour is a
-  // royal blue that matches the reference aesthetic.
+  // Slow rotation around the z-axis so the toroidal circulation reads as
+  // motion; the wireframe itself is axisymmetric, so nothing else needs
+  // per-frame updating.
   tick(dt) {
     if (!this.group.visible) return;
-    this._time += dt;
-    this._rotate += dt * 0.25;             // ~14° / sec cyclonic spin
+    this._rotate += dt * 0.15;
     this.group.rotation.z = this._rotate;
-
-    const flowPhase = this._time * 0.22;
-    const N_PULSES  = 3;
-    const BASE_R = 0.28, BASE_G = 0.50, BASE_B = 1.00;   // royal blue
-
-    for (let i = 0; i < this._nAz; i++) {
-      const { colors, thetas, line } = this._lines[i];
-      for (let k = 0; k < thetas.length; k++) {
-        const t = ((thetas[k] - flowPhase) % 1 + 1) % 1;
-        // Keep a bright baseline so lines read as solid even between pulses.
-        const pulse = 0.5 * (1 + Math.sin(t * N_PULSES * 2 * Math.PI));
-        const v = 0.55 + 0.45 * pulse;
-        colors[k * 3 + 0] = BASE_R * v;
-        colors[k * 3 + 1] = BASE_G * v;
-        colors[k * 3 + 2] = BASE_B * v;
-      }
-      line.geometry.getAttribute('color').needsUpdate = true;
-    }
-
-    // Axial beam — upward-moving brightness pulse.
-    for (let k = 0; k < 2; k++) {
-      const t = ((k - flowPhase) % 1 + 1) % 1;
-      const pulse = 0.5 * (1 + Math.sin(t * 2 * Math.PI));
-      const v = 0.4 + 0.6 * pulse;
-      this._axisColors[k * 3 + 0] = 0.6 * v;
-      this._axisColors[k * 3 + 1] = 0.8 * v;
-      this._axisColors[k * 3 + 2] = 1.0 * v;
-    }
-    this._axisLine.geometry.getAttribute('color').needsUpdate = true;
   }
 
   update(model) {
-    const on = model.state.Cosmology === 'vortex';
+    const on = model.state.Cosmology === this._stateKey;
     this.group.visible = on;
     if (!on) return;
     const k = (model.state.VaultHeight || COSMOLOGY_DEFAULT_VAULT_H)

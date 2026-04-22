@@ -72,10 +72,12 @@ export class Renderer {
     // shown at a time, driven by state.Cosmology.
     this.yggdrasil = new Yggdrasil();
     this.mtMeru    = new MtMeru();
-    this.toroidalVortex = new ToroidalVortex();
+    this.toroidalVortex     = new ToroidalVortex('single');
+    this.toroidalVortexDual = new ToroidalVortex('dual');
     this.sm.world.add(this.yggdrasil.group);
     this.sm.world.add(this.mtMeru.group);
     this.sm.world.add(this.toroidalVortex.group);
+    this.sm.world.add(this.toroidalVortexDual.group);
 
     // Sun and moon markers. Vault-of-heavens dots stay large-ish so they're
     // findable against the starfield; the optical-vault dots are tiny points
@@ -220,6 +222,7 @@ export class Renderer {
     this.yggdrasil.update(m);
     this.mtMeru.update(m);
     this.toroidalVortex.update(m);
+    this.toroidalVortexDual.update(m);
     this.observer.update(m);
 
     // In first-person (InsideVault) mode the true-source markers on the
@@ -370,6 +373,7 @@ export class Renderer {
       : 0;
     this._lastRafTs = now;
     this.toroidalVortex?.tick(dt);
+    this.toroidalVortexDual?.tick(dt);
     this.sm.render();
     requestAnimationFrame(this._raf);
   }

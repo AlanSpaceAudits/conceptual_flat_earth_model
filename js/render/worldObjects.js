@@ -221,10 +221,10 @@ export class GroundPoint {
     this.dot.renderOrder = 40;
     this.group.add(this.dot);
   }
-  updateAt(latDeg, lonDeg, feRadius = FE_RADIUS, visible = true, projection = 'ae') {
+  updateAt(latDeg, lonDeg, feRadius = FE_RADIUS, visible = true) {
     this.group.visible = visible;
     if (!visible) return;
-    const p = pointOnFeMap(latDeg, lonDeg, feRadius, projection);
+    const p = pointOnFE(latDeg, lonDeg, feRadius);
     this.dot.position.set(p[0], p[1], 1e-3);
   }
 }

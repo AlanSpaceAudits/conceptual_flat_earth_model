@@ -87,47 +87,41 @@ export const DEMOS = [
     ],
   },
   {
-    name: 'Solar eclipse — optical vault',
+    name: 'Solar eclipse — maximum (calibration)',
     intro: (model) => {
-      // Search for the next solar eclipse starting 1 day before the model's
-      // current DateTime so "replay" of the same demo keeps targeting the
-      // same upcoming event rather than jumping past it.
+      // Snap to the moment of maximum solar eclipse and stand the observer
+      // at the subsolar point so the sun sits at the zenith. If the sun
+      // and moon markers don't visually overlap on the optical vault at
+      // this instant, the offset between them is the ephemeris error —
+      // calibrate the moon (or sun) model to close the gap.
       const curDate = dateTimeToDate(model.state.DateTime - 1);
       const { nextSolar } = findNextEclipses(curDate);
       if (!nextSolar) { _eclipseDT = null; return {}; }
       _eclipseDT = nextSolar.getTime() / TIME_ORIGIN.msPerDay - TIME_ORIGIN.ZeroDate;
 
-      // Subsolar point at eclipse maximum: where the sun sits at the zenith.
-      // Stand 45° of arc to the north of it so the sun is due south at
-      // ~45° altitude; heading 180° points the observer straight at it.
       const eq = sunEquatorial(nextSolar);
       const gmstDeg = greenwichSiderealDeg(nextSolar);
       const raDeg  = eq.ra  * 180 / Math.PI;
       const decDeg = eq.dec * 180 / Math.PI;
       const subLong = ((raDeg - gmstDeg + 540) % 360) - 180;
-      const obsLat  = Math.max(-85, Math.min(85, decDeg + 45));
       return {
-        DateTime:          _eclipseDT - 5 / 24,
-        ObserverLat:       obsLat,
+        DateTime:          _eclipseDT,                       // max eclipse
+        ObserverLat:       Math.max(-85, Math.min(85, decDeg)),
         ObserverLong:      subLong,
-        ObserverHeading:   180,
+        ObserverHeading:   0,
+        CameraHeight:      89.9,                             // look straight up
         InsideVault:       true,
         ShowOpticalVault:  true,
         ShowTruePositions: false,
-        ShowFacingVector:  true,
+        ShowFacingVector:  false,
       };
     },
     tasks: () => {
       if (_eclipseDT == null) {
         return [ Ttxt('No solar eclipse found within the search window.') ];
       }
-      // -5h → +5h of sim time over 10 wall-clock seconds = 1 h/s. Total
-      // partial phases span ≈ 3h around maximum, leaving roughly 5 real
-      // seconds of post-eclipse sky before the demo ends.
       return [
-        Ttxt('Solar eclipse — sun at ~45° altitude, optical-vault view. Starting 5 h before maximum, playing at 1 h / real-second.'),
-        Tval('DateTime', _eclipseDT + 5 / 24, 10000, 0, 'linear'),
-        Ttxt('Moon has cleared the sun — eclipse past.', 500),
+        Ttxt('Solar eclipse — snapped to maximum. Observer at the subsolar point, looking straight up. Sun and moon should coincide on the optical vault; any visible offset is the ephemeris gap to calibrate.'),
       ];
     },
   },

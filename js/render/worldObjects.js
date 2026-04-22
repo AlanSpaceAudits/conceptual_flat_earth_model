@@ -196,15 +196,16 @@ export class GroundPoint {
   constructor(color) {
     this.group = new THREE.Group();
     this.group.name = 'gp';
-    // Small flat disc lying on the ground. Secondary annotation rather than
-    // a prominent 3D marker. depthTest: false + high renderOrder so it's
-    // still visible under the shadow overlay when glanced at from above.
+    // Small flat disc lying on the ground. The shadow overlay writes no
+    // depth, so depthTest: true still lets this be seen through the
+    // shadow while being properly occluded by opaque geometry (observer
+    // figures, Yggdrasil, Mt Meru, etc.) in front of it.
     this.dot = new THREE.Mesh(
       new THREE.CircleGeometry(0.006, 20),
       new THREE.MeshBasicMaterial({
         color,
         transparent: true, opacity: 0.85,
-        depthTest: false, depthWrite: false,
+        depthTest: true, depthWrite: false,
         side: THREE.DoubleSide,
       }),
     );
@@ -602,12 +603,15 @@ export class CelestialMarker {
     // Must render AFTER the translucent vault shell so it isn't hidden
     // behind the shell's blend. Staying in the transparent pass with high
     // renderOrder is the reliable way to do that.
+    // depthTest on so opaque objects between the camera and the marker
+    // (observer figures, Yggdrasil, Mt Meru, land) correctly occlude it
+    // instead of the marker leaking through their silhouettes.
     this.domeDot = new THREE.Mesh(
       new THREE.SphereGeometry(vaultSize, 20, 16),
       new THREE.MeshBasicMaterial({
         color,
         transparent: true, opacity: 1.0,
-        depthTest: false, depthWrite: false,
+        depthTest: true, depthWrite: false,
       }),
     );
     this.domeDot.renderOrder = 100;
@@ -617,7 +621,7 @@ export class CelestialMarker {
       new THREE.MeshBasicMaterial({
         color,
         transparent: true, opacity: 0.25,
-        depthTest: false, depthWrite: false,
+        depthTest: true, depthWrite: false,
       }),
     );
     this.domeHalo.renderOrder = 99;

@@ -12,12 +12,14 @@ export class Animator {
     this.model = model;
     this.queue = [];
     this.running = false;
+    this.paused  = false;   // S201 — pause/resume without clearing queue
     this._now = null;
     this._frame = this._frame.bind(this);
   }
 
   play(tasks) {
     this.queue = tasks.slice();
+    this.paused = false;
     this._now = performance.now();
     if (!this.running) {
       this.running = true;
@@ -25,17 +27,33 @@ export class Animator {
     }
   }
 
+  // S201 — freeze the tween queue in place. The rAF chain breaks but
+  // `this.queue` is preserved; observer/lat/long/view-mode changes
+  // don't touch it. Resume by calling .resume() later.
+  pause() {
+    if (!this.running) return;
+    this.paused = true;
+  }
+
+  resume() {
+    if (!this.running || !this.paused) return;
+    this.paused = false;
+    this._now   = performance.now();   // don't credit paused interval as elapsed
+    requestAnimationFrame(this._frame);
+  }
+
   stop() {
     this.running = false;
+    this.paused  = false;
     this.queue = [];
   }
 
-  isPlaying() {
-    return this.running;
-  }
+  isPlaying() { return this.running && !this.paused; }
+  isPaused()  { return this.running && this.paused; }
 
   _frame(ts) {
     if (!this.running) return;
+    if (this.paused)   return;   // rAF chain stays broken until resume()
     const elapsed = ts - this._now;
     this._now = ts;
 

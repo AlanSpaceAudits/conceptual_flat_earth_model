@@ -12,7 +12,10 @@ import { dateTimeToDate } from './time.js';
 import {
   sunEquatorial, moonEquatorial, greenwichSiderealDeg, equatorialToCelestCoord,
   planetEquatorial, PLANET_NAMES, bodyRADec, BODY_NAMES,
+  bodyGeocentric, helio as ephHelio, geo as ephGeo, ptol as ephPtol,
+  apix as ephApix, vsop as ephVsop,
 } from './ephemeris.js';
+import { apparentStarPosition } from './ephemerisCommon.js';
 import { CEL_NAV_STARS, celNavStarById } from './celnavStars.js';
 import {
   compTransMatCelestToGlobe, compTransMatLocalFeToGlobalFe, compTransMatVaultToFe,
@@ -180,16 +183,80 @@ function defaultState() {
     // chart rendering when selected.
     StarfieldType: 'random',
 
-    // S009 — ephemeris source for the sun/moon/planet pipeline.
-    //   'geocentric'   — use sunEquatorial / moonEquatorial / planetEquatorial
-    //                    directly. Cheapest; current model default.
-    //   'heliocentric' — go through bodyHeliocentric(name, date) and
-    //                    differencing against earth's heliocentric pos,
-    //                    then rotating into equatorial. Architecturally
-    //                    distinct; numerically equivalent at current
-    //                    precision. Selecting this exercises the helio
-    //                    pipeline for debugging / cross-checking.
-    BodySource: 'geocentric',
+    // S011 / S015 / S016 — five ephemeris pipelines. All computed every
+    // frame and displayed side-by-side in the Tracker HUD; BodySource
+    // decides which one drives the primary sky render.
+    //   'heliocentric' — Schlyter Kepler + Sun-around-Earth composition
+    //   'geocentric'   — Single Earth-focus Kepler ellipse per planet
+    //                    (S010; no Sun stage, accuracy trade accepted)
+    //   'ptolemy'      — Almagest deferent + epicycle (van Gent port)
+    //   'astropixels'  — DE405 tabulated data, credit Fred Espenak.
+    //                    Default source at startup: matches Stellarium
+    //                    to arcseconds across all bodies in-range.
+    //   'vsop87'       — Bretagnon & Francou 1988 analytical theory.
+    // S017b — default changed from 'geocentric' to 'astropixels' so
+    // first impression matches the sky.
+    BodySource: 'astropixels',
+
+    // S014 / S017 — independent toggles for each correction applied
+    // to the J2000 star catalogue before horizon-frame projection.
+    // The three individual corrections start OFF; "Trepidation" is
+    // ON by default and forces all three on — giving an out-of-the-
+    // box full apparent-of-date view. Unchecking Trepidation lands
+    // you on raw J2000 with a blank slate, ready to add one effect
+    // at a time.
+    //   StarApplyPrecession → Lieske 1977 / Meeus 21.4 (~20' over 26 y)
+    //   StarApplyNutation   → Meeus 22.A (±9")
+    //   StarApplyAberration → Meeus 23.2 (±20.5")
+    //   StarTrepidation     → master toggle for the combined correction.
+    //                         The name is a nod to medieval Arabic
+    //                         astronomy's hypothetical "trepidation of
+    //                         the equinoxes" — an extra oscillation
+    //                         bolted onto precession to match
+    //                         observation. Here the label carries the
+    //                         same framing: "the combined apparent
+    //                         wobble, as a single phenomenon."
+    StarApplyPrecession: false,
+    StarApplyNutation:   false,
+    StarApplyAberration: false,
+    StarTrepidation:     true,
+
+    // S200 — eclipse demo state hooks. The eclipse demo registry
+    // sets these via `intro()` so downstream renderers can react:
+    //   EclipseActive    — true while an eclipse demo is playing
+    //   EclipseKind      — 'solar' | 'lunar'
+    //   EclipseEventUTMS — UTC milliseconds of refined max eclipse
+    //                      (per the active ephemeris pipeline)
+    //   EclipsePipeline  — short label of the pipeline used (HelioC,
+    //                      DE405, etc.) for the descriptive readout
+    //   EclipseMinSepDeg — sun-moon (or sun-antimoon for lunar)
+    //                      separation in degrees at the refined moment
+    //
+    // S200 STUB — the umbra/penumbra ground projection and observer
+    // darkening live downstream in the renderer. This serial wires
+    // the state but defers the 3D projection to a sub-serial because
+    // it requires per-frame computation of the moon's shadow cone
+    // intersected with the FE disc geometry, which is non-trivial.
+    EclipseActive:     false,
+    EclipseKind:       null,
+    EclipseEventUTMS:  null,
+    EclipsePipeline:   null,
+    EclipseMinSepDeg:  null,
+    EclipseMagnitude:  null,
+    EclipseEventType:  null,
+    // S202 — body radii in FE units. Drive the umbra/penumbra cone
+    // geometry. r_s > r_m is what makes the umbra cone converge
+    // behind the moon; both are in `FE_RADIUS` units. Defaults in
+    // the renderer are 0.030 (sun) / 0.020 (moon), chosen so the
+    // derived shadow is visible on a unit-radius disc. Demo intros
+    // may set these per-event if wanted.
+    EclipseSunRadiusFE:      null,
+    EclipseMoonRadiusFE:     null,
+    // S201 — deprecated ground-radius overrides from the circular
+    // decal. Kept for URL-state back-compat; the S202 renderer
+    // ignores them.
+    EclipseUmbraRadiusFE:    null,
+    EclipsePenumbraRadiusFE: null,
 
     // S009 — force-full-night toggle so the user can test Cel Nav
     // starfield / body placement without waiting for the actual day/
@@ -197,12 +264,10 @@ function defaultState() {
     // of the sun's elevation.
     PermanentNight: false,
 
-    // S009 — currently tracked object for the second HUD panel.
-    //   'none'          — no tracker readout
-    //   'sun' / 'moon'  — luminaries
-    //   'mercury' / 'venus' / 'mars' / 'jupiter' / 'saturn' — planets
-    //   'star:<id>'     — Cel Nav star (id matches celnavStars.js entry)
-    TrackerTarget: 'none',
+    // S009a — multi-tracker: array of ids the HUD / disc-GP renders for.
+    // Each id: 'sun' / 'moon' / planet name / 'star:<id>'. Empty array
+    // collapses the tracker HUD and hides all tracked-object GPs.
+    TrackerTargets: [],
 
     // description / pointer
     Description: '',
@@ -559,8 +624,23 @@ export class FeModel extends EventTarget {
     c.CelNavStars = [];
     const STAR_VAULT_HEIGHT = s.StarfieldVaultHeight;
     for (const star of CEL_NAV_STARS) {
-      const ra  = (star.raH / 24) * 2 * Math.PI;
-      const dec = star.decD * Math.PI / 180;
+      // S012 / S013 / S014 / S017 — bring the J2000 catalogue entry
+      // up to apparent-of-date before the horizon-frame projection.
+      // Four independent user toggles control which corrections apply;
+      // `StarTrepidation` is the combined-correction label — when on
+      // it overrides the individual flags and forces all three.
+      const raJ2000  = (star.raH / 24) * 2 * Math.PI;
+      const decJ2000 = star.decD * Math.PI / 180;
+      const starOpts = s.StarTrepidation
+        ? { precession: true, nutation: true, aberration: true }
+        : {
+            precession: !!s.StarApplyPrecession,
+            nutation:   !!s.StarApplyNutation,
+            aberration: !!s.StarApplyAberration,
+          };
+      const apparent = apparentStarPosition(raJ2000, decJ2000, utcDate, starOpts);
+      const ra  = apparent.ra;
+      const dec = apparent.dec;
       const celestCoord   = equatorialToCelestCoord({ ra, dec });
       const celestLatLong = coordToLatLong(celestCoord);
       const vaultCoord    = vaultCoordToGlobalFeCoord(
@@ -584,42 +664,78 @@ export class FeModel extends EventTarget {
       });
     }
 
-    // --- Tracker readout (S009) ------------------------------------
-    // The Tracker UI ships a dropdown of every selectable object; the
-    // recompute here collapses that selection to a single readout
-    // payload the HUD panel consumes.
-    c.TrackerInfo = null;
-    const target = s.TrackerTarget || 'none';
-    if (target !== 'none') {
+    // --- Tracker readouts (S009 / S009a) ---------------------------
+    // Multi-target: one info payload per tracked id. Each payload
+    // carries both ephemerides (geo + helio) + ground-point lat/lon
+    // so the HUD can show both readings side by side and the disc
+    // GP renderer can drop a dot at the body's sub-point.
+    c.TrackerInfos = [];
+    const targets = Array.isArray(s.TrackerTargets) ? s.TrackerTargets : [];
+    const wrapLon = (x) => ((x + 180) % 360 + 360) % 360 - 180;
+
+    for (const target of targets) {
       let info = null;
+
       if (target === 'sun') {
+        const rGeo   = ephGeo.bodyGeocentric('sun', utcDate);
+        const rHelio = ephHelio.bodyGeocentric('sun', utcDate);
+        const rPtol  = ephPtol.bodyGeocentric('sun', utcDate);
+        const rApix  = ephApix.bodyGeocentric('sun', utcDate);
+        const rVsop  = ephVsop.bodyGeocentric('sun', utcDate);
         info = {
-          name:     'Sun',
-          category: 'luminary',
-          ra:       c.SunRA,
-          dec:      c.SunDec,
-          azimuth:  c.SunAnglesGlobe.azimuth,
-          elevation:c.SunAnglesGlobe.elevation,
+          target, name: 'Sun', category: 'luminary',
+          azimuth: c.SunAnglesGlobe.azimuth,
+          elevation: c.SunAnglesGlobe.elevation,
+          helioReading:      { ra: rHelio.ra, dec: rHelio.dec },
+          geoReading:        { ra: rGeo.ra,   dec: rGeo.dec   },
+          ptolemyReading:    { ra: rPtol.ra,  dec: rPtol.dec  },
+          astropixelsReading:{ ra: rApix.ra,  dec: rApix.dec  },
+          vsop87Reading:     { ra: rVsop.ra,  dec: rVsop.dec  },
+          gpLat: c.SunCelestLatLong.lat,
+          gpLon: wrapLon(c.SunRA * 180 / Math.PI - c.SkyRotAngle),
+          vaultCoord: c.SunVaultCoord,
         };
       } else if (target === 'moon') {
+        const rGeo   = ephGeo.bodyGeocentric('moon', utcDate);
+        const rHelio = ephHelio.bodyGeocentric('moon', utcDate);
+        const rPtol  = ephPtol.bodyGeocentric('moon', utcDate);
+        const rApix  = ephApix.bodyGeocentric('moon', utcDate);
+        const rVsop  = ephVsop.bodyGeocentric('moon', utcDate);
         info = {
-          name:     'Moon',
-          category: 'luminary',
-          ra:       c.MoonRA,
-          dec:      c.MoonDec,
-          azimuth:  c.MoonAnglesGlobe.azimuth,
-          elevation:c.MoonAnglesGlobe.elevation,
+          target, name: 'Moon', category: 'luminary',
+          azimuth: c.MoonAnglesGlobe.azimuth,
+          elevation: c.MoonAnglesGlobe.elevation,
+          helioReading:      { ra: rHelio.ra, dec: rHelio.dec },
+          geoReading:        { ra: rGeo.ra,   dec: rGeo.dec   },
+          ptolemyReading:    { ra: rPtol.ra,  dec: rPtol.dec  },
+          astropixelsReading:{ ra: rApix.ra,  dec: rApix.dec  },
+          vsop87Reading:     { ra: rVsop.ra,  dec: rVsop.dec  },
+          gpLat: c.MoonCelestLatLong.lat,
+          gpLon: wrapLon(c.MoonRA * 180 / Math.PI - c.SkyRotAngle),
+          vaultCoord: c.MoonVaultCoord,
         };
       } else if (PLANET_NAMES.includes(target)) {
         const p = c.Planets[target];
         if (p) {
+          const rGeo   = ephGeo.bodyGeocentric(target, utcDate);
+          const rHelio = ephHelio.bodyGeocentric(target, utcDate);
+          const rPtol  = ephPtol.bodyGeocentric(target, utcDate);
+          const rApix  = ephApix.bodyGeocentric(target, utcDate);
+          const rVsop  = ephVsop.bodyGeocentric(target, utcDate);
           info = {
-            name:     target[0].toUpperCase() + target.slice(1),
+            target,
+            name: target[0].toUpperCase() + target.slice(1),
             category: 'planet',
-            ra:       p.ra,
-            dec:      p.dec,
-            azimuth:  p.anglesGlobe.azimuth,
-            elevation:p.anglesGlobe.elevation,
+            azimuth: p.anglesGlobe.azimuth,
+            elevation: p.anglesGlobe.elevation,
+            helioReading:      { ra: rHelio.ra, dec: rHelio.dec },
+            geoReading:        { ra: rGeo.ra,   dec: rGeo.dec   },
+            ptolemyReading:    { ra: rPtol.ra,  dec: rPtol.dec  },
+            astropixelsReading:{ ra: rApix.ra,  dec: rApix.dec  },
+            vsop87Reading:     { ra: rVsop.ra,  dec: rVsop.dec  },
+            gpLat: p.celestLatLong.lat,
+            gpLon: wrapLon(p.ra * 180 / Math.PI - c.SkyRotAngle),
+            vaultCoord: p.vaultCoord,
           };
         }
       } else if (target.startsWith('star:')) {
@@ -627,21 +743,31 @@ export class FeModel extends EventTarget {
         const entry  = c.CelNavStars.find((x) => x.id === starId);
         const def    = celNavStarById(starId);
         if (entry && def) {
+          // Stars aren't in the ephemeris pipeline — all three "sources"
+          // come from the same J2000 catalogue entry. vaultCoord is
+          // the same pre-projected heavenly-vault point the CelNav
+          // starfield draws, so the GP dashed line lands exactly
+          // where the star sits in the sky.
           info = {
-            name:     def.name,
-            category: 'star',
-            mag:      def.mag,
-            ra:       entry.ra,
-            dec:      entry.dec,
-            azimuth:  entry.anglesGlobe.azimuth,
-            elevation:entry.anglesGlobe.elevation,
+            target, name: def.name, category: 'star', mag: def.mag,
+            azimuth: entry.anglesGlobe.azimuth,
+            elevation: entry.anglesGlobe.elevation,
+            helioReading:      { ra: entry.ra, dec: entry.dec },
+            geoReading:        { ra: entry.ra, dec: entry.dec },
+            ptolemyReading:    { ra: entry.ra, dec: entry.dec },
+            astropixelsReading:{ ra: entry.ra, dec: entry.dec },
+            vsop87Reading:     { ra: entry.ra, dec: entry.dec },
+            gpLat: entry.celestLatLong.lat,
+            gpLon: wrapLon(entry.ra * 180 / Math.PI - c.SkyRotAngle),
+            vaultCoord: entry.vaultCoord,
           };
         }
       }
+
       if (info) {
-        info.source = bodySource;
-        info.utcMs  = utcDate.getTime();
-        c.TrackerInfo = info;
+        info.activeSource = bodySource;
+        info.utcMs = utcDate.getTime();
+        c.TrackerInfos.push(info);
       }
     }
   }

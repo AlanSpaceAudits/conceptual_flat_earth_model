@@ -519,6 +519,283 @@ void main() {
 }
 `;
 
+// --- Solar-eclipse ground shadow (S202) ----------------------------------
+//
+// Derives the umbra and penumbra footprint on the ground each frame
+// from the actual sun and moon 3D positions in the FE scene. No
+// decorative follower — the boundary comes from ray-projected cone
+// geometry:
+//
+//   1. Treat sun and moon as disks (perpendicular to the sun-moon
+//      axis) with physical radii r_s and r_m in FE units.
+//   2. Sample N=48 points around the sun-disk edge.
+//   3. For the **umbra boundary**, each sun-edge point projects
+//      through the *same-side* moon-edge point; that ray extended
+//      to z=0 lands on the umbra boundary on the ground.
+//   4. For the **penumbra boundary**, the sun-edge point projects
+//      through the *opposite-side* moon-edge point.
+//   5. Umbra is suppressed (no ground totality spot) when the cone
+//      apex sits above the ground — annular / partial regime.
+//
+// Because the axis from sun through moon is generally tilted with
+// respect to the disc normal (0, 0, 1), the intersection of each
+// cone with the z=0 plane is an **ellipse**, not a circle, whenever
+// sun and moon aren't directly overhead. As the eclipse progresses
+// the sun + moon positions change and the ellipse stretches /
+// rotates / slides across the disc — which is the true eclipse path
+// behaviour that S201's circular decal could not produce.
+//
+// Sun / moon physical radii default to FE-scale constants chosen so
+// the typical shadow is visible (umbra a few percent of the FE
+// radius; penumbra an order of magnitude larger). They can be
+// overridden via state (`EclipseSunRadiusFE`, `EclipseMoonRadiusFE`)
+// — the demo registry may set these per-event if a future serial
+// wants to scale shadow by actual Espenak magnitude data.
+//
+// Observer occupancy is a proper point-in-polygon test against the
+// derived footprint, not a point-in-circle test. Full darkness inside
+// the umbra, partial across the penumbra.
+export class EclipseShadow {
+  constructor(feRadius = FE_RADIUS) {
+    this.group = new THREE.Group();
+    this.group.name = 'eclipseShadow';
+    this.feRadius = feRadius;
+
+    this.penumbraMat = new THREE.MeshBasicMaterial({
+      color: 0x000000,
+      transparent: true, opacity: 0.32,
+      depthTest: true, depthWrite: false, side: THREE.DoubleSide,
+    });
+    this.penumbraMesh = new THREE.Mesh(new THREE.BufferGeometry(), this.penumbraMat);
+    this.penumbraMesh.position.z = 4e-4;
+    this.penumbraMesh.renderOrder = 8;
+    this.group.add(this.penumbraMesh);
+
+    this.umbraMat = new THREE.MeshBasicMaterial({
+      color: 0x000000,
+      transparent: true, opacity: 0.90,
+      depthTest: true, depthWrite: false, side: THREE.DoubleSide,
+    });
+    this.umbraMesh = new THREE.Mesh(new THREE.BufferGeometry(), this.umbraMat);
+    this.umbraMesh.position.z = 5e-4;
+    this.umbraMesh.renderOrder = 9;
+    this.group.add(this.umbraMesh);
+
+    this.group.visible = false;
+    this._umbraPoly    = null;
+    this._penumbraPoly = null;
+  }
+
+  update(model) {
+    const s = model.state, c = model.computed;
+    const active = !!s.EclipseActive && s.EclipseKind === 'solar';
+    this.group.visible = active;
+    if (!active) {
+      this._umbraPoly = null;
+      this._penumbraPoly = null;
+      return;
+    }
+
+    const S = c.SunVaultCoord, M = c.MoonVaultCoord;
+    if (!S || !M) return;
+
+    // Default FE-scale body radii. Chosen so the umbra cone
+    // actually reaches the disc at typical vault heights:
+    // umbra reaches ground iff  Mz/Sz < r_m/r_s  (derivation in
+    // S202 changelog). With default SunVaultHeight = 0.5 and
+    // MoonVaultHeight = 0.4, Mz/Sz = 0.8 — so we pick r_m/r_s
+    // slightly above that threshold.
+    const r_s = s.EclipseSunRadiusFE  ?? 0.030;
+    const r_m = s.EclipseMoonRadiusFE ?? 0.025;
+
+    const footprint = this._computeFootprint(S, M, r_s, r_m, 48);
+    this._umbraPoly    = footprint.umbraPoly;
+    this._penumbraPoly = footprint.penumbraPoly;
+
+    // Penumbra — always draw if derived geometry yields one.
+    if (this._penumbraPoly && this._penumbraPoly.length >= 3) {
+      this._rebuildShapeMesh(this.penumbraMesh, this._penumbraPoly);
+      this.penumbraMesh.visible = true;
+    } else {
+      this.penumbraMesh.visible = false;
+    }
+
+    // Umbra — only when the derived geometry supports it AND the
+    // tabulated magnitude says it's a central eclipse.
+    const mag = s.EclipseMagnitude ?? 1;
+    if (footprint.umbraExists && mag >= 0.99 && this._umbraPoly && this._umbraPoly.length >= 3) {
+      this._rebuildShapeMesh(this.umbraMesh, this._umbraPoly);
+      this.umbraMesh.visible = true;
+    } else {
+      this.umbraMesh.visible = false;
+    }
+  }
+
+  // Ray-sampled cone-ground intersection. Returns arrays of [x, y]
+  // ground points for the umbra and penumbra boundaries.
+  _computeFootprint(S, M, r_s, r_m, N) {
+    const Sx = S[0], Sy = S[1], Sz = S[2];
+    const Mx = M[0], My = M[1], Mz = M[2];
+    const dx = Mx - Sx, dy = My - Sy, dz = Mz - Sz;
+    const D  = Math.sqrt(dx * dx + dy * dy + dz * dz);
+    if (D < 1e-6) return { umbraPoly: null, penumbraPoly: null, umbraExists: false };
+
+    // Unit direction from sun → moon.
+    const dhx = dx / D, dhy = dy / D, dhz = dz / D;
+
+    // Perpendicular basis (e1, e2) spanning the sun/moon disk planes.
+    // Pick a seed not parallel to dhat, then Gram-Schmidt.
+    const seed = Math.abs(dhz) < 0.9 ? [0, 0, 1] : [1, 0, 0];
+    // e1 = normalize(cross(dhat, seed))
+    let e1x = dhy * seed[2] - dhz * seed[1];
+    let e1y = dhz * seed[0] - dhx * seed[2];
+    let e1z = dhx * seed[1] - dhy * seed[0];
+    const e1n = Math.sqrt(e1x * e1x + e1y * e1y + e1z * e1z);
+    if (e1n < 1e-9) return { umbraPoly: null, penumbraPoly: null, umbraExists: false };
+    e1x /= e1n; e1y /= e1n; e1z /= e1n;
+    // e2 = cross(dhat, e1)
+    const e2x = dhy * e1z - dhz * e1y;
+    const e2y = dhz * e1x - dhx * e1z;
+    const e2z = dhx * e1y - dhy * e1x;
+
+    // Umbra cone apex: A_u = S + (D · r_s / (r_s − r_m)) · dhat
+    // Only meaningful if r_s > r_m; apex z must be below ground for
+    // the umbra to reach z=0 as an ellipse (otherwise annular-style).
+    const rsmDiff = r_s - r_m;
+    const D_u  = rsmDiff > 1e-9 ? D * r_s / rsmDiff : Infinity;
+    const apexZ = Sz + dhz * D_u;
+    const umbraExists = Number.isFinite(D_u) && apexZ < 0;
+
+    const umbraPoly = [];
+    const penumbraPoly = [];
+
+    for (let k = 0; k < N; k++) {
+      const phi = (k / N) * 2 * Math.PI;
+      const cp = Math.cos(phi), sp = Math.sin(phi);
+
+      // Sun-disk edge at angle phi.
+      const psx = Sx + r_s * (cp * e1x + sp * e2x);
+      const psy = Sy + r_s * (cp * e1y + sp * e2y);
+      const psz = Sz + r_s * (cp * e1z + sp * e2z);
+
+      // Moon-disk edge at SAME angle (for the umbra tangent ray).
+      const pmux = Mx + r_m * (cp * e1x + sp * e2x);
+      const pmuy = My + r_m * (cp * e1y + sp * e2y);
+      const pmuz = Mz + r_m * (cp * e1z + sp * e2z);
+
+      // Moon-disk edge at OPPOSITE angle (for the penumbra tangent).
+      const pmpx = Mx - r_m * (cp * e1x + sp * e2x);
+      const pmpy = My - r_m * (cp * e1y + sp * e2y);
+      const pmpz = Mz - r_m * (cp * e1z + sp * e2z);
+
+      // Umbra ray: sun-edge → same-side moon-edge, extend to z=0.
+      if (umbraExists) {
+        const denom = pmuz - psz;
+        if (Math.abs(denom) > 1e-9) {
+          const t = -psz / denom;
+          if (t > 1) {   // ray actually reaches ground beyond the moon
+            umbraPoly.push([psx + t * (pmux - psx), psy + t * (pmuy - psy)]);
+          }
+        }
+      }
+
+      // Penumbra ray: sun-edge → opposite-side moon-edge, extend to z=0.
+      const denomP = pmpz - psz;
+      if (Math.abs(denomP) > 1e-9) {
+        const t = -psz / denomP;
+        if (t > 1) {
+          penumbraPoly.push([psx + t * (pmpx - psx), psy + t * (pmpy - psy)]);
+        }
+      }
+    }
+
+    return {
+      umbraPoly:    umbraPoly.length    >= 3 ? umbraPoly    : null,
+      penumbraPoly: penumbraPoly.length >= 3 ? penumbraPoly : null,
+      umbraExists,
+    };
+  }
+
+  _rebuildShapeMesh(mesh, points2D) {
+    if (mesh.geometry) mesh.geometry.dispose();
+    const shape = new THREE.Shape();
+    shape.moveTo(points2D[0][0], points2D[0][1]);
+    for (let i = 1; i < points2D.length; i++) {
+      shape.lineTo(points2D[i][0], points2D[i][1]);
+    }
+    shape.closePath();
+    mesh.geometry = new THREE.ShapeGeometry(shape);
+  }
+
+  // Observer occupancy via point-in-polygon against the derived
+  // footprint. Full dark inside umbra; inside penumbra, smooth
+  // distance-to-edge ramp using the barycentric distance to the
+  // polygon centroid so observers near the centre darken more than
+  // those near the penumbra rim.
+  computeObserverDarkFactor(model) {
+    const s = model.state;
+    if (!s.EclipseActive || s.EclipseKind !== 'solar') return 0;
+    const obs = model.computed.ObserverFeCoord;
+    const p = [obs[0], obs[1]];
+
+    if (this._umbraPoly && this._pointInPoly(p, this._umbraPoly)) {
+      return 1.0;
+    }
+    if (this._penumbraPoly && this._pointInPoly(p, this._penumbraPoly)) {
+      // Linear falloff: 1 at centroid, 0 at polygon edge (approx).
+      const c = this._polyCentroid(this._penumbraPoly);
+      const dToC = Math.hypot(p[0] - c[0], p[1] - c[1]);
+      const rEdge = this._approxPolyRadiusInDir(this._penumbraPoly, c, [p[0] - c[0], p[1] - c[1]]);
+      const ratio = rEdge > 1e-9 ? Math.max(0, 1 - dToC / rEdge) : 0;
+      const peak  = (s.EclipseMagnitude ?? 1) >= 0.99 ? 1.0 : 0.6;
+      return ratio * peak;
+    }
+    return 0;
+  }
+
+  _pointInPoly(p, poly) {
+    let inside = false;
+    const [x, y] = p;
+    for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+      const xi = poly[i][0], yi = poly[i][1];
+      const xj = poly[j][0], yj = poly[j][1];
+      const crosses = ((yi > y) !== (yj > y))
+                    && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+      if (crosses) inside = !inside;
+    }
+    return inside;
+  }
+
+  _polyCentroid(poly) {
+    let sx = 0, sy = 0;
+    for (const pt of poly) { sx += pt[0]; sy += pt[1]; }
+    return [sx / poly.length, sy / poly.length];
+  }
+
+  // Approx distance from `centre` to the polygon edge along direction
+  // `dir` (unnormalised). Walks each edge, finds the intersection of
+  // the ray centre+t·dir with the segment, returns the smallest t>0.
+  _approxPolyRadiusInDir(poly, centre, dir) {
+    const dx = dir[0], dy = dir[1];
+    const L = Math.hypot(dx, dy);
+    if (L < 1e-9) return 0;
+    const nx = dx / L, ny = dy / L;
+    let best = Infinity;
+    for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+      const ax = poly[j][0] - centre[0], ay = poly[j][1] - centre[1];
+      const bx = poly[i][0] - centre[0], by = poly[i][1] - centre[1];
+      // Solve centre + t·(nx,ny) = a + s·(b − a) for 0 ≤ s ≤ 1, t ≥ 0.
+      const dbx = bx - ax, dby = by - ay;
+      const det = nx * (-dby) - ny * (-dbx);
+      if (Math.abs(det) < 1e-12) continue;
+      const t = (ax * (-dby) - ay * (-dbx)) / det;
+      const sParam = (nx * ay - ny * ax) / det;
+      if (t >= 0 && sParam >= 0 && sParam <= 1 && t < best) best = t;
+    }
+    return Number.isFinite(best) ? best : 0;
+  }
+}
+
 export class Shadow {
   constructor(feRadius = FE_RADIUS) {
     this.group = new THREE.Group();
@@ -3285,6 +3562,88 @@ export class ToroidalVortex {
     // observer's hemisphere of vision.
     const clip = model.state.InsideVault ? this._clipPlanes : [];
     for (const m of this._materials) m.clippingPlanes = clip;
+  }
+}
+
+// --- Tracked-object ground points (S009a) --------------------------------
+//
+// One disc-surface dot per entry in `c.TrackerInfos`. Colour keyed by
+// category so sun-tracking reads yellow, moon white, planets warm, stars
+// pale blue. Pool is fixed-size and reused across frames; unused slots
+// hide. Tracked GPs are always visible while the target is in
+// TrackerTargets — independent of ShowGroundPoints (which only gates
+// sun/moon GPs). Hidden in first-person (Optical) mode so they don't
+// clutter the observer's view of the ground they're standing on.
+const TRACKED_GP_COLORS = {
+  sun: 0xffc844, moon: 0xf4f4f4,
+  planet: 0xff8c66, star: 0x8ed4ff,
+};
+
+export class TrackedGroundPoints {
+  constructor(max = 16) {
+    this.group = new THREE.Group();
+    this.group.name = 'tracked-gps';
+    this._pool  = [];
+    this._lines = [];
+    for (let i = 0; i < max; i++) {
+      const gp = new GroundPoint(0xffffff);
+      this._pool.push(gp);
+      this.group.add(gp.group);
+
+      // Parallel pool of solid vertical lines from the object's vault
+      // coord straight down to the disc GP. Same pattern sunGPLine /
+      // moonGPLine use — makes the GP legible as "this dot on the
+      // ground corresponds to that point in the sky".
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.Float32BufferAttribute([0, 0, 0, 0, 0, 0], 3));
+      const mat = new THREE.LineBasicMaterial({
+        color: 0xffffff, transparent: true, opacity: 0.45,
+        depthTest: false, depthWrite: false,
+      });
+      const line = new THREE.Line(geo, mat);
+      line.renderOrder = 45;
+      this._lines.push(line);
+      this.group.add(line);
+    }
+  }
+
+  update(model) {
+    const s = model.state;
+    const c = model.computed;
+    const infos = c.TrackerInfos || [];
+    const showAll = !s.InsideVault;
+
+    for (let i = 0; i < this._pool.length; i++) {
+      const slot = this._pool[i];
+      const line = this._lines[i];
+      const info = infos[i];
+      if (!info || !showAll) {
+        slot.group.visible = false;
+        line.visible = false;
+        continue;
+      }
+      const key = info.target === 'sun'  ? 'sun'
+               :  info.target === 'moon' ? 'moon'
+               :  info.category;
+      const color = TRACKED_GP_COLORS[key] || 0xffffff;
+      slot.dot.material.color.setHex(color);
+      slot.updateAt(info.gpLat, info.gpLon, FE_RADIUS, true);
+
+      // Dashed line from vaultCoord straight down to z ≈ 0 on the
+      // disc GP. Only drawn when the model gave us a vault coord and
+      // when ShowTruePositions is on — the line would dangle
+      // pointing at nothing otherwise. Hidden in first-person too,
+      // via `showAll` above.
+      if (info.vaultCoord && s.ShowTruePositions !== false) {
+        line.material.color.setHex(color);
+        const top = info.vaultCoord;
+        const pts = [top[0], top[1], top[2], top[0], top[1], 0.0015];
+        line.geometry.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
+        line.visible = true;
+      } else {
+        line.visible = false;
+      }
+    }
   }
 }
 

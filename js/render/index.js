@@ -4,10 +4,10 @@
 import * as THREE from 'three';
 import { SceneManager } from './scene.js';
 import {
-  DiscBase, DiscGrid, Shadow, VaultOfHeavens, ObserversOpticalVault,
+  DiscBase, DiscGrid, Shadow, EclipseShadow, VaultOfHeavens, ObserversOpticalVault,
   CelestialMarker, Observer, Stars, LatitudeLines, GroundPoint,
   CelestialPoles, DeclinationCircles, Yggdrasil, MtMeru, ToroidalVortex,
-  LongitudeRing, CelNavStars,
+  LongitudeRing, CelNavStars, TrackedGroundPoints,
 } from './worldObjects.js';
 import { loadLandGeo, buildGeoJsonLand, buildImageMap, buildBlankMap } from './earthMap.js';
 import { Constellations } from './constellations.js';
@@ -44,6 +44,12 @@ export class Renderer {
     this.shadow = new Shadow(FE_RADIUS);
     this.sm.world.add(this.shadow.group);
 
+    // S201 — solar-eclipse ground shadow (umbra + penumbra) drawn
+    // on the disc during active eclipse demos. Visibility gates on
+    // state.EclipseActive + state.EclipseKind === 'solar'.
+    this.eclipseShadow = new EclipseShadow(FE_RADIUS);
+    this.sm.world.add(this.eclipseShadow.group);
+
     this.latLines = new LatitudeLines(FE_RADIUS);
     this.sm.world.add(this.latLines.group);
 
@@ -51,6 +57,10 @@ export class Renderer {
     this.moonGP = new GroundPoint(0xf4f4f4);
     this.sm.world.add(this.sunGP.group);
     this.sm.world.add(this.moonGP.group);
+    // S009a — per-tracked-object GPs. Always visible while target is in
+    // TrackerTargets, independent of ShowGroundPoints.
+    this.trackedGPs = new TrackedGroundPoints(16);
+    this.sm.world.add(this.trackedGPs.group);
 
     // Dashed lines from the body's vault position straight down to its
     // ground point. The line ends share (x, y) because the vault and GP
@@ -236,6 +246,11 @@ export class Renderer {
     }
     this.discGrid.update(m);
     this.shadow.update(m);
+    this.eclipseShadow.update(m);
+    // S201 — observer darkening inside the solar shadow path.
+    // Compute the factor here and feed SceneManager to dim lights.
+    const eclipseDark = this.eclipseShadow.computeObserverDarkFactor(m);
+    this.sm.setEclipseDarkFactor?.(eclipseDark);
     this.latLines.update(m);
     this.longitudeRing.update(m);
 
@@ -249,6 +264,7 @@ export class Renderer {
     const moonLon = wrapLon(c.MoonRA * 180 / Math.PI - c.SkyRotAngle);
     this.sunGP.updateAt(sunLat,  sunLon,  FE_RADIUS, s.ShowGroundPoints);
     this.moonGP.updateAt(moonLat, moonLon, FE_RADIUS, s.ShowGroundPoints);
+    this.trackedGPs.update(m);
 
     // Vault markers use the canonical vault coords app.js already
     // computes. No overlay-level re-projection.

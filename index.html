@@ -36,6 +36,12 @@
     <!-- S009 — Tracker HUD panel, sits below #hud. Hidden unless the
          user picks a TrackerTarget in the Tracker tab. -->
     <div id="tracker-hud"></div>
+    <!-- S200 — Meeus warning banner. Visible only when the active
+         BodySource uses Meeus-based luminaries (HelioC, GeoC, VSOP87
+         which delegates moon to Meeus). The Meeus moon is ~2.5° off
+         DE405; eclipse demos in those modes will land at the wrong
+         UTC moment. -->
+    <div id="meeus-warning" hidden></div>
     <img id="logo" src="assets/ac_logo.png" alt="Aether Cosmology"
          style="position:absolute; right:16px; bottom:16px; width:180px; height:180px; pointer-events:none; opacity:0.9; user-select:none; z-index:10;">
   </div>

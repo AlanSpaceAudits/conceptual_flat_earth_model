@@ -1088,3 +1088,1140 @@ unit-radius hemisphere while rings live on the flattened vault.
       `#tracker-hud` CSS block, and `TrackerTarget` + its recompute
       block + URL persistence.
 
+### S009a — refinement (2026-04-23)
+
+Focused refinement on top of S009 (same serial, no S010):
+
+  1. **Multi-tracker.** `TrackerTarget` (string) → `TrackerTargets`
+     (array of ids). Default `[]`. Tracker tab replaced the dropdown
+     with a toggle button grid (new `buttonGridRow` renderer driven
+     by `row.buttonGrid`); clicking adds/removes each id. Active
+     buttons carry the `.on` class. Cel Nav stars are alphabetised
+     in the grid.
+
+  2. **Dual ephemerides shown simultaneously.** `c.TrackerInfos[]`
+     now carries `geoReading: {ra, dec}` and `helioReading: {ra,
+     dec}` per tracked object. The HUD renders one `.tracker-block`
+     per entry with az/el + both source lines stacked (`Geo:` and
+     `Helio:`). The row matching `BodySource` gets `.active`
+     (orange accent); the other gets `.inactive` (grey).
+
+     Block DOM is cached per target id (`blockCache: Map`) so each
+     frame only rewrites `textContent` on existing rows instead of
+     tearing the block down and rebuilding it. Both source rows
+     therefore tick visibly in place — the audience can watch the
+     numbers advance in lockstep and confirm the geo/helio
+     pipelines really do produce equal RA/Dec at current precision.
+     (Previous implementation called `replaceChildren()` on every
+     `'update'` event; the rebuild churn hid the per-tick changes.)
+
+  3. **Per-tracked-object GPs on the disc + dashed line to vault.**
+     New `TrackedGroundPoints` class in `worldObjects.js` holds 16 GP
+     slots **and** a parallel pool of vertical lines; per frame it
+     reads `c.TrackerInfos[i].gpLat / gpLon` + `vaultCoord` and
+     colours the slot / line by category (sun yellow, moon white,
+     planets coral, stars Cel Nav blue). Always visible when
+     tracking, independent of `ShowGroundPoints`. Hidden in first-
+     person (Optical) mode, and the dashed line is gated on
+     `ShowTruePositions` the same way sun/moon GP lines are. The
+     `vaultCoord` comes directly from the precomputed body/star
+     pipeline (sun/moon/planet already have one; Cel Nav stars
+     store one on `c.CelNavStars[i].vaultCoord`), so the line lands
+     exactly at the star/planet on the heavenly vault — matching
+     the sun/moon convention.
+
+  4. **HUD offset + scroll.** `#tracker-hud { top: 160px → 240px }`
+     to clear the main HUD's moon-phase widget (56 px canvas + label)
+     plus padding. `max-height: calc(100vh - 260px)` +
+     `overflow-y: auto` so large tracked sets scroll cleanly.
+
+  5. **URL persistence for arrays.** `urlState.js` gains an
+     `ARRAY_KEYS` set; array-valued state fields serialise as
+     comma-joined strings. Empty array → omitted from the hash.
+
+- **Revert S009a only**: in `app.js` swap back to `TrackerTarget`
+  (string) + the single-`TrackerInfo` recompute block; remove
+  `bodyGeocentric` / `bodyFromHeliocentric` imports; restore the
+  Track `select` row and the single-line `buildTrackerHud` in
+  `controlPanel.js`; remove `buttonGridRow`; delete
+  `TrackedGroundPoints` in `worldObjects.js` and its import +
+  instantiation + `.update(m)` call in `render/index.js`; restore
+  `#tracker-hud { top: 160px }` and drop the
+  `.tracker-block / .source-line / .tracker-foot / .button-grid /
+  .tracker-btn` CSS rules; drop `ARRAY_KEYS` in `urlState.js` and
+  revert the key name back to `TrackerTarget`.
+
+### S009b — refinement (2026-04-23)
+
+Two independent fixes, both in `js/ui/controlPanel.js`:
+
+  1. **Lat / long decimal precision** (`controlPanel.js:158–159`).
+     `step: 0.1 → 0.0001` for `ObserverLat` and `ObserverLong`. The
+     shared `numericRow` renderer uses `step` for three things — the
+     HTML number input's step, the slider's step, and the displayed
+     decimal count via `digits = ceil(-log10(step))` — so bumping
+     the step gives the number field four decimal places (≈ 0.36″
+     per tick, sub-arcsecond). No other layer clips precision: the
+     state clamp is `Clamp(..., -90, 90)` (range only, not a
+     quantiser) and URL persistence already writes `toFixed(4)`.
+     Needed so users can enter the exact observatory / nav-fix
+     coordinate Stellarium uses for a cross-comparison.
+
+  2. **Timezone = shift UTC, hold local clock (Path B).** Previously
+     the timezone dropdown only re-formatted the `dateTimeRow`
+     display; `DateTime` stayed fixed and the ephemeris produced the
+     same RA/Dec regardless of zone — which made cross-checking
+     Stellarium confusing. New behaviour in `timezoneRow`'s change
+     handler:
+
+         newOff   = parseInt(sel.value, 10);
+         oldOff   = model.state.TimezoneOffsetMinutes || 0;
+         deltaMin = newOff − oldOff;
+         DateTime_new = DateTime_old − deltaMin / (60·24);
+         setState({ TimezoneOffsetMinutes: newOff,
+                    DateTime: DateTime_new });
+
+     Derivation: `local = UTC + offset`; holding `local` fixed while
+     `offset` changes forces `UTC_new = UTC_old − (offset_new −
+     offset_old)`. Converting the delta from minutes into the
+     DateTime's day units gives the formula above. Result: switching
+     the TZ dropdown makes the sky move by exactly the time-zone
+     delta, so entering a local observation time and flipping zones
+     reproduces "what the sky looks like at the same local-clock
+     reading at a different longitude" — the workflow the user
+     wants for Stellarium parity.
+
+     The preamble comment above `dateTimeRow` was updated to
+     document the new semantics. No changes to ephemeris math
+     (`julianDay`, `sunEquatorial`, `moonEquatorial`, etc.) — those
+     already consume `DateTime` as UTC-since-epoch and are
+     timezone-agnostic. All S009 tracker readouts, Cel Nav star
+     positions, and sun/moon GP lines follow automatically once
+     `DateTime` is shifted.
+
+- **Revert S009b only**: restore `step: 0.1` on ObserverLat /
+  ObserverLong rows; in `timezoneRow`'s `sel.addEventListener` revert
+  the handler to just `setState({ TimezoneOffsetMinutes: parseInt(sel.value, 10) })`
+  and drop the `DateTime` shift; restore the earlier preamble comment
+  describing display-only timezone.
+
+### S009d — refinement (2026-04-23)
+
+Tracker HUD polish:
+
+  1. **Both ephem rows rendered equally.** Dropped the
+     `.source-line.active` / `.source-line.inactive` class swap in
+     `buildTrackerHud`; both Geo and Helio rows always render with
+     the same orange-accent bordered style. `BodySource` still drives
+     which pipeline the model uses internally, but the HUD no longer
+     visually demotes one source — the dual display is the point.
+
+  2. **Simpler, more robust refresh.** Block-cache logic collapsed:
+     every refresh unconditionally rewrites `textContent` on all
+     six internal rows (title / az-el / Geo / Helio / foot) for each
+     tracked target. Safe-reattach check (`if (rec.block.parentNode
+     !== trackerEl) trackerEl.appendChild(...)`) handles any case
+     where a cache entry was orphaned. Fixes the "block disappears /
+     won't stay activated when adding a new star or scrubbing time"
+     report.
+
+  3. CSS (`css/styles.css`) — removed `.source-line.active` and
+     `.source-line.inactive` rules; `.source-line` alone now carries
+     the orange-accent styling for both Geo and Helio rows.
+
+- **Revert S009d only**: restore the `.source-line.active /
+  .source-line.inactive` CSS pair; restore the `activeSource` block
+  in `buildTrackerHud` that swaps `'active' | 'inactive'` classes
+  on each source-row based on `model.state.BodySource`.
+
+## S010 — True removal of heliocentric intermediates from ephemeris.js
+
+- **Date:** 2026-04-23
+- **Files changed:**
+  - `change_log_serials.md` (this entry)
+  - `js/core/ephemeris.js` (rewritten — Earth-focus Kepler per planet)
+  - `js/core/ephemeris.reframe.backup.js` (new — byte-exact copy of the
+    S010 Tychonic-reframe attempt, preserved before this rewrite)
+  - `js/core/ephemeris.S009.backup.js` (unchanged — the original
+    pre-S010 heliocentric version, preserved from the earlier attempt)
+- **Purpose:** Remove the heliocentric chain from the **active**
+  computation path of `ephemeris.js`, for real this time. The earlier
+  S010 commit reframed the planetary pipeline as Tychonic — renaming
+  `heliocentric` → `keplerPosition` and recomputing each planet as
+  `sun_around_earth + planet_around_sun` — which still produced a
+  Sun-relative intermediate for every planet on every tick. That
+  attempt is rejected; this entry replaces it. The active file now
+  models each planet as a **single Kepler ellipse with the Earth at
+  the focus**, evaluated once per planet, with no Sun-centred
+  intermediate anywhere in the math.
+- **Rationale (noted by the user):** Planetary orbital distances in
+  this conceptual sim are ratios, not physical lengths — AU only
+  acquires meaning by assuming an Earth-radius scale. The conceptual
+  price of removing the Sun-relative stage (inner planets no longer
+  librate about the Sun; no planet exhibits retrograde motion; RA/Dec
+  no longer match real ephemerides) is explicitly acceptable. The
+  mission is structural: the chain must start and end geocentrically.
+- **Numerical consequences (stated honestly — not preserved):**
+  - Sun: unchanged (Meeus Ch. 25 — already geocentric).
+  - Moon: unchanged (Meeus Ch. 47 — already geocentric).
+  - Planets: RA/Dec values now differ from the S009 pipeline by tens
+    of degrees. The Schlyter elements are retained as conceptual ratio
+    parameters (eccentricity, inclination, node, argument, mean
+    motion), but because they were originally calibrated for
+    heliocentric use, reinterpreting them as Earth-focus ellipses
+    produces positions that do not match a real ephemeris. Retrograde
+    motion and Mercury/Venus elongation bounds are not reproducible
+    without a Sun-relative stage; both are therefore absent by design.
+- **Implementation notes (minimal and faithful):**
+  1. **Exact backup.** `js/core/ephemeris.js` (the Tychonic-reframe
+     version) was copied to `js/core/ephemeris.reframe.backup.js`
+     before any edits. `md5sum` verified byte-identical hashes
+     (`a74eb23a…`). The older pre-reframe backup
+     `js/core/ephemeris.S009.backup.js` (`907c6ce0…`) is untouched.
+  2. **`ORBIT_EL` table.** The `'sun'` row (Schlyter's Earth-around-Sun
+     elements in disguise) has been **removed**. Only the five planet
+     rows remain — `mercury`, `venus`, `mars`, `jupiter`, `saturn` —
+     with their numeric elements unchanged. In this module those
+     numbers now parameterise each planet's Earth-focus Kepler
+     ellipse; they are not interpreted as Sun-relative orbits.
+  3. **`keplerPosition(name, d)` → `keplerEarthFocus(name, d)`.**
+     Internal helper renamed. Its math (orbit-plane solve plus three
+     Euler rotations) is unchanged, but the returned (x, y, z) is now
+     documented and used as the planet's **geocentric** ecliptic
+     position — the focus of the ellipse is Earth. The prior helper's
+     doc-comment claim of *"'sun' → geocentric; planet → Sun-relative"*
+     is gone; there is no `'sun'` case and no Sun-relative case.
+  4. **`planetEquatorial(name, date)` collapsed to one evaluation:**
+
+         const d = schlyterDay(date);
+         const p = keplerEarthFocus(name, d);
+         → rotate ecliptic → equatorial at ε = 23.4393° − 3.563e-7·d
+         → extract RA / Dec
+
+     No `sunGeo` variable, no `planetRelSun` variable, no additive
+     composition. Signature and return shape (`{ ra, dec }`) unchanged.
+  5. **`bodyHeliocentric` removed from exports.** No external module
+     imports this name (verified by grep across `js/`). Removing it
+     eliminates the last function whose contract promised a
+     Sun-centred vector. The internal `equatorialToEcliptic` and
+     `eclipticToEquatorialRadians` helpers — which existed only to
+     support `bodyHeliocentric` — are removed too.
+  6. **`bodyFromHeliocentric` collapsed to an overt alias.**
+
+         export const bodyFromHeliocentric = bodyGeocentric;
+
+     The name is preserved only so `app.js`'s Tracker-HUD dual-readout
+     continues to resolve its import; both the Geo and Helio rows of
+     the HUD will now carry the same value. This is the opposite of a
+     wrapper-that-hides-helio-math: it is an explicit collapse onto
+     the geocentric chain, with no Sun term anywhere behind it.
+  7. **`bodyRADec(name, date, source)` signature preserved, body
+     collapsed.** The `source` parameter is accepted and ignored;
+     both `'geocentric'` and `'heliocentric'` route to
+     `bodyGeocentric`. Documented in a comment at the function site.
+  8. **Untouched:** `sunEquatorial` (Meeus Ch. 25), `moonEquatorial`
+     (Meeus Ch. 47), `greenwichSiderealDeg` (Meeus Ch. 12),
+     `equatorialToCelestCoord`, `solveKepler`, `elementsAt`,
+     `schlyterDay`, `julianDay`, `meanObliquityDeg`,
+     `moonNodeOmegaDeg`, `findNextEclipses`, `sepAngle`,
+     `ECLIPSE_ANG_THRESHOLD`, `PLANET_NAMES`, `BODY_NAMES`. The
+     file-header comment block was rewritten to describe the
+     Earth-focus model honestly and to call out the accuracy cost.
+- **Downstream:** no import-site changes required. `app.js`,
+  `controlPanel.js`, `demos/definitions.js`, and `render/worldObjects.js`
+  all continue to import the same exported names. The Tracker HUD
+  will now display two identical RA/Dec lines per target (Geo and
+  Helio), because the "second pipeline" has been collapsed into the
+  first. That visible duplication is deliberate — a future serial
+  can choose to drop the redundant row from the HUD; it is left in
+  place here to keep this change surgical.
+- **Verification:**
+  - Grep of the active file for `sun`/`helio`/`Sun`: remaining hits
+    are (a) `sunEquatorial` (Meeus geocentric sun — the sun as a
+    body, not as an orbit centre), (b) `sunVec` inside
+    `findNextEclipses` (the sun's position on the sky), (c) the
+    `BODY_NAMES` list entry `'sun'`, (d) the doc-comments and the
+    `bodyFromHeliocentric = bodyGeocentric` alias line. No math
+    function computes a planet relative to the Sun.
+  - Runtime smoke-test (`node --input-type=module`): all seven bodies
+    return finite RA/Dec; `bodyHeliocentric` is absent from exports;
+    `bodyGeocentric`, `bodyFromHeliocentric`, and
+    `bodyRADec(..., 'heliocentric')` all return identical values
+    for every body (all three paths resolve to the geocentric chain).
+- **Revert path (to the Tychonic-reframe attempt):**
+  1. `cp js/core/ephemeris.reframe.backup.js js/core/ephemeris.js`
+  2. Restore app.js imports (no change required — the alias
+     `bodyFromHeliocentric = bodyGeocentric` preserved the API).
+  3. Remove this S010 entry from `change_log_serials.md`.
+- **Revert path (all the way to the pre-S010 heliocentric version):**
+  1. `cp js/core/ephemeris.S009.backup.js js/core/ephemeris.js`
+  2. Optionally delete the two backups:
+     `rm js/core/ephemeris.reframe.backup.js js/core/ephemeris.S009.backup.js`
+  3. Remove this S010 entry from `change_log_serials.md`.
+
+
+## S011 — Three-pipeline ephemeris with Ptolemy as the third path
+
+- **Date:** 2026-04-23
+- **Files added:**
+  - `js/core/ephemerisCommon.js` (shared Meeus sun / moon / GMST /
+    eclipse-finder / coord utilities)
+  - `js/core/ephemerisHelio.js` (Schlyter heliocentric Kepler +
+    Sun-around-Earth composition; faithful extraction of the S009
+    planet code)
+  - `js/core/ephemerisGeo.js` (S010 single Earth-focus Kepler
+    ellipse per planet; extracted from former monolithic ephemeris.js)
+  - `js/core/ephemerisPtolemy.js` (**NEW pipeline** — deferent +
+    epicycle per the *Almagest*; ported from R.H. van Gent's
+    "Almagest Ephemeris Calculator"
+    https://webspace.science.uu.nl/~gent0113/astro/almagestephemeris.htm
+    — credit and URL embedded in the module header)
+  - `js/core/ephemeris.S010.backup.js` (byte-exact backup of the
+    monolithic S010 `ephemeris.js` prior to its conversion into a
+    dispatcher)
+- **Files changed:**
+  - `js/core/ephemeris.js` — rewritten as a three-way dispatcher.
+    New router `bodyRADec(name, date, source)` with
+    `source ∈ {'heliocentric', 'geocentric', 'ptolemy'}`. Also
+    exports per-source namespaces `helio`, `geo`, `ptol` so callers
+    can compute all three readings simultaneously. Legacy exports
+    (`bodyGeocentric`, `bodyFromHeliocentric`, `planetEquatorial`,
+    `sunEquatorial`, `moonEquatorial`, `greenwichSiderealDeg`,
+    `equatorialToCelestCoord`, `findNextEclipses`, `PLANET_NAMES`,
+    `BODY_NAMES`) preserved; `bodyGeocentric` defaults to the
+    `'geocentric'` (Earth-focus Kepler) pipeline and
+    `bodyFromHeliocentric` remains an alias for it.
+  - `js/core/app.js` — imports `helio`, `geo`, `ptol` namespaces;
+    tracker compute block now produces three readings per target
+    (`helioReading`, `geoReading`, `ptolemyReading`); stars populate
+    all three with the same J2000 catalogue entry. `BodySource`
+    state documented for three options.
+  - `js/ui/controlPanel.js` — `BodySource` selector expanded to
+    three options (HelioC / GeoC / Ptolemy). Tracker HUD `makeBlock`
+    now creates three `source-line` rows per target; `refresh`
+    writes RA/Dec labelled `Helio : …`, `GeoC  : …`, `Ptol  : …`.
+- **Purpose:** Stand up three structurally distinct ephemeris
+  pipelines in parallel so the sim can display them side-by-side in
+  real time. All three are computed every tick (total cost ~900
+  floating-point ops per frame — a microsecond — so lazy loading
+  would be premature optimisation). The Tracker HUD shows three
+  genuinely-different RA/Dec readings per target; the BodySource
+  selector picks which one feeds the primary sky render.
+- **Pipeline semantics:**
+  - **HelioC** (`ephemerisHelio.js`) — Schlyter's simplified
+    heliocentric Keplerian elements. Planet is placed on its own
+    Sun-centred ellipse; geocentric position = Schlyter's
+    Sun-around-Earth row + planet-around-Sun. Original pre-S010
+    behaviour. Sun/Moon via Meeus from `ephemerisCommon.js`.
+  - **GeoC** (`ephemerisGeo.js`) — S010 Earth-focus single Kepler
+    per planet. No Sun-relative stage anywhere; apparent-motion
+    accuracy is poor (no retrograde, no inner-planet elongation
+    bounds) but the active chain is Earth-centred throughout.
+    Sun/Moon via Meeus from `ephemerisCommon.js`.
+  - **Ptolemy** (`ephemerisPtolemy.js`) — Ptolemy's deferent +
+    epicycle per *Almagest* book IX–XI. Structurally geocentric at
+    every stage; retains retrograde motion and Mercury/Venus
+    elongation via the epicycle construction. Has its own Sun
+    (Almagest III.4 eccentric) and Moon (Almagest V.5–V.8). Uses
+    Ptolemy's obliquity (23°51′20″). Accuracy ~1° around antiquity,
+    drifting to ~10° at modern dates because Ptolemy's mean
+    motions and apogees were slightly off — an authentic feature
+    of the Ptolemaic model, not a porting error.
+- **Credit:** the Ptolemy pipeline is a port of
+  R.H. van Gent, "Almagest Ephemeris Calculator" (Utrecht
+  University), at the URL above. van Gent's transcription of the
+  Almagest orbital constants, his implementations of the eccentric
+  + epicycle evaluators (`eqplan`, `eqme`, `latout`), and his
+  inner-planet latitude formulas are all retained verbatim (with
+  sexagesimal literals preserved via a `sex(...)` helper). The
+  port strips the DOM-coupling of the original page and adapts
+  function signatures to match the sim's ephemeris API
+  (`{ ra, dec }` in radians).
+- **Cost at runtime:** Verified ~900 ops/frame across all three
+  pipelines (Sun ~50, Moon ~200, Helio planets ~200, GeoC planets
+  ~150, Ptolemy planets ~300). No observable UI impact. No lazy
+  loading.
+- **Parity check:** `ephemerisHelio.bodyGeocentric` for all seven
+  bodies at 2026-04-23T12:00Z produces exactly `0.00e+0` delta
+  against `ephemeris.S009.backup.js.bodyGeocentric` — confirming
+  the S009 heliocentric path was ported bit-for-bit.
+- **Revert paths:**
+  1. *Revert everything to the S010 monolith:*
+     `cp js/core/ephemeris.S010.backup.js js/core/ephemeris.js`
+     then delete `ephemerisCommon.js`, `ephemerisHelio.js`,
+     `ephemerisGeo.js`, `ephemerisPtolemy.js`, and the
+     `ephemeris.S010.backup.js` file. Revert the import change in
+     `app.js`, drop `ptolemy` from the `BodySource` selector, and
+     drop the `ptolemy` source-row in `controlPanel.js`.
+  2. *Remove only the Ptolemy pipeline:*
+     In `ephemeris.js` drop the `ptol` import/namespace export and
+     the `'ptolemy'` branch in `bodyRADec` / `planetEquatorial` /
+     `sunEquatorial` / `moonEquatorial`. In `app.js` drop the
+     `ptolemyReading` assignments. In `controlPanel.js` drop the
+     third source-line in `makeBlock` and remove the `'ptolemy'`
+     option from the `BodySource` selector.
+
+## S012 — Precession + nutation for Cel Nav stars
+
+- **Date:** 2026-04-23
+- **Files changed:**
+  - `js/core/ephemerisCommon.js` — added `apparentStarPosition(raJ2000, decJ2000, date) → { ra, dec }` (radians in/out).
+  - `js/core/app.js` — imports `apparentStarPosition`; inside the
+    `CEL_NAV_STARS` loop, catalogue J2000 values are run through it
+    before the celestial → horizon projection. The Tracker HUD
+    readings for stars therefore now carry apparent-of-date RA/Dec,
+    and the per-frame az/el uses the precessed coordinates.
+- **Purpose:** Close the ~20′ star-position gap visible in the S011
+  Stellarium cross-checks. Until now the 58-star Nautical-Almanac
+  catalogue was held at J2000 forever; each additional year of wall
+  time widened the visible drift. The correction had been proposed
+  and rolled back once earlier (S009c); this clean retry lives in a
+  common utility rather than being inlined in the render loop.
+- **Implementation:**
+  1. **Precession — Lieske 1977 (IAU 1976), Meeus 21.4.**
+     Compute the three angles ζ, z, θ from the usual polynomials in
+     T (Julian centuries from J2000) and apply the rigorous rotation
+     matrix formulation (cos/sin of ζ, θ; then atan2 + z offset
+     + asin). Output is mean equator of date.
+  2. **Nutation — low-accuracy Meeus 22.A.**
+     Two leading terms driven by the longitude of the Moon's
+     ascending node Ω:
+         Δψ = −17.20″·sin(Ω)    (longitude)
+         Δε =   +9.20″·cos(Ω)    (obliquity)
+     Correction to RA/Dec via the equatorial-form equations after
+     Meeus 22.A. Adds ≈9″ to the accuracy budget.
+  3. **Annual aberration — NOT applied.** Would add up to ≈20″
+     (0.006°). Below the ~15″ noise floor after precession +
+     nutation; skipped to keep the per-frame hot path small.
+  4. **Proper motion — NOT applied.** The sim's catalogue doesn't
+     tabulate it; maximum accumulated PM from J2000 to 2026 is
+     ≈30″ (Arcturus, fastest of the 58 Nautical-Almanac stars);
+     below the noise floor.
+- **Expected accuracy vs Stellarium:** sub-arcminute (typically
+  under 15″) across the 58-star catalogue for any date within
+  ±200 years of J2000. Verified computationally: precession
+  deltas for Menkar (ΔRA ≈1247″ = 20.8′) match the observed S011
+  Menkar sky-discrepancy (21.6′) within arcseconds.
+- **Cost:** ~20 trig ops per star per frame × 58 stars ≈ 1100 ops
+  per frame. Negligible — the ephemeris pipelines are already
+  ~900 ops per frame and the render pipeline dwarfs both.
+- **Revert path:**
+  1. In `app.js`, restore the CEL_NAV_STARS loop to use
+     `(star.raH / 24) * 2π` and `star.decD * π/180` directly (drop
+     the `apparentStarPosition` call and its result destructure).
+  2. Drop the `apparentStarPosition` import from `app.js`.
+  3. Remove the `apparentStarPosition` export and implementation
+     from `ephemerisCommon.js`.
+  4. Remove this S012 entry from `change_log_serials.md`.
+
+## S013 — Annual aberration for Cel Nav stars
+
+- **Date:** 2026-04-23
+- **Files changed:**
+  - `js/core/ephemerisCommon.js` — extended `apparentStarPosition` with
+    a third correction step (Meeus 23.2 annual aberration, first-order).
+  - `change_log_serials.md` (this entry).
+- **Purpose:** Close the remaining ~20″ residual between sim and
+  Stellarium star positions after S012. With precession + nutation
+  stars matched to ~10″ already; aberration adds the final ~20″
+  correction for starlight bent by Earth's orbital velocity.
+- **Implementation:**
+  - κ = 20.49552″ (constant of aberration).
+  - Uses λ_sun = Sun's apparent ecliptic longitude per Meeus Ch. 25.
+    Recomputed inline in the function (same polynomial form as the
+    sunEquatorial helper) so `apparentStarPosition` stays
+    self-contained — no cross-module call overhead in the hot path.
+  - Meeus 23.2 formulae:
+        Δα = −κ · (cos α cos λ cos ε + sin α sin λ) / cos δ
+        Δδ = −κ · [cos λ cos ε (tan ε cos δ − sin α sin δ)
+                   + cos α sin δ sin λ]
+  - The E-term (Meeus 23.3, eccentric-orbit correction using the
+    longitude of Earth's perihelion) is dropped; it contributes
+    ≤0.3″ and is below the nutation-model residual.
+- **Expected accuracy vs Stellarium:** under 10″ for all 58 stars at
+  any date within ±200 years of J2000. Residual sources (in
+  decreasing magnitude): proper motion (≤30″ for Arcturus, typical
+  ≤5″; not applied because the catalogue doesn't tabulate it), the
+  nutation's dropped higher-order terms (~2″), and the aberration's
+  dropped E-term (≤0.3″).
+- **Cost:** ~10 extra trig ops per star per frame above S012; total
+  ≈ 1700 ops/frame across all 58 stars. Still negligible.
+- **Revert path:** in `ephemerisCommon.js`, delete the annual-
+  aberration block (the `K_AB` constant, the inline Sun-longitude
+  recomputation, and the two `dRaAb` / `dDecAb` corrections) at the
+  tail of `apparentStarPosition`. Revert the function header
+  comment to "S012 only, aberration NOT applied". Remove this S013
+  entry from `change_log_serials.md`.
+
+## S014 — Toggleable star-correction modes
+
+- **Date:** 2026-04-23
+- **Files changed:**
+  - `js/core/ephemerisCommon.js` — `apparentStarPosition` now takes a
+    fourth parameter `mode` ∈ `{'precession', 'nutation',
+    'aberration', 'all'}` (default `'all'`). Each mode applies only
+    the named correction; `'all'` sequences precession → nutation →
+    aberration as before.
+  - `js/core/app.js` — new state field `StarCorrection` (default
+    `'all'`). The `CEL_NAV_STARS` loop passes
+    `s.StarCorrection || 'all'` through to `apparentStarPosition`.
+  - `js/ui/controlPanel.js` — new dropdown `Star corr.` under the
+    Ephemeris group with four options
+    (Precession ~20′, Nutation ±9″, Aberration ±20″, All).
+  - `js/ui/urlState.js` — `StarCorrection` added to the persisted
+    state keys (with `STRING_KEYS` entry).
+- **Purpose:** Pedagogical demo of the three "mini motions" that
+  combine to produce apparent stellar drift. With this toggle a
+  viewer can:
+  - Select *Precession only* to see the ~20′ secular shift of the
+    vernal equinox since J2000.
+  - Select *Nutation only* to see the ±9″ Ω-driven wobble.
+  - Select *Aberration only* to see the annual ±20.5″ ellipse that
+    Earth's orbital motion produces.
+  - Select *All* to see the full apparent place (matches Stellarium
+    within a few arcseconds).
+  The motivation is the user's framing: "you can't say for sure if
+  it's a series of mini motions or one oscillation with respect to a
+  fixed Earth" — this lets viewers inspect each component and make
+  up their own mind.
+- **Isolation semantics:** when a single mode is selected, the
+  correction is applied to the J2000 catalogue coordinates directly
+  (not to a precessed intermediate). For the sub-arcminute nutation
+  and aberration terms the difference is sub-arcsecond, so the
+  visible magnitudes are honest. Only `'all'` produces the
+  physically-correct sequenced chain.
+- **Default:** `'all'` preserves the S013 behaviour; nothing changes
+  visually unless the user picks a mode.
+- **Revert path:** in `ephemerisCommon.js`, drop the `mode`
+  parameter (back to fixed full-chain); in `app.js`, remove the
+  `StarCorrection` state and the fourth argument to
+  `apparentStarPosition`; in `controlPanel.js`, remove the
+  `StarCorrection` row; in `urlState.js`, remove `StarCorrection`
+  from the persisted-keys list.
+
+## S015 — AstroPixels (DE405) ephemeris pipeline
+
+- **Date:** 2026-04-23
+- **Data source:**
+  Fred Espenak, "AstroPixels — Ephemeris"
+  https://www.astropixels.com/ephemeris/ephemeris.html
+  The underlying ephemeris is JPL DE405 — the same reference
+  Stellarium uses — so Astropixels agrees with Stellarium to
+  sub-arcsecond at any tabulated date. **All credit for the raw
+  data belongs to Fred Espenak.**
+- **Files added:**
+  - `scripts/scrape_astropixels.mjs` — one-time Node script that
+    downloads 12 years × 7 bodies = 84 pages (throttled, cached),
+    parses the fixed-width RA/Dec columns from each `<pre>` block,
+    and emits a compact JS data module.
+  - `js/data/astropixels.js` — auto-generated (~510 KB). Per body
+    per year, `Float64` pairs `[raSec, decArcsec]` at 00:00 UTC for
+    each day-of-year.
+  - `js/core/ephemerisAstropixels.js` — runtime pipeline. Loads the
+    data module, runs date → (year, doy, fractional-day) lookup,
+    linearly interpolates between the two nearest daily samples,
+    wraps RA at year boundaries. Credit + URL + DE405 provenance
+    embedded in the module header.
+- **Files changed:**
+  - `js/core/ephemeris.js` — dispatcher imports `apix`, exports it
+    in the namespace map, routes `'astropixels'` through
+    `bodyRADec` / `planetEquatorial` / `sunEquatorial` /
+    `moonEquatorial`, adds to `EPHEMERIS_SOURCES`.
+  - `js/core/app.js` — new `ephApix` import; tracker compute block
+    now produces `astropixelsReading` for every target.
+  - `js/ui/controlPanel.js` — `BodySource` selector adds
+    "DE405 (Espenak AstroPixels)"; Tracker HUD `makeBlock` adds a
+    fourth source-line and `refresh` writes `DE405 : …`.
+- **Coverage:** 2019–2030 (the full range Espenak publishes at
+  scrape time). Outside that range the pipeline returns
+  `{ ra: 0, dec: 0 }` and logs one console warning per body.
+- **Accuracy:** sub-arcsecond at tabulated dates. Linear-interpolation
+  residual is ≤0.5″ for slow bodies (Sun, planets) and up to ~1′
+  for the Moon (which moves ~13°/day). For higher in-between
+  accuracy a cubic-Hermite interpolant could replace linear; the
+  ~1′ moon floor is acceptable for the sim's visual budget.
+- **Licensing / courtesy:** robots.txt on astropixels.com allows
+  all crawling; the scraper throttles at 750 ms between requests;
+  every consuming module prominently cites Espenak. No permission
+  was sought beyond honouring robots.txt and the polite-rate
+  convention; future maintainers should reconsider this if the
+  project goes public.
+- **Revert path:** drop `ephemerisAstropixels.js`,
+  `js/data/astropixels.js`, and `scripts/scrape_astropixels.mjs`;
+  remove `apix` from `ephemeris.js` (import, namespace export,
+  `'astropixels'` branches, `EPHEMERIS_SOURCES` entry); remove
+  the astropixels reading from `app.js` tracker blocks; remove
+  the selector option + HUD row from `controlPanel.js`.
+
+## S016 — VSOP87 (Bretagnon & Francou) ephemeris pipeline
+
+- **Date:** 2026-04-23
+- **Theory source:**
+  Bretagnon, P., and Francou, G. (1988). "Planetary theories in
+  rectangular and spherical variables — VSOP87 solutions."
+  *Astronomy and Astrophysics,* **202**, 309–315.
+  VSOP87D variant — heliocentric spherical coordinates in the
+  mean-ecliptic-and-equinox-of-date frame.
+- **Coefficient source:**
+  commenthol/astronomia (npm package), MIT-licensed JavaScript
+  port of Sonia Keys's Go port of the original Bureau des
+  Longitudes tables. Copied verbatim into
+  `js/data/vsop87/{mercury,venus,earth,mars,jupiter,saturn}.js`
+  with attribution in `js/data/vsop87/LICENSE_ATTRIBUTION.md`.
+- **Files added:**
+  - `js/data/vsop87/mercury.js` (339 KB) — full L/B/R series
+  - `js/data/vsop87/venus.js`   (83 KB)
+  - `js/data/vsop87/earth.js`   (120 KB)
+  - `js/data/vsop87/mars.js`    (270 KB)
+  - `js/data/vsop87/jupiter.js` (171 KB)
+  - `js/data/vsop87/saturn.js`  (282 KB)
+  - `js/data/vsop87/LICENSE_ATTRIBUTION.md` — MIT notice with
+    full copyright chain.
+  - `js/core/ephemerisVsop87.js` — runtime evaluator.
+- **Implementation (`ephemerisVsop87.js`):**
+  1. `evalSeries(series, T)` evaluates each L/B/R subseries via
+     `Σᵢ Aᵢ · cos(Bᵢ + Cᵢ·T)`, summed across powers `T^p`
+     (p=0..5) where T is Julian millennia from J2000.
+  2. Planet and Earth are both evaluated heliocentrically; the
+     vectors are rectangularised, subtracted, and re-spherical-
+     ised to produce geocentric ecliptic (λ, β, Δ).
+  3. Meeus 32.3 FK5 correction brings the dynamical VSOP87
+     frame into the FK5 reference frame (sub-arcsecond bias).
+  4. Ecliptic → equatorial at the mean obliquity of date.
+  5. Sun geocentric = Earth heliocentric vector reflected through
+     origin (same pipeline, negated λ).
+  6. Moon delegates to Meeus (`ephemerisCommon.moonEquatorial`) —
+     VSOP87 doesn't provide lunar theory. The known ~2.5° Meeus-
+     moon discrepancy vs DE405 is tracked as a separate issue
+     (Task #147).
+- **Files changed:** `ephemeris.js` (import `vsop`, export
+  namespace, route `'vsop87'` in all four dispatchers, add to
+  `EPHEMERIS_SOURCES`); `app.js` (import `ephVsop`, new
+  `vsop87Reading` on every tracker info); `controlPanel.js`
+  (5th selector option, 5th source-line in Tracker HUD block).
+- **Accuracy:** sub-arcsecond for inner planets, a few arcseconds
+  for outer planets, across ±4000 years of J2000 — the full
+  documented accuracy of VSOP87D. Verified vs AstroPixels at
+  2026-04-23T12:00Z: Saturn agrees to ~1.2s RA / ~6″ Dec, Mars
+  to ~1.7s / ~10″, Jupiter to ~0.4s / ~9″.
+- **Cost:** 1.26 MB of coefficient data (uncompressed JS). Parse
+  once at module load. Per-call cost is ≈6000 cos-ops for the
+  planet + 6000 for Earth = 12000 trig ops. Negligible in
+  practice; the data size is the main cost.
+- **Revert path:** drop `ephemerisVsop87.js` and the six
+  `js/data/vsop87/*.js` files; remove `vsop` from `ephemeris.js`
+  (import, namespace export, `'vsop87'` branches,
+  `EPHEMERIS_SOURCES` entry); remove the VSOP87 reading from
+  `app.js` tracker blocks; remove the selector option + HUD row
+  from `controlPanel.js`.
+
+- **Pre-existing issue surfaced during S015/S016:**
+  The Meeus Ch. 47 moon in `ephemerisCommon.js` (27 longitude +
+  18 latitude terms) is **~2.5° RA / ~0.3° Dec off** the DE405
+  reference at modern dates. This affects the HelioC, GeoC, and
+  (by delegation) VSOP87 moon outputs. The AstroPixels moon uses
+  DE405-tabulated values directly and is unaffected. Diagnosis
+  pending — likely a coefficient transcription error in the
+  Meeus table or a missing E-factor multiplier. Tracked under
+  Task #147.
+
+## S017 — Star-correction checkboxes + Unicorn Dust
+
+- **Date:** 2026-04-23
+- **Files changed:**
+  - `js/core/ephemerisCommon.js` — `apparentStarPosition` now takes
+    an options object `{ precession, nutation, aberration }` instead
+    of the S014 `mode` string enum. Each flag gates its corresponding
+    correction independently.
+  - `js/core/app.js` — retires the `StarCorrection` string field;
+    adds four independent booleans: `StarApplyPrecession`,
+    `StarApplyNutation`, `StarApplyAberration`, `StarUnicornDust`
+    (all default `true`). The tracker compute block composes the
+    options object: when `StarUnicornDust` is checked, it forces all
+    three corrections on regardless of the other flags; otherwise
+    each flag passes through individually.
+  - `js/ui/controlPanel.js` — the "Star corr." select row becomes
+    four `row.bool` rows in the Ephemeris group.
+  - `js/ui/urlState.js` — removes `'StarCorrection'` from the
+    persisted keys + STRING_KEYS; adds the four new boolean keys.
+- **Purpose:** Match how the user wanted the control to feel — four
+  checkboxes they can flip independently, plus a "Unicorn Dust"
+  master label that treats all three as one combined wobble. The
+  pedagogy remains the same: viewers can see each correction in
+  isolation, any combination, or all three together.
+- **Behaviour of Unicorn Dust:** acts as an override. When checked,
+  all three corrections are applied regardless of the individual
+  checkboxes' states (useful for "show me the full sum quickly"
+  without deselecting/reselecting). When unchecked, the three
+  individual flags control the math separately. Defaults to ON so
+  out-of-the-box positions match Stellarium to arcseconds.
+- **Revert path:** in `ephemerisCommon.js`, restore the `mode`
+  parameter form; in `app.js`, swap the four booleans back to a
+  single `StarCorrection` enum and restore the ternary; in
+  `controlPanel.js`, reinstate the `{ key, label, select }` row; in
+  `urlState.js`, swap `StarApply*` + `StarUnicornDust` back to a
+  single `'StarCorrection'` string key. Remove this S017 entry.
+
+### S017a — Defaults flipped; retrospective on the S010–S017 arc
+
+- **Date:** 2026-04-23
+- **Change:** `StarApplyPrecession`, `StarApplyNutation`,
+  `StarApplyAberration` defaults flipped from `true` to `false`.
+  `StarUnicornDust` stays `true`. Net behaviour: out-of-the-box the
+  user sees the combined apparent-of-date corrections (Unicorn Dust
+  forces them on), but unchecking Unicorn Dust immediately lands
+  on a raw-J2000 view with all three individual toggles off — the
+  natural "blank canvas" for adding one effect at a time. Matches
+  the pedagogical intent the user stated when S014 was first
+  proposed.
+- **File changed:** `js/core/app.js` — only the four default values
+  in the initial state block.
+- **README:** thanks to Fred Espenak added to the Special Thanks
+  section alongside attribution for van Gent, Bretagnon & Francou,
+  Sonia Keys, commenthol, and Meeus.
+
+**Retrospective — what the ephemeris arc covered, what worked,
+what didn't.** Eight serials (S010 through S017) of ephemeris work.
+Below, an honest account for future you:
+
+**S010 — Remove heliocentric intermediates from ephemeris.js.**
+First attempt was a Tychonic reframe (rename, same math) — rejected
+by the user as a lie. Second attempt cut the Sun-around-Earth row
+entirely and modelled each planet as a single Earth-focus Kepler
+ellipse. **Worked structurally** (no heliocentric math anywhere in
+the active chain) but **wrecked planet accuracy** (no retrograde,
+inner planets don't librate). User accepted the trade.
+
+**S011 — Three-pipeline split.** Broke `ephemeris.js` into a
+dispatcher + three independent modules (HelioC / GeoC / Ptolemy).
+Ported R.H. van Gent's Almagest JavaScript for the Ptolemy pipeline.
+**Worked.** Three pipelines run every frame, ~900 ops total,
+negligible cost. Van Gent's code transcribed cleanly after the
+sexagesimal literals were preserved via a `sex(...)` helper.
+
+**S012 — Star precession.** Stars had been stuck at J2000 forever,
+producing ~20' drift by 2026. Added Lieske 1977 precession in
+`apparentStarPosition`. **Worked immediately** — stars went from
+20' off Stellarium to a few arcminutes.
+
+**S013 — Star aberration.** Added Meeus 23.2 annual aberration.
+**Worked.** Star positions dropped to sub-10" vs Stellarium, right
+at the nutation residual floor.
+
+**S014 — Star-correction mode toggle.** Added a 4-option dropdown
+(precession / nutation / aberration / all). **Worked but wrong
+ergonomics** — user wanted checkboxes, not a radio. Superseded by
+S017 two weeks later in the same conversation.
+
+**S015 — AstroPixels/DE405 pipeline.** Scraped Fred Espenak's
+daily ephemeris tables (2019–2030, 7 bodies, 84 pages, ~520 KB JS
+data). Linear interpolation between daily samples. **Worked
+beautifully** — matches Stellarium to sub-arcsecond for sun and
+planets, ~1' for the Moon (linear-interp residual on a fast body).
+Fred Espenak cited in module header, attribution file, README.
+
+**S016 — VSOP87 pipeline.** Bundled the full Bretagnon & Francou
+1988 coefficient tables (via commenthol's MIT-licensed port; 1.26 MB
+of JS). Implemented the L/B/R series evaluator, FK5 correction,
+and ecliptic→equatorial rotation. **Worked.** Agrees with
+AstroPixels to within ~1s RA / ~10" Dec across the planet set —
+both are DE-grade. Works for any date, unlike AstroPixels which is
+bounded by what Espenak publishes.
+
+**S017 — Checkboxes for star corrections.** Converted the S014
+dropdown to independent checkboxes plus a master "Unicorn Dust"
+override. **Worked.** URL state persists all four booleans.
+
+**What *didn't* work along the way:**
+
+1. **Mercury's perihelion precession formula (user's equation):**
+   user showed the Einstein formula ε = 6π/(1-e²)·(v/c)². Clarified
+   this is GR perihelion precession (43"/cy for Mercury), not
+   Kepler's equation — wouldn't help the 5' Saturn error.
+2. **Applying star precession to Schlyter planet output.**
+   Initially thought this would close the 5' Saturn HelioC gap.
+   It wouldn't — Schlyter's output is already referenced to the
+   ecliptic/equinox-of-date per his own documentation, so
+   layering precession on top would double-count. The 5' gap is
+   intrinsic to Schlyter's simplified elements (missing periodic
+   perturbations from Jupiter-on-Saturn etc.).
+3. **Treating the "Sun shifts between HelioC and GeoC" report as
+   a bug.** The user reported it, I dug, and confirmed HelioC
+   Sun === GeoC Sun bit-exactly (both route to Meeus). The
+   observation was probably Ptolemy flickering during a
+   multi-click switch. No fix needed.
+4. **Acrux 53° discrepancy.** Turned out to be mismatched observer
+   latitude between Stellarium and the sim, not a code bug.
+   Matched observer state → Acrux dropped to 0.2° off (the
+   ordinary precession gap S012 then fixed).
+
+**Known issue still open (Task #147):**
+Our 27-term Meeus Ch. 47 moon in `ephemerisCommon.js` is about
+**2.5° off DE405** at modern dates. Affects HelioC / GeoC / VSOP87
+moon outputs (Astropixels has its own DE405 moon, unaffected).
+Most likely cause: a transcription error in the table or a missing
+E-factor multiplier. Pre-existing, not introduced by any of the
+S010–S017 work. Tracked for a later serial.
+
+**What the user can demonstrate with this stack now:**
+
+- Four correct geocentric pipelines (HelioC / DE405 / VSOP87 /
+  Ptolemy-with-ancient-calibration), each with honest provenance
+  and documented accuracy envelopes.
+- Three pipelines that disagree on planet positions for different
+  reasons (simplified Kepler, ancient constants, re-framed as
+  Earth-focus). Users can switch modes in real time and see the
+  ground-truth pipeline (DE405 or VSOP87) sit right where
+  Stellarium puts them, while the other pipelines land elsewhere
+  — a visible, testable demonstration.
+- For the stars: each of precession, nutation, and aberration
+  toggleable independently, or as a combined "Unicorn Dust"
+  correction — the pedagogical point that the dominant ~20' drift
+  in star positions could just as well be described as three
+  separate mini motions or one compound observer wobble.
+
+### S017b — Rename Unicorn Dust → Trepidation; AstroPixels as default source
+
+- **Date:** 2026-04-23
+- **Files changed:**
+  - `js/core/app.js` — (a) state key `StarUnicornDust` renamed to
+    `StarTrepidation` (default still `true`); (b) `BodySource`
+    default flipped from `'geocentric'` to `'astropixels'`, so the
+    sim opens with the DE405 (Espenak) pipeline driving the sky.
+    Star-loop ternary now reads `s.StarTrepidation`.
+  - `js/ui/controlPanel.js` — fourth bool-row key and label updated
+    (`StarTrepidation` / "Trepidation"). Doc comment reframed to
+    reference medieval trepidation-of-the-equinoxes as the naming
+    precedent.
+  - `js/ui/urlState.js` — persisted-keys list updated
+    (`StarUnicornDust` → `StarTrepidation`).
+  - `js/core/ephemerisCommon.js` — single doc-comment reference
+    updated ("Unicorn Dust" → "Trepidation"); no behaviour change.
+- **Naming rationale:** "Trepidation of the equinoxes" was a
+  medieval Arabic and early-European astronomical hypothesis: an
+  additional oscillation of the equinox superposed on precession,
+  proposed (wrongly, as it turned out) to reconcile Ptolemaic
+  parameters with observation. The name fits the toggle's
+  framing — "the combined apparent wobble presented as a single
+  phenomenon" — and carries historical weight appropriate to the
+  sim's pedagogical intent.
+- **Why AstroPixels is the new default:** the user wants the sim's
+  first impression to match the real sky. DE405 agrees with
+  Stellarium to sub-arcsecond, so anyone loading the page sees
+  planets exactly where they belong. Switching to HelioC / GeoC /
+  Ptolemy / VSOP87 then becomes a deliberate comparison action
+  rather than the default starting point.
+- **Revert path:** replace all `StarTrepidation` with
+  `StarUnicornDust` across app.js / controlPanel.js / urlState.js /
+  ephemerisCommon.js; flip `BodySource` default back to
+  `'geocentric'`; remove this entry.
+
+## S200 — Eclipse demo overhaul; Espenak table loader; ephemeris-linked playback; Meeus warning; FE prediction track placeholder; shadow/darkening hooks; autoplay queue
+
+- **Date:** 2026-04-23
+- **Files added:**
+  - `scripts/scrape_eclipses.mjs` — one-time scraper that pulls Fred
+    Espenak's `eclipses/solar.html` and `eclipses/lunar.html` tables
+    and emits a parsed JS data module. Cached HTML in
+    `/tmp/astropixels_cache/`. Throttling + UA + robots.txt honoured.
+  - `js/data/astropixelsEclipses.js` — auto-generated. 44 solar + 67
+    lunar = **111 events 2021-2040**, each with date, TD/UT ISO,
+    type, Saros, magnitude, central duration. Attribution + JPL
+    DE405 provenance baked into the file header.
+  - `js/demos/eclipseRegistry.js` — builds a demo entry for every
+    real eclipse. Each entry's `intro(model)` reads the active
+    `BodySource`, picks the matching pipeline's sun/moon functions,
+    refines the eclipse moment via the new
+    `refineEclipseByMinSeparation` helper, then plants the observer
+    at that pipeline's subsolar (solar) or sub-lunar (lunar) point.
+    Result: the same astropixels-tabulated eclipse plays out
+    *differently* under each pipeline — the pedagogy.
+  - `js/demos/feEclipseTrack.js` — **PLACEHOLDER** track for FE /
+    Saros-harmonic eclipse prediction. Single advisory entry; awaits
+    Shane St. Pierre's resource pack (under
+    `/home/alan/Documents/eclipse/`). Explicit non-faking note in
+    file header per user instruction.
+- **Files changed:**
+  - `js/core/ephemerisCommon.js` — `findNextEclipses` now takes
+    optional `sunFn` / `moonFn` parameters (default Meeus for
+    backward compat). New export
+    `refineEclipseByMinSeparation(approxDate, sunFn, moonFn, opts)`
+    that scans ±2 h in 1-minute steps and returns the moment of
+    minimum sun–moon (or sun–antimoon for lunar) separation.
+  - `js/core/app.js` — five new state fields:
+    `EclipseActive`, `EclipseKind`, `EclipseEventUTMS`,
+    `EclipsePipeline`, `EclipseMinSepDeg`. Set by the eclipse demo's
+    `intro()`. Wired only at the state level; the umbra/penumbra
+    render and observer darkening are STUBS (see below).
+  - `js/demos/definitions.js` — old hand-coded eclipse demos
+    removed. New layout: 6 general demos + 44 solar +
+    67 lunar + FE-placeholder. Every entry carries a `group` field;
+    `DEMO_GROUPS` exported as the section metadata.
+  - `js/demos/index.js` — `Demos` class:
+    1. **Grouped rendering.** Renders a section header per
+       `DEMO_GROUPS` entry; eclipse sections collapsed by default
+       (click header to expand). Per-section "Play all" button.
+    2. **Autoplay queue.** `playGroup(groupId)` queues every demo in
+       that group; an rAF-driven watcher advances to the next
+       queued demo when the current one's tween queue empties.
+       Manual `play()` cancels the queue.
+    3. **Stop / Next / Prev** preserved; Next honours active queue
+       cursor when present.
+  - `index.html` — added `<div id="meeus-warning" hidden></div>`
+    inside `#view`.
+  - `js/main.js` — Meeus banner controller. Watches `BodySource`;
+    when set to `'heliocentric'`, `'geocentric'`, or `'vsop87'`
+    (all rely on Meeus moon), shows red warning text at the bottom
+    of the view explaining the ~2.5° / ~4 h gap.
+  - `css/styles.css` — `#meeus-warning` styling (red on translucent
+    dark, pinned bottom of view); `.demo-group-header` and
+    `.demo-play-all` for the new grouped demo list; demo-list
+    `max-height` raised from 240px to 380px.
+- **Behaviour delivered:**
+  - **(B)** Eclipse date loader / selectable demo list — ✅
+  - **(C)** Ephemeris-linked playback — ✅ each pipeline refines &
+    renders in its own frame.
+  - **(D)** Meeus warning — ✅ red bottom banner when active source
+    relies on Meeus moon.
+  - **(E)** FE prediction track — ✅ structural placeholder, clearly
+    marked, ready for Shane's resource-pack drop-in.
+  - **(H)** Autoplay queue — ✅ "Play all" per group; watcher
+    advances on `Animator.isPlaying() === false`.
+- **Behaviour stubbed (not full S200 delivery — flagged for sub-serial):**
+  - **(F) Dynamic umbra/penumbra ground projection** — state hooks
+    are wired (`EclipseActive` etc.), and the demo's intro plants
+    observer + time correctly. The 3D projection of the moon's
+    shadow cone onto the FE disc geometry is non-trivial and
+    deferred to a follow-up serial. The renderer can read the
+    `Eclipse*` state fields when ready and project geometry without
+    touching anything else; no further demo-side work needed.
+  - **(G) Observer darkening inside the path** — same status as (F).
+    Hook reserved; once shadow geometry exists, computing whether
+    `(ObserverLat, ObserverLong)` lies inside the umbra/penumbra
+    is a single point-in-cone test that gates a `NightFactor`-like
+    boost.
+  - **FE prediction logic** — explicit non-faking placeholder.
+    Shane's resource pack lives under `/home/alan/Documents/eclipse/`
+    and includes the Dimbleby PDF + 2 transcript files + an Excel
+    sheet. Parsing + Saros-harmony prediction logic is a separate
+    serial.
+- **OCR/parse note vs supplied lists:** The user-supplied lunar list
+  has 45 dates; the astropixels HTML lists 67. The 22 extra events
+  are **Penumbral** lunar eclipses, which the user's list appears
+  to omit (a common convention since penumbrals are subtle). All
+  67 are included in the data module with `type` correctly tagged;
+  the UI can filter Penumbral if a smaller list is preferred. Source
+  authority preserved per user instruction.
+- **Cross-pipeline eclipse comparison verified:** for the 2026-02-17
+  annular solar eclipse, refined min-separation per pipeline:
+  - DE405:        0.832°  (observer: −11.9°, +0.8°  — West Africa, real)
+  - Ptolemy:      0.897°  (observer: −14.9°, −37.4°)
+  - HelioC:       1.587°  (observer: −11.8°, −29.5°)
+  - GeoC:         1.587°  (Same as HelioC — both Meeus luminaries)
+  - VSOP87:       1.586°  (Same — VSOP87 delegates moon to Meeus)
+  Confirms the design: each pipeline lands on its own syzygy.
+- **Revert path:** delete the four S200 files
+  (`scrape_eclipses.mjs`, `astropixelsEclipses.js`,
+  `eclipseRegistry.js`, `feEclipseTrack.js`); restore
+  `definitions.js` to the pre-S200 8-demo list; revert
+  `index.js` to the simpler version (no grouping, no autoplay
+  queue); remove the `Eclipse*` state fields from `app.js`; remove
+  `findNextEclipses` extra parameters and `refineEclipseByMinSeparation`
+  from `ephemerisCommon.js`; remove the Meeus banner from
+  `main.js` and the styles + element in `index.html` /
+  `css/styles.css`; remove this S200 entry.
+
+## S201 — Eclipse demo refinements: DE405 default on reset, pause/resume, real umbra/penumbra on the ground, observer darkening
+
+- **Date:** 2026-04-23
+- **Files changed:**
+  - `js/ui/urlState.js` — URL schema-version stamp (`v=201`) +
+    migration. On load, if the URL's `v` is missing or lower than
+    `URL_SCHEMA_VERSION`, version-gated keys (`BodySource`) are
+    dropped from the restored patch so the initial-state default
+    (`'astropixels'`) takes effect. Fixes the "hard reset leaves
+    geocentric in place" report.
+  - `js/demos/animation.js` — `Animator` gains `pause()`, `resume()`,
+    and `isPaused()`. `pause()` halts the rAF chain without clearing
+    the task queue; `resume()` restarts rAF and resets `_now` so the
+    paused interval isn't credited as elapsed tween time.
+  - `js/demos/index.js` — new **Pause/Resume** button between Prev
+    and Stop. Label toggles on click; resets to "Pause" when a new
+    demo is played or Stop is hit. Also: `_playSingle` now resets
+    the eclipse state (`EclipseActive: false`, etc.) before each
+    demo's intro so the shadow doesn't linger when switching from
+    an eclipse demo to a general demo.
+  - `js/demos/eclipseRegistry.js` — demo `intro()` now also emits
+    `EclipseMagnitude` and `EclipseEventType` so the renderer can
+    size and conditionally draw the umbra / penumbra correctly
+    (no umbra for partial eclipses mag < 0.99).
+  - `js/render/worldObjects.js` — **new `EclipseShadow` class**.
+    Two concentric circle meshes on the disc (umbra + penumbra);
+    centered at the sub-lunar ground point; sized per
+    `EclipseUmbraRadiusFE` / `EclipsePenumbraRadiusFE` state
+    overrides or FE-scale defaults (0.012 / 0.15). Also provides
+    `computeObserverDarkFactor(model)` which returns 0..1 based
+    on observer distance to shadow centre.
+  - `js/render/index.js` — renderer instantiates `EclipseShadow`,
+    adds it to `sm.world`, calls `eclipseShadow.update(m)` each
+    frame, and pipes
+    `eclipseShadow.computeObserverDarkFactor(m)` into
+    `SceneManager.setEclipseDarkFactor(...)`.
+  - `js/render/scene.js` — new `setEclipseDarkFactor(f)` cache +
+    `render()` dims ambient + sunLight intensities and lerps the
+    background toward the night colour proportional to that
+    factor. Observer standing inside the umbra sees the sky
+    darken to totality-like levels; in penumbra the darkening
+    scales linearly with distance-from-centre.
+  - `js/core/app.js` — added `EclipseMagnitude`, `EclipseEventType`,
+    and `EclipseUmbraRadiusFE` / `EclipsePenumbraRadiusFE`
+    optional-override state fields.
+- **Acceptance of the original S201 asks:**
+  - **(B)** DE405 as hard-reset default — ✅ URL schema-gate drops
+    stale `BodySource` on load; initial state `'astropixels'` wins.
+  - **(C)** Pause / resume — ✅ button + animator methods; tween
+    queue is frozen so observer lat/long/view-mode changes during
+    pause don't reset the eclipse demo.
+  - **(D)** Real umbra/penumbra on the ground — ✅ new mesh group,
+    visible in Heavenly Vault (drawn on disc at z ≈ 5e-4 / 4e-4).
+    Umbra hidden for partial eclipses (mag < 0.99), both rendered
+    for Total / Annular / Hybrid. Position tracks the sub-lunar
+    point frame-by-frame.
+  - **(E)** Observer darkening — ✅ point-in-concentric-disc test
+    each frame; factor modulates ambient, directional sun, and
+    background. Full inside umbra, linear ramp across penumbra.
+- **Known limits (not-a-bug flags):**
+  - Shadow shape is a flat circle — not an ellipse — because the FE
+    model has the sun and moon as point-like bodies at fixed vault
+    heights, so the ground projection is symmetric around the
+    sub-lunar point. The real-world DE405 path of totality is a
+    thin ellipse stretched along the moon's ground-track; that
+    level of path fidelity is not modelled in this sim. The
+    circle-approximation is the honest simplification.
+  - Inside the observer's Optical Vault (first-person mode), the
+    ground shadow renders on the disc beneath the camera but is
+    visually obscured by the vault shell. The scene darkening is
+    the primary in-vault signal that the observer is inside the
+    path.
+- **URL schema version:** bumped to `v=201`. Earlier URLs (with no
+  `v` or `v=200`) lose their `BodySource` on load and fall back to
+  `'astropixels'`. Other keys survive the migration. Future default
+  changes should add keys to `VERSION_GATED_KEYS` and bump the
+  constant.
+- **Revert path:** drop `EclipseShadow` from `worldObjects.js`;
+  remove its instantiation + update + `computeObserverDarkFactor`
+  call in `render/index.js`; delete
+  `SceneManager.setEclipseDarkFactor` + the eclipse-darken folds
+  in `render()`; remove S201 fields from app.js initial state; revert
+  `urlState.js` schema-version block; drop `Animator.pause/resume`
+  and the Pause/Resume button; remove this S201 entry.
+
+## S202 — True derived umbra/penumbra ground projection (replaces S201's circular decal)
+
+- **Date:** 2026-04-23
+- **Files changed:**
+  - `js/render/worldObjects.js` — `EclipseShadow` class **rewritten
+    end-to-end**. Old behaviour (two `THREE.CircleGeometry` meshes
+    snapped to the sub-lunar point, isotropic scale) is gone. New
+    behaviour derives the umbra + penumbra ground footprints from
+    the actual Sun → Moon → ground cone-plane intersection:
+    1. **Sample** 48 points around the sun-disk edge (disk plane
+       perpendicular to the sun-moon axis).
+    2. For each sun-edge point, build a ray through the **same-side**
+       moon-edge point (umbra tangent) and the **opposite-side**
+       moon-edge point (penumbra tangent).
+    3. Extend each ray to `z = 0` → one ground boundary point per
+       sample. The umbra/penumbra boundary polygons are these
+       48-sample loops.
+    4. The umbra cone apex is at `A_u = S + dhat · D · r_s/(r_s − r_m)`;
+       if `A_u.z > 0` (apex above the disc), the umbra never reaches
+       the ground and its mesh is suppressed — correct annular-style
+       behaviour driven by actual geometry, not by the tabulated
+       magnitude.
+    5. A `THREE.ShapeGeometry` is rebuilt each frame from the 48
+       boundary samples; that's the mesh the user actually sees.
+  - `js/core/app.js` — two new state fields for the body radii that
+    drive the cone geometry: `EclipseSunRadiusFE`,
+    `EclipseMoonRadiusFE`. S201's ground-radius overrides
+    (`EclipseUmbraRadiusFE`, `EclipsePenumbraRadiusFE`) are now
+    deprecated (kept in state for URL-back-compat, ignored by
+    the S202 renderer).
+- **Defaults and the umbra-reach condition:** umbra reaches the
+  ground only when `Mz/Sz < r_m/r_s`. With default
+  `SunVaultHeight = 0.5`, `MoonVaultHeight = 0.4`, `Mz/Sz = 0.8`,
+  so `r_m/r_s` must exceed 0.8 for a ground umbra to appear. The
+  S202 defaults are `r_s = 0.030`, `r_m = 0.025` (ratio 0.833),
+  chosen to just clear that threshold so overhead-conjunction
+  demos see a small but visible umbra. Sizes can be overridden
+  per-event via the state fields above.
+- **Elliptical footprint by construction:** when the sun-moon axis
+  is tilted from the disc normal, the cone-plane intersection is an
+  ellipse (aspect = 1 / cos(tilt) for the cone's projected radii).
+  Verified numerically:
+  - Overhead conjunction    → circle, aspect 1.000
+  - 45° sun-moon tilt       → ellipse, aspect ≈ 1.44 (umbra),
+                              ≈ 1.91 (penumbra)
+  - Low-sun near horizon    → heavily elongated ellipse, offset
+                              several tenths of an FE radius from
+                              the sub-lunar point.
+  The S201 circular decal could not produce any of this.
+- **Observer occupancy:** replaced the point-in-circle test with
+  **point-in-polygon** against the 48-sample umbra / penumbra
+  boundaries. Full dark inside umbra; inside penumbra a smooth
+  linear falloff — 1 at the polygon centroid → 0 at the boundary
+  in the observer's direction, via a segment-ray intersection
+  that walks the 48 edges. The darkening thus tracks the *shape*
+  of the derived shadow, not a fake radial circle.
+- **Preserved S201 behaviour:** eclipse demo selection, ephemeris-
+  linked playback, pause/resume, Meeus warning banner, autoplay
+  queue, Heavenly/Optical orientation — all untouched.
+- **Known limitations (honest):**
+  - Body radii are constants; real DE405 uses Sun/Moon physical
+    radii and actual sun-moon distances per date. The sim's
+    derived shadow *shape* evolves with eclipse geometry per the
+    active pipeline's sun/moon positions, but the *scale* is
+    governed by these two chosen FE-scale radii. A future serial
+    can couple `r_s`/`r_m` to the astropixels event magnitude +
+    ΔT to get true scale.
+  - The FE vault is a flattened dome, not a point-light + point-
+    moon configuration. The sun and moon are treated as flat disks
+    perpendicular to the sun-moon axis (standard shadow-cone
+    idealisation). Higher-fidelity geometry (e.g. treating the
+    moon as a sphere) would not change the ground footprint shape
+    noticeably; it's the cone-plane intersection that shapes the
+    ellipse.
+- **Revert path:** re-add a `THREE.CircleGeometry` based
+  `EclipseShadow` (S201 form); remove `EclipseSunRadiusFE` +
+  `EclipseMoonRadiusFE` state; restore the sub-lunar position
+  snap; remove this entry.
+
+## S204 — (REVERTED)
+
+- **Date:** 2026-04-23
+- **Status:** Implemented then reverted at user request ("didn't work").
+- **What it had tried:** Besselian-equivalent shadow-path overlay —
+  scrape the NASA Five Millennium Solar Eclipse Catalog
+  (`5MCSEcatalog.txt`) to enrich each solar event with
+  greatest-eclipse lat/long, gamma, sun altitude/azimuth, path
+  width, central duration; new `EclipseShadowPath` class sweeping
+  the S202 cone-plane math across ±2 h of 120 time samples to
+  trace umbra/penumbra centerline polylines + a perpendicular-
+  offset ribbon mesh on the disc. User-visible result did not
+  match intent.
+- **Revert performed:** deleted
+  `scripts/enrich_eclipses_with_5mcse.mjs`; re-ran S200's
+  `scrape_eclipses.mjs` to regenerate
+  `js/data/astropixelsEclipses.js` without 5MCSE fields;
+  removed `EclipseShadowPath` class + module-level
+  `_coneFootprint`/`_polyCentroid` helpers from
+  `js/render/worldObjects.js` (S202 `EclipseShadow` still has its
+  own inline cone-plane math, unaffected); removed the class
+  instantiation, per-frame update call, supporting imports
+  (`bodyRADec`, `greenwichSiderealDeg`, `celestLatLongToVaultCoord`,
+  `vaultCoordToGlobalFeCoord`), and `_bodyFeCoordAt` helper from
+  `js/render/index.js`; removed `ShowEclipsePath` state field from
+  `js/core/app.js`. Syntax-checked all three files + smoke-tested
+  module loads; sim is back to S202 + S203 state.
+- **S202 live instant-shadow unchanged.** Other unrelated serials
+  (S200 demo system, S201 pause/resume + Meeus banner, S202 cone-
+  plane live shadow, S203 FE Saros predictor if present) untouched.

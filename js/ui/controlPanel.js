@@ -4,7 +4,7 @@
 import { dateTimeToString, dateTimeToDate } from '../core/time.js';
 import { TIME_ORIGIN } from '../core/constants.js';
 import { findNextEclipses } from '../core/ephemeris.js';
-import { CEL_NAV_SELECT_OPTIONS } from '../core/celnavStars.js';
+import { CEL_NAV_SELECT_OPTIONS, CEL_NAV_STARS } from '../core/celnavStars.js';
 import { listProjections } from '../core/projections.js';
 import { Autoplay } from './autoplay.js';
 
@@ -77,8 +77,16 @@ const TIMEZONES = [
 ];
 
 // Date + time + timezone: inputs show local wall-clock in the selected zone;
-// DateTime in the model is always stored as UTC. Change the zone to shift the
-// display only; the underlying instant is preserved.
+// DateTime in the model is always stored as UTC.
+//
+// S009b — changing the TZ dropdown now **shifts the UTC instant** so the
+// displayed wall-clock stays put (Path B: hold-local-clock, move-UTC).
+// This matches the workflow users expect when cross-checking against
+// Stellarium: enter a local time for an observation site, flip TZs,
+// and watch the sky move by the corresponding number of hours. The
+// Date / Time inputs (below) still take the wall-clock as being in the
+// currently-selected zone when committing edits, so typing a new value
+// commits the same UTC instant that timezoneRow would produce.
 function dateTimeRow(model) {
   const el = document.createElement('div');
   el.className = 'row datetime';
@@ -130,7 +138,23 @@ function timezoneRow(model) {
   const sel = el.querySelector('select');
   function refresh() { sel.value = String(model.state.TimezoneOffsetMinutes || 0); }
   sel.addEventListener('change', () => {
-    model.setState({ TimezoneOffsetMinutes: parseInt(sel.value, 10) });
+    // S009b — Path B: flipping the timezone holds the DISPLAYED
+    // wall-clock constant and shifts the underlying UTC instant by
+    // the delta. Derivation: local = UTC + offset. If local is to
+    // stay the same across the change, UTC_new = UTC_old − (offset_new
+    // − offset_old). Convert the delta from minutes to DateTime's
+    // day units (1 day = 1440 min). This is what you want for
+    // Stellarium-parity workflows: set a local observation time,
+    // switch zones, and the sky moves to what a local clock at the
+    // same nominal time would see at the new longitude.
+    const newOff = parseInt(sel.value, 10);
+    const oldOff = model.state.TimezoneOffsetMinutes || 0;
+    const deltaMin  = newOff - oldOff;
+    const deltaDays = deltaMin / (60 * 24);
+    model.setState({
+      TimezoneOffsetMinutes: newOff,
+      DateTime: (model.state.DateTime || 0) - deltaDays,
+    });
   });
   model.addEventListener('update', refresh);
   refresh();
@@ -155,8 +179,11 @@ const FIELD_GROUPS = [
           { value: 'kangaroo', label: 'Kangaroo' },
           { value: 'none',     label: 'None' },
         ]},
-        { key: 'ObserverLat',  label: 'ObserverLat',  unit: '°', min: -90,  max:  90,  step: 0.1 },
-        { key: 'ObserverLong', label: 'ObserverLong', unit: '°', min: -180, max: 180,  step: 0.1 },
+        // S009b — step 0.0001° ≈ 0.36" so the number field gives
+        // sub-arcsecond granularity (needed for Stellarium-parity
+        // tests at a specific observatory / nav-fix coordinate).
+        { key: 'ObserverLat',  label: 'ObserverLat',  unit: '°', min: -90,  max:  90,  step: 0.0001 },
+        { key: 'ObserverLong', label: 'ObserverLong', unit: '°', min: -180, max: 180,  step: 0.0001 },
         // S007 — observer elevation above the disc. Drives the camera
         // z-offset in Optical mode; geometry (cardinals, meridian arc,
         // heading line) stays ground-anchored.
@@ -265,11 +292,14 @@ const FIELD_GROUPS = [
   // azimuth/elevation/RA/Dec readout. Also exposes BodySource so the
   // user can toggle the helioc vs geoc pipeline and see readouts are
   // consistent.
+  // S009 / S009a — Tracker tab. Multi-select button grid; toggling
+  // each button adds/removes its id from `TrackerTargets`. Every
+  // tracked object gets a block in the HUD with both ephemerides and
+  // a coloured GP on the disc.
   {
     tab: 'Tracker', groups: [
       { title: 'Object', rows: [
-        { key: 'TrackerTarget', label: 'Track', select: [
-          { value: 'none',    label: '— none —' },
+        { key: 'TrackerTargets', label: 'Track', buttonGrid: [
           { value: 'sun',     label: 'Sun' },
           { value: 'moon',    label: 'Moon' },
           { value: 'mercury', label: 'Mercury' },
@@ -277,14 +307,33 @@ const FIELD_GROUPS = [
           { value: 'mars',    label: 'Mars' },
           { value: 'jupiter', label: 'Jupiter' },
           { value: 'saturn',  label: 'Saturn' },
-          ...CEL_NAV_SELECT_OPTIONS,
+          ...[...CEL_NAV_STARS]
+              .sort((a, b) => a.name.localeCompare(b.name))
+              .map((s) => ({ value: `star:${s.id}`, label: s.name })),
         ]},
       ]},
       { title: 'Ephemeris', rows: [
         { key: 'BodySource', label: 'Source', select: [
-          { value: 'geocentric',   label: 'Geocentric' },
-          { value: 'heliocentric', label: 'Heliocentric' },
+          { value: 'heliocentric', label: 'HelioC   (Schlyter Kepler + Sun-geo)' },
+          { value: 'geocentric',   label: 'GeoC     (Earth-focus Kepler)' },
+          { value: 'ptolemy',      label: 'Ptolemy  (deferent + epicycle)' },
+          { value: 'astropixels',  label: 'DE405    (Espenak AstroPixels)' },
+          { value: 'vsop87',       label: 'VSOP87   (Bretagnon & Francou)' },
         ]},
+        // S014 / S017 — star correction toggles. Four independent
+        // checkboxes; the first three apply precession / nutation /
+        // aberration individually. "Trepidation" is the combined-
+        // correction label — when checked it forces all three
+        // corrections on. The name references the medieval Arabic
+        // "trepidation of the equinoxes", a hypothetical extra
+        // oscillation bolted onto precession to match observation;
+        // here it labels "the compound apparent wobble as a single
+        // phenomenon", the pedagogical counterpart to viewing the
+        // three individual corrections one at a time.
+        { key: 'StarApplyPrecession', label: 'Precession',  bool: true },
+        { key: 'StarApplyNutation',   label: 'Nutation',    bool: true },
+        { key: 'StarApplyAberration', label: 'Aberration',  bool: true },
+        { key: 'StarTrepidation',     label: 'Trepidation', bool: true },
       ]},
     ],
   },
@@ -467,6 +516,47 @@ function boolSelectRow(model, row) {
   return el;
 }
 
+// S009a — multi-select button grid. Drives an array-valued state
+// field. Clicking a button toggles that id's membership in the array;
+// active buttons get the `.on` class.
+function buttonGridRow(model, row) {
+  const el = document.createElement('div');
+  el.className = 'row button-grid-row';
+  const label = document.createElement('label');
+  label.textContent = row.label;
+  el.appendChild(label);
+  const grid = document.createElement('div');
+  grid.className = 'button-grid';
+  el.appendChild(grid);
+
+  const btns = row.buttonGrid.map((opt) => {
+    const value = typeof opt === 'string' ? opt : opt.value;
+    const text  = typeof opt === 'string' ? opt : (opt.label ?? opt.value);
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'tracker-btn';
+    btn.textContent = text;
+    btn.addEventListener('click', () => {
+      const current = Array.isArray(model.state[row.key]) ? model.state[row.key] : [];
+      const next = current.includes(value)
+        ? current.filter((v) => v !== value)
+        : [...current, value];
+      model.setState({ [row.key]: next });
+    });
+    grid.appendChild(btn);
+    return { btn, value };
+  });
+
+  function refresh() {
+    const current = Array.isArray(model.state[row.key]) ? model.state[row.key] : [];
+    const set = new Set(current);
+    for (const { btn, value } of btns) btn.classList.toggle('on', set.has(value));
+  }
+  model.addEventListener('update', refresh);
+  refresh();
+  return el;
+}
+
 function boolRow(model, row) {
   const el = document.createElement('div');
   el.className = 'row bool';
@@ -508,6 +598,7 @@ export function buildControlPanel(panelEl, model, demos) {
         if (row.bool) rowEl = boolRow(model, row);
         else if (row.boolSelect) rowEl = boolSelectRow(model, row);
         else if (row.select) rowEl = selectRow(model, row);
+        else if (row.buttonGrid) rowEl = buttonGridRow(model, row);
         else if (row.cardinal) rowEl = cardinalRow(model, row);
         else if (row.action) rowEl = actionRow(model, row);
         else if (row.nudge) rowEl = nudgeRow(model, row);
@@ -696,25 +787,19 @@ export function buildHud(hudEl, model) {
   refresh();
 }
 
-// S009 — Tracker HUD panel. Sits directly under the main HUD `#hud`,
-// styled with the same `.line` rows, and subscribes to the model's
-// `update` event. When `TrackerTarget` is 'none' the panel collapses
-// (display: none); otherwise it reports name, az, el, RA, Dec, and the
-// source timestamp for the selected object. Manual-select fallback for
-// clickable object selection: users pick the target from the Tracker
-// tab in the control panel.
+// S009 / S009a / S009d — Tracker HUD panel. One `.tracker-block` per
+// tracked target. Both Geo and Helio rows use the same `.source-line`
+// style regardless of the `BodySource` selection — the audience sees
+// both readouts equally, which is the point of the dual-pipeline
+// display (each tick of time, the two rows advance in sync proving
+// the helioc and geoc pipelines converge).
+//
+// Refresh is keyed-cache based so adding a target or changing time
+// just updates textContent in place. Every refresh recomputes text
+// unconditionally; there's no "skip if already right" branching that
+// could leave a block stale.
 export function buildTrackerHud(trackerEl, model) {
   trackerEl.classList.add('tracker-hud');
-  const titleEl = document.createElement('div');
-  titleEl.className = 'line tracker-title';
-  trackerEl.appendChild(titleEl);
-
-  const lines = ['azel', 'radec', 'src'].map(() => {
-    const d = document.createElement('div');
-    d.className = 'line';
-    trackerEl.appendChild(d);
-    return d;
-  });
 
   const fmtDeg = (v, p = 1) => (v >= 0 ? '+' : '') + v.toFixed(p);
   const fmtHours = (raRad) => {
@@ -734,23 +819,121 @@ export function buildTrackerHud(trackerEl, model) {
     const ss = (mRaw - mm) * 60;
     return `${sign}${String(dd).padStart(2, '0')}°${String(mm).padStart(2, '0')}′${ss.toFixed(1).padStart(4, '0')}″`;
   };
+  // S012 — az is already 0–360 degrees, el is already ±90 degrees;
+  // both as decimal numbers from the observer pipeline. Produce
+  // Stellarium-style signed dms for both. Az uses 3-digit degrees
+  // (0–360), el uses 2-digit signed degrees.
+  const fmtDmsDegAz = (deg) => {
+    const d = ((deg % 360) + 360) % 360;
+    const dd = Math.floor(d);
+    const mRaw = (d - dd) * 60;
+    const mm = Math.floor(mRaw);
+    const ss = (mRaw - mm) * 60;
+    return `+${String(dd).padStart(3, '0')}°${String(mm).padStart(2, '0')}′${ss.toFixed(1).padStart(4, '0')}″`;
+  };
+  const fmtDmsDegEl = (deg) => {
+    const sign = deg < 0 ? '−' : '+';
+    const abs = Math.abs(deg);
+    const dd = Math.floor(abs);
+    const mRaw = (abs - dd) * 60;
+    const mm = Math.floor(mRaw);
+    const ss = (mRaw - mm) * 60;
+    return `${sign}${String(dd).padStart(2, '0')}°${String(mm).padStart(2, '0')}′${ss.toFixed(1).padStart(4, '0')}″`;
+  };
+
+  // target id → { block, title, azel, helio, geo, ptolemy, astropixels,
+  // vsop87, foot } DOM nodes kept across refreshes. S011 added Ptolemy,
+  // S015 added AstroPixels/DE405, S016 added VSOP87.
+  const blockCache = new Map();
+
+  function makeBlock() {
+    const block = document.createElement('div');
+    block.className = 'tracker-block';
+    const title = document.createElement('div');
+    title.className = 'line tracker-title';
+    block.appendChild(title);
+    const azel = document.createElement('div');
+    azel.className = 'line';
+    block.appendChild(azel);
+    const helio = document.createElement('div');
+    helio.className = 'line source-line';
+    block.appendChild(helio);
+    const geo = document.createElement('div');
+    geo.className = 'line source-line';
+    block.appendChild(geo);
+    const ptolemy = document.createElement('div');
+    ptolemy.className = 'line source-line';
+    block.appendChild(ptolemy);
+    const astropixels = document.createElement('div');
+    astropixels.className = 'line source-line';
+    block.appendChild(astropixels);
+    const vsop87 = document.createElement('div');
+    vsop87.className = 'line source-line';
+    block.appendChild(vsop87);
+    const foot = document.createElement('div');
+    foot.className = 'line tracker-foot';
+    block.appendChild(foot);
+    return { block, title, azel, helio, geo, ptolemy, astropixels, vsop87, foot };
+  }
 
   const refresh = () => {
-    const info = model.computed.TrackerInfo;
-    if (!info) {
+    const infos = model.computed.TrackerInfos || [];
+    if (infos.length === 0) {
       trackerEl.style.display = 'none';
+      for (const { block } of blockCache.values()) block.remove();
+      blockCache.clear();
       return;
     }
     trackerEl.style.display = '';
-    const catLabel = info.category === 'star' ? 'star'
-                   : info.category === 'planet' ? 'planet'
-                   : 'luminary';
-    titleEl.textContent = `Tracking: ${info.name} (${catLabel})`;
-    lines[0].textContent = `az ${fmtDeg(info.azimuth, 2)}°   el ${fmtDeg(info.elevation, 2)}°`;
-    lines[1].textContent = `RA ${fmtHours(info.ra)}   Dec ${fmtDms(info.dec)}`;
-    const srcTag = info.source === 'heliocentric' ? 'helio' : 'geo';
-    const magTag = (info.mag != null) ? `   mag ${info.mag.toFixed(2)}` : '';
-    lines[2].textContent = `src ${srcTag}   ${dateTimeToString(model.state.DateTime)}${magTag}`;
+
+    const stamp = dateTimeToString(model.state.DateTime);
+
+    // Discard blocks for targets no longer selected.
+    const keep = new Set(infos.map((i) => i.target));
+    for (const [id, rec] of blockCache) {
+      if (!keep.has(id)) {
+        rec.block.remove();
+        blockCache.delete(id);
+      }
+    }
+
+    // Create-or-reuse a block per target, update text unconditionally.
+    for (const info of infos) {
+      let rec = blockCache.get(info.target);
+      if (!rec) {
+        rec = makeBlock();
+        blockCache.set(info.target, rec);
+      }
+      // Attach / re-attach — no-op if already a child; cheap fallback
+      // if the cache got out of sync with the DOM.
+      if (rec.block.parentNode !== trackerEl) trackerEl.appendChild(rec.block);
+
+      const cat = info.category === 'star'   ? 'star'
+                : info.category === 'planet' ? 'planet'
+                : 'luminary';
+      rec.title.textContent = `${info.name} (${cat})`;
+      rec.azel.textContent  = `az ${fmtDmsDegAz(info.azimuth)}   el ${fmtDmsDegEl(info.elevation)}`;
+      rec.helio.textContent =
+        `Helio : RA ${fmtHours(info.helioReading.ra)}   Dec ${fmtDms(info.helioReading.dec)}`;
+      rec.geo.textContent =
+        `GeoC  : RA ${fmtHours(info.geoReading.ra)}   Dec ${fmtDms(info.geoReading.dec)}`;
+      rec.ptolemy.textContent =
+        `Ptol  : RA ${fmtHours(info.ptolemyReading.ra)}   Dec ${fmtDms(info.ptolemyReading.dec)}`;
+      rec.astropixels.textContent =
+        `DE405 : RA ${fmtHours(info.astropixelsReading.ra)}   Dec ${fmtDms(info.astropixelsReading.dec)}`;
+      rec.vsop87.textContent =
+        `VSOP87: RA ${fmtHours(info.vsop87Reading.ra)}   Dec ${fmtDms(info.vsop87Reading.dec)}`;
+      const magTag = (info.mag != null) ? `   mag ${info.mag.toFixed(2)}` : '';
+      rec.foot.textContent = `${stamp}${magTag}`;
+    }
+
+    // Re-order blocks to match the infos[] ordering. `appendChild` on
+    // an existing child moves it to the end, so walking infos and
+    // appending each block once produces the correct final order.
+    for (const info of infos) {
+      const rec = blockCache.get(info.target);
+      if (rec) trackerEl.appendChild(rec.block);
+    }
   };
 
   model.addEventListener('update', refresh);

@@ -196,6 +196,34 @@ if (infoBtn && infoPopup) {
 
 attachUrlState(model, demos);
 
+// S200 — Meeus warning banner.
+//
+// The banner is shown whenever the active BodySource depends on the
+// Meeus moon (which is currently ~2.5° off DE405; tracked as Task #147).
+// HelioC and GeoC use Meeus directly; VSOP87 delegates the moon to
+// Meeus. AstroPixels and Ptolemy each have their own moon and don't
+// trigger the warning.
+//
+// The text is shown in red at the bottom of the #view pane. Eclipse
+// demos in those modes will land at the wrong UTC moment, by roughly
+// 4 hours, because the finder uses the same Meeus moon.
+const MEEUS_BODY_SOURCES = new Set(['heliocentric', 'geocentric', 'vsop87']);
+const meeusBannerEl = document.getElementById('meeus-warning');
+function syncMeeusBanner() {
+  if (!meeusBannerEl) return;
+  const src = model.state.BodySource || 'geocentric';
+  const isMeeus = MEEUS_BODY_SOURCES.has(src);
+  meeusBannerEl.hidden = !isMeeus;
+  if (isMeeus) {
+    meeusBannerEl.innerHTML =
+      `<strong>Meeus timing error.</strong> Active source uses the Meeus Ch.47 moon, `
+      + `which is ~2.5° off DE405. Eclipse demos in this mode land roughly 4 hours `
+      + `from the real UTC moment.`;
+  }
+}
+model.addEventListener('update', syncMeeusBanner);
+syncMeeusBanner();
+
 // Expose for debugging from the console.
 window.model = model;
 window.renderer = renderer;

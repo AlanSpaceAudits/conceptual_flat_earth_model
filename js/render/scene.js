@@ -147,16 +147,41 @@ export class SceneManager {
     this.sunLight.target.position.set(0, 0, 0);
   }
 
+  // S201 — eclipse-path observer darkening. Renderer pushes the
+  // computed factor (0 = unaffected, 1 = fully inside umbra) every
+  // frame; `render()` folds it into ambient, sunLight, and the
+  // background colour so the observer "loses the sun" visually when
+  // they're inside the shadow path.
+  setEclipseDarkFactor(f) {
+    this._eclipseDarkFactor = Math.max(0, Math.min(1, f || 0));
+  }
+
   render() {
     this.updateCamera();
     this.updateLight();
+    const darken = this._eclipseDarkFactor || 0;
+    // Fold the darken factor into ambient + sun intensities. Base
+    // intensities (0.9 and 0.5) multiplied by (1 − 0.85·darken) so
+    // the scene never goes pitch black — the sun's corona is still
+    // dimly lit during totality.
+    const dimAmbient = 0.9 * (1 - 0.85 * darken);
+    const dimSun     = 0.5 * (1 - 0.90 * darken);
+    if (Math.abs(this.ambient.intensity - dimAmbient) > 1e-4) {
+      this.ambient.intensity = dimAmbient;
+    }
+    if (Math.abs(this.sunLight.intensity - dimSun) > 1e-4) {
+      this.sunLight.intensity = dimSun;
+    }
     // Inside-vault background fades to night based on NightFactor so the
-    // projected starfield has dark sky behind it.
+    // projected starfield has dark sky behind it. S201 — eclipse darken
+    // pushes toward night colour regardless of NightFactor.
     if (this.model.state.InsideVault) {
-      const nf = this.model.computed.NightFactor || 0;
+      const nf = Math.max(this.model.computed.NightFactor || 0, darken);
       this.scene.background.copy(this.dayColor).lerp(this.nightColor, nf);
-    } else if (!this.scene.background.equals(this.dayColor)) {
-      this.scene.background.copy(this.dayColor);
+    } else {
+      // Heavenly vault mode — lerp background toward night during eclipse
+      // darken so the shadow's effect is visible on scene lighting too.
+      this.scene.background.copy(this.dayColor).lerp(this.nightColor, darken * 0.6);
     }
     this.renderer.render(this.scene, this.camera);
   }

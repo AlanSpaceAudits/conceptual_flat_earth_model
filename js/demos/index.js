@@ -1,7 +1,11 @@
 // Demo manager: play/stop/next/prev + UI list.
+//
+// S200 — added grouped rendering, autoplay queue (advance to the next
+// demo in a list when the current one finishes), and Meeus-warning
+// integration via the `meeusActive` callback.
 
 import { Animator } from './animation.js';
-import { DEMOS } from './definitions.js';
+import { DEMOS, DEMO_GROUPS } from './definitions.js';
 
 export class Demos {
   constructor(model) {
@@ -10,26 +14,84 @@ export class Demos {
     this.list = DEMOS.slice();
     this.currentIndex = -1;
     this._panelHost = null;
+    this._listEl = null;
+    this._collapsed = new Set(['solar-eclipses', 'lunar-eclipses']);  // groups collapsed by default
+    // Autoplay queue: when non-null, after the active demo's task
+    // queue empties we advance to the next index in `_queue`.
+    this._queue = null;
+    this._queueCursor = 0;
+
+    // Poll the animator each rAF; when it stops while a queue is
+    // active, advance.
+    const tick = () => {
+      if (this._queue && !this.animator.isPlaying() && this._queueCursor < this._queue.length) {
+        const next = this._queue[this._queueCursor++];
+        // Defer to microtask so any state-mutation hooks settle.
+        Promise.resolve().then(() => this._playSingle(next, /* fromQueue */ true));
+      }
+      requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
   }
 
-  play(index) {
+  _playSingle(index, fromQueue = false) {
     if (index < 0 || index >= this.list.length) return;
     this.animator.stop();
     this.currentIndex = index;
     const d = this.list[index];
+    // S201 — reset eclipse state before each demo's intro so the
+    // shadow doesn't linger when switching from an eclipse demo to
+    // a general demo.
+    this.model.setState({
+      EclipseActive: false, EclipseKind: null,
+      EclipseEventUTMS: null, EclipsePipeline: null,
+      EclipseMinSepDeg: null, EclipseMagnitude: null, EclipseEventType: null,
+    });
     const introState = typeof d.intro === 'function' ? d.intro(this.model) : d.intro;
     this.model.setState(introState);
     this.animator.play(d.tasks(this.model));
+    if (this._btnPauseResume) this._btnPauseResume.textContent = 'Pause';
     this._refreshPanel();
+    if (!fromQueue) {
+      // Manual play breaks any active queue.
+      this._queue = null;
+      this._queueCursor = 0;
+    }
+  }
+
+  // Single-click play (breaks autoplay queue).
+  play(index) { this._playSingle(index, false); }
+
+  // Play a list (group-id) sequentially. After each demo's tasks
+  // finish, the next one starts automatically.
+  playGroup(groupId) {
+    const indices = [];
+    this.list.forEach((d, i) => { if (d.group === groupId) indices.push(i); });
+    if (!indices.length) return;
+    this._queue = indices;
+    this._queueCursor = 1;       // first item plays now; queue cursor points to next
+    this._playSingle(indices[0], true);
   }
 
   stop() {
     this.animator.stop();
+    this._queue = null;
+    this._queueCursor = 0;
+    if (this._btnPauseResume) this._btnPauseResume.textContent = 'Pause';
     this._refreshPanel();
   }
 
-  next() { this.play(Math.min(this.currentIndex + 1, this.list.length - 1)); }
-  prev() { this.play(Math.max(this.currentIndex - 1, 0)); }
+  next() {
+    // If a queue is active, jump to next queued item; otherwise next in list.
+    if (this._queue && this._queueCursor < this._queue.length) {
+      const idx = this._queue[this._queueCursor++];
+      this._playSingle(idx, true);
+      return;
+    }
+    this._playSingle(Math.min(this.currentIndex + 1, this.list.length - 1), false);
+  }
+
+  prev() { this._playSingle(Math.max(this.currentIndex - 1, 0), false); }
 
   renderInto(panel) {
     this._panelHost = panel;
@@ -43,29 +105,86 @@ export class Demos {
     const btnPrev = document.createElement('button');
     btnPrev.textContent = 'Prev';
     btnPrev.addEventListener('click', () => this.prev());
+    // S201 — pause/resume. Freezes the tween queue so the user can
+    // move observer lat/long or switch Heavenly/Optical while the
+    // eclipse geometry stays exactly where it was.
+    const btnPauseResume = document.createElement('button');
+    btnPauseResume.textContent = 'Pause';
+    btnPauseResume.addEventListener('click', () => {
+      if (this.animator.isPaused()) {
+        this.animator.resume();
+        btnPauseResume.textContent = 'Pause';
+      } else if (this.animator.isPlaying() || this.animator.running) {
+        this.animator.pause();
+        btnPauseResume.textContent = 'Resume';
+      }
+    });
+    this._btnPauseResume = btnPauseResume;
     const btnNext = document.createElement('button');
     btnNext.textContent = 'Next';
     btnNext.addEventListener('click', () => this.next());
-    controls.append(btnStop, btnPrev, btnNext);
+    controls.append(btnStop, btnPauseResume, btnPrev, btnNext);
     panel.appendChild(controls);
 
     this._listEl = document.createElement('div');
     this._listEl.className = 'demo-list';
     panel.appendChild(this._listEl);
 
-    this.list.forEach((d, i) => {
-      const b = document.createElement('button');
-      b.textContent = d.name;
-      b.addEventListener('click', () => this.play(i));
-      this._listEl.appendChild(b);
-    });
+    this._buildGroupedList();
     this._refreshPanel();
   }
 
-  _refreshPanel() {
+  _buildGroupedList() {
     if (!this._listEl) return;
-    [...this._listEl.children].forEach((b, i) => {
-      b.setAttribute('aria-current', i === this.currentIndex ? 'true' : 'false');
+    this._listEl.replaceChildren();
+    this._buttons = [];   // index → button DOM
+    const groups = DEMO_GROUPS.length
+      ? DEMO_GROUPS
+      : [{ id: 'general', label: 'Demos' }];
+
+    groups.forEach(g => {
+      const indices = [];
+      this.list.forEach((d, i) => { if ((d.group || 'general') === g.id) indices.push(i); });
+      if (!indices.length) return;
+
+      const header = document.createElement('div');
+      header.className = 'demo-group-header';
+      const collapsed = this._collapsed.has(g.id);
+      header.textContent = `${collapsed ? '▶' : '▼'} ${g.label} (${indices.length})`;
+      header.style.cursor = 'pointer';
+      header.addEventListener('click', () => {
+        if (this._collapsed.has(g.id)) this._collapsed.delete(g.id);
+        else this._collapsed.add(g.id);
+        this._buildGroupedList();
+        this._refreshPanel();
+      });
+      this._listEl.appendChild(header);
+
+      // "Play all" mini-button per group with >1 entries.
+      if (indices.length > 1) {
+        const playAll = document.createElement('button');
+        playAll.className = 'demo-play-all';
+        playAll.textContent = `▶ Play all in ${g.label.split(' (')[0]} (autoplay queue)`;
+        playAll.addEventListener('click', () => this.playGroup(g.id));
+        this._listEl.appendChild(playAll);
+      }
+
+      if (collapsed) return;
+
+      indices.forEach(i => {
+        const b = document.createElement('button');
+        b.textContent = this.list[i].name;
+        b.addEventListener('click', () => this.play(i));
+        this._listEl.appendChild(b);
+        this._buttons[i] = b;
+      });
+    });
+  }
+
+  _refreshPanel() {
+    if (!this._buttons) return;
+    this._buttons.forEach((b, i) => {
+      if (b) b.setAttribute('aria-current', i === this.currentIndex ? 'true' : 'false');
     });
   }
 }

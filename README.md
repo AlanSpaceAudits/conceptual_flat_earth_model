@@ -34,12 +34,31 @@ lat/long graticule and the fictitious center-of-earth observer.
 
 ## Special Thanks
 
-This project is built on ideas and groundwork from two people whose work
+This project is built on ideas and groundwork from people whose work
 pointed the way:
 
 * **Shane St. Pierre** — for the conceptual framing and the push to actually
   build a working, interactive demonstration of the model.
 * **Walter Bislin** — for the original numerical constants, projection
   choices, and the visual conventions that this port preserves.
+* **Fred Espenak** — for the public geocentric ephemeris tables on
+  [AstroPixels](https://www.astropixels.com/ephemeris/ephemeris.html),
+  computed from JPL DE405 and bundled here as the "DE405" ephemeris
+  pipeline. All credit for the underlying data belongs to him; this sim
+  only tabulates daily RA/Dec for sun, moon, and the five classical
+  planets. See `js/core/ephemerisAstropixels.js` for the runtime
+  attribution and `js/data/astropixels.js` for the extracted data.
 
-Without their inspiration and their own models, this wouldn't exist.
+Additional credits baked into the ephemeris pipelines:
+
+* **R.H. van Gent** (Utrecht University) — Almagest Ephemeris Calculator,
+  the source of the Ptolemaic deferent+epicycle pipeline.
+* **Bretagnon & Francou** (1988) / **Sonia Keys** / **commenthol** —
+  VSOP87 theory and the MIT-licensed JS coefficient port used for
+  the analytical ephemeris pipeline.
+* **Jean Meeus**, *Astronomical Algorithms* (2nd ed., 1998) — the
+  backbone for the Sun, Moon, GMST, precession, nutation, and
+  aberration routines used across all pipelines.
+
+Without their inspiration, their published theory, and their public
+data tables, this wouldn't exist.

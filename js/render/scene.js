@@ -54,17 +54,37 @@ export class SceneManager {
   updateCamera() {
     const s = this.model.state;
     const obs = this.model.computed.ObserverFeCoord;
+    // S007 — expose the current camera aspect on model.computed so
+    // worldObjects code can compute horizontal FOV (for placing the
+    // right-side elevation scale at the correct angular offset)
+    // without importing the camera directly. Updated every frame so
+    // window resizes flow through.
+    this.model.computed.ViewAspect = this.camera.aspect;
 
     // First-person mode: camera at observer's eye height, looking along the
     // ObserverHeading compass direction. CameraHeight is reused as look
     // pitch in this mode so the user can tilt up toward the zenith.
     if (s.InsideVault) {
-      if (this.camera.fov !== 75) {
-        this.camera.fov = 75;
+      // S002 — Optical FOV reads the mode-local `OpticalZoom` scalar,
+      // NOT `Zoom`. Mode switches therefore don't leak: the Heavenly
+      // orbit camera never sees OpticalZoom, and Optical never sees
+      // the orbit Zoom. fov = 75° / OpticalZoom, clamped.
+      const FOV_BASE = 75;
+      const FOV_MIN  = 0.005;
+      const zoom = Math.max(0.2, s.OpticalZoom || 5.09);
+      const fov  = Math.max(FOV_MIN, Math.min(FOV_BASE, FOV_BASE / zoom));
+      if (Math.abs(this.camera.fov - fov) > 1e-6) {
+        this.camera.fov = fov;
         this.camera.updateProjectionMatrix();
       }
+      // S007 — `ObserverElevation` lifts the camera (and only the
+      // camera) above the disc. `ObserverFeCoord` is still at z = 0
+      // so all downstream geometry (arrow, line, cardinals, labels)
+      // keeps its ground-anchored math unchanged; the user just
+      // looks down from a higher vantage.
       const eyeH = 0.012;
-      this.camera.position.set(obs[0], obs[1], obs[2] + eyeH);
+      const elev = Math.max(0, Math.min(0.5, s.ObserverElevation || 0));
+      this.camera.position.set(obs[0], obs[1], obs[2] + eyeH + elev);
 
       // Local north (toward disc centre) for an observer at (ox, oy). At
       // the pole obsLen → 0 and the radial direction is undefined; use

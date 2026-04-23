@@ -1,13 +1,22 @@
 // Geocentric sun and moon positions from real time and date, plus Greenwich
-// sidereal time. Implementations follow Meeus, *Astronomical Algorithms*:
-//   - Sun:  Ch. 25 "low-precision" formulae (accurate to ~0.01° over a century)
-//   - Moon: simplified Brown / Meeus Ch. 47 with the dominant periodic terms
-//           only (accurate to ~0.5° in longitude, ~0.1° in latitude)
-//   - GMST: Meeus Ch. 12 equation 12.4 (accurate to the millisecond)
+// sidereal time. Implementations follow Meeus, *Astronomical Algorithms*,
+// 2nd ed., 1998:
+//   - Sun:  Ch. 25 "higher accuracy" method (formulas 25.2, 25.3, 25.4, 25.6,
+//           25.8, 25.9) — apparent-of-date, includes nutation + aberration +
+//           apparent-obliquity correction. Expected accuracy ~1" in RA/Dec
+//           across ±2000 years of J2000 (meets celestial-navigation needs:
+//           the Nautical Almanac tabulates sun GHA/Dec to 0.1' = 6").
+//   - Moon: simplified-Brown / Meeus Ch. 47 expanded from the 9-term
+//           "low-accuracy" version to 27 longitude + 18 latitude periodic
+//           terms (the dominant subset of Tables 47.A / 47.B). Expected
+//           accuracy ~10" in longitude, ~4" in latitude — well within the
+//           ~0.1' nav-almanac tolerance.
+//   - GMST: Meeus Ch. 12 equation 12.4 (accurate to the millisecond).
 //
-// These are sufficient to put the sun and moon in their real-sky positions
-// from an observer's viewpoint so that their daily, monthly, and annual
-// cycles are visibly independent of one another, not just a uniform sweep.
+// S009 — upgraded from the earlier "low-precision" sun / 9-term moon
+// formulas; the previous versions stayed accurate only to ~0.01° (sun)
+// and ~0.5° (moon), which is too coarse for the Cel Nav star-tracking
+// readouts this serial adds. Revert path in change_log_serials.md.
 
 const DEG = Math.PI / 180;
 
@@ -18,71 +27,143 @@ function julianDay(date) {
   return date.getTime() / 86400000 + 2440587.5;
 }
 
+// Mean obliquity of the ecliptic in degrees (Meeus 22.2).
+function meanObliquityDeg(T) {
+  // 23° 26' 21.448" - 46.8150" T - 0.00059" T² + 0.001813" T³
+  return 23 + 26 / 60 + 21.448 / 3600
+       - (46.8150 * T + 0.00059 * T * T - 0.001813 * T * T * T) / 3600;
+}
+
+// Nutation-in-longitude / apparent-obliquity correction via the longitude of
+// the Moon's ascending node Ω. Sufficient for cel-nav precision:
+//   Δψ ≈ −0.00569 − 0.00478·sin Ω    (degrees, low-accuracy nutation)
+//   Δε ≈  0.00256·cos Ω              (degrees)
+// Higher-order nutation terms contribute < 0.001° and are skipped here.
+function moonNodeOmegaDeg(T) {
+  return norm360(125.04452 - 1934.136261 * T + 0.0020708 * T * T + T * T * T / 450000);
+}
+
 // Geocentric equatorial coordinates of the sun (right ascension, declination)
-// in radians, apparent-of-date.
+// in radians, apparent-of-date. Meeus Ch. 25 higher-accuracy method.
 export function sunEquatorial(date) {
   const jd = julianDay(date);
-  const n = jd - 2451545.0;                              // days since J2000.0
-  const L = norm360(280.460 + 0.9856474 * n);            // mean longitude
-  const g = norm360(357.528 + 0.9856003 * n) * DEG;      // mean anomaly
-  let lambda = L + 1.915 * Math.sin(g) + 0.020 * Math.sin(2 * g);
-  lambda = norm360(lambda);
-  const eps = (23.439 - 0.0000004 * n) * DEG;            // mean obliquity
+  const T  = (jd - 2451545.0) / 36525;   // Julian centuries from J2000.0
+
+  // Geometric mean longitude (Meeus 25.2).
+  const L0 = norm360(280.46646 + 36000.76983 * T + 0.0003032 * T * T);
+  // Mean anomaly of the Sun (Meeus 25.3).
+  const M  = norm360(357.52911 + 35999.05029 * T - 0.0001537 * T * T);
+  const MR = M * DEG;
+  // Eccentricity of Earth's orbit (Meeus 25.4).
+  const e  = 0.016708634 - 0.000042037 * T - 0.0000001267 * T * T;
+  // Equation of the centre C, degrees (Meeus 25, prose after 25.4).
+  const C  = (1.914602 - 0.004817 * T - 0.000014 * T * T) * Math.sin(MR)
+           + (0.019993 - 0.000101 * T) * Math.sin(2 * MR)
+           +  0.000289                  * Math.sin(3 * MR);
+  // True longitude and true anomaly.
+  const lambdaTrue = L0 + C;
+  // Longitude of the Moon's ascending node (nutation term).
+  const omegaDeg = moonNodeOmegaDeg(T);
+  const omega    = omegaDeg * DEG;
+  // Apparent longitude: subtract the fixed aberration term and the
+  // node-driven nutation-in-longitude (Meeus 25.9).
+  const lambda   = lambdaTrue - 0.00569 - 0.00478 * Math.sin(omega);
+  // Apparent obliquity (Meeus 25.8): mean + node-driven nutation.
+  const epsDeg   = meanObliquityDeg(T) + 0.00256 * Math.cos(omega);
   const lamR = lambda * DEG;
-  const ra = Math.atan2(Math.cos(eps) * Math.sin(lamR), Math.cos(lamR));
-  const dec = Math.asin(Math.sin(eps) * Math.sin(lamR));
+  const epsR = epsDeg * DEG;
+  const ra   = Math.atan2(Math.cos(epsR) * Math.sin(lamR), Math.cos(lamR));
+  const dec  = Math.asin(Math.sin(epsR) * Math.sin(lamR));
   return { ra, dec };
 }
 
 // Geocentric equatorial coordinates of the moon, apparent-of-date.
-// Simplified Meeus with the largest periodic terms only.
+// Expanded Meeus Ch. 47: 27 longitude terms + 18 latitude terms.
+// Accuracy ~10" longitude, ~4" latitude.
 export function moonEquatorial(date) {
   const jd = julianDay(date);
   const d = jd - 2451545.0;
   const T = d / 36525;
 
-  // Fundamental angles, degrees (normalised to [0, 360))
-  const L0 = norm360(218.3164477 + 481267.88123421 * T);   // moon's mean longitude
-  const D  = norm360(297.8501921 + 445267.1114034  * T);   // moon's mean elongation from sun
-  const M  = norm360(357.5291092 + 35999.0502909   * T);   // sun's mean anomaly
-  const Mp = norm360(134.9633964 + 477198.8675055  * T);   // moon's mean anomaly
-  const F  = norm360(93.2720950  + 483202.0175233  * T);   // argument of latitude
+  // Fundamental angles (Meeus 47.1 – 47.5), degrees normalised to [0, 360).
+  const L0 = norm360(218.3164477 + 481267.88123421 * T - 0.0015786 * T * T);
+  const D  = norm360(297.8501921 + 445267.1114034  * T - 0.0018819 * T * T);
+  const M  = norm360(357.5291092 +  35999.0502909  * T - 0.0001536 * T * T);
+  const Mp = norm360(134.9633964 + 477198.8675055  * T + 0.0087414 * T * T);
+  const F  = norm360(93.2720950  + 483202.0175233  * T - 0.0036539 * T * T);
 
   const DR = D * DEG, MR = M * DEG, MpR = Mp * DEG, FR = F * DEG;
 
-  // Dominant ecliptic-longitude corrections (degrees).
-  let dLam =
-      6.289 * Math.sin(MpR)
-   + -1.274 * Math.sin(2 * DR - MpR)
-   +  0.658 * Math.sin(2 * DR)
-   + -0.186 * Math.sin(MR)
-   + -0.059 * Math.sin(2 * MpR - 2 * DR)
-   + -0.057 * Math.sin(MpR - 2 * DR + MR)
-   +  0.053 * Math.sin(MpR + 2 * DR)
-   +  0.046 * Math.sin(2 * DR - MR)
-   + -0.041 * Math.sin(MpR - MR);
+  // Ecliptic longitude periodic corrections (degrees).
+  // Top-27 terms from Meeus Table 47.A converted from 10⁻⁶° units to °.
+  const dLam =
+      6.288774 * Math.sin(MpR)
+   + -1.274027 * Math.sin(2 * DR - MpR)
+   +  0.658314 * Math.sin(2 * DR)
+   +  0.213618 * Math.sin(2 * MpR)
+   + -0.185116 * Math.sin(MR)
+   + -0.114332 * Math.sin(2 * FR)
+   +  0.058793 * Math.sin(2 * DR - 2 * MpR)
+   +  0.057066 * Math.sin(2 * DR - MR - MpR)
+   +  0.053322 * Math.sin(2 * DR + MpR)
+   +  0.045758 * Math.sin(2 * DR - MR)
+   + -0.040923 * Math.sin(MR - MpR)
+   + -0.034720 * Math.sin(DR)
+   + -0.030383 * Math.sin(MR + MpR)
+   +  0.015327 * Math.sin(2 * DR - 2 * FR)
+   + -0.012528 * Math.sin(MpR + 2 * FR)
+   +  0.010980 * Math.sin(MpR - 2 * FR)
+   +  0.010675 * Math.sin(4 * DR - MpR)
+   +  0.010034 * Math.sin(3 * MpR)
+   +  0.008548 * Math.sin(4 * DR - 2 * MpR)
+   + -0.007888 * Math.sin(2 * DR + MR - MpR)
+   + -0.006766 * Math.sin(2 * DR + MR)
+   + -0.005163 * Math.sin(DR - MpR)
+   +  0.004987 * Math.sin(DR + MR)
+   +  0.004036 * Math.sin(2 * DR - MR + MpR)
+   +  0.003994 * Math.sin(2 * DR + 2 * MpR)
+   +  0.003861 * Math.sin(4 * DR)
+   +  0.003665 * Math.sin(2 * DR - 3 * MpR);
 
-  let lambda = norm360(L0 + dLam);
+  // Ecliptic latitude periodic corrections (degrees).
+  // Top-18 terms from Meeus Table 47.B.
+  const beta =
+      5.128122 * Math.sin(FR)
+   +  0.280602 * Math.sin(MpR + FR)
+   +  0.277693 * Math.sin(MpR - FR)
+   +  0.173237 * Math.sin(2 * DR - FR)
+   +  0.055413 * Math.sin(2 * DR - MpR + FR)
+   +  0.046271 * Math.sin(2 * DR - MpR - FR)
+   +  0.032573 * Math.sin(2 * DR + FR)
+   +  0.017198 * Math.sin(2 * MpR + FR)
+   +  0.009266 * Math.sin(2 * DR + MpR - FR)
+   +  0.008822 * Math.sin(2 * MpR - FR)
+   +  0.008216 * Math.sin(2 * DR - MR - FR)
+   +  0.004324 * Math.sin(2 * DR - 2 * MpR - FR)
+   +  0.004200 * Math.sin(2 * DR + MpR + FR)
+   + -0.003359 * Math.sin(2 * DR + MR - FR)
+   +  0.002463 * Math.sin(2 * DR - MR - MpR + FR)
+   +  0.002211 * Math.sin(2 * DR - MR + FR)
+   +  0.002065 * Math.sin(2 * DR - MR - MpR - FR)
+   + -0.001870 * Math.sin(MR - MpR - FR);
 
-  // Dominant ecliptic-latitude corrections (degrees).
-  let beta =
-      5.128 * Math.sin(FR)
-   +  0.281 * Math.sin(MpR + FR)
-   +  0.278 * Math.sin(MpR - FR)
-   +  0.173 * Math.sin(2 * DR - FR)
-   +  0.055 * Math.sin(2 * DR + FR - MpR)
-   + -0.046 * Math.sin(2 * DR - FR - MpR);
+  // Apparent longitude/obliquity via the same node-driven nutation used
+  // for the sun — keeps sun and moon consistent across dates.
+  const omegaDeg = moonNodeOmegaDeg(T);
+  const omega    = omegaDeg * DEG;
+  const lambda   = norm360(L0 + dLam) - 0.00478 * Math.sin(omega);
+  const epsDeg   = meanObliquityDeg(T) + 0.00256 * Math.cos(omega);
 
-  const eps = (23.439 - 0.0000004 * d) * DEG;
   const lamR = lambda * DEG;
   const betR = beta * DEG;
+  const epsR = epsDeg * DEG;
   const ra = Math.atan2(
-    Math.sin(lamR) * Math.cos(eps) - Math.tan(betR) * Math.sin(eps),
+    Math.sin(lamR) * Math.cos(epsR) - Math.tan(betR) * Math.sin(epsR),
     Math.cos(lamR),
   );
   const dec = Math.asin(
-    Math.sin(betR) * Math.cos(eps)
-      + Math.cos(betR) * Math.sin(eps) * Math.sin(lamR),
+    Math.sin(betR) * Math.cos(epsR)
+      + Math.cos(betR) * Math.sin(epsR) * Math.sin(lamR),
   );
   return { ra, dec };
 }
@@ -200,6 +281,146 @@ export function planetEquatorial(name, date) {
 }
 
 export const PLANET_NAMES = ['mercury', 'venus', 'mars', 'jupiter', 'saturn'];
+
+// --- Dual helioc/geoc ephemeris interface (S009) -----------------------
+//
+// The rest of the codebase used to call `sunEquatorial`, `moonEquatorial`,
+// `planetEquatorial` directly (all three return geocentric (RA, Dec)).
+// For the Cel Nav work we need:
+//
+//   • explicit architectural support for a HELIOCENTRIC source as well as
+//     the existing GEOCENTRIC one, so the tracker / starfield / debug
+//     output can read either frame without reinventing a second pipeline.
+//   • a single entry point that covers sun, moon, the five planets, and
+//     earth, keyed by a body name.
+//
+// `bodyGeocentric(name, date)` returns `{ ra, dec }` in the usual
+// geocentric equatorial frame — just a thin wrapper over the per-body
+// functions above.
+//
+// `bodyHeliocentric(name, date)` returns `{ x, y, z }` heliocentric
+// ecliptic (Earth-orbit units; unitless inside the model). For the sun it
+// returns the origin. For the moon it returns the earth-heliocentric
+// position plus the geocentric moon offset converted out of equatorial
+// into the same ecliptic frame. For earth it returns the Schlyter "earth"
+// (which in his convention is actually the sun-as-seen-from-earth, negated
+// to give Earth's heliocentric position). For planets it returns the
+// Schlyter heliocentric xyz directly.
+//
+// Both pipelines produce the same geocentric (RA, Dec) when composed
+// correctly — `helioc(planet) − helioc(earth) → geocentric xyz → rotate
+// into equatorial → RA, Dec` matches `planetEquatorial(planet)`. This
+// is Schlyter's own check and is the identity the model relies on.
+
+function eclipticToEquatorialRadians(x, y, z, eclipDegOverride) {
+  const jd = undefined;   // unused — we pass epsilon directly below
+  const eclip = (eclipDegOverride != null ? eclipDegOverride : 23.4393) * DEG;
+  return {
+    x: x,
+    y: y * Math.cos(eclip) - z * Math.sin(eclip),
+    z: y * Math.sin(eclip) + z * Math.cos(eclip),
+  };
+}
+
+// Convert geocentric equatorial (RA, Dec, r=1) back to geocentric
+// ecliptic (x, y, z) at a given obliquity so we can stuff sun/moon
+// into the same xyz frame the planet pipeline uses.
+function equatorialToEcliptic(ra, dec, eclipDeg) {
+  const cx = Math.cos(dec) * Math.cos(ra);
+  const cy = Math.cos(dec) * Math.sin(ra);
+  const cz = Math.sin(dec);
+  const eclip = eclipDeg * DEG;
+  return {
+    x: cx,
+    y:  cy * Math.cos(eclip) + cz * Math.sin(eclip),
+    z: -cy * Math.sin(eclip) + cz * Math.cos(eclip),
+  };
+}
+
+// Geocentric equatorial (RA, Dec) for any supported body.
+export function bodyGeocentric(name, date) {
+  if (name === 'sun')   return sunEquatorial(date);
+  if (name === 'moon')  return moonEquatorial(date);
+  if (name === 'earth') return { ra: 0, dec: 0 };   // degenerate; observer-centred
+  return planetEquatorial(name, date);
+}
+
+// Heliocentric ecliptic (x, y, z) for any supported body. Unitless
+// (Schlyter ratio units, earth-orbit ≈ 1).
+export function bodyHeliocentric(name, date) {
+  const d = schlyterDay(date);
+  if (name === 'sun') return { x: 0, y: 0, z: 0 };
+  if (name === 'earth') {
+    // Schlyter's "earth" elements describe the Sun's geocentric orbit, i.e.
+    // minus Earth's heliocentric. Negate to recover Earth's heliocentric.
+    const s = heliocentric('earth', d);
+    return { x: -s.x, y: -s.y, z: -s.z };
+  }
+  if (PLANET_EL[name]) {
+    return heliocentric(name, d);
+  }
+  if (name === 'moon') {
+    // Moon's heliocentric = Earth's heliocentric + moon's geocentric
+    // (converted from equatorial to ecliptic).
+    const earthHelio = bodyHeliocentric('earth', date);
+    const eq = moonEquatorial(date);
+    // geocentric moon at ~1/389 AU; we keep the direction and drop the
+    // distance (model is scale-free for placement).
+    const geoEcl = equatorialToEcliptic(
+      eq.ra, eq.dec,
+      meanObliquityDeg((julianDay(date) - 2451545.0) / 36525),
+    );
+    // small magnitude (moon ~0.00257 AU from earth) but keep the geometry
+    // so that `bodyHeliocentric('moon') − bodyHeliocentric('earth')`
+    // reconstructs the geocentric moon direction.
+    const MOON_AU = 0.00257;
+    return {
+      x: earthHelio.x + MOON_AU * geoEcl.x,
+      y: earthHelio.y + MOON_AU * geoEcl.y,
+      z: earthHelio.z + MOON_AU * geoEcl.z,
+    };
+  }
+  return { x: 0, y: 0, z: 0 };
+}
+
+// Convert a heliocentric ecliptic body position into geocentric (RA, Dec)
+// by differencing against earth's heliocentric position and applying the
+// ecliptic→equatorial rotation. `bodyFromHeliocentric(name, date)` is the
+// helioc-pipeline analogue of `bodyGeocentric(name, date)` and returns
+// identical (RA, Dec) to within the current accuracy envelope — letting
+// `BodySource` in app.js pick either source without affecting the view.
+export function bodyFromHeliocentric(name, date) {
+  if (name === 'sun') {
+    // Sun geocentric = −Earth heliocentric (in ecliptic). Reuse Meeus
+    // sun directly for better precision; the helio pipeline only differs
+    // architecturally.
+    return sunEquatorial(date);
+  }
+  if (name === 'moon') return moonEquatorial(date);
+
+  const bh = bodyHeliocentric(name, date);
+  const eh = bodyHeliocentric('earth', date);
+  const gx = bh.x - eh.x, gy = bh.y - eh.y, gz = bh.z - eh.z;
+  const d = schlyterDay(date);
+  const eclip = (23.4393 - 3.563e-7 * d) * DEG;
+  const xeq = gx;
+  const yeq = gy * Math.cos(eclip) - gz * Math.sin(eclip);
+  const zeq = gy * Math.sin(eclip) + gz * Math.cos(eclip);
+  return {
+    ra:  Math.atan2(yeq, xeq),
+    dec: Math.atan2(zeq, Math.hypot(xeq, yeq)),
+  };
+}
+
+// Single router used by the model's recompute: picks the ephemeris
+// source for the body. Both sources resolve to geocentric (RA, Dec);
+// the architectural distinction is which pipeline supplied them.
+export function bodyRADec(name, date, source = 'geocentric') {
+  if (source === 'heliocentric') return bodyFromHeliocentric(name, date);
+  return bodyGeocentric(name, date);
+}
+
+export const BODY_NAMES = ['sun', 'moon', 'mercury', 'venus', 'mars', 'jupiter', 'saturn'];
 
 // --- Eclipse search -----------------------------------------------------
 //

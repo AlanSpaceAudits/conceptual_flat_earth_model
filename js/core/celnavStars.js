@@ -1,0 +1,92 @@
+// Celestial-navigation star catalogue (S009).
+//
+// The 58 named navigational stars listed in the Nautical Almanac (57
+// almanac stars plus Polaris). Each entry carries:
+//
+//   id   — lowercase ASCII identifier used as a state-field value
+//   name — display name as it appears in the almanac
+//   raH  — right ascension at J2000.0, in hours (0 ≤ raH < 24)
+//   decD — declination at J2000.0, in degrees (−90 ≤ decD ≤ +90)
+//   mag  — apparent visual magnitude (used for sprite sizing)
+//
+// Positions are epoch J2000.0. Precession to date is not applied — the
+// current sim frame rotates the whole celestial sphere by sidereal time
+// already, and cel-nav tolerances (~0.1' in the almanac) easily absorb
+// the <1' decade-scale precession for tracker readouts. If strict
+// apparent-of-date positions are needed later, apply the Meeus IAU 2006
+// precession matrix to raH/decD inside the renderer.
+
+export const CEL_NAV_STARS = [
+  // 57-star Nautical Almanac list, numbered left-to-right as in the almanac
+  { id: 'alpheratz',   name: 'Alpheratz',   raH:  0.1398, decD:  29.0904, mag: 2.06 },
+  { id: 'ankaa',       name: 'Ankaa',       raH:  0.4380, decD: -42.3060, mag: 2.38 },
+  { id: 'schedar',     name: 'Schedar',     raH:  0.6751, decD:  56.5373, mag: 2.24 },
+  { id: 'diphda',      name: 'Diphda',      raH:  0.7265, decD: -17.9867, mag: 2.04 },
+  { id: 'achernar',    name: 'Achernar',    raH:  1.6286, decD: -57.2367, mag: 0.46 },
+  { id: 'hamal',       name: 'Hamal',       raH:  2.1196, decD:  23.4625, mag: 2.00 },
+  { id: 'polaris',     name: 'Polaris',     raH:  2.5302, decD:  89.2641, mag: 1.97 },
+  { id: 'acamar',      name: 'Acamar',      raH:  2.9711, decD: -40.3047, mag: 2.90 },
+  { id: 'menkar',      name: 'Menkar',      raH:  3.0380, decD:   4.0897, mag: 2.53 },
+  { id: 'mirfak',      name: 'Mirfak',      raH:  3.4054, decD:  49.8612, mag: 1.79 },
+  { id: 'aldebaran',   name: 'Aldebaran',   raH:  4.5987, decD:  16.5093, mag: 0.85 },
+  { id: 'rigel',       name: 'Rigel',       raH:  5.2423, decD:  -8.2017, mag: 0.12 },
+  { id: 'capella',     name: 'Capella',     raH:  5.2782, decD:  45.9980, mag: 0.08 },
+  { id: 'bellatrix',   name: 'Bellatrix',   raH:  5.4188, decD:   6.3497, mag: 1.64 },
+  { id: 'elnath',      name: 'Elnath',      raH:  5.4382, decD:  28.6075, mag: 1.65 },
+  { id: 'alnilam',     name: 'Alnilam',     raH:  5.6036, decD:  -1.2019, mag: 1.69 },
+  { id: 'betelgeuse',  name: 'Betelgeuse',  raH:  5.9195, decD:   7.4071, mag: 0.50 },
+  { id: 'canopus',     name: 'Canopus',     raH:  6.3992, decD: -52.6957, mag: -0.72 },
+  { id: 'sirius',      name: 'Sirius',      raH:  6.7525, decD: -16.7161, mag: -1.46 },
+  { id: 'adhara',      name: 'Adhara',      raH:  6.9770, decD: -28.9722, mag: 1.50 },
+  { id: 'procyon',     name: 'Procyon',     raH:  7.6550, decD:   5.2250, mag: 0.38 },
+  { id: 'pollux',      name: 'Pollux',      raH:  7.7553, decD:  28.0262, mag: 1.14 },
+  { id: 'avior',       name: 'Avior',       raH:  8.3752, decD: -59.5093, mag: 1.86 },
+  { id: 'suhail',      name: 'Suhail',      raH:  9.1330, decD: -43.4326, mag: 2.21 },
+  { id: 'miaplacidus', name: 'Miaplacidus', raH:  9.2200, decD: -69.7172, mag: 1.67 },
+  { id: 'alphard',     name: 'Alphard',     raH:  9.4597, decD:  -8.6586, mag: 1.98 },
+  { id: 'regulus',     name: 'Regulus',     raH: 10.1395, decD:  11.9672, mag: 1.35 },
+  { id: 'dubhe',       name: 'Dubhe',       raH: 11.0621, decD:  61.7511, mag: 1.79 },
+  { id: 'denebola',    name: 'Denebola',    raH: 11.8177, decD:  14.5720, mag: 2.13 },
+  { id: 'gienah',      name: 'Gienah',      raH: 12.2634, decD: -17.5419, mag: 2.59 },
+  { id: 'acrux',       name: 'Acrux',       raH: 12.4433, decD: -63.0991, mag: 0.77 },
+  { id: 'gacrux',      name: 'Gacrux',      raH: 12.5194, decD: -57.1133, mag: 1.63 },
+  { id: 'alioth',      name: 'Alioth',      raH: 12.9005, decD:  55.9598, mag: 1.77 },
+  { id: 'spica',       name: 'Spica',       raH: 13.4199, decD: -11.1613, mag: 1.04 },
+  { id: 'alkaid',      name: 'Alkaid',      raH: 13.7923, decD:  49.3133, mag: 1.86 },
+  { id: 'hadar',       name: 'Hadar',       raH: 14.0637, decD: -60.3730, mag: 0.61 },
+  { id: 'menkent',     name: 'Menkent',     raH: 14.1112, decD: -36.3700, mag: 2.06 },
+  { id: 'arcturus',    name: 'Arcturus',    raH: 14.2610, decD:  19.1824, mag: -0.05 },
+  { id: 'rigilkent',   name: 'Rigil Kent',  raH: 14.6600, decD: -60.8354, mag: -0.01 },
+  { id: 'zubenelgenubi', name: "Zuben'ubi", raH: 14.8479, decD: -16.0418, mag: 2.75 },
+  { id: 'kochab',      name: 'Kochab',      raH: 14.8451, decD:  74.1555, mag: 2.08 },
+  { id: 'alphecca',    name: 'Alphecca',    raH: 15.5781, decD:  26.7147, mag: 2.23 },
+  { id: 'antares',     name: 'Antares',     raH: 16.4901, decD: -26.4320, mag: 1.09 },
+  { id: 'atria',       name: 'Atria',       raH: 16.8111, decD: -69.0277, mag: 1.91 },
+  { id: 'sabik',       name: 'Sabik',       raH: 17.1729, decD: -15.7249, mag: 2.43 },
+  { id: 'shaula',      name: 'Shaula',      raH: 17.5603, decD: -37.1038, mag: 1.62 },
+  { id: 'rasalhague',  name: 'Rasalhague',  raH: 17.5823, decD:  12.5601, mag: 2.08 },
+  { id: 'eltanin',     name: 'Eltanin',     raH: 17.9434, decD:  51.4889, mag: 2.23 },
+  { id: 'kausaust',    name: 'Kaus Aust.',  raH: 18.4029, decD: -34.3846, mag: 1.85 },
+  { id: 'vega',        name: 'Vega',        raH: 18.6156, decD:  38.7837, mag: 0.03 },
+  { id: 'nunki',       name: 'Nunki',       raH: 18.9211, decD: -26.2967, mag: 2.02 },
+  { id: 'altair',      name: 'Altair',      raH: 19.8464, decD:   8.8683, mag: 0.77 },
+  { id: 'peacock',     name: 'Peacock',     raH: 20.4274, decD: -56.7350, mag: 1.94 },
+  { id: 'deneb',       name: 'Deneb',       raH: 20.6905, decD:  45.2803, mag: 1.25 },
+  { id: 'enif',        name: 'Enif',        raH: 21.7364, decD:   9.8750, mag: 2.39 },
+  { id: 'alnair',      name: "Al Na'ir",    raH: 22.1372, decD: -46.9609, mag: 1.74 },
+  { id: 'fomalhaut',   name: 'Fomalhaut',   raH: 22.9609, decD: -29.6222, mag: 1.16 },
+  { id: 'markab',      name: 'Markab',      raH: 23.0793, decD:  15.2053, mag: 2.49 },
+];
+
+// Lookup by id.
+const BY_ID = new Map(CEL_NAV_STARS.map((s) => [s.id, s]));
+
+export function celNavStarById(id) {
+  return BY_ID.get(id) || null;
+}
+
+// Select options ready to drop into the control-panel schema.
+export const CEL_NAV_SELECT_OPTIONS = CEL_NAV_STARS.map((s) => ({
+  value: `star:${s.id}`,
+  label: s.name,
+}));

@@ -131,6 +131,28 @@ export function buildGeoJsonLand(geojson, projection, {
 }
 
 // -------------------------------------------------------------------------
+// Blank path
+// -------------------------------------------------------------------------
+//
+// Solid black disc at FE disc size. Used to inspect the canonical
+// coordinate shell (graticule, tropics, longitude ring, azimuth grid)
+// without any geographic art on top.
+
+export function buildBlankMap({ feRadius = 1, color = 0x000000 } = {}) {
+  const group = new THREE.Group();
+  group.name = 'land';
+  const mat = new THREE.MeshBasicMaterial({
+    color, transparent: false, side: THREE.DoubleSide, depthWrite: false,
+  });
+  const geom = new THREE.CircleGeometry(feRadius, 128);
+  const mesh = new THREE.Mesh(geom, mat);
+  mesh.position.z = EPS_LIFT;
+  mesh.name = 'blank-disc';
+  group.add(mesh);
+  return group;
+}
+
+// -------------------------------------------------------------------------
 // Image-asset path
 // -------------------------------------------------------------------------
 //

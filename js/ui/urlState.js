@@ -2,7 +2,8 @@
 // Only the observable scalar state fields are round-tripped.
 
 const PERSISTED_KEYS = [
-  'ObserverLat', 'ObserverLong', 'Zoom',
+  'ObserverLat', 'ObserverLong', 'ObserverElevation',
+  'Zoom', 'OpticalZoom',
   'CameraDirection', 'CameraHeight', 'CameraDistance',
   'DateTime', 'VaultSize', 'VaultHeight',
   'OpticalVaultSize', 'OpticalVaultHeight',
@@ -12,6 +13,7 @@ const PERSISTED_KEYS = [
   'ShowOpticalVaultRays', 'ShowManyRays', 'ShowTruePositions',
   'ShowLatitudeLines', 'ShowGroundPoints', 'ShowPlanets', 'ShowLogo',
   'ShowConstellations', 'ShowConstellationLines',
+  'ShowLongitudeRing', 'ShowAzimuthRing',
   'DynamicStars',
   'TimezoneOffsetMinutes',
   'StarfieldVaultHeight', 'MoonVaultHeight', 'SunVaultHeight',
@@ -21,9 +23,16 @@ const PERSISTED_KEYS = [
   'Cosmology',
   'MapProjection',
   'StarfieldType',
+  // S009
+  'BodySource', 'PermanentNight', 'TrackerTarget',
 ];
 
-const STRING_KEYS = new Set(['ObserverFigure', 'Cosmology', 'MapProjection', 'StarfieldType']);
+const STRING_KEYS = new Set([
+  'ObserverFigure', 'Cosmology', 'MapProjection', 'StarfieldType',
+  // S009 — BodySource + TrackerTarget carry string values; PermanentNight
+  // is boolean and rides the existing bool branch in paramsToPatch().
+  'BodySource', 'TrackerTarget',
+]);
 
 function stateToParams(state) {
   const p = new URLSearchParams();

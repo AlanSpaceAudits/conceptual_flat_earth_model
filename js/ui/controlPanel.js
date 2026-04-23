@@ -4,6 +4,7 @@
 import { dateTimeToString, dateTimeToDate } from '../core/time.js';
 import { TIME_ORIGIN } from '../core/constants.js';
 import { findNextEclipses } from '../core/ephemeris.js';
+import { CEL_NAV_SELECT_OPTIONS } from '../core/celnavStars.js';
 import { listProjections } from '../core/projections.js';
 import { Autoplay } from './autoplay.js';
 
@@ -140,9 +141,6 @@ const FIELD_GROUPS = [
   {
     tab: 'View', groups: [
       { title: 'Observer', rows: [
-        { key: 'ObserverLat',  label: 'ObserverLat',  unit: '°', min: -90,  max:  90,  step: 0.1 },
-        { key: 'ObserverLong', label: 'ObserverLong', unit: '°', min: -180, max: 180,  step: 0.1 },
-        { key: 'ObserverHeading', label: 'Facing',    unit: '°', min: 0,    max: 360,  step: 1, cardinal: true },
         { key: 'ObserverFigure', label: 'Figure', select: [
           { value: 'male',     label: 'Male' },
           { value: 'female',   label: 'Female' },
@@ -157,6 +155,21 @@ const FIELD_GROUPS = [
           { value: 'kangaroo', label: 'Kangaroo' },
           { value: 'none',     label: 'None' },
         ]},
+        { key: 'ObserverLat',  label: 'ObserverLat',  unit: '°', min: -90,  max:  90,  step: 0.1 },
+        { key: 'ObserverLong', label: 'ObserverLong', unit: '°', min: -180, max: 180,  step: 0.1 },
+        // S007 — observer elevation above the disc. Drives the camera
+        // z-offset in Optical mode; geometry (cardinals, meridian arc,
+        // heading line) stays ground-anchored.
+        { key: 'ObserverElevation', label: 'Elevation', unit: '', min: 0, max: 0.5, step: 0.001 },
+        { key: 'ObserverHeading', label: 'Facing',    unit: '°', min: 0,    max: 360,  step: 0.0001, cardinal: true },
+        { key: 'ObserverHeading', label: 'Nudge', nudge: [
+          { delta:  1,        label: '+1°' },
+          { delta: -1,        label: '−1°' },
+          { delta:  1/60,     label: "+1'" },
+          { delta: -1/60,     label: "−1'" },
+          { delta:  1/3600,   label: '+1"' },
+          { delta: -1/3600,   label: '−1"' },
+        ], wrap360: true },
         { key: 'InsideVault', label: '', action: {
           enterLabel: 'Heavenly Vault', exitLabel: 'Optical Vault',
         } },
@@ -217,6 +230,8 @@ const FIELD_GROUPS = [
         { key: 'ShowStars',           label: 'Stars',              bool: true },
         { key: 'ShowConstellations',      label: 'Constellations',        bool: true },
         { key: 'ShowConstellationLines',  label: 'Constellation outlines', bool: true },
+        { key: 'ShowLongitudeRing',       label: 'Longitude ring (ground)', bool: true },
+        { key: 'ShowAzimuthRing',         label: 'Azimuth ring (vault)',    bool: true },
         { key: 'DynamicStars',        label: 'Starfield Mode',
           boolSelect: { trueLabel: 'Dynamic (fade w/ day)', falseLabel: 'Static (always visible)' } },
         { key: 'ShowVaultRays',       label: 'Vault Rays',         bool: true },
@@ -237,6 +252,38 @@ const FIELD_GROUPS = [
           { value: 'random',      label: 'Default (random)' },
           { value: 'chart-dark',  label: 'Chart (dark)' },
           { value: 'chart-light', label: 'Chart (light)' },
+          { value: 'celnav',      label: 'Cel Nav (named stars)' },
+        ]},
+        // S009 — permanent night mode so starfield / body placement can
+        // be tested without waiting for the sun to set.
+        { key: 'PermanentNight', label: 'Permanent night', bool: true },
+      ]},
+    ],
+  },
+  // S009 — dedicated Tracker tab. Manual-select dropdown (sun, moon,
+  // five planets, 58 Cel Nav stars) feeds the second HUD panel's
+  // azimuth/elevation/RA/Dec readout. Also exposes BodySource so the
+  // user can toggle the helioc vs geoc pipeline and see readouts are
+  // consistent.
+  {
+    tab: 'Tracker', groups: [
+      { title: 'Object', rows: [
+        { key: 'TrackerTarget', label: 'Track', select: [
+          { value: 'none',    label: '— none —' },
+          { value: 'sun',     label: 'Sun' },
+          { value: 'moon',    label: 'Moon' },
+          { value: 'mercury', label: 'Mercury' },
+          { value: 'venus',   label: 'Venus' },
+          { value: 'mars',    label: 'Mars' },
+          { value: 'jupiter', label: 'Jupiter' },
+          { value: 'saturn',  label: 'Saturn' },
+          ...CEL_NAV_SELECT_OPTIONS,
+        ]},
+      ]},
+      { title: 'Ephemeris', rows: [
+        { key: 'BodySource', label: 'Source', select: [
+          { value: 'geocentric',   label: 'Geocentric' },
+          { value: 'heliocentric', label: 'Heliocentric' },
         ]},
       ]},
     ],
@@ -350,6 +397,33 @@ function cardinalRow(model, row) {
   return wrap;
 }
 
+// Fine-increment nudge buttons for a numeric key. `row.nudge` is an
+// array of { delta, label } entries; each button adds its delta to the
+// stored value. If `row.wrap360` is true the result wraps into
+// [0, 360). Used for degree fields where the user wants sub-degree
+// precision (arcminute = 1/60°, arcsecond = 1/3600°) without fighting
+// a super-sensitive slider.
+function nudgeRow(model, row) {
+  const el = document.createElement('div');
+  el.className = 'row nudge-buttons';
+  const btnsHtml = row.nudge
+    .map((n, i) => `<button data-i="${i}">${n.label}</button>`)
+    .join('');
+  el.innerHTML = `<label>${row.label}</label>${btnsHtml}`;
+  const buttons = Array.from(el.querySelectorAll('button'));
+  buttons.forEach((b, i) => {
+    b.addEventListener('click', () => {
+      const delta = row.nudge[i].delta;
+      const cur = model.state[row.key];
+      let next = (Number.isFinite(cur) ? cur : 0) + delta;
+      if (row.wrap360) next = ((next % 360) + 360) % 360;
+      model.setState({ [row.key]: next });
+    });
+  });
+  el.style.gridTemplateColumns = `96px repeat(${row.nudge.length}, 1fr)`;
+  return el;
+}
+
 // Single toggle button whose label flips based on a boolean state field.
 // row.action is `{ enterLabel, exitLabel }` — shown when the field is
 // false / true respectively.
@@ -436,6 +510,7 @@ export function buildControlPanel(panelEl, model, demos) {
         else if (row.select) rowEl = selectRow(model, row);
         else if (row.cardinal) rowEl = cardinalRow(model, row);
         else if (row.action) rowEl = actionRow(model, row);
+        else if (row.nudge) rowEl = nudgeRow(model, row);
         else rowEl = numericRow(model, row);
         panel.appendChild(rowEl);
       });
@@ -617,6 +692,67 @@ export function buildHud(hudEl, model) {
     moonLabel.textContent =
       `${moonPhaseName(c.MoonPhaseFraction, waxing)}  ·  ${(c.MoonPhaseFraction * 100).toFixed(0)}%`;
   };
+  model.addEventListener('update', refresh);
+  refresh();
+}
+
+// S009 — Tracker HUD panel. Sits directly under the main HUD `#hud`,
+// styled with the same `.line` rows, and subscribes to the model's
+// `update` event. When `TrackerTarget` is 'none' the panel collapses
+// (display: none); otherwise it reports name, az, el, RA, Dec, and the
+// source timestamp for the selected object. Manual-select fallback for
+// clickable object selection: users pick the target from the Tracker
+// tab in the control panel.
+export function buildTrackerHud(trackerEl, model) {
+  trackerEl.classList.add('tracker-hud');
+  const titleEl = document.createElement('div');
+  titleEl.className = 'line tracker-title';
+  trackerEl.appendChild(titleEl);
+
+  const lines = ['azel', 'radec', 'src'].map(() => {
+    const d = document.createElement('div');
+    d.className = 'line';
+    trackerEl.appendChild(d);
+    return d;
+  });
+
+  const fmtDeg = (v, p = 1) => (v >= 0 ? '+' : '') + v.toFixed(p);
+  const fmtHours = (raRad) => {
+    const h = ((raRad % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI) * 12 / Math.PI;
+    const hh = Math.floor(h);
+    const mm = Math.floor((h - hh) * 60);
+    const ss = ((h - hh) * 60 - mm) * 60;
+    return `${String(hh).padStart(2, '0')}ʰ${String(mm).padStart(2, '0')}ᵐ${ss.toFixed(1).padStart(4, '0')}ˢ`;
+  };
+  const fmtDms = (decRad) => {
+    const d = decRad * 180 / Math.PI;
+    const sign = d < 0 ? '−' : '+';
+    const abs = Math.abs(d);
+    const dd = Math.floor(abs);
+    const mRaw = (abs - dd) * 60;
+    const mm = Math.floor(mRaw);
+    const ss = (mRaw - mm) * 60;
+    return `${sign}${String(dd).padStart(2, '0')}°${String(mm).padStart(2, '0')}′${ss.toFixed(1).padStart(4, '0')}″`;
+  };
+
+  const refresh = () => {
+    const info = model.computed.TrackerInfo;
+    if (!info) {
+      trackerEl.style.display = 'none';
+      return;
+    }
+    trackerEl.style.display = '';
+    const catLabel = info.category === 'star' ? 'star'
+                   : info.category === 'planet' ? 'planet'
+                   : 'luminary';
+    titleEl.textContent = `Tracking: ${info.name} (${catLabel})`;
+    lines[0].textContent = `az ${fmtDeg(info.azimuth, 2)}°   el ${fmtDeg(info.elevation, 2)}°`;
+    lines[1].textContent = `RA ${fmtHours(info.ra)}   Dec ${fmtDms(info.dec)}`;
+    const srcTag = info.source === 'heliocentric' ? 'helio' : 'geo';
+    const magTag = (info.mag != null) ? `   mag ${info.mag.toFixed(2)}` : '';
+    lines[2].textContent = `src ${srcTag}   ${dateTimeToString(model.state.DateTime)}${magTag}`;
+  };
+
   model.addEventListener('update', refresh);
   refresh();
 }

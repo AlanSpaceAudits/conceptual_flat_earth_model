@@ -7,8 +7,9 @@ import {
   DiscBase, DiscGrid, Shadow, VaultOfHeavens, ObserversOpticalVault,
   CelestialMarker, Observer, Stars, LatitudeLines, GroundPoint,
   CelestialPoles, DeclinationCircles, Yggdrasil, MtMeru, ToroidalVortex,
+  LongitudeRing, CelNavStars,
 } from './worldObjects.js';
-import { loadLandGeo, buildGeoJsonLand, buildImageMap } from './earthMap.js';
+import { loadLandGeo, buildGeoJsonLand, buildImageMap, buildBlankMap } from './earthMap.js';
 import { Constellations } from './constellations.js';
 import { StarfieldChart } from './starfieldChart.js';
 import { getProjection } from '../core/projections.js';
@@ -31,6 +32,9 @@ export class Renderer {
 
     this.discBase = new DiscBase(FE_RADIUS);
     this.sm.world.add(this.discBase.group);
+
+    this.longitudeRing = new LongitudeRing(FE_RADIUS);
+    this.sm.world.add(this.longitudeRing.group);
 
     this.land = null; // populated async
 
@@ -64,6 +68,12 @@ export class Renderer {
 
     this.stars = new Stars(2000, clipPlanes);
     this.sm.world.add(this.stars.group);
+
+    // S009 — Cel Nav starfield. Hidden unless StarfieldType === 'celnav';
+    // shares the ShowStars / DynamicStars / NightFactor gates with the
+    // procedural `stars` cloud.
+    this.celNavStars = new CelNavStars(clipPlanes);
+    this.sm.world.add(this.celNavStars.group);
 
     this.constellations = new Constellations(clipPlanes);
     this.sm.world.add(this.constellations.group);
@@ -163,7 +173,8 @@ export class Renderer {
 
   _rebuildLand(projectionId) {
     const projection = getProjection(projectionId);
-    if (!this._landGeo && !projection.imageAsset) return;
+    const isBlank = projection.renderStyle === 'blank';
+    if (!this._landGeo && !projection.imageAsset && !isBlank) return;
     if (this.land) {
       this.sm.world.remove(this.land);
       this.land.traverse((o) => {
@@ -174,7 +185,9 @@ export class Renderer {
         }
       });
     }
-    this.land = projection.imageAsset
+    this.land = isBlank
+      ? buildBlankMap({ feRadius: FE_RADIUS })
+      : projection.imageAsset
       ? buildImageMap(projection, { feRadius: FE_RADIUS })
       : buildGeoJsonLand(this._landGeo, projection, { feRadius: FE_RADIUS });
     this.sm.world.add(this.land);
@@ -218,35 +231,29 @@ export class Renderer {
     const m = this.model;
     const c = m.computed, s = m.state;
     const projId = s.MapProjection || 'ae';
-    const projection = getProjection(projId);
     if (projId !== this._landProjection) {
       this._rebuildLand(projId);
     }
     this.discGrid.update(m);
     this.shadow.update(m);
     this.latLines.update(m);
+    this.longitudeRing.update(m);
 
-    // Sub-solar and sub-lunar ground points (lat/lon where the body is
-    // currently at zenith). Dec is the lat; lon is RA - GMST, wrapped to
-    // [-180, 180]. These are the disc-surface projections of the true
-    // sources on the vault of the heavens.
+    // Sub-solar and sub-lunar ground points land on the canonical
+    // shell, not the projection art. Projection choice no longer
+    // moves sun / moon dots, vault markers, or tracks.
     const wrapLon = (x) => ((x + 180) % 360 + 360) % 360 - 180;
     const sunLat  = c.SunDec * 180 / Math.PI;
     const sunLon  = wrapLon(c.SunRA * 180 / Math.PI - c.SkyRotAngle);
     const moonLat = c.MoonDec * 180 / Math.PI;
     const moonLon = wrapLon(c.MoonRA * 180 / Math.PI - c.SkyRotAngle);
-    this.sunGP.updateAt(sunLat,  sunLon,  FE_RADIUS, s.ShowGroundPoints, projection);
-    this.moonGP.updateAt(moonLat, moonLon, FE_RADIUS, s.ShowGroundPoints, projection);
+    this.sunGP.updateAt(sunLat,  sunLon,  FE_RADIUS, s.ShowGroundPoints);
+    this.moonGP.updateAt(moonLat, moonLon, FE_RADIUS, s.ShowGroundPoints);
 
-    // Re-project visual vault coords (x, y only — keep z from model) so
-    // each body's dome marker sits over its own projected GP instead of
-    // drifting away when a non-AE projection is active.
-    const projXY = (lat, lon, z) => {
-      const p = projection.project(lat, lon, FE_RADIUS);
-      return [p[0], p[1], z];
-    };
-    const sunVaultVis  = projId === 'ae' ? c.SunVaultCoord  : projXY(sunLat,  sunLon,  c.SunVaultCoord[2]);
-    const moonVaultVis = projId === 'ae' ? c.MoonVaultCoord : projXY(moonLat, moonLon, c.MoonVaultCoord[2]);
+    // Vault markers use the canonical vault coords app.js already
+    // computes. No overlay-level re-projection.
+    const sunVaultVis  = c.SunVaultCoord;
+    const moonVaultVis = c.MoonVaultCoord;
 
     // Vertical dashed line from each body's sub-point on its vault down
     // to its ground point on the disc. Hidden when the true-source end is
@@ -265,6 +272,7 @@ export class Renderer {
     this.vaultOfHeavens.update(m);
     this.observersOpticalVault.update(m);
     this.stars.update(m);
+    this.celNavStars.update(m);
     this.starfieldChart.update(m);
     this.constellations.update(m);
     // When a chart starfield is active, hide both the heavenly-vault and
@@ -310,12 +318,8 @@ export class Renderer {
         continue;
       }
       mk.group.visible = true;
-      let vaultVis = p.vaultCoord;
-      if (projId !== 'ae') {
-        const planetLon = wrapLon(p.ra * 180 / Math.PI - c.SkyRotAngle);
-        vaultVis = projXY(p.celestLatLong.lat, planetLon, p.vaultCoord[2]);
-      }
-      mk.update(vaultVis, p.opticalVaultCoord, showTrueVault, s.ShowOpticalVault,
+      mk.update(p.vaultCoord, p.opticalVaultCoord,
+                showTrueVault, s.ShowOpticalVault,
                 p.anglesGlobe.elevation, c.NightFactor);
     }
 
@@ -355,20 +359,15 @@ export class Renderer {
   _updateTracks() {
     const s = this.model.state;
     const c = this.model.computed;
-    const projId = s.MapProjection || 'ae';
-    const projection = getProjection(projId);
+    // Tracks are built on the canonical shell via celestLatLongToVaultCoord
+    // (AE math internally) + TransMatVaultToFe. Projection choice does
+    // not move them.
     const trackPts = (lat) => {
       const pts = [];
       for (let lon = -180; lon <= 180; lon += 3) {
         const local = celestLatLongToVaultCoord(lat, lon, s.VaultSize, s.VaultHeight);
         const p = vaultCoordToGlobalFeCoord(local, c.TransMatVaultToFe);
-        if (projId === 'ae') {
-          pts.push(p[0], p[1], p[2]);
-        } else {
-          const discLon = lon - c.SkyRotAngle;
-          const pr = projection.project(lat, discLon, FE_RADIUS);
-          pts.push(pr[0], pr[1], p[2]);
-        }
+        pts.push(p[0], p[1], p[2]);
       }
       return pts;
     };

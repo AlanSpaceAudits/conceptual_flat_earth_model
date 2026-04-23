@@ -60,6 +60,24 @@ header .info-popup p:last-child { margin-bottom: 0; }
 #hud .moon-phase-canvas { display: block; }
 #hud .moon-phase-label { font-size: 11px; color: #f4f6fa; }
 
+/* S009 — Tracker HUD panel, stacks under #hud using the same visual
+   language but with an accent-orange border so it reads as a distinct
+   sub-readout. Offset is a fixed pixel drop below the top of #view
+   that comfortably clears the main HUD's default 7-line content. */
+#tracker-hud {
+  position: absolute; top: 160px; left: 8px;
+  pointer-events: none;
+  font: 12px/1.4 ui-monospace, Menlo, monospace;
+  color: #f4f6fa;
+  background: rgba(10, 14, 22, 0.78);
+  border: 1px solid rgba(244, 166, 64, 0.45);
+  border-radius: 6px;
+  padding: 6px 9px;
+  max-width: 440px;
+}
+#tracker-hud .line { white-space: pre; }
+#tracker-hud .tracker-title { color: #f4a640; font-weight: 600; margin-bottom: 2px; }
+
 #panel { grid-area: panel; background: var(--panel); border-left: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; }
 #panel .tabs { display: flex; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
 #panel .tabs button { flex: 1 1 auto; padding: 8px; background: transparent; border: 0; border-right: 1px solid var(--border); color: var(--muted); cursor: pointer; font: inherit; }
@@ -130,6 +148,15 @@ footer#desc .desc-dynamic { color: var(--fg); }
   border-color: #ff8c1a; font-weight: bold;
 }
 .row.cardinal-buttons button.active:hover { background: #ffa040; border-color: #ffa040; color: #1a1a1a; }
+
+.row.nudge-buttons { gap: 3px; }
+.row.nudge-buttons button {
+  background: var(--row); color: var(--fg);
+  border: 1px solid var(--border); border-radius: 3px;
+  padding: 3px 0; font: inherit; font-size: 11px;
+  cursor: pointer;
+}
+.row.nudge-buttons button:hover { border-color: var(--accent); color: var(--accent); }
 
 .row.action-row { grid-template-columns: 1fr; }
 .row.action-row label { display: none; }

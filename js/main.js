@@ -3,7 +3,7 @@
 import { FeModel } from './core/app.js';
 import { Renderer } from './render/index.js';
 import { attachMouseHandler } from './ui/mouseHandler.js';
-import { buildControlPanel, buildHud } from './ui/controlPanel.js';
+import { buildControlPanel, buildHud, buildTrackerHud } from './ui/controlPanel.js';
 import { Demos } from './demos/index.js';
 import { attachUrlState } from './ui/urlState.js';
 
@@ -16,6 +16,10 @@ const panelEl = document.getElementById('panel');
 buildControlPanel(panelEl, model, demos);
 const hudEl = document.getElementById('hud');
 buildHud(hudEl, model);
+// S009 — second HUD panel for the Tracker. Sits below #hud and is
+// hidden whenever TrackerTarget === 'none'.
+const trackerHudEl = document.getElementById('tracker-hud');
+if (trackerHudEl) buildTrackerHud(trackerHudEl, model);
 
 let renderer = null;
 try {
@@ -77,6 +81,86 @@ if (logoEl) {
   model.addEventListener('update', syncLogo);
   syncLogo();
 }
+
+// S002 — Optical vault entry default. When the user transitions
+// FROM Heavenly INTO Optical, snap OpticalZoom to 5.09 (the desired
+// entry zoom) unless they already have a non-default value. Orbit
+// Zoom is never touched here, so switching modes never blows out
+// the Heavenly camera.
+// S006b — also snap CameraHeight (pitch) to 10° on entry. With
+// CameraHeight = 0 (horizon) and FOV 14.74°, the 9° vertical slice
+// of the view only intersects the bottom ~5° of the 90° active-
+// meridian arc, so the arc reads as a tiny stub and the user can't
+// see the ground-line continuing into the sky. A 10° uptilt puts
+// segments 13-15 of the 16-segment arc inside the visible band, so
+// the yellow guide visibly rises from the horizon on the very first
+// frame after entering Optical. The user can still drag to pitch
+// back down to the horizon if they want.
+// S006c — entry at FOV 37.5° (OpticalZoom = 2.0) lands in the 15°
+// coarse regime, matching the user's requested ladder: start at 15°,
+// wheel in to 5° (FOV < 30°), wheel further to 1° (FOV < 8°). The
+// previous entry zoom of 5.09 landed directly in the 5° regime, which
+// skipped the 15° inspection layer.
+const OPTICAL_ENTRY_ZOOM  = 2.0;
+const OPTICAL_ENTRY_PITCH = 10;
+let _prevInsideVault = !!model.state.InsideVault;
+model.addEventListener('update', () => {
+  const now = !!model.state.InsideVault;
+  if (now && !_prevInsideVault) {
+    model.setState({
+      OpticalZoom:  OPTICAL_ENTRY_ZOOM,
+      CameraHeight: OPTICAL_ENTRY_PITCH,
+    });
+  }
+  _prevInsideVault = now;
+});
+
+// S002 — Active-cadence HUD chip. Shows the current angular step
+// the Optical wheel is operating in (15° / 1° / 1' / 1"). Visible
+// only in Optical mode.
+const cadenceChip = document.createElement('div');
+cadenceChip.id = 'cadence-chip';
+cadenceChip.style.cssText = `
+  position: absolute;
+  top: 8px;
+  right: 12px;
+  pointer-events: none;
+  font: 12px/1.4 ui-monospace, Menlo, monospace;
+  color: #f4a640;
+  background: rgba(10, 14, 22, 0.78);
+  border: 1px solid rgba(244, 166, 64, 0.4);
+  border-radius: 6px;
+  padding: 4px 10px;
+  z-index: 10;
+  display: none;
+`;
+const viewEl = document.getElementById('view');
+if (viewEl) viewEl.appendChild(cadenceChip);
+
+// S006 (revised — S006b) — three-tier ladder: static 15° wire,
+// refined 5°, refined 1°. Matches refinedAzCadenceForFov in
+// worldObjects.js and opticalCadenceStepDeg in mouseHandler.js.
+function activeCadenceLabel(fovDeg) {
+  if (fovDeg >= 30) return '15°';
+  if (fovDeg >= 8)  return '5°';
+  return '1°';
+}
+
+model.addEventListener('update', () => {
+  if (!cadenceChip) return;
+  const s = model.state;
+  if (!s.InsideVault) {
+    cadenceChip.style.display = 'none';
+    return;
+  }
+  const zoom = Math.max(0.2, s.OpticalZoom || 5.09);
+  const fov  = Math.max(1, Math.min(75, 75 / zoom));
+  const heading = ((s.ObserverHeading || 0) % 360 + 360) % 360;
+  cadenceChip.textContent =
+    `Step: ${activeCadenceLabel(fov)}  ·  FOV ${fov.toFixed(1)}°  ·  `
+    + `Facing ${heading.toFixed(1)}°`;
+  cadenceChip.style.display = '';
+});
 
 // When the user switches the starfield from random to a chart, auto-
 // uncheck the constellation overlays so they don't fight with the chart's

@@ -9,7 +9,7 @@ import { FE_RADIUS, GEOMETRY } from '../core/constants.js';
 import {
   pointOnFE, celestLatLongToVaultCoord, feLatLongToGlobalFeCoord,
 } from '../core/feGeometry.js';
-import { getProjection } from '../core/projections.js';
+import { canonicalLatLongToDisc } from '../core/canonical.js';
 import {
   latLongToCoord, coordToLatLong, vaultCoordToGlobalFeCoord,
 } from '../core/transforms.js';
@@ -17,16 +17,29 @@ import {
 
 const v3 = (a) => new THREE.Vector3(a[0], a[1], a[2]);
 
-// Canvas-textured sprite used for in-scene text labels (N/E/S/W cardinals).
+// Canvas-textured sprite used for in-scene text labels. Canvas size
+// tracks the measured text width so 3- and 4-character labels like
+// "30°" / "120°" / "330°" don't clip. Callers should use
+// setSpriteScale(sp, heightScale) to size the sprite — that keeps text
+// height consistent across labels while width follows the content.
 function makeTextSprite(text, color = '#ffffff') {
+  const fontPx = 44;
+  const padX = 12;
+  const padY = 10;
+  const probe = document.createElement('canvas').getContext('2d');
+  probe.font = `bold ${fontPx}px sans-serif`;
+  const textWidth = Math.ceil(probe.measureText(text).width);
+
   const canvas = document.createElement('canvas');
-  canvas.width = 64; canvas.height = 64;
+  canvas.width  = textWidth + padX * 2;
+  canvas.height = fontPx + padY * 2;
   const ctx = canvas.getContext('2d');
-  ctx.font = 'bold 44px sans-serif';
+  ctx.font = `bold ${fontPx}px sans-serif`;
   ctx.fillStyle = color;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText(text, 32, 32);
+  ctx.fillText(text, canvas.width / 2, canvas.height / 2);
+
   const tex = new THREE.CanvasTexture(canvas);
   tex.minFilter = THREE.LinearFilter;
   tex.magFilter = THREE.LinearFilter;
@@ -35,14 +48,132 @@ function makeTextSprite(text, color = '#ffffff') {
   });
   const sprite = new THREE.Sprite(mat);
   sprite.renderOrder = 65;
+  sprite.userData.aspect = canvas.width / canvas.height;
   return sprite;
+}
+
+// Scale a sprite produced by makeTextSprite by a target text height —
+// width is derived from the sprite's canvas aspect so labels of
+// different character counts render at a consistent height.
+function setSpriteScale(sprite, height) {
+  const a = sprite.userData.aspect || 1;
+  sprite.scale.set(height * a, height, height);
+}
+
+// Update a sprite's texture in place: redraws the canvas with new
+// text / colour. Preserves pool sprite slots without allocating new
+// Sprite / material instances.
+//
+// S006a — two fixes over the previous S003-era implementation:
+//
+//  1. Skip work entirely when the text is unchanged. The pool is
+//     repainted on every cache miss, but heading often moves without
+//     the visible label set changing (same integer degrees in view),
+//     so most calls are redundant. userData.lastText gates the no-op.
+//
+//  2. When the text HAS changed, dispose the old CanvasTexture and
+//     install a fresh one backed by the same canvas. Without this,
+//     some browsers / driver paths skip the GPU re-upload when a
+//     CanvasTexture's backing canvas is resized (which happens every
+//     time the text's pixel width changes), producing the stale-
+//     glyph artefacts the user reported — duplicate "0°" slots and
+//     trailing "° °" ghosts around narrow labels. Rebuilding the
+//     texture forces three.js to treat it as new.
+function repaintTextSprite(sprite, text, color) {
+  if (sprite.userData.lastText === text
+      && sprite.userData.lastColor === color) {
+    return;
+  }
+
+  const fontPx = 44;
+  const padX = 12;
+  const padY = 10;
+  const probe = document.createElement('canvas').getContext('2d');
+  probe.font = `bold ${fontPx}px sans-serif`;
+  const textWidth = Math.ceil(probe.measureText(text).width);
+
+  const canvas = sprite.material.map.image;
+  canvas.width  = textWidth + padX * 2;
+  canvas.height = fontPx + padY * 2;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.font = `bold ${fontPx}px sans-serif`;
+  ctx.fillStyle = color;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(text, canvas.width / 2, canvas.height / 2);
+
+  sprite.material.map.dispose();
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.minFilter = THREE.LinearFilter;
+  tex.magFilter = THREE.LinearFilter;
+  sprite.material.map = tex;
+  sprite.material.needsUpdate = true;
+  sprite.userData.aspect = canvas.width / canvas.height;
+  sprite.userData.lastText = text;
+  sprite.userData.lastColor = color;
+}
+
+// Pick tick / label cadence for the visible FOV. Returns:
+//   layer      — always 'degree' in the revised S006 scope
+//   majorArc   — meridian arc spacing in degrees (= major)
+//   minorArc   — set equal to majorArc so no minor arcs draw
+//   labelEvery — label stride in degrees
+//   fmt        — always 'deg' in the revised S006 scope
+//
+// S006 (revised — S006b) — three-layer refined cadence with the
+// intermediate 5° band restored. S006a dropped the 5° band because of
+// texture-reupload artefacts; those were fixed in S006a's rewritten
+// `repaintTextSprite`, so the 5° layer is safe to bring back. The
+// ladder now reads:
+//   • FOV ≥ 30°         →  static 15° wire handles it (null)
+//   • 8°  ≤ FOV < 30°   →  refined 5° meridians + 5° labels
+//   • FOV < 8°          →  refined 1° meridians + 1° labels
+// The OpticalZoom clamp in app.js still caps FOV at 1°, so sub-degree
+// cadences never appear.
+function refinedAzCadenceForFov(fovDeg) {
+  if (fovDeg >= 30) return null; // coarse 15° wire handles this range
+  if (fovDeg >= 8) {
+    return {
+      layer: 'degree-5',
+      majorArc: 5, minorArc: 5,
+      major: 5, minor: 5,
+      labelEvery: 5, fmt: 'deg',
+    };
+  }
+  return {
+    layer: 'degree-1',
+    majorArc: 1, minorArc: 1,
+    major: 1, minor: 1,
+    labelEvery: 1, fmt: 'deg',
+  };
+}
+
+// S006 (revised) — always whole degrees. `% 360` on the rounded value
+// prevents the `Math.round(359.7) = 360` → `"360°"` edge case where a
+// wrap-around label would collide with the `0°` label at the same
+// screen position. `fmt` is retained for call-site shape but ignored.
+function formatAzimuthLabel(azDeg /* fmt */) {
+  const a = ((azDeg % 360) + 360) % 360;
+  return (Math.round(a) % 360) + '°';
+}
+
+// S007 — elevation label cadence mirrors the azimuth ladder so the
+// right-side scale stays synchronised with the bottom band:
+//   FOV ≥ 30°        → 15° (coarse)
+//   8° ≤ FOV < 30°  →  5° (refined 5°)
+//   FOV <  8°        →  1° (refined 1°)
+function elevCadenceForFov(fovDeg) {
+  if (fovDeg >= 30) return 15;
+  if (fovDeg >= 8)  return 5;
+  return 1;
 }
 
 // Upper hemisphere grid as line segments: parallels (latitude rings) plus
 // meridians (longitude arcs from horizon to pole). No diagonal triangle
 // edges — used for the optical-vault wireframe so it reads as a clean sky
 // grid instead of a triangulated mesh.
-function buildLatLongHemisphereGeom(radius = 1, latRings = 6, lonRays = 12, ringRes = 64) {
+function buildLatLongHemisphereGeom(radius = 1, latRings = 6, lonRays = 24, ringRes = 64) {
   const positions = [];
   // Parallels — skip the pole (i=0) and the horizon ring (i=latRings); the
   // horizon will sit at the disc clip plane already.
@@ -116,6 +247,87 @@ function bezierQuad(p0, p1, p2, samples = 32) {
   return out;
 }
 
+// --- Heavenly-vault 360° longitude ring -----------------------------------
+//
+// A canonical ring around the FE disc rim that shows the 360° longitude
+// reference. Built once from canonicalLatLongToDisc; projection-
+// independent. This is the "outer circumference" azimuth-style marker
+// the Heavenly view reads against.
+//
+// Tick cadence is 10° minor / 30° major, with numeric labels every 30°.
+// Labels carry the longitude value of the meridian that meets the rim
+// at that point.
+// LongitudeRing labels are placed clockwise starting from the 0°
+// anchor (offset 180° so "0°" lands opposite world +x, aligning with
+// the observer's N direction when ObserverLong = 0). The clockwise
+// sweep matches compass / azimuth convention: 0° → 90° → 180° → 270°
+// going CW viewed from above.
+const LONGITUDE_RING_ANCHOR_DEG = 180;
+
+function ringAngleRad(d) {
+  // Anchor at LONGITUDE_RING_ANCHOR_DEG, advance clockwise with d.
+  return (LONGITUDE_RING_ANCHOR_DEG - d) * Math.PI / 180;
+}
+
+function buildDegreeTicks(radius, tickInner, tickOuter, stepDeg, color, opacity, z) {
+  const pts = [];
+  for (let d = 0; d < 360; d += stepDeg) {
+    const r = ringAngleRad(d);
+    const cos = Math.cos(r), sin = Math.sin(r);
+    pts.push(tickInner * cos, tickInner * sin, z,
+             tickOuter * cos, tickOuter * sin, z);
+  }
+  const geom = new THREE.BufferGeometry();
+  geom.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
+  return new THREE.LineSegments(
+    geom,
+    new THREE.LineBasicMaterial({
+      color, transparent: opacity < 1, opacity,
+      depthTest: false, depthWrite: false,
+    }),
+  );
+}
+function buildDegreeLabels(labelRadius, stepDeg, color, z, scale) {
+  const group = new THREE.Group();
+  for (let d = 0; d < 360; d += stepDeg) {
+    const r = ringAngleRad(d);
+    const sp = makeTextSprite(String(d) + '°', color);
+    sp.position.set(labelRadius * Math.cos(r), labelRadius * Math.sin(r), z);
+    setSpriteScale(sp, scale);
+    group.add(sp);
+  }
+  return group;
+}
+
+export class LongitudeRing {
+  constructor(feRadius = FE_RADIUS) {
+    this.group = new THREE.Group();
+    this.group.name = 'longitude-ring';
+    this.minorTicks = buildDegreeTicks(
+      feRadius, feRadius * 1.025, feRadius * 1.04,
+      10, 0x556677, 0.55, 4e-4,
+    );
+    this.majorTicks = buildDegreeTicks(
+      feRadius, feRadius * 1.025, feRadius * 1.065,
+      30, 0x334455, 0.85, 4e-4,
+    );
+    this.labels = buildDegreeLabels(
+      feRadius * 1.09, 30, '#334455', 4e-4, 0.09,
+    );
+    this.group.add(this.minorTicks);
+    this.group.add(this.majorTicks);
+    this.group.add(this.labels);
+  }
+  update(model) {
+    // Hidden in Optical-vault mode so it doesn't compete with the
+    // compass-azimuth ring on the observer's cap. In orbital /
+    // Heavenly mode both rings are visible — they measure different
+    // things but the user can see them together.
+    const inVault = !!model.state.InsideVault;
+    this.group.visible = !inVault && (model.state.ShowLongitudeRing !== false);
+  }
+}
+
 // --- FE disc + grid --------------------------------------------------------
 
 export class DiscBase {
@@ -151,28 +363,21 @@ export class LatitudeLines {
   constructor(feRadius = FE_RADIUS) {
     this.group = new THREE.Group();
     this.group.name = 'latitude-lines';
-    this.feRadius = feRadius;
-    this._circles = [
+    const circles = [
       { lat:  66.5636, color: 0x66ccff, label: 'Arctic Circle' },
       { lat:  23.4392, color: 0xffc844, label: 'Tropic of Cancer' },
       { lat:   0.0,    color: 0xff4040, label: 'Equator' },
       { lat: -23.4392, color: 0xffc844, label: 'Tropic of Capricorn' },
       { lat: -66.5636, color: 0x66ccff, label: 'Antarctic Circle' },
     ];
-    this._lastProjectionId = null;
-    this._rebuild(getProjection('ae'));
-  }
-  _rebuild(projection) {
-    while (this.group.children.length) {
-      const c = this.group.children.pop();
-      c.geometry?.dispose();
-      c.material?.dispose();
-    }
-    for (const c of this._circles) {
+    // Built once from the canonical coordinate shell. The tropic /
+    // polar / equator rings do not move when the map projection
+    // underneath changes. See js/core/canonical.js.
+    for (const c of circles) {
       const pts = [];
       for (let k = 0; k <= 256; k++) {
         const lon = -180 + k * (360 / 256);
-        const p = projection.project(c.lat, lon, this.feRadius);
+        const p = canonicalLatLongToDisc(c.lat, lon, feRadius);
         pts.push(p[0], p[1], 8e-4);
       }
       const geo = new THREE.BufferGeometry();
@@ -187,11 +392,8 @@ export class LatitudeLines {
       line.name = c.label;
       this.group.add(line);
     }
-    this._lastProjectionId = projection.id;
   }
   update(model) {
-    const projId = model.state.MapProjection || 'ae';
-    if (projId !== this._lastProjectionId) this._rebuild(getProjection(projId));
     this.group.visible = !!model.state.ShowLatitudeLines;
   }
 }
@@ -222,11 +424,12 @@ export class GroundPoint {
     this.dot.renderOrder = 40;
     this.group.add(this.dot);
   }
-  updateAt(latDeg, lonDeg, feRadius = FE_RADIUS, visible = true, projection = null) {
+  updateAt(latDeg, lonDeg, feRadius = FE_RADIUS, visible = true) {
     this.group.visible = visible;
     if (!visible) return;
-    const proj = projection || getProjection('ae');
-    const p = proj.project(latDeg, lonDeg, feRadius);
+    // Canonical shell — sub-solar / sub-lunar dot lands at the
+    // geographic lat/long in AE disc coords regardless of the map art.
+    const p = canonicalLatLongToDisc(latDeg, lonDeg, feRadius);
     this.dot.position.set(p[0], p[1], 1e-3);
   }
 }
@@ -359,22 +562,15 @@ export class DiscGrid {
   constructor(feRadius = FE_RADIUS) {
     this.group = new THREE.Group();
     this.group.name = 'disc-grid';
-    this.feRadius = feRadius;
-    this._lastProjectionId = null;
-    this._rebuild(getProjection('ae'));
-  }
-  _rebuild(projection) {
-    while (this.group.children.length) {
-      const c = this.group.children.pop();
-      c.geometry?.dispose();
-      c.material?.dispose();
-    }
     const segs = [];
+    // Lat / long graticule built once on the canonical coordinate
+    // shell. The grid is a property of the coordinate system, not the
+    // projection art — see js/core/canonical.js.
     for (let lat = -90 + 15; lat <= 75; lat += 15) {
       const ringPts = [];
       for (let k = 0; k <= 120; k++) {
         const lon = -180 + k * 3;
-        const p = projection.project(lat, lon, this.feRadius);
+        const p = canonicalLatLongToDisc(lat, lon, feRadius);
         ringPts.push(p[0], p[1], 2e-4);
       }
       for (let k = 0; k < ringPts.length - 3; k += 3) {
@@ -383,17 +579,14 @@ export class DiscGrid {
       }
     }
     for (let lon = 0; lon < 360; lon += 15) {
-      const a = projection.project(90, lon, this.feRadius);
-      const b = projection.project(-90, lon, this.feRadius);
+      const a = canonicalLatLongToDisc(90, lon, feRadius);
+      const b = canonicalLatLongToDisc(-90, lon, feRadius);
       segs.push(a[0], a[1], 2e-4, b[0], b[1], 2e-4);
     }
     this.lines = makeLineSegments(segs, 0x556677, { opacity: 0.4 });
     this.group.add(this.lines);
-    this._lastProjectionId = projection.id;
   }
   update(model) {
-    const projId = model.state.MapProjection || 'ae';
-    if (projId !== this._lastProjectionId) this._rebuild(getProjection(projId));
     this.group.visible = model.state.ShowFeGrid;
   }
 }
@@ -486,14 +679,15 @@ export class ObserversOpticalVault {
     );
     this.group.add(this.mesh);
 
-    // Latitude/longitude grid only — no triangle diagonals. WireframeGeometry
-    // would emit every triangle edge (including diagonals across each quad);
-    // we want a clean parallel-and-meridian grid instead, so build the line
-    // segments directly.
+    // Stellarium-style alt/az grid on the optical vault: altitude
+    // rings every 15° (at 15°/30°/45°/60°/75°) and azimuth meridians
+    // every 15° (24 of them). Same geometry viewed from inside
+    // (first-person) or outside (orbit) — azimuth and altitude cells
+    // therefore read identically in both modes.
     this.wire = new THREE.LineSegments(
-      buildLatLongHemisphereGeom(1),
+      buildLatLongHemisphereGeom(1, 6, 24),
       new THREE.LineBasicMaterial({
-        color: 0x555555, transparent: true, opacity: 0.5,
+        color: 0x7a8499, transparent: true, opacity: 0.55,
         clippingPlanes,
       }),
     );
@@ -530,36 +724,279 @@ export class ObserversOpticalVault {
     // against day/ocean backgrounds where blues used to disappear.
     this.cardinalsGroup = new THREE.Group();
     this.cardinalsGroup.name = 'cardinals';
+    // S006 (revised) — unit-direction recorded on each sprite so
+    // update() can re-home the label between the coarse radius (1.14,
+    // floating above the rim) and the refined radius (1.00, sitting
+    // on its own meridian ray as a compact anchor).
     const cardinalDefs = [
-      { letter: 'N', pos: [-1.08,  0.00, 0.02], color: '#ff6868' },
-      { letter: 'S', pos: [ 1.08,  0.00, 0.02], color: '#ff6868' },
-      { letter: 'E', pos: [ 0.00,  1.08, 0.02], color: '#7fe39a' },
-      { letter: 'W', pos: [ 0.00, -1.08, 0.02], color: '#7fe39a' },
+      { letter: 'N', dir: [-1,  0], color: '#ff6868' },
+      { letter: 'S', dir: [ 1,  0], color: '#ff6868' },
+      { letter: 'E', dir: [ 0,  1], color: '#7fe39a' },
+      { letter: 'W', dir: [ 0, -1], color: '#7fe39a' },
     ];
-    const SPRITE_SCALE = 0.18;
+    this._cardinalSprites = [];
     for (const d of cardinalDefs) {
       const sp = makeTextSprite(d.letter, d.color);
-      sp.position.set(d.pos[0], d.pos[1], d.pos[2]);
-      sp.scale.set(SPRITE_SCALE, SPRITE_SCALE, SPRITE_SCALE);
+      sp.userData.baseDir = d.dir;
+      sp.position.set(1.14 * d.dir[0], 1.14 * d.dir[1], 0.02);
+      setSpriteScale(sp, 0.10);
       this.cardinalsGroup.add(sp);
+      this._cardinalSprites.push(sp);
     }
     this.group.add(this.cardinalsGroup);
+
+    // Compass-azimuth ring on the vault rim. Ticks at 5° minor / 15°
+    // major, numeric labels every 15° (skipping the four cardinal
+    // slots since N/E/S/W own those). Shares the 1.14 label radius
+    // with the cardinals, so azimuth 0 / 30 / 60 / 90 / ... and the
+    // N/E/S/W letters all sit on a single ring — this is the
+    // canonical heading scale that persists between Optical and
+    // Heavenly views.
+    this.azimuthGroup = new THREE.Group();
+    this.azimuthGroup.name = 'azimuth-ring';
+    const azPts = [];
+    const addTicks = (step, inner, outer) => {
+      for (let az = 0; az < 360; az += step) {
+        // az=0 → local-FE −x; az=90 → +y; az=180 → +x; az=270 → −y.
+        const phi = Math.atan2(Math.sin(az * Math.PI / 180),
+                              -Math.cos(az * Math.PI / 180));
+        const cos = Math.cos(phi), sin = Math.sin(phi);
+        azPts.push(inner * cos, inner * sin, 0.01,
+                   outer * cos, outer * sin, 0.01);
+      }
+    };
+    addTicks(15, 1.00, 1.08);
+    addTicks(5,  1.00, 1.04);
+    const azGeom = new THREE.BufferGeometry();
+    azGeom.setAttribute('position', new THREE.Float32BufferAttribute(azPts, 3));
+    this.azimuthTicks = new THREE.LineSegments(
+      azGeom,
+      new THREE.LineBasicMaterial({
+        color: 0xf4a640, transparent: true, opacity: 0.9,
+        depthTest: false, depthWrite: false,
+      }),
+    );
+    this.azimuthGroup.add(this.azimuthTicks);
+    // S006d — collect the coarse 15° azimuth labels into a list so
+    // update() can re-home them onto the pitch-driven reading band
+    // each frame. `basePhi` is stashed on each sprite so we don't
+    // recompute atan2 every frame.
+    this._azimuthLabels = [];
+    for (let az = 0; az < 360; az += 15) {
+      if (az % 90 === 0) continue;
+      const phi = Math.atan2(Math.sin(az * Math.PI / 180),
+                            -Math.cos(az * Math.PI / 180));
+      const sp = makeTextSprite(String(az) + '°', '#f4a640');
+      sp.userData.basePhi = phi;
+      sp.position.set(1.14 * Math.cos(phi), 1.14 * Math.sin(phi), 0.01);
+      const labelScale = az % 30 === 0 ? 0.09 : 0.075;
+      setSpriteScale(sp, labelScale);
+      this.azimuthGroup.add(sp);
+      this._azimuthLabels.push(sp);
+    }
+    this.group.add(this.azimuthGroup);
+
+    // ----- S001: refined DMS azimuth scale ---------------------------
+    // When the Optical-vault mousewheel narrows the camera FOV, this
+    // overlay rebuilds ticks / labels at a cadence appropriate to the
+    // visible window. Tick positions come from the same canonical
+    // compass-azimuth axis the coarse ring uses, so the reading
+    // under the camera centre is always `ObserverHeading` — zoom is
+    // pure angular refinement, not a reinterpretation.
+    //
+    // Cadences (visible-FOV driven):
+    //   FOV ≥ 30°     : coarse ring only (this overlay empty).
+    //   FOV ≥ 8°      : 5° major, 1° minor, label every 5°.
+    //   FOV ≥ 2°      : 1° major, 5' minor, label every 1°.
+    //   FOV ≥ 0.5°    : 10' major, 1' minor, label every 10'.
+    //   FOV ≥ 0.1°    : 1' major, 6" minor, label every 1'.
+    //   FOV ≥ 0.02°   : 10" major, 1" minor, label every 10".
+    //   FOV <  0.02°  : 1" major, 0.1" minor, label every 1".
+    this.refinedAzGroup = new THREE.Group();
+    this.refinedAzGroup.name = 'refined-azimuth';
+    // Pool up to REFINED_MAX_TICKS tick segments; draw range clamps
+    // to how many we actually emit per frame.
+    const REFINED_MAX_TICKS = 512;
+    this._refinedPos = new Float32Array(REFINED_MAX_TICKS * 6);
+    const refGeom = new THREE.BufferGeometry();
+    refGeom.setAttribute('position', new THREE.BufferAttribute(this._refinedPos, 3));
+    refGeom.setDrawRange(0, 0);
+    this.refinedTicks = new THREE.LineSegments(
+      refGeom,
+      new THREE.LineBasicMaterial({
+        color: 0xf4a640, transparent: true, opacity: 0.95,
+        depthTest: false, depthWrite: false,
+      }),
+    );
+    this.refinedAzGroup.add(this.refinedTicks);
+    // Label pool — sprites whose canvas texture we rewrite on demand.
+    // S006a — bumped 24 → 64. With labelEvery always = 1° in refined,
+    // the widest refined FOV (just under 30°) emits up to ~43 labels;
+    // 64 gives headroom so we never hit the pool-length cap and lose
+    // labels at the edges of the window.
+    this._refinedLabelPool = [];
+    const REFINED_MAX_LABELS = 64;
+    for (let i = 0; i < REFINED_MAX_LABELS; i++) {
+      const sp = makeTextSprite(' ', '#f4a640');
+      sp.visible = false;
+      setSpriteScale(sp, 0.085);
+      this.refinedAzGroup.add(sp);
+      this._refinedLabelPool.push(sp);
+    }
+    this._refineKey = null;   // cache key: (fov, heading, mode) rounded
+    // S006a — initialise the refined-state flags so the first call to
+    // _updateRefinedScale always sees a clean transition edge. Without
+    // this, _refinedActive is undefined on the first frame after
+    // entering Optical, which defeats the transition-invalidation
+    // logic below and can leave the active-meridian arc un-emitted.
+    this._refinedActive   = false;
+    this._refinedActiveAz = null;
+    this.group.add(this.refinedAzGroup);
+
+    // ----- S007: right-side elevation (latitude) scale -----------------
+    // The algebraic DUAL of the azimuth reading band. Where azimuth
+    // labels sit at FIXED azimuths and VARIABLE elevation (pitch-
+    // driven), elevation labels sit at VARIABLE azimuth (heading-
+    // driven, offset to the right side of the view) and FIXED
+    // elevation values. Cadence ladder mirrors refinedAzCadenceForFov:
+    // 15° at coarse (FOV ≥ 30°), 5° at refined 5° (8° ≤ FOV < 30°),
+    // 1° at refined 1° (FOV < 8°). Colour `#8ed4ff` (light blue)
+    // visually distinguishes the altitude axis from the orange-yellow
+    // azimuth axis.
+    //
+    // S007a — replaced the original 20-slot dynamic-repaint pool
+    // with one pre-painted sprite per integer elevation 0°–85° (86
+    // sprites). The earlier pool windowed emission to the visible
+    // vertical band; at 1° cadence with vFov ≤ 8° that emitted at
+    // most ~8 labels and the higher cadence multiples were never in
+    // the scene graph, so the user couldn't see the scale extend
+    // toward zenith even when the lower portion was rendered. Now
+    // every cadence-multiple is in the scene at all times; the
+    // per-frame work is just a visibility toggle + position update,
+    // and three.js frustum culling handles which sprites actually
+    // render. Each sprite carries `userData.elev = e` so
+    // _updateElevScale can decide visibility purely from that.
+    this.elevLabelsGroup = new THREE.Group();
+    this.elevLabelsGroup.name = 'elevation-scale';
+    this._elevLabels = [];
+    for (let e = 0; e <= 85; e++) {
+      const sp = makeTextSprite(e + '°', '#8ed4ff');
+      sp.visible = false;
+      setSpriteScale(sp, 0.02);
+      sp.userData.elev = e;
+      this.elevLabelsGroup.add(sp);
+      this._elevLabels.push(sp);
+    }
+    this.group.add(this.elevLabelsGroup);
+
+    // ----- S004: refined meridian-arc grid -----------------------------
+    // The "refined longitudinal grid" — full meridian arcs from horizon
+    // to zenith emitted at the cadence's majorArc / minorArc strides,
+    // windowed to the visible heading range. This subgroup is scaled
+    // (r, r, h) at render time so arcs sit on the optical-vault
+    // hemisphere exactly like the static wire does.
+    this.refinedMeridiansGroup = new THREE.Group();
+    this.refinedMeridiansGroup.name = 'refined-meridians';
+    // Each arc tessellates into ARC_SEGS line segments between horizon
+    // and zenith. Pre-allocate buffers big enough for the worst-case
+    // visible-window arc count at the finest cadence.
+    const ARC_SEGS = 16;
+    this._arcSegs  = ARC_SEGS;
+    this._majorMeridianBuf = new Float32Array(800 * ARC_SEGS * 6);   // up to 800 major arcs
+    this._minorMeridianBuf = new Float32Array(2400 * ARC_SEGS * 6);  // up to 2400 minor arcs
+    const majGeom = new THREE.BufferGeometry();
+    majGeom.setAttribute('position', new THREE.BufferAttribute(this._majorMeridianBuf, 3));
+    majGeom.setDrawRange(0, 0);
+    // S006 — meridians rendered white so the active-meridian highlight
+    // (orange-yellow #ffd24a, same colour as the heading arrow) reads
+    // cleanly against the grid instead of fighting the old steel-blue
+    // palette. Majors are solid-ish (0.7); minors sit back at 0.3.
+    this.refinedMajorMeridians = new THREE.LineSegments(
+      majGeom,
+      new THREE.LineBasicMaterial({
+        color: 0xffffff, transparent: true, opacity: 0.7,
+        depthTest: false, depthWrite: false, clippingPlanes,
+      }),
+    );
+    const minGeom = new THREE.BufferGeometry();
+    minGeom.setAttribute('position', new THREE.BufferAttribute(this._minorMeridianBuf, 3));
+    minGeom.setDrawRange(0, 0);
+    this.refinedMinorMeridians = new THREE.LineSegments(
+      minGeom,
+      new THREE.LineBasicMaterial({
+        color: 0xffffff, transparent: true, opacity: 0.3,
+        depthTest: false, depthWrite: false, clippingPlanes,
+      }),
+    );
+    // S006 — active-meridian overlay. A single meridian arc drawn at
+    // the nearest major-cadence azimuth to ObserverHeading, in the same
+    // yellow as the heading arrow / ray so the user can see which
+    // longitude line they are inspecting. One arc × arcSegs line
+    // segments × 2 endpoints × 3 coords = arcSegs·6 floats.
+    this._activeMeridianBuf = new Float32Array(ARC_SEGS * 6);
+    const actGeom = new THREE.BufferGeometry();
+    actGeom.setAttribute('position', new THREE.BufferAttribute(this._activeMeridianBuf, 3));
+    actGeom.setDrawRange(0, 0);
+    this.refinedActiveMeridian = new THREE.LineSegments(
+      actGeom,
+      new THREE.LineBasicMaterial({
+        color: 0xffd24a, transparent: true, opacity: 1.0,
+        depthTest: false, depthWrite: false, clippingPlanes,
+      }),
+    );
+    this.refinedActiveMeridian.renderOrder = 62;
+    this.refinedMeridiansGroup.add(this.refinedMinorMeridians);
+    this.refinedMeridiansGroup.add(this.refinedMajorMeridians);
+    this.refinedMeridiansGroup.add(this.refinedActiveMeridian);
+
+    // S008 (revised — S008b) — refined altitude rings, the horizontal
+    // counterpart to refinedMajorMeridians. Lives inside
+    // refinedMeridiansGroup so it inherits the (r, r, h) flattened
+    // vault scale and lands on the same surface the static wire's
+    // rings do. Buffer pre-sized for the worst case at 1° cadence
+    // (86 rings × ALT_RING_SEGS segments × 6 floats per segment).
+    // Cadence cache `_refinedAltRingsCadence` avoids re-emission per
+    // frame — only when the regime changes (5° ↔ 1° ↔ coarse-hidden)
+    // does the buffer get rewritten.
+    const ALT_RING_SEGS = 32;
+    const ALT_RING_MAX  = 86;
+    this._refinedAltRingSegs = ALT_RING_SEGS;
+    this._refinedAltRingBuf  = new Float32Array(ALT_RING_MAX * ALT_RING_SEGS * 6);
+    const altRingGeom = new THREE.BufferGeometry();
+    altRingGeom.setAttribute('position', new THREE.BufferAttribute(this._refinedAltRingBuf, 3));
+    altRingGeom.setDrawRange(0, 0);
+    this.refinedAltRings = new THREE.LineSegments(
+      altRingGeom,
+      new THREE.LineBasicMaterial({
+        color: 0xffffff, transparent: true, opacity: 0.30,
+        depthTest: false, depthWrite: false, clippingPlanes,
+      }),
+    );
+    this._refinedAltRingsCadence = -1;
+    this.refinedMeridiansGroup.add(this.refinedAltRings);
+
+    this.group.add(this.refinedMeridiansGroup);
 
     // Observer's facing arrow: a flat triangle lying near z=0, pointing along
     // -x in its local frame (toward N at heading 0). The headingGroup is
     // rotated about z by -heading so the arrow tracks ObserverHeading
     // clockwise (compass convention): 0 = N, 90 = E, 180 = S, 270 = W.
+    // S006 (revised) — shrunk ~3.5× (tip at -0.035 instead of -0.12).
+    // Arrow is now a compact origin cue; the heading ray takes over as
+    // the dominant directional indicator.
     this.headingGroup = new THREE.Group();
     this.headingGroup.name = 'heading-arrow';
+    const ARROW_TIP_X = -0.035;   // exposed as this._arrowTipX below
     const arrowShape = new THREE.Shape();
-    arrowShape.moveTo(-0.95, 0);
-    arrowShape.lineTo(-0.55, 0.10);
-    arrowShape.lineTo(-0.55, 0.04);
-    arrowShape.lineTo(-0.10, 0.04);
-    arrowShape.lineTo(-0.10, -0.04);
-    arrowShape.lineTo(-0.55, -0.04);
-    arrowShape.lineTo(-0.55, -0.10);
-    arrowShape.lineTo(-0.95, 0);
+    arrowShape.moveTo(ARROW_TIP_X, 0);
+    arrowShape.lineTo(-0.022, 0.008);
+    arrowShape.lineTo(-0.022, 0.003);
+    arrowShape.lineTo(-0.006, 0.003);
+    arrowShape.lineTo(-0.006, -0.003);
+    arrowShape.lineTo(-0.022, -0.003);
+    arrowShape.lineTo(-0.022, -0.008);
+    arrowShape.lineTo(ARROW_TIP_X, 0);
+    this._arrowTipX = ARROW_TIP_X;
     const arrowGeom = new THREE.ShapeGeometry(arrowShape);
     this.headingArrow = new THREE.Mesh(
       arrowGeom,
@@ -569,9 +1006,35 @@ export class ObserversOpticalVault {
       }),
     );
     this.headingArrow.renderOrder = 64;
-    this.headingArrow.position.z = 0.012;
+    // S006 (revised) — lay the arrow flat on the horizon plane (z = 0)
+    // so its tip is geometrically coincident with the start of the
+    // ground-line segment and the active meridian arc's base, which
+    // also live at z = 0. The material keeps depthTest off, so there's
+    // no z-fight with the disc underneath.
+    this.headingArrow.position.z = 0;
     this.headingGroup.add(this.headingArrow);
     this.group.add(this.headingGroup);
+
+    // Heading ray: a thin yellow line from the observer extending in the
+    // heading direction to the appropriate edge — optical vault rim in
+    // first-person, disc rim (world) in orbit. Lives in a NON-scaled
+    // subgroup so the Heavenly-mode length (which depends on observer
+    // position) doesn't ride the vault scale.
+    this.headingLineGroup = new THREE.Group();
+    this.headingLineGroup.name = 'heading-ray';
+    const rayGeom = new THREE.BufferGeometry();
+    rayGeom.setAttribute('position', new THREE.Float32BufferAttribute(
+      [0, 0, 0.018, 0, 0, 0.018], 3));
+    this.headingLine = new THREE.Line(
+      rayGeom,
+      new THREE.LineBasicMaterial({
+        color: 0xffd24a, transparent: true, opacity: 0.95,
+        depthTest: false, depthWrite: false,
+      }),
+    );
+    this.headingLine.renderOrder = 63;
+    this.headingLineGroup.add(this.headingLine);
+    this.group.add(this.headingLineGroup);
   }
 
   update(model) {
@@ -586,10 +1049,14 @@ export class ObserversOpticalVault {
     this.mesh.scale.set(r, r, h);
     this.wire.scale.set(r, r, h);
     this.axes.scale.set(r, r, h);
-    // Cardinal labels and heading arrow live near z=0 on the rim, so they
-    // only need the horizontal scale.
+    // S004: refined meridian arcs live on the same hemisphere as the
+    // static wire, so they share its (r, r, h) scale.
+    this.refinedMeridiansGroup.scale.set(r, r, h);
+    // Cardinal labels, heading arrow, and azimuth ring live near z=0
+    // on the rim, so they only need the horizontal scale.
     this.cardinalsGroup.scale.set(r, r, r);
     this.headingGroup.scale.set(r, r, r);
+    this.azimuthGroup.scale.set(r, r, r);
 
     // Heading rotation about z. ObserverHeading is compass degrees
     // (0 = N at -x_local, 90 = E at +y_local, 180 = S at +x_local,
@@ -597,7 +1064,169 @@ export class ObserversOpticalVault {
     // which is a NEGATIVE rotation about +z, so rotate by -heading.
     this.headingGroup.rotation.set(0, 0, -ToRad(s.ObserverHeading || 0));
     this.headingGroup.visible = s.ShowFacingVector !== false;
-    this.cardinalsGroup.visible = s.ShowFacingVector !== false;
+    // Cardinals and the azimuth ring share the ShowAzimuthRing
+    // toggle — they're the canonical heading scale, visible in BOTH
+    // Optical and Heavenly so the reading persists across views.
+    const azOn = s.ShowAzimuthRing !== false;
+    this.cardinalsGroup.visible = azOn;
+    // S001: refined DMS scale only appears in Optical mode when the
+    // user has zoomed past the coarse-ring threshold; below that FOV
+    // the coarse 15° ring is hidden so the refined cadence owns the
+    // visual field.
+    this._updateRefinedScale(s);
+    // S007 — emit the right-side 0°–90° elevation scale each frame.
+    // Companion to the bottom azimuth band; shares colour-distinct
+    // palette, same ringR, same eyeH compensation, same cadence
+    // ladder (15° / 5° / 1°).
+    this._updateElevScale(s, c);
+    // Coarse ring is hidden in Optical when the refined scale takes
+    // over — otherwise both rings would overlap at fine cadences.
+    const coarseHidden = s.InsideVault && this._refinedActive;
+    this.azimuthGroup.visible = azOn && !coarseHidden;
+
+    // S006 (revised) — ground-to-sky directional guide.
+    //
+    // The guide is a single connected geometric path:
+    //   1. arrow tip on the horizon plane (z = 0, arrow lies flat)
+    //   2. ground line from arrow tip to the horizon foot (radius r,
+    //      still z = 0)
+    //   3. active meridian arc from that same horizon foot up to
+    //      zenith (refinedActiveMeridian, already emitted elsewhere)
+    //
+    // For the line end to sit exactly on the arc base, three things
+    // must match:
+    //   • direction    — use `activeAz` (the snapped meridian) when
+    //                    the refined overlay is active; the coarse
+    //                    view has no arc to meet, so follow heading
+    //                    there to keep the line aligned with the arrow.
+    //   • end radius   — `r`, not `r·1.08` (the arc base sits at `r`,
+    //                    not the outer tick-ring radius).
+    //   • end z        — `0`, not `0.018` (the arc base is at z = 0
+    //                    after the `(r, r, h)` scale collapses the
+    //                    unit horizon onto the horizon plane).
+    //
+    // In Heavenly there is no refined arc to connect to, so the line
+    // keeps its original disc-rim geometry and z = 0.018 offset.
+    const hRad = ToRad(s.ObserverHeading || 0);
+    const hCos = Math.cos(hRad);
+    const hSin = Math.sin(hRad);
+    let dirCos, dirSin, hLen, lineZ, tipOffset;
+    if (s.InsideVault) {
+      // S006c — gate on `_refinedActiveAz != null` instead of
+      // `_refinedActive`, so the ground line snaps to the highlighted
+      // meridian in BOTH the coarse (15°) and refined (5° / 1°)
+      // regimes. `_refinedActiveAz` is set whenever the active-meridian
+      // arc is drawn; it's cleared to null when refined is inactive
+      // (Heavenly or ShowAzimuthRing off), in which case we fall back
+      // to raw heading.
+      const dirAz = (this._refinedActiveAz != null)
+        ? this._refinedActiveAz
+        : (s.ObserverHeading || 0);
+      const dRad = ToRad(dirAz);
+      dirCos  = Math.cos(dRad);
+      dirSin  = Math.sin(dRad);
+      tipOffset = -this._arrowTipX * r;   // ground distance, observer → arrow tip
+      hLen      = r;                      // meet the arc base exactly
+      lineZ     = 0;                      // match the arc base z
+    } else {
+      dirCos = hCos;
+      dirSin = hSin;
+      tipOffset = 0;
+      const rObs = Math.hypot(obs[0], obs[1]);
+      hLen = rObs * hCos
+           + Math.sqrt(Math.max(0, 1 - rObs * rObs * hSin * hSin));
+      lineZ = 0.018;
+    }
+    const rayPos = this.headingLine.geometry.attributes.position.array;
+    rayPos[0] = -dirCos * tipOffset;
+    rayPos[1] =  dirSin * tipOffset;
+    rayPos[2] = lineZ;
+    rayPos[3] = -dirCos * hLen;
+    rayPos[4] =  dirSin * hLen;
+    rayPos[5] = lineZ;
+    this.headingLine.geometry.attributes.position.needsUpdate = true;
+    this.headingLineGroup.visible = s.ShowFacingVector !== false;
+
+    // S006 (revised) — fade the arrow as FOV narrows into the refined
+    // 1° regime so the straight line becomes the primary directional
+    // indicator. Full opacity at FOV ≥ 30° (coarse view), linear ramp
+    // down to 0 at FOV ≤ 8° (inside the refined regime, where labels
+    // have already switched to 1° cadence). Heavenly leaves the arrow
+    // at full opacity — orbit view doesn't have the zoom-in problem.
+    if (s.InsideVault) {
+      const fov = Math.max(1, Math.min(75, 75 / Math.max(0.2, s.OpticalZoom || 5.09)));
+      const t = Math.max(0, Math.min(1, (fov - 8) / (30 - 8)));
+      this.headingArrow.material.opacity = 0.85 * t;
+    } else {
+      this.headingArrow.material.opacity = 0.85;
+    }
+
+    // S006 (revised) — when refined is active the cardinals shrink and
+    // sit right on their meridian rays (radius 1.00 vs coarse 1.14)
+    // so they read as line-attached anchors, not floating headers.
+    //
+    // S006a (further revision) — the refined cardinal height is now
+    // FOV-scaled (screen-fraction target) instead of a fixed world
+    // height, because a fixed world size that reads as a 15%-of-view
+    // letter at FOV 14.7° reads as a 230%-of-view billboard at FOV 1°,
+    // dominating the tight-zoom view.
+    //
+    // S006b — halved across the board. Coarse cardH 0.10 → 0.05;
+    // refined screen-fraction target 0.12 → 0.06 with upper clamp
+    // 0.10 → 0.05. N / E / S / W now read as small anchors, not
+    // dominant letters, at every Optical zoom level.
+    //
+    // S006d — cardinals AND coarse azimuth labels now ride the pitch-
+    // driven reading band. Shared `labelElev` from `_labelBandElevRad`
+    // puts them just above the horizon at low pitch and slides them
+    // up with the view as the user tilts. Because cardinalsGroup and
+    // azimuthGroup are both scaled by (r, r, r), the local positions
+    // are divided by `r` so the resulting WORLD position matches the
+    // refined labels' world position (both end up on the same ring
+    // of radius 1.14 from the observer). `+ eyeH/r` on local z
+    // compensates for the camera's 0.012 z-offset over the observer
+    // so the label appears at elevation `labelElev` from the camera
+    // rather than slightly below.
+    const refined = s.InsideVault && this._refinedActive;
+    let cardR, cardH;
+    if (refined) {
+      cardR = 1.00;
+      const cFov = Math.max(1, Math.min(75, 75 / Math.max(0.2, s.OpticalZoom || 5.09)));
+      const cFovRad = cFov * Math.PI / 180;
+      // S006e — halved from S006b/S006d (was min(0.05, 0.06·cFovRad)).
+      // N / E / S / W at 5° and 1° are now subtle anchors, not visual
+      // competitors for the degree labels. Coarse (15°) cardinal size
+      // stays at 0.05 so the jump from coarse to refined is an
+      // explicit size change, not a silent regression.
+      cardH = Math.min(0.025, 0.03 * cFovRad);
+    } else {
+      cardR = 1.14;
+      cardH = 0.05;
+    }
+    const bandFovDeg = Math.max(0.005, Math.min(75, 75 / Math.max(0.2, s.OpticalZoom || 5.09)));
+    const bandElev   = this._labelBandElevRad(s, bandFovDeg);
+    const cosE = Math.cos(bandElev);
+    const sinE = Math.sin(bandElev);
+    const eyeH = 0.012;
+    const rSafe = Math.max(1e-6, r);
+    for (const sp of this._cardinalSprites) {
+      const b = sp.userData.baseDir;
+      sp.position.set(
+        (cardR / rSafe) * cosE * b[0],
+        (cardR / rSafe) * cosE * b[1],
+        (cardR * sinE + eyeH) / rSafe,
+      );
+      setSpriteScale(sp, cardH);
+    }
+    // Coarse 15° azimuth labels share the band with the cardinals.
+    for (const sp of this._azimuthLabels) {
+      const phi = sp.userData.basePhi;
+      sp.position.set(
+        (1.14 / rSafe) * cosE * Math.cos(phi),
+        (1.14 / rSafe) * cosE * Math.sin(phi),
+        (1.14 * sinE + eyeH) / rSafe,
+      );
+    }
 
     // Orient axes to the observer's local globe frame via its lat/long swap.
     // Axes x=north, y=east, z=up are already aligned in fe-local frame; we
@@ -605,6 +1234,482 @@ export class ObserversOpticalVault {
     this.group.rotation.set(0, 0, ToRad(s.ObserverLong));
 
     this.group.visible = s.ShowOpticalVault;
+  }
+
+  // S001 — rebuild the refined azimuth tick / label layer. Reads the
+  // current state.Zoom to recover FOV (fov = 75° / Zoom), picks a
+  // cadence from refinedAzCadenceForFov, then emits ticks and labels
+  // only inside a window around ObserverHeading so the line count
+  // stays bounded even at arcsecond cadence. Cached by (mode, fov
+  // cadence, heading bucket) so it only rebuilds when necessary.
+  // S006d/e — compute the elevation (radians) at which the degree
+  // labels should sit this frame. Shared by coarse labels, refined
+  // labels, and cardinals so the entire "reading band" stays
+  // horizon-anchored at low pitch and follows the view up as the
+  // user tilts.
+  //
+  // S006e reformulation: the previous additive formula
+  //   labelElev = max(0, pitch − fov/2) + 0.05·fov
+  // only started tracking once pitch crossed fov/2 and then sat at
+  // 5 % of the FOV above the view's bottom edge. Both numbers were
+  // too weak — the band felt detached from the view as the user
+  // tilted, and when it did track it hugged the bottom edge
+  // uncomfortably. Replaced with a "floor or track, whichever is
+  // higher" formula:
+  //
+  //   floorElev = 0.03 · fov
+  //     keeps labels at a tiny elevation above the horizon when
+  //     pitch is low enough that the horizon is still in view
+  //   trackElev = pitch − 0.35 · fov
+  //     puts labels at 15 % above the view's bottom edge
+  //     (bottom_of_view = pitch − fov/2; 15 % above that =
+  //      pitch − fov/2 + 0.15·fov = pitch − 0.35·fov)
+  //   labelElev = min(85°, max(floorElev, trackElev))
+  //
+  // Handoff from floor to tracking happens at `pitch ≈ 0.38 · fov`
+  // (where trackElev equals floorElev) — substantially earlier than
+  // the old `pitch = fov/2` crossover. At FOV 37.5° that's pitch
+  // ~14.3° instead of 18.75°; at FOV 1° it's pitch 0.38° instead of
+  // 0.5°. Tracking mode then sits at 15 % above the view's bottom
+  // edge — three times the old 5 % margin — so the band reads as a
+  // comfortable reading strip rather than an edge-hugging line.
+  // 85° cap still prevents zenith pile-up.
+  _labelBandElevRad(s, fovDeg) {
+    const pitchDeg = Math.max(0, Math.min(90, s.CameraHeight || 0));
+    const floorDeg = 0.03 * fovDeg;
+    const trackDeg = pitchDeg - 0.35 * fovDeg;
+    const elevDeg  = Math.min(85, Math.max(floorDeg, trackDeg));
+    return elevDeg * Math.PI / 180;
+  }
+
+  // S007/a — emit the right-side 0°–85° elevation scale. Labels sit
+  // at FIXED world elevations on the right-side meridian (azimuth =
+  // heading + rightBandAz). Pre-painted sprites in `_elevLabels`,
+  // one per integer elevation 0°–85°; per frame we toggle visibility
+  // by cadence:
+  //
+  //   FOV ≥ 30°        →  cadence 15°, cap 75° (labels: 0,15,30,45,60,75)
+  //   8° ≤ FOV < 30°   →  cadence  5°, cap 85° (labels: 0,5,…,85)
+  //   FOV <  8°        →  cadence  1°, cap 85° (labels: 0,1,…,85)
+  //
+  // Every cadence-multiple at or below the cap is in the scene graph
+  // at all times — three.js frustum culling decides what actually
+  // renders. So as the user tilts up, the higher labels are already
+  // there waiting; the scale isn't constrained to the narrow
+  // `[pitch − vFov/2, pitch + vFov/2]` window the previous version
+  // emitted into.
+  //
+  // Right-edge azimuth offset uses the camera's exact aspect ratio
+  // (`c.ViewAspect`, set each frame by SceneManager) so labels land
+  // at 80 % of the way from view-centre to the right edge regardless
+  // of window shape.
+  _updateElevScale(s, c) {
+    const labels = this._elevLabels;
+    const active = !!s.InsideVault && (s.ShowAzimuthRing !== false);
+    if (!active) {
+      for (const sp of labels) sp.visible = false;
+      return;
+    }
+
+    const zoom = Math.max(0.2, s.OpticalZoom || 5.09);
+    const fov  = Math.max(0.005, Math.min(75, 75 / zoom));
+    const fovRad = fov * Math.PI / 180;
+    const aspect = Math.max(0.5, Math.min(4, c && c.ViewAspect ? c.ViewAspect : 16 / 9));
+    const hFovRad = 2 * Math.atan(Math.tan(fovRad / 2) * aspect);
+    const azOffsetDeg = (0.80 * hFovRad / 2) * 180 / Math.PI;
+
+    const heading = ((s.ObserverHeading || 0) % 360 + 360) % 360;
+    const labelAz = heading + azOffsetDeg;
+    const phi = Math.atan2(Math.sin(labelAz * Math.PI / 180),
+                          -Math.cos(labelAz * Math.PI / 180));
+    const cosPhi = Math.cos(phi);
+    const sinPhi = Math.sin(phi);
+
+    const cadDeg = elevCadenceForFov(fov);
+    // Per-cadence cap: 75° at the coarse 15° regime (matches the
+    // user's "complete it all the way to 75°" spec), 85° at the
+    // refined 5° / 1° regimes.
+    const cap = (cadDeg === 15) ? 75 : 85;
+
+    // S008b — labels now sit on the FLATTENED VAULT (scale r, r, h),
+    // not on a unit-radius hemisphere. Previously labels were at
+    // (1.14·cosE·cosφ, 1.14·cosE·sinφ, 1.14·sinE + eyeH), which
+    // projected at TRUE astronomical elevation `e` from the camera —
+    // but the actual altitude rings live on the flattened vault and
+    // project at `atan((h/r)·tan(e))`. At `e = 30°` that's a ~8° gap
+    // in the view. Putting the label on the vault ring's own world
+    // coordinate puts the label exactly on the line in the view.
+    // Tiny `+ 0.002` z-lift avoids the label sprite landing exactly
+    // on the ring stroke.
+    const r = (c && c.OpticalVaultRadius != null) ? c.OpticalVaultRadius : 0.5;
+    const h = (c && c.OpticalVaultHeight != null) ? c.OpticalVaultHeight : 0.35;
+    const HARD_MIN = 1e-6;
+
+    for (const sp of labels) {
+      const e = sp.userData.elev;
+      if (e > cap || (e % cadDeg) !== 0) {
+        sp.visible = false;
+        continue;
+      }
+      const eRad = e * Math.PI / 180;
+      const cosE = Math.cos(eRad);
+      const sinE = Math.sin(eRad);
+      const labelXY = r * cosE;
+      const labelZ  = h * sinE;
+      sp.position.set(
+        labelXY * cosPhi,
+        labelXY * sinPhi,
+        labelZ + 0.002,
+      );
+      // Distance-aware screen-fraction sizing. `dist` is the label's
+      // approximate distance from the camera (camera near observer
+      // origin); scaling by dist keeps each label at a consistent
+      // ~4 % of view height regardless of which vault ring it sits
+      // on (high-elev rings sit closer to the camera so absolute
+      // world height shrinks accordingly).
+      const dist = Math.sqrt(labelXY * labelXY + labelZ * labelZ);
+      const labelH = Math.max(HARD_MIN, 0.04 * dist * fovRad);
+      setSpriteScale(sp, labelH);
+      sp.visible = true;
+    }
+  }
+
+  // S006c — emit the active-meridian arc as a single arcSegs-segment
+  // LineSegments at the snapped azimuth. Called from both coarse and
+  // refined branches so the highlighted meridian is visible from the
+  // moment the user enters Optical, not only after zooming past
+  // FOV 30°. Writes into `_activeMeridianBuf` (sized ARC_SEGS * 6),
+  // sets the draw range, and records the snapped azimuth on
+  // `_refinedActiveAz` so the heading-line direction logic can use it.
+  _emitActiveMeridian(activeAz) {
+    const arcSegs = this._arcSegs;
+    const buffer  = this._activeMeridianBuf;
+    const phi = Math.atan2(Math.sin(activeAz * Math.PI / 180),
+                          -Math.cos(activeAz * Math.PI / 180));
+    const cos = Math.cos(phi), sin = Math.sin(phi);
+    for (let k = 0; k < arcSegs; k++) {
+      const p1 = (k / arcSegs) * (Math.PI / 2);
+      const p2 = ((k + 1) / arcSegs) * (Math.PI / 2);
+      const o = k * 6;
+      buffer[o    ] = Math.sin(p1) * cos;
+      buffer[o + 1] = Math.sin(p1) * sin;
+      buffer[o + 2] = Math.cos(p1);
+      buffer[o + 3] = Math.sin(p2) * cos;
+      buffer[o + 4] = Math.sin(p2) * sin;
+      buffer[o + 5] = Math.cos(p2);
+    }
+    this.refinedActiveMeridian.geometry.setDrawRange(0, arcSegs * 2);
+    this.refinedActiveMeridian.geometry.attributes.position.needsUpdate = true;
+    this._refinedActiveAz = activeAz;
+  }
+
+  _updateRefinedScale(s) {
+    const active = !!s.InsideVault && (s.ShowAzimuthRing !== false);
+    if (!active) {
+      this.refinedAzGroup.visible = false;
+      this.refinedMeridiansGroup.visible = false;
+      // S006a — invalidate the cache on any transition out of the
+      // refined regime so the next re-entry rebuilds ticks, meridian
+      // arcs (including the active-highlight), and labels from scratch
+      // rather than inheriting a stale key from a previous session.
+      if (this._refinedActive) this._refineKey = null;
+      this._refinedActive = false;
+      // S006c — clear the snapped-azimuth record so the heading-line
+      // logic falls back to raw heading when we're not in Optical
+      // (or ShowAzimuthRing is toggled off).
+      this._refinedActiveAz = null;
+      // S008b — hide refined altitude rings when refined overlay is
+      // off entirely. Cadence cache stays so re-entry doesn't re-emit
+      // the same buffer.
+      this.refinedAltRings.visible = false;
+      return;
+    }
+    // S002 — refined overlay reads the mode-local OpticalZoom, so
+    // Heavenly's orbit Zoom can't accidentally drive the refined
+    // cadence (and vice versa). Default 5.09 on entry matches app.js.
+    const zoom = Math.max(0.2, s.OpticalZoom || 5.09);
+    const fov  = Math.max(0.005, Math.min(75, 75 / zoom));
+    const cad  = refinedAzCadenceForFov(fov);
+    const headingNow = ((s.ObserverHeading || 0) % 360 + 360) % 360;
+
+    // S006c — active-meridian highlight is drawn in BOTH coarse and
+    // refined regimes. Snap cadence: 15° in coarse (matches the
+    // static wire), cad.majorArc in refined (5° or 1°). Emitting
+    // every frame is cheap (one 16-segment arc) and keeps the
+    // heading-line snapping consistent.
+    const snapDeg  = cad ? cad.majorArc : 15;
+    const activeAz = Math.round(headingNow / snapDeg) * snapDeg;
+    this._emitActiveMeridian(activeAz);
+    this.refinedActiveMeridian.visible = true;
+    this.refinedMeridiansGroup.visible = true;
+
+    if (!cad) {
+      // Coarse 15° regime — refined-grid pieces hidden (the static
+      // wire's 5 latitude rings at 15°/30°/45°/60°/75° suffice here);
+      // the active-meridian highlight stays visible. Refined altitude
+      // rings also hidden — there's no 15° ring to add that the
+      // static wire doesn't already provide.
+      this.refinedAzGroup.visible = false;
+      this.refinedMajorMeridians.visible = false;
+      this.refinedMinorMeridians.visible = false;
+      this.refinedAltRings.visible = false;
+      if (this._refinedActive) this._refineKey = null;
+      this._refinedActive = false;
+      return;
+    }
+    // S006a — same invalidation on the other edge: coarse → refined.
+    // The first refined frame after entering the 5°/1° regimes always
+    // misses the cache so ticks + grid + labels rebuild from scratch.
+    if (!this._refinedActive) this._refineKey = null;
+    this._refinedActive = true;
+    this.refinedAzGroup.visible = true;
+    this.refinedMajorMeridians.visible = true;
+    this.refinedMinorMeridians.visible = true;
+
+    // S008b — emit refined horizontal altitude rings at the same
+    // cadence as the meridians so the lat/long box grid is complete:
+    //   5° regime  → 18 rings (0°, 5°, 10°, …, 85°)
+    //   1° regime  → 86 rings (0°, 1°, 2°, …, 85°)
+    // Lives in refinedMeridiansGroup so the (r, r, h) flattened
+    // vault scale applies; emitting in unit-frame coords lets that
+    // scale do all the work. Cached by cadence — only the regime
+    // change (5° ↔ 1°) triggers a re-emission.
+    const ringCad = cad.majorArc;
+    if (this._refinedAltRingsCadence !== ringCad) {
+      const ringBuf = this._refinedAltRingBuf;
+      const segsPerRing = this._refinedAltRingSegs;
+      const ringBudget = ringBuf.length / 6;
+      let ringSegCursor = 0;
+      for (let e = 0; e <= 85; e += ringCad) {
+        if (ringSegCursor + segsPerRing > ringBudget) break;
+        const ringRu = Math.cos(e * Math.PI / 180);
+        const ringZu = Math.sin(e * Math.PI / 180);
+        for (let k = 0; k < segsPerRing; k++) {
+          const t1 = (k / segsPerRing) * 2 * Math.PI;
+          const t2 = ((k + 1) / segsPerRing) * 2 * Math.PI;
+          const o = ringSegCursor * 6;
+          ringBuf[o    ] = ringRu * Math.cos(t1);
+          ringBuf[o + 1] = ringRu * Math.sin(t1);
+          ringBuf[o + 2] = ringZu;
+          ringBuf[o + 3] = ringRu * Math.cos(t2);
+          ringBuf[o + 4] = ringRu * Math.sin(t2);
+          ringBuf[o + 5] = ringZu;
+          ringSegCursor++;
+        }
+      }
+      this.refinedAltRings.geometry.setDrawRange(0, ringSegCursor * 2);
+      this.refinedAltRings.geometry.attributes.position.needsUpdate = true;
+      this._refinedAltRingsCadence = ringCad;
+    }
+    this.refinedAltRings.visible = true;
+
+    // S006d — lift refined label pool onto the pitch-driven reading
+    // band every frame, even on cache hit. The cache gates the heavier
+    // tick / grid / repaint work below, but the LABELS must follow
+    // CameraHeight continuously (not just on heading or FOV changes),
+    // so we reposition their visible sprites here using the stored
+    // `basePhi` from the last emission.
+    const rLabelRingR = 1.14;
+    const rLabelElev  = this._labelBandElevRad(s, fov);
+    const rLabelCosE  = Math.cos(rLabelElev);
+    const rLabelSinE  = Math.sin(rLabelElev);
+    const rLabelEyeH  = 0.012;
+    for (const sp of this._refinedLabelPool) {
+      if (!sp.visible) continue;
+      const phi = sp.userData.basePhi;
+      if (phi == null) continue;
+      sp.position.set(
+        rLabelRingR * rLabelCosE * Math.cos(phi),
+        rLabelRingR * rLabelCosE * Math.sin(phi),
+        rLabelRingR * rLabelSinE + rLabelEyeH,
+      );
+    }
+
+    // S006c — reuse `headingNow` computed above (the branch used to
+    // have its own `const heading = ...`). Cache key at a resolution
+    // finer than the current major cadence so a nudge within one
+    // tick doesn't trigger a rebuild.
+    const hKey = Math.round(headingNow / cad.minor) * cad.minor;
+    const fKey = Math.round(fov * 1000);
+    const key  = `${fKey}|${hKey.toFixed(7)}`;
+    if (key === this._refineKey) return;
+    this._refineKey = key;
+
+    // Emit ticks across heading ± window. `fov` is the full horizontal
+    // field angle; 0.7·fov overrun gives a small margin either side.
+    const halfWindow = Math.min(180, fov * 0.7 + cad.major);
+    const minAz = headingNow - halfWindow;
+    const maxAz = headingNow + halfWindow;
+
+    // --- ticks --------------------------------------------------------
+    const pos = this._refinedPos;
+    let seg = 0;
+    const maxSeg = pos.length / 6;
+    const emitTick = (az, inner, outer) => {
+      if (seg >= maxSeg) return;
+      const phi = Math.atan2(Math.sin(az * Math.PI / 180),
+                            -Math.cos(az * Math.PI / 180));
+      const cos = Math.cos(phi), sin = Math.sin(phi);
+      const o = seg * 6;
+      pos[o    ] = inner * cos;
+      pos[o + 1] = inner * sin;
+      pos[o + 2] = 0.015;
+      pos[o + 3] = outer * cos;
+      pos[o + 4] = outer * sin;
+      pos[o + 5] = 0.015;
+      seg++;
+    };
+    // Minor ticks — iterate with floor-aligned start so they land on
+    // exact multiples of cad.minor rather than drifting with heading.
+    const minorStart = Math.ceil(minAz / cad.minor) * cad.minor;
+    for (let az = minorStart; az <= maxAz; az += cad.minor) {
+      // Skip anywhere a major tick will be drawn (avoids double lines).
+      const nearMajor = Math.abs(az / cad.major - Math.round(az / cad.major)) < 1e-6;
+      if (nearMajor) continue;
+      emitTick(az, 1.00, 1.03);
+    }
+    // Major ticks — longer.
+    const majorStart = Math.ceil(minAz / cad.major) * cad.major;
+    for (let az = majorStart; az <= maxAz; az += cad.major) {
+      emitTick(az, 1.00, 1.08);
+    }
+    this.refinedTicks.geometry.setDrawRange(0, seg * 2);
+    this.refinedTicks.geometry.attributes.position.needsUpdate = true;
+
+    // --- refined meridian grid (S004) -------------------------------
+    // A meridian at compass azimuth `az` is an arc from (sinφ·cos,
+    // sinφ·sin, cosφ) for polar φ sweeping 0 (zenith) → π/2 (horizon).
+    // `phi` here is the LOCAL-FE angle for a compass azimuth so the
+    // arcs land on the same rays the horizon-ring ticks and
+    // cardinals use.
+    const arcSegs = this._arcSegs;
+    const emitArc = (buffer, budget, segCursor, az) => {
+      if (segCursor + arcSegs > budget) return segCursor;
+      const phi = Math.atan2(Math.sin(az * Math.PI / 180),
+                            -Math.cos(az * Math.PI / 180));
+      const cos = Math.cos(phi), sin = Math.sin(phi);
+      for (let k = 0; k < arcSegs; k++) {
+        const p1 = (k / arcSegs) * (Math.PI / 2);
+        const p2 = ((k + 1) / arcSegs) * (Math.PI / 2);
+        const o = segCursor * 6;
+        buffer[o    ] = Math.sin(p1) * cos;
+        buffer[o + 1] = Math.sin(p1) * sin;
+        buffer[o + 2] = Math.cos(p1);
+        buffer[o + 3] = Math.sin(p2) * cos;
+        buffer[o + 4] = Math.sin(p2) * sin;
+        buffer[o + 5] = Math.cos(p2);
+        segCursor++;
+      }
+      return segCursor;
+    };
+
+    // Minor meridians — dimmer, fill between majors.
+    const majBudget = this._majorMeridianBuf.length / 6;
+    const minBudget = this._minorMeridianBuf.length / 6;
+    let minSeg = 0;
+    if (cad.minorArc > 0) {
+      const startMin = Math.ceil(minAz / cad.minorArc) * cad.minorArc;
+      for (let az = startMin; az <= maxAz; az += cad.minorArc) {
+        // Skip where a major meridian will be drawn.
+        const nearMajor = Math.abs(az / cad.majorArc - Math.round(az / cad.majorArc)) < 1e-6;
+        if (nearMajor) continue;
+        const nxt = emitArc(this._minorMeridianBuf, minBudget, minSeg, az);
+        if (nxt === minSeg) break; // buffer full
+        minSeg = nxt;
+      }
+    }
+    this.refinedMinorMeridians.geometry.setDrawRange(0, minSeg * 2);
+    this.refinedMinorMeridians.geometry.attributes.position.needsUpdate = true;
+
+    // Major meridians — brighter, primary longitudinal grid.
+    let majSeg = 0;
+    const startMaj = Math.ceil(minAz / cad.majorArc) * cad.majorArc;
+    for (let az = startMaj; az <= maxAz; az += cad.majorArc) {
+      const nxt = emitArc(this._majorMeridianBuf, majBudget, majSeg, az);
+      if (nxt === majSeg) break; // buffer full
+      majSeg = nxt;
+    }
+    this.refinedMajorMeridians.geometry.setDrawRange(0, majSeg * 2);
+    this.refinedMajorMeridians.geometry.attributes.position.needsUpdate = true;
+
+    // (S006c — active meridian arc was already emitted at the top of
+    // _updateRefinedScale, before the coarse/refined split, so it
+    // shows in both regimes. Nothing to do here.)
+
+    // --- labels -------------------------------------------------------
+    // S005 — fine-scale labels were still visually huge because the
+    // old S003 sizer used an absolute MIN_LABEL_HEIGHT floor of 0.028
+    // world units. At arcsecond cadence the natural widthBudget-based
+    // height is ~2e-5, so the floor was ~1400× too large and the
+    // labels filled a third of the screen.
+    //
+    // New sizer: explicit screen-fraction target per cadence regime.
+    // Coarse labels still look like readable annotations; fine labels
+    // shrink to precise coordinate text sitting right on their tick.
+    //
+    //   targetFrac  = fraction of screen height the label should take
+    //                 in the current regime. Shrinks at DMS:
+    //                   deg       → 8% of screen
+    //                   degmin    → 5% of screen
+    //                   degminsec → 3% of screen
+    //
+    //   h_screen    = targetFrac · ringR · FOV_rad (world height at
+    //                 vault distance that subtends targetFrac of the
+    //                 screen at the current camera FOV).
+    //
+    //   h_arc       = widthBudget / aspect (arc-budget limit from S003,
+    //                 prevents overlap between adjacent labels).
+    //
+    //   h = min(h_screen, h_arc) — arc-budget still caps at coarse
+    //       FOV where screen-target would blow up; screen-target caps
+    //       at fine FOV where arc-budget would still allow a label
+    //       much larger than the screen.
+    const pool = this._refinedLabelPool;
+    const ringR = 1.14;
+    const LABEL_WIDTH_FRAC = 0.55;
+    const arcBetweenLabels = ringR * cad.labelEvery * Math.PI / 180;
+    const widthBudget = arcBetweenLabels * LABEL_WIDTH_FRAC;
+    const targetFrac  = cad.fmt === 'degminsec' ? 0.03
+                      : cad.fmt === 'degmin'    ? 0.05
+                      : 0.08;
+    const fovRad = Math.max(1e-6, fov * Math.PI / 180);
+    const hScreen = targetFrac * ringR * fovRad;
+    const HARD_MIN = 1e-6;   // avoid genuinely zero-sized sprites
+
+    // S006d — refined labels share the pitch-driven reading band with
+    // the coarse labels and cardinals. Reuse the lift constants
+    // computed above the cache check (`rLabelRingR`, `rLabelCosE`,
+    // `rLabelSinE`, `rLabelEyeH`). refinedAzGroup is unscaled so the
+    // local position IS the world offset from the observer; the
+    // `+ eyeH` on z compensates for the camera's 0.012 z-offset over
+    // the observer so the label projects at `labelElev` from the
+    // camera rather than slightly below. `basePhi` is stashed on each
+    // visible sprite so the per-frame lift above the cache check can
+    // track pitch without re-running this emission.
+
+    let labelI = 0;
+    const labelStart = Math.ceil(minAz / cad.labelEvery) * cad.labelEvery;
+    for (let az = labelStart; az <= maxAz; az += cad.labelEvery) {
+      if (labelI >= pool.length) break;
+      const sp = pool[labelI];
+      const phi = Math.atan2(Math.sin(az * Math.PI / 180),
+                            -Math.cos(az * Math.PI / 180));
+      sp.userData.basePhi = phi;
+      sp.position.set(
+        rLabelRingR * rLabelCosE * Math.cos(phi),
+        rLabelRingR * rLabelCosE * Math.sin(phi),
+        rLabelRingR * rLabelSinE + rLabelEyeH,
+      );
+      repaintTextSprite(sp, formatAzimuthLabel(az, cad.fmt), '#f4a640');
+      const aspect = sp.userData.aspect || 1;
+      const hArc = widthBudget / aspect;
+      let h = Math.min(hArc, hScreen);
+      if (h < HARD_MIN) h = HARD_MIN;
+      setSpriteScale(sp, h);
+      sp.visible = true;
+      labelI++;
+    }
+    for (; labelI < pool.length; labelI++) pool[labelI].visible = false;
   }
 }
 
@@ -2180,5 +3285,128 @@ export class ToroidalVortex {
     // observer's hemisphere of vision.
     const clip = model.state.InsideVault ? this._clipPlanes : [];
     for (const m of this._materials) m.clippingPlanes = clip;
+  }
+}
+
+// --- Cel Nav starfield (S009) --------------------------------------------
+//
+// Replacement for the procedural / chart star layers when
+// `StarfieldType === 'celnav'`. Unlike `Stars` (2000 random points), this
+// renders the 58 real navigational stars from the Nautical Almanac; unlike
+// `StarfieldChart` (texture with baked-in stars), each star is an
+// individually-positioned selectable object — driving the Tracker HUD and
+// letting future serials add click / hover interactions.
+//
+// Two layers, matching the pattern the existing Stars class uses:
+//   • `domePoints`   — stars on the heavenly vault (seen from orbital view
+//                      and also from inside the vault looking outward).
+//   • `spherePoints` — stars projected onto the observer's optical vault,
+//                      with sub-horizon stars parked below the disc so the
+//                      clip plane hides them.
+//
+// Both layers consume `c.CelNavStars`, populated every frame in
+// `FeModel.update()` via the sun/moon/planet projection pipeline. That
+// guarantees these stars track sidereal time, observer lat/long, and
+// Optical-vault shape exactly the way the ephemeris-driven bodies do.
+//
+// Star size is driven by the catalogue's `mag` so naked-eye-brightness
+// cues carry through; Sirius (mag -1.46) sits at ~5 px, dimmest
+// navigational stars (~mag 3) at ~1.5 px.
+export class CelNavStars {
+  constructor(clippingPlanes = []) {
+    this.group = new THREE.Group();
+    this.group.name = 'cel-nav-stars';
+
+    const MAX_STARS = 64;   // 58 nav stars + headroom
+    this._maxStars = MAX_STARS;
+    this._domePositions   = new Float32Array(MAX_STARS * 3);
+    this._domeSizes       = new Float32Array(MAX_STARS);
+    this._spherePositions = new Float32Array(MAX_STARS * 3);
+    this._sphereSizes     = new Float32Array(MAX_STARS);
+
+    const domeGeom = new THREE.BufferGeometry();
+    domeGeom.setAttribute('position', new THREE.BufferAttribute(this._domePositions, 3));
+    domeGeom.setAttribute('size',     new THREE.BufferAttribute(this._domeSizes,     1));
+    domeGeom.setDrawRange(0, 0);
+    this.domePoints = new THREE.Points(
+      domeGeom,
+      new THREE.PointsMaterial({
+        color: 0xffffff,
+        size: 3, sizeAttenuation: false,
+        transparent: true, opacity: 1,
+        clippingPlanes,
+      }),
+    );
+    this.group.add(this.domePoints);
+
+    const sphGeom = new THREE.BufferGeometry();
+    sphGeom.setAttribute('position', new THREE.BufferAttribute(this._spherePositions, 3));
+    sphGeom.setAttribute('size',     new THREE.BufferAttribute(this._sphereSizes,     1));
+    sphGeom.setDrawRange(0, 0);
+    this.spherePoints = new THREE.Points(
+      sphGeom,
+      new THREE.PointsMaterial({
+        color: 0xffffff,
+        size: 2.5, sizeAttenuation: false,
+        transparent: true, opacity: 1,
+        depthTest: false, depthWrite: false,
+        clippingPlanes,
+      }),
+    );
+    this.spherePoints.renderOrder = 55;
+    this.group.add(this.spherePoints);
+  }
+
+  update(model) {
+    const s = model.state;
+    const c = model.computed;
+
+    const active = (s.StarfieldType === 'celnav') && (c.CelNavStars != null);
+    // Same fade rules as Stars: dynamic fade by NightFactor unless the
+    // user disables `DynamicStars`, hard-gated on `ShowStars`.
+    const nightAlpha = s.DynamicStars ? (c.NightFactor || 0) : 1.0;
+    const visibilityGate = s.DynamicStars ? nightAlpha > 0.01 : true;
+    const showStars = active && s.ShowStars && visibilityGate;
+
+    this.domePoints.visible   = showStars && (s.ShowTruePositions !== false);
+    this.domePoints.material.opacity   = nightAlpha;
+    this.spherePoints.visible = showStars && s.ShowOpticalVault;
+    this.spherePoints.material.opacity = nightAlpha;
+
+    if (!showStars) {
+      this.domePoints.geometry.setDrawRange(0, 0);
+      this.spherePoints.geometry.setDrawRange(0, 0);
+      return;
+    }
+
+    const stars = c.CelNavStars;
+    const n = Math.min(stars.length, this._maxStars);
+    const dp = this._domePositions;
+    const sp = this._spherePositions;
+
+    for (let i = 0; i < n; i++) {
+      const star = stars[i];
+      // Heavenly vault position (precomputed by app.js).
+      dp[i * 3    ] = star.vaultCoord[0];
+      dp[i * 3 + 1] = star.vaultCoord[1];
+      dp[i * 3 + 2] = star.vaultCoord[2];
+      // Optical vault: below-horizon stars parked far below the disc so
+      // the disc clip plane hides them (matches Stars class convention).
+      const localGlobe = M.Trans(c.TransMatCelestToGlobe, star.celestCoord);
+      if (localGlobe[0] <= 0) {
+        sp[i * 3    ] = 0;
+        sp[i * 3 + 1] = 0;
+        sp[i * 3 + 2] = -1000;
+      } else {
+        sp[i * 3    ] = star.opticalVaultCoord[0];
+        sp[i * 3 + 1] = star.opticalVaultCoord[1];
+        sp[i * 3 + 2] = star.opticalVaultCoord[2];
+      }
+    }
+
+    this.domePoints.geometry.setDrawRange(0, n);
+    this.domePoints.geometry.attributes.position.needsUpdate = true;
+    this.spherePoints.geometry.setDrawRange(0, n);
+    this.spherePoints.geometry.attributes.position.needsUpdate = true;
   }
 }

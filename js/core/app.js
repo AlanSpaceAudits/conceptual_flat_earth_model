@@ -11,8 +11,9 @@ import { CELESTIAL, GEOMETRY, FE_RADIUS, initTimeOrigin } from './constants.js';
 import { dateTimeToDate } from './time.js';
 import {
   sunEquatorial, moonEquatorial, greenwichSiderealDeg, equatorialToCelestCoord,
-  planetEquatorial, PLANET_NAMES,
+  planetEquatorial, PLANET_NAMES, bodyRADec, BODY_NAMES,
 } from './ephemeris.js';
+import { CEL_NAV_STARS, celNavStarById } from './celnavStars.js';
 import {
   compTransMatCelestToGlobe, compTransMatLocalFeToGlobalFe, compTransMatVaultToFe,
   celestCoordToLocalGlobeCoord, coordToLatLong, localGlobeCoordToAngles,
@@ -56,10 +57,20 @@ function defaultState() {
     // 0 = North, 90 = East, 180 = South, 270 = West. Drives the cardinal
     // arrow and the convergence/divergence read of the projected starfield.
     ObserverHeading: 0,
+    // S007 — observer elevation above the disc (world units). 0 keeps
+    // the eye at the ground (current behaviour). Lifting the observer
+    // only moves the camera; ObserverFeCoord stays at z = 0 so all
+    // downstream geometry (meridian arc, heading ray, cardinals) keeps
+    // its ground-anchored math unchanged.
+    ObserverElevation: 0,
     CameraDirection: 30.0,
     CameraHeight:    25.0,
     CameraDistance:  GEOMETRY.CameraDistanceDefault,
-    Zoom:             1.4,
+    Zoom:             1.4,    // Heavenly orbit zoom — unaffected by Optical wheel.
+    // S002 — Optical-only zoom scalar. Drives only the first-person
+    // FOV (`fov = 75° / OpticalZoom`). Default 5.09 is the value the
+    // user wants on entering Optical Vault.
+    OpticalZoom:      5.09,
 
     // time — defaults to 2017-08-21 22:41 UTC (total solar eclipse reference).
     DateTime:    232.9454, // days since 2017-01-01
@@ -106,6 +117,8 @@ function defaultState() {
     ShowLogo:          true,
     ShowConstellations:      true,
     ShowConstellationLines:  true,
+    ShowLongitudeRing:       true,
+    ShowAzimuthRing:         true,
 
     // First-person camera mode: place the camera at the observer's position
     // looking along their heading, and hide everything a real observer in
@@ -160,7 +173,36 @@ function defaultState() {
     // Starfield type for the heavenly-vault disc. 'random' uses the
     // procedural point cloud; 'chart-dark' / 'chart-light' swap in a polar
     // star-chart texture (dark- vs light-background variants).
+    // S009 — 'celnav' adds a real-named-star field built from the 58
+    // Nautical-Almanac navigational stars (see celnavStars.js). Each
+    // star is individually positioned from RA/Dec and projected into
+    // both Heavenly and Optical vaults, replacing the procedural /
+    // chart rendering when selected.
     StarfieldType: 'random',
+
+    // S009 — ephemeris source for the sun/moon/planet pipeline.
+    //   'geocentric'   — use sunEquatorial / moonEquatorial / planetEquatorial
+    //                    directly. Cheapest; current model default.
+    //   'heliocentric' — go through bodyHeliocentric(name, date) and
+    //                    differencing against earth's heliocentric pos,
+    //                    then rotating into equatorial. Architecturally
+    //                    distinct; numerically equivalent at current
+    //                    precision. Selecting this exercises the helio
+    //                    pipeline for debugging / cross-checking.
+    BodySource: 'geocentric',
+
+    // S009 — force-full-night toggle so the user can test Cel Nav
+    // starfield / body placement without waiting for the actual day/
+    // night cycle. When true, NightFactor is pinned to 1.0 regardless
+    // of the sun's elevation.
+    PermanentNight: false,
+
+    // S009 — currently tracked object for the second HUD panel.
+    //   'none'          — no tracker readout
+    //   'sun' / 'moon'  — luminaries
+    //   'mercury' / 'venus' / 'mars' / 'jupiter' / 'saturn' — planets
+    //   'star:<id>'     — Cel Nav star (id matches celnavStars.js entry)
+    TrackerTarget: 'none',
 
     // description / pointer
     Description: '',
@@ -261,11 +303,23 @@ export class FeModel extends EventTarget {
 
     // --- clamp --------------------------------------------------------
     s.ObserverLat  = Clamp(s.ObserverLat, -90, 90);
+    // S007 — clamp observer elevation. Upper bound 0.5 ≈ the vault
+    // radius, so the camera can rise as high as the horizon ring
+    // without clipping through the vault shell.
+    s.ObserverElevation = Clamp(s.ObserverElevation, 0, 0.5);
     s.ObserverLong = ((s.ObserverLong + 180) % 360 + 360) % 360 - 180;
     s.CameraHeight = Clamp(s.CameraHeight, -30, 89.9);
     s.CameraDirection = ((s.CameraDirection + 180) % 360 + 360) % 360 - 180;
     s.ObserverHeading = ((s.ObserverHeading % 360) + 360) % 360;
-    s.Zoom         = Clamp(s.Zoom, 0.1, 100);
+    // S002 — restored Heavenly Zoom clamp to its original gentle
+    // range. The Optical FOV no longer reads `Zoom`; it reads the
+    // separate `OpticalZoom` field below, which carries its own clamp.
+    s.Zoom         = Clamp(s.Zoom, 0.1, 10);
+    // S006 — hard lock at the individual-degree inspection layer.
+    // OpticalZoom_MAX = 75 → fov_min = 75°/75 = 1°. Once the refined
+    // grid is drawing one meridian per degree, further zoom would add
+    // nothing — no sub-degree cadence is defined in this scope.
+    s.OpticalZoom  = Clamp(s.OpticalZoom, 0.2, 75);
     s.VaultSize     = Clamp(s.VaultSize, GEOMETRY.VaultSizeMin, GEOMETRY.VaultSizeMax);
     s.VaultHeight   = Clamp(s.VaultHeight, GEOMETRY.VaultHeightMin, GEOMETRY.VaultHeightMax);
     s.OpticalVaultSize   = Clamp(s.OpticalVaultSize,
@@ -298,8 +352,13 @@ export class FeModel extends EventTarget {
     // driven by independent real periods (1 solar year, 1 sidereal month,
     // 1 sidereal day, plus precession + lunar node regression baked in).
     const utcDate = dateTimeToDate(s.DateTime);
-    const sunEq  = sunEquatorial(utcDate);
-    const moonEq = moonEquatorial(utcDate);
+    // S009 — ephemeris source is selectable. Both pipelines return
+    // geocentric equatorial (ra, dec); the heliocentric pipeline routes
+    // through helio-xyz + earth differencing before projection. At
+    // current precision they produce the same tracker readouts.
+    const bodySource = s.BodySource || 'geocentric';
+    const sunEq  = bodyRADec('sun',  utcDate, bodySource);
+    const moonEq = bodyRADec('moon', utcDate, bodySource);
     const gmstDeg = greenwichSiderealDeg(utcDate);
 
     c.SkyRotAngle      = gmstDeg;
@@ -431,8 +490,15 @@ export class FeModel extends EventTarget {
     //   sun elev = -6°  -> 0.5 (civil twilight, stars emerging)
     //   sun elev ≤ -12° -> 1  (nautical twilight and beyond, full dark)
     // Used by the star fade and by the optical-vault orb dimming.
-    const sunElev = c.SunAnglesGlobe.elevation;
-    c.NightFactor = Limit01((-sunElev) / 12.0);
+    // S009 — `PermanentNight` forces NightFactor = 1 so the user can
+    // test the Cel Nav starfield / body placement without waiting for
+    // dusk. Sun-angle-driven fade resumes as soon as the toggle is off.
+    if (s.PermanentNight) {
+      c.NightFactor = 1;
+    } else {
+      const sunElev = c.SunAnglesGlobe.elevation;
+      c.NightFactor = Limit01((-sunElev) / 12.0);
+    }
 
     // --- planets -----------------------------------------------------
     // Planet altitudes are dynamic each frame, mirroring how the sun and
@@ -454,7 +520,7 @@ export class FeModel extends EventTarget {
 
     c.Planets = {};
     for (const name of PLANET_NAMES) {
-      const eq = planetEquatorial(name, utcDate);
+      const eq = bodyRADec(name, utcDate, bodySource);
       const celestCoord = equatorialToCelestCoord(eq);
       const ll = coordToLatLong(celestCoord);
       const decNorm = 0.5 + 0.5 * Math.max(-1, Math.min(1,
@@ -481,6 +547,102 @@ export class FeModel extends EventTarget {
         vaultCoord, opticalVaultCoord,
         anglesGlobe,
       };
+    }
+
+    // --- Cel Nav stars (S009) --------------------------------------
+    // Project every star in the nav-almanac catalogue through the same
+    // celestial → local-globe → vault pipeline the sun/moon/planets
+    // use. Each star's starfield altitude is a fixed fraction of the
+    // user's StarfieldVaultHeight so the whole catalogue hangs just
+    // below the sphere of the starfield shell (same convention the
+    // existing random-star cloud follows).
+    c.CelNavStars = [];
+    const STAR_VAULT_HEIGHT = s.StarfieldVaultHeight;
+    for (const star of CEL_NAV_STARS) {
+      const ra  = (star.raH / 24) * 2 * Math.PI;
+      const dec = star.decD * Math.PI / 180;
+      const celestCoord   = equatorialToCelestCoord({ ra, dec });
+      const celestLatLong = coordToLatLong(celestCoord);
+      const vaultCoord    = vaultCoordToGlobalFeCoord(
+        vaultCoordAt(celestLatLong.lat, celestLatLong.lng, STAR_VAULT_HEIGHT, FE_RADIUS),
+        c.TransMatVaultToFe,
+      );
+      const localGlobe  = celestCoordToLocalGlobeCoord(celestCoord, c.TransMatCelestToGlobe);
+      const anglesGlobe = localGlobeCoordToAngles(localGlobe);
+      const opticalVaultCoord = localGlobeCoordToGlobalFeCoord(
+        opticalVaultProject(localGlobe, c.OpticalVaultRadius, c.OpticalVaultHeight),
+        c.TransMatLocalFeToGlobalFe,
+      );
+      c.CelNavStars.push({
+        id:   star.id,
+        name: star.name,
+        mag:  star.mag,
+        ra, dec,
+        celestCoord, celestLatLong,
+        vaultCoord, opticalVaultCoord,
+        anglesGlobe,
+      });
+    }
+
+    // --- Tracker readout (S009) ------------------------------------
+    // The Tracker UI ships a dropdown of every selectable object; the
+    // recompute here collapses that selection to a single readout
+    // payload the HUD panel consumes.
+    c.TrackerInfo = null;
+    const target = s.TrackerTarget || 'none';
+    if (target !== 'none') {
+      let info = null;
+      if (target === 'sun') {
+        info = {
+          name:     'Sun',
+          category: 'luminary',
+          ra:       c.SunRA,
+          dec:      c.SunDec,
+          azimuth:  c.SunAnglesGlobe.azimuth,
+          elevation:c.SunAnglesGlobe.elevation,
+        };
+      } else if (target === 'moon') {
+        info = {
+          name:     'Moon',
+          category: 'luminary',
+          ra:       c.MoonRA,
+          dec:      c.MoonDec,
+          azimuth:  c.MoonAnglesGlobe.azimuth,
+          elevation:c.MoonAnglesGlobe.elevation,
+        };
+      } else if (PLANET_NAMES.includes(target)) {
+        const p = c.Planets[target];
+        if (p) {
+          info = {
+            name:     target[0].toUpperCase() + target.slice(1),
+            category: 'planet',
+            ra:       p.ra,
+            dec:      p.dec,
+            azimuth:  p.anglesGlobe.azimuth,
+            elevation:p.anglesGlobe.elevation,
+          };
+        }
+      } else if (target.startsWith('star:')) {
+        const starId = target.slice(5);
+        const entry  = c.CelNavStars.find((x) => x.id === starId);
+        const def    = celNavStarById(starId);
+        if (entry && def) {
+          info = {
+            name:     def.name,
+            category: 'star',
+            mag:      def.mag,
+            ra:       entry.ra,
+            dec:      entry.dec,
+            azimuth:  entry.anglesGlobe.azimuth,
+            elevation:entry.anglesGlobe.elevation,
+          };
+        }
+      }
+      if (info) {
+        info.source = bodySource;
+        info.utcMs  = utcDate.getTime();
+        c.TrackerInfo = info;
+      }
     }
   }
 }

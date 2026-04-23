@@ -64,6 +64,23 @@ export const PROJECTIONS = {
     },
   },
 
+  blank: {
+    id: 'blank',
+    name: 'Blank (no features)',
+    imageAsset: null,
+    imageNativeWidth: null,
+    imageNativeHeight: null,
+    imageInscribedRadius: 0.5,
+    // When true, earthMap.js renders a solid black disc and skips the
+    // GeoJSON land pipeline entirely. Used to inspect the canonical
+    // coordinate shell without geographic clutter.
+    renderStyle: 'blank',
+    notes: 'Black circle, no continents. Shows the canonical coordinate shell alone.',
+    project(lat, lon, feRadius = 1) {
+      return polarFromRadial(lat, lon, feRadius, RADIAL_AE);
+    },
+  },
+
   hellerick: {
     id: 'hellerick',
     name: 'Hellerick boreal',

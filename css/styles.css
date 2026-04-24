@@ -165,7 +165,14 @@ header .info-popup p:last-child { margin-bottom: 0; }
   z-index: 30;
   pointer-events: auto;
 }
-#bottom-bar .time-controls { display: flex; align-items: center; gap: 4px; }
+#bottom-bar .bar-left { flex: 1 1 0; min-width: 0; }
+#bottom-bar .time-controls { display: flex; align-items: center; gap: 4px; flex: 0 0 auto; }
+#bottom-bar .vault-swap { font-size: 15px; margin-right: 8px; }
+#bottom-bar .vault-swap[aria-pressed="true"] {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(255, 154, 60, 0.10);
+}
 #bottom-bar .time-btn {
   background: var(--row);
   color: var(--fg);
@@ -189,7 +196,8 @@ header .info-popup p:last-child { margin-bottom: 0; }
 #bottom-bar .tabs {
   display: flex;
   gap: 2px;
-  flex: 1;
+  flex: 1 1 0;
+  min-width: 0;
   justify-content: flex-end;
 }
 #bottom-bar .tab-btn {

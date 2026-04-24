@@ -771,8 +771,15 @@ export function buildControlPanel(host, model, demos) {
   const bar = document.createElement('div');
   bar.id = 'bottom-bar';
 
+  const barLeft = document.createElement('div');
+  barLeft.className = 'bar-left';
+
   const timeControls = document.createElement('div');
   timeControls.className = 'time-controls';
+  const btnVault = document.createElement('button');
+  btnVault.className = 'time-btn vault-swap';
+  btnVault.type = 'button';
+  btnVault.title = 'Swap Heavenly ⇄ Optical Vault';
   const btnRew  = document.createElement('button');
   btnRew.className = 'time-btn';  btnRew.type = 'button';
   btnRew.textContent = '⏪';  btnRew.title = 'Rewind';
@@ -784,13 +791,25 @@ export function buildControlPanel(host, model, demos) {
   btnFf.textContent = '⏩';  btnFf.title = 'Fast forward';
   const speedReadout = document.createElement('span');
   speedReadout.className = 'time-speed';
-  timeControls.append(btnRew, btnPlay, btnFf, speedReadout);
+  timeControls.append(btnVault, btnRew, btnPlay, btnFf, speedReadout);
 
   const tabsBar = document.createElement('div');
   tabsBar.className = 'tabs';
   tabsBar.setAttribute('role', 'tablist');
 
-  bar.append(timeControls, tabsBar);
+  bar.append(barLeft, timeControls, tabsBar);
+
+  const refreshVaultBtn = () => {
+    const inVault = !!model.state.InsideVault;
+    btnVault.textContent = inVault ? '🌐' : '👁';
+    btnVault.setAttribute('aria-pressed', inVault ? 'true' : 'false');
+  };
+  btnVault.addEventListener('click', () => {
+    model.setState({ InsideVault: !model.state.InsideVault });
+    refreshVaultBtn();
+  });
+  model.addEventListener('update', refreshVaultBtn);
+  refreshVaultBtn();
 
   const popupsContainer = document.createElement('div');
   popupsContainer.id = 'tab-popups';

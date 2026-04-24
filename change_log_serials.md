@@ -384,3 +384,17 @@ Format:
   to clear the new strip.
 - **Revert:** `git checkout v-s000235 -- js/ui/controlPanel.js
   css/styles.css`.
+
+## S237 — Center transport controls + vault-swap button
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/ui/controlPanel.js`, `css/styles.css`.
+- **Change:**
+  - Added a `.bar-left` spacer (flex: 1) before the `.time-controls`
+    so the rewind / play-pause / fast-forward cluster sits centered
+    between it and the `.tabs` block (flex: 1) on the right.
+  - Added a vault-swap button at the head of the cluster. Icon
+    `👁` when in Heavenly, `🌐` when in Optical; click toggles
+    `InsideVault`. `aria-pressed` mirrors state.
+- **Revert:** `git checkout v-s000236 -- js/ui/controlPanel.js
+  css/styles.css`.

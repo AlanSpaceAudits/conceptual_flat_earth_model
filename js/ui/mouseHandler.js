@@ -183,7 +183,16 @@ export function attachMouseHandler(canvas, model) {
   let downX = 0, downY = 0;
   let dragDist = 0;
   const hoverTip = ensureHoverTooltip();
-  const hideHover = () => { hoverTip.style.display = 'none'; };
+  // Id of the celestial body currently under the cursor (whatever the
+  // hover tooltip is showing). Used by the pointer-up click handler so
+  // the selected target is exactly the one whose info box the user
+  // was looking at, rather than recomputed from a slightly different
+  // click position.
+  let hoveredHit = null;
+  const hideHover = () => {
+    hoverTip.style.display = 'none';
+    hoveredHit = null;
+  };
 
   canvas.addEventListener('pointerdown', (e) => {
     dragging = true;
@@ -199,14 +208,18 @@ export function attachMouseHandler(canvas, model) {
     try { canvas.releasePointerCapture(e.pointerId); } catch {}
     if (!wasClick) return;
     if (!model.state.InsideVault) return;
-    const click = canvasToSkyAngles(canvas, e.offsetX, e.offsetY, model.state);
-    const best = findNearestCelestial(
-      click.az, click.el, model.computed, model.state, click.fovV,
-    );
+    // Prefer the hovered hit (the body whose tooltip is currently
+    // shown) over a fresh nearest-search — the user clicked the info
+    // box they could see, even if another body is slightly nearer
+    // the click pixel.
+    let best = hoveredHit;
+    if (!best) {
+      const click = canvasToSkyAngles(canvas, e.offsetX, e.offsetY, model.state);
+      best = findNearestCelestial(
+        click.az, click.el, model.computed, model.state, click.fovV,
+      );
+    }
     if (!best) return;
-    // Snap heading + pitch to the object. Clamp pitch to 0 so a
-    // below-horizon target (shouldn't be clickable, but guard
-    // anyway) keeps the camera level.
     const targetHeading = ((best.angles.azimuth % 360) + 360) % 360;
     const targetPitch = Math.max(0, Math.min(89.9, best.angles.elevation));
     model.setState({
@@ -247,6 +260,7 @@ export function attachMouseHandler(canvas, model) {
           sky.az, sky.el, model.computed, model.state, sky.fovV,
         );
         if (hit) {
+          hoveredHit = hit;
           const name = displayNameFor(hit.id, model.computed);
           const az = ((hit.angles.azimuth % 360) + 360) % 360;
           const el = hit.angles.elevation;

@@ -388,7 +388,7 @@ export class FeModel extends EventTarget {
     const moonToSun   = V.Norm(V.Sub(c.SunCelestCoord, V.Scale(c.MoonCelestCoord, 0)));
     const shadowUp    = V.Norm(V.Mult(moonToSun, moonToGlobe));
     c.MoonPhase = Math.acos(Limit1(V.ScalarProd(moonToSun, moonToGlobe)));
-    c.MoonPhaseFraction = 0.5 * (1 - Math.cos(c.MoonPhase));
+    c.MoonPhaseFraction = 0.5 * (1 + Math.cos(c.MoonPhase));
 
     // Terminator rotation as seen from the observer.
     const globeToMoon = V.Scale(celestCoordToLocalGlobeCoord(

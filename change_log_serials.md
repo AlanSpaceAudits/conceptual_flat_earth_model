@@ -500,6 +500,19 @@ Format:
 - **Revert:** `git checkout v-s000256 -- js/render/worldObjects.js
   js/render/constellations.js`.
 
+## S273 — Fix inverted moon-phase illumination fraction
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/core/app.js`.
+- **Change:** `MoonPhaseFraction` formula changed from
+  `0.5 * (1 - cos(MoonPhase))` to `0.5 * (1 + cos(MoonPhase))`.
+  The phase-angle `MoonPhase` is 0 at full and π at new, so the
+  prior `(1 - cos)` returned the *dark* fraction; every consumer
+  (HUD widget, phase name, illumination bar, percentage text)
+  treats the value as the illuminated fraction, which made new
+  moon show as fully lit and full moon as fully dark.
+- **Revert:** `git checkout v-s000272 -- js/core/app.js`.
+
 ## S272 — Galaxies catalogue, render layer, tracker integration
 
 - **Date:** 2026-04-24

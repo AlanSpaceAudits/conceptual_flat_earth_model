@@ -500,6 +500,19 @@ Format:
 - **Revert:** `git checkout v-s000256 -- js/render/worldObjects.js
   js/render/constellations.js`.
 
+## S288 — Heavenly-vault preset snap when leaving Optical with a tracked body
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/main.js`.
+- **Change:** The existing `InsideVault` transition listener
+  now also handles `true → false` with an active `FollowTarget`.
+  On that transition it applies a bird's-eye preset:
+  `CameraHeight: 80.3°`, `CameraDistance: 10`, `Zoom: 4.67` —
+  matching the orbit settings the user screenshotted. No attempt
+  to re-centre on the body yet; that's deferred to a future
+  `cel_cam` free-camera mode.
+- **Revert:** `git checkout v-s000287 -- js/main.js`.
+
 ## S287 — Hover tooltip + larger click hitbox for celestial bodies
 
 - **Date:** 2026-04-24

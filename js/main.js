@@ -76,6 +76,12 @@ if (logoEl) {
 // Optical-mode entry snap: FOV 75° + pitch 7.5° so 45° sits at the viewport top.
 const OPTICAL_ENTRY_ZOOM  = 1.0;
 const OPTICAL_ENTRY_PITCH = 7.5;
+// Heavenly-mode snap when leaving Optical with an active FollowTarget:
+// bird's-eye preset so the disc is visible with the tracked body's
+// ground point near the centre. User can then pan manually.
+const HEAVENLY_TRACK_PITCH = 80.3;
+const HEAVENLY_TRACK_DIST  = 10;
+const HEAVENLY_TRACK_ZOOM  = 4.67;
 let _prevInsideVault = !!model.state.InsideVault;
 model.addEventListener('update', () => {
   const now = !!model.state.InsideVault;
@@ -83,6 +89,12 @@ model.addEventListener('update', () => {
     model.setState({
       OpticalZoom:  OPTICAL_ENTRY_ZOOM,
       CameraHeight: OPTICAL_ENTRY_PITCH,
+    });
+  } else if (!now && _prevInsideVault && model.state.FollowTarget) {
+    model.setState({
+      CameraHeight:   HEAVENLY_TRACK_PITCH,
+      CameraDistance: HEAVENLY_TRACK_DIST,
+      Zoom:           HEAVENLY_TRACK_ZOOM,
     });
   }
   _prevInsideVault = now;

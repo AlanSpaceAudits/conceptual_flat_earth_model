@@ -56,8 +56,8 @@ header .info-popup p:last-child { margin-bottom: 0; }
   position: absolute;
   right: 16px;
   bottom: 86px;
-  width: clamp(80px, 14vmin, 180px);
-  height: clamp(80px, 14vmin, 180px);
+  width: clamp(40px, 12vmin, 180px);
+  height: clamp(40px, 12vmin, 180px);
   pointer-events: none;
   opacity: 0.9;
   user-select: none;

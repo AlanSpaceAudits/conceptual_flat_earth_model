@@ -500,6 +500,15 @@ Format:
 - **Revert:** `git checkout v-s000256 -- js/render/worldObjects.js
   js/render/constellations.js`.
 
+## S282 — AC logo shrinks further on phone-sized viewports
+
+- **Date:** 2026-04-24
+- **Files changed:** `css/styles.css`.
+- **Change:** `#logo` clamp widened: min 80 px → 40 px, slope
+  14vmin → 12vmin, max unchanged at 180 px. Small phone
+  viewports (~360 px wide) now render the logo around 43 px.
+- **Revert:** `git checkout v-s000281 -- css/styles.css`.
+
 ## S281 — Info bar moves into the dark bottom-bar area
 
 - **Date:** 2026-04-24

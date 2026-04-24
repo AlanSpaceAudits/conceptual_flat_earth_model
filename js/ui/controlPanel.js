@@ -828,11 +828,32 @@ export function buildControlPanel(host, model, demos) {
   speedReadout.className = 'time-speed';
   timeControls.append(btnVault, btnRew, btnPlay, btnFf, speedReadout);
 
+  const compassControls = document.createElement('div');
+  compassControls.className = 'compass-controls';
+  const compassBtns = [
+    { label: 'N', heading: 0   },
+    { label: 'E', heading: 90  },
+    { label: 'S', heading: 180 },
+    { label: 'W', heading: 270 },
+  ].map(({ label, heading }) => {
+    const b = document.createElement('button');
+    b.className = 'time-btn compass-btn';
+    b.type = 'button';
+    b.textContent = label;
+    b.title = `Face ${label}`;
+    b.dataset.heading = String(heading);
+    b.addEventListener('click', () => {
+      model.setState({ ObserverHeading: heading, FollowTarget: null });
+    });
+    compassControls.appendChild(b);
+    return b;
+  });
+
   const tabsBar = document.createElement('div');
   tabsBar.className = 'tabs';
   tabsBar.setAttribute('role', 'tablist');
 
-  bar.append(barLeft, timeControls, tabsBar);
+  bar.append(barLeft, timeControls, compassControls, tabsBar);
 
   const refreshVaultBtn = () => {
     const inVault = !!model.state.InsideVault;
@@ -845,6 +866,17 @@ export function buildControlPanel(host, model, demos) {
   });
   model.addEventListener('update', refreshVaultBtn);
   refreshVaultBtn();
+
+  const refreshCompass = () => {
+    const heading = ((model.state.ObserverHeading || 0) % 360 + 360) % 360;
+    for (const b of compassBtns) {
+      const h = Number(b.dataset.heading);
+      const d = Math.min(Math.abs(heading - h), 360 - Math.abs(heading - h));
+      b.setAttribute('aria-pressed', d < 0.5 ? 'true' : 'false');
+    }
+  };
+  model.addEventListener('update', refreshCompass);
+  refreshCompass();
 
   const popupsContainer = document.createElement('div');
   popupsContainer.id = 'tab-popups';

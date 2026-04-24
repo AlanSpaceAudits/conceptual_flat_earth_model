@@ -255,6 +255,20 @@ header .info-popup p:last-child { margin-bottom: 0; }
   padding-left: 6px;
 }
 
+#bottom-bar .compass-controls {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  flex: 0 0 auto;
+  margin-left: 12px;
+}
+#bottom-bar .compass-btn { min-width: 28px; padding: 4px 6px; font-weight: 600; }
+#bottom-bar .compass-btn[aria-pressed="true"] {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(255, 154, 60, 0.10);
+}
+
 #bottom-bar .tabs {
   display: flex;
   gap: 2px;

@@ -500,6 +500,23 @@ Format:
 - **Revert:** `git checkout v-s000256 -- js/render/worldObjects.js
   js/render/constellations.js`.
 
+## S285 — N / E / S / W quick-turn buttons on the bottom bar
+
+- **Date:** 2026-04-24
+- **Files changed:** `css/styles.css`, `js/ui/controlPanel.js`.
+- **Change:**
+  - New `.compass-controls` group between `.time-controls` and
+    `.tabs` with four buttons (N 0°, E 90°, S 180°, W 270°).
+    Each click sets `ObserverHeading` to the cardinal value and
+    clears any active `FollowTarget` so the snap takes.
+  - Active cardinal (heading within 0.5° of its value) takes
+    `aria-pressed="true"` and the shared accent-border
+    highlight used by the vault-swap button.
+  - CSS: compass buttons reuse `.time-btn` styling with
+    tighter padding / min-width and bold labels.
+- **Revert:** `git checkout v-s000284 -- css/styles.css
+  js/ui/controlPanel.js`.
+
 ## S284 — Click-to-snap and continuous follow in Optical mode
 
 - **Date:** 2026-04-24

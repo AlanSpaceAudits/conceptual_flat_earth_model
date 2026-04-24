@@ -335,6 +335,7 @@ export class Renderer {
     const trackerSetGP = new Set(
       Array.isArray(s.TrackerTargets) ? s.TrackerTargets : [],
     );
+    if (s.FollowTarget) trackerSetGP.add(s.FollowTarget);
     const sunGPShow  = !stmGP || trackerSetGP.has('sun');
     const moonGPShow = !stmGP || trackerSetGP.has('moon');
     const showGPLine = s.ShowGroundPoints
@@ -391,6 +392,7 @@ export class Renderer {
     // panel button grid emits ('sun', 'moon', planet name).
     const stm = !!s.SpecifiedTrackerMode;
     const trackerSet = new Set(Array.isArray(s.TrackerTargets) ? s.TrackerTargets : []);
+    if (s.FollowTarget) trackerSet.add(s.FollowTarget);
     const showSun   = !stm || trackerSet.has('sun');
     const showMoon  = !stm || trackerSet.has('moon');
     this.sunMarker.group.visible  = showSun;

@@ -3933,9 +3933,11 @@ export class CelNavStars {
     // isn't in `TrackerTargets`. Off-screen park (0, 0, -1000) on
     // both buffers so the disc clip plane hides the point.
     const stm = !!s.SpecifiedTrackerMode;
-    const trackerSet = stm
-      ? new Set(Array.isArray(s.TrackerTargets) ? s.TrackerTargets : [])
-      : null;
+    let trackerSet = null;
+    if (stm) {
+      trackerSet = new Set(Array.isArray(s.TrackerTargets) ? s.TrackerTargets : []);
+      if (s.FollowTarget) trackerSet.add(s.FollowTarget);
+    }
 
     for (let i = 0; i < n; i++) {
       const star = stars[i];
@@ -4056,9 +4058,11 @@ export class CatalogPointStars {
     const dp = this._domePositions;
     const sp = this._spherePositions;
     const stm = !!s.SpecifiedTrackerMode;
-    const trackerSet = stm
-      ? new Set(Array.isArray(s.TrackerTargets) ? s.TrackerTargets : [])
-      : null;
+    let trackerSet = null;
+    if (stm) {
+      trackerSet = new Set(Array.isArray(s.TrackerTargets) ? s.TrackerTargets : []);
+      if (s.FollowTarget) trackerSet.add(s.FollowTarget);
+    }
 
     for (let i = 0; i < n; i++) {
       const star = entries[i];

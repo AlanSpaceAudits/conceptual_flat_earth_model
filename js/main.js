@@ -86,10 +86,21 @@ let _prevInsideVault = !!model.state.InsideVault;
 model.addEventListener('update', () => {
   const now = !!model.state.InsideVault;
   if (now && !_prevInsideVault) {
-    model.setState({
-      OpticalZoom:  OPTICAL_ENTRY_ZOOM,
-      CameraHeight: OPTICAL_ENTRY_PITCH,
-    });
+    if (model.state.FollowTarget) {
+      // Entering Optical while tracking: keep the default zoom but
+      // don't apply the horizon-pitch snap — the follow listener in
+      // mouseHandler re-aims heading/pitch at the target the very
+      // next update, so the body stays centred on screen.
+      model.setState({
+        OpticalZoom: OPTICAL_ENTRY_ZOOM,
+        FreeCamActive: false,
+      });
+    } else {
+      model.setState({
+        OpticalZoom:  OPTICAL_ENTRY_ZOOM,
+        CameraHeight: OPTICAL_ENTRY_PITCH,
+      });
+    }
   } else if (!now && _prevInsideVault && model.state.FollowTarget) {
     model.setState({
       CameraHeight:   HEAVENLY_TRACK_PITCH,
@@ -97,10 +108,6 @@ model.addEventListener('update', () => {
       Zoom:           HEAVENLY_TRACK_ZOOM,
       FreeCamActive:  true,
     });
-  }
-  if (now && _prevInsideVault === false && model.state.FreeCamActive) {
-    // Entering Optical cancels free-cam (Optical handles its own follow).
-    model.setState({ FreeCamActive: false });
   }
   _prevInsideVault = now;
 });

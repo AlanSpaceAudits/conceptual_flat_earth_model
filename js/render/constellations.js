@@ -176,9 +176,11 @@ export class Constellations {
     // star whose id isn't in `TrackerTargets`. Cel-nav duplicates
     // are already hidden regardless; this rule additionally
     // kills non-cel-nav stars that aren't explicitly tracked.
-    const trackerSet = stm
-      ? new Set(Array.isArray(s.TrackerTargets) ? s.TrackerTargets : [])
-      : null;
+    let trackerSet = null;
+    if (stm) {
+      trackerSet = new Set(Array.isArray(s.TrackerTargets) ? s.TrackerTargets : []);
+      if (s.FollowTarget) trackerSet.add(s.FollowTarget);
+    }
 
     for (let i = 0; i < this._nStars; i++) {
       const [lat, lon] = this._stars[i];

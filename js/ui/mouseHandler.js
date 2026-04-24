@@ -300,7 +300,13 @@ export function attachMouseHandler(canvas, model) {
     if (dragDist >= CLICK_DRAG_PX
         && (model.state.FollowTarget || model.state.FreeCamActive)) {
       // Any real drag breaks the follow — user is steering manually.
-      model.setState({ FollowTarget: null, FreeCamActive: false });
+      // Also drop Specified Tracker Mode so the rest of the sky comes
+      // back instead of leaving the user staring at an empty canvas.
+      model.setState({
+        FollowTarget: null,
+        FreeCamActive: false,
+        SpecifiedTrackerMode: false,
+      });
     }
 
     if (model.state.InsideVault) {

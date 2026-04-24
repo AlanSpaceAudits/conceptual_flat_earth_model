@@ -500,6 +500,34 @@ Format:
 - **Revert:** `git checkout v-s000256 -- js/render/worldObjects.js
   js/render/constellations.js`.
 
+## S299 — FollowTarget survives STM; drag clears STM; Optical re-entry keeps target centred
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/main.js`, `js/render/constellations.js`,
+  `js/render/index.js`, `js/render/worldObjects.js`,
+  `js/ui/mouseHandler.js`.
+- **Change:**
+  - Every Specified-Tracker-Mode filter site (`CelNavStars`,
+    `CatalogPointStars`, `Constellations`, and the sun / moon /
+    planet markers + sun/moon GP dashed line in
+    `render/index.js`) now adds `state.FollowTarget` to the
+    allow-set alongside `TrackerTargets`. Clicking 🎯 while
+    locked on a body keeps that body visible even if it was
+    never in `TrackerTargets`.
+  - `mouseHandler` drag-handler now also clears
+    `SpecifiedTrackerMode` when a real drag breaks the follow,
+    so the rest of the sky returns rather than leaving the
+    canvas empty.
+  - `main.js` Optical-entry handler: when `FollowTarget` is set,
+    skip the default pitch-7.5° snap and just set `OpticalZoom`
+    + clear `FreeCamActive`. The continuous follow listener in
+    `mouseHandler` then re-aims heading/pitch at the target the
+    very next update, so the body stays in screen centre after
+    hopping back from Heavenly free-cam.
+- **Revert:** `git checkout v-s000298 -- js/main.js
+  js/render/constellations.js js/render/index.js
+  js/render/worldObjects.js js/ui/mouseHandler.js`.
+
 ## S298 — Comprehensive about.md refresh
 
 - **Date:** 2026-04-24

@@ -532,6 +532,19 @@ Format:
   js/render/index.js js/ui/controlPanel.js js/ui/urlState.js`;
   delete `js/core/satellites.js`.
 
+## S352 — Shrink compass-grid buttons so both rows stay inside the transport band
+
+- **Date:** 2026-04-24
+- **Files changed:** `css/styles.css`.
+- **Change:** Compass / cycle / cardinal grid buttons trimmed
+  to `padding: 0 6px; font-size: 11px; line-height: 14px;
+  min-width: 30px`. Each button ≈ 16 px tall, so a 2-row
+  cluster totals ≈ 34 px and sits inside the 44 px transport
+  band — the bottom row no longer dips below the single-row
+  time-controls on the left. `align-items: center` lands both
+  clusters' mid-lines on the same y.
+- **Revert:** `git checkout v-s000351 -- css/styles.css`.
+
 ## S351 — 🧭 button also toggles the Optical-vault grid
 
 - **Date:** 2026-04-24

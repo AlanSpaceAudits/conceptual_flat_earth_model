@@ -344,10 +344,10 @@ header .info-popup p:last-child { margin-bottom: 0; }
 #bottom-bar .mode-grid .time-btn,
 #bottom-bar .cycle-row .time-btn,
 #bottom-bar .cardinal-grid .time-btn {
-  min-width: 32px;
+  min-width: 30px;
   padding: 0 6px;
-  font-size: 12px;
-  line-height: 18px;
+  font-size: 11px;
+  line-height: 14px;
   margin: 0;
 }
 #bottom-bar .az-ring-btn[aria-pressed="true"] {

@@ -532,6 +532,49 @@ Format:
   js/render/index.js js/ui/controlPanel.js js/ui/urlState.js`;
   delete `js/core/satellites.js`.
 
+## S368 — Bright Star Catalog + 200 extra galaxies / quasars + Disable All
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/core/brightStarCatalog.js` (new),
+  `js/core/galaxiesExtra.js` (new),
+  `js/core/quasarsExtra.js` (new),
+  `js/core/galaxies.js`, `js/core/quasars.js`,
+  `js/core/app.js`, `js/render/index.js`,
+  `js/ui/controlPanel.js`, `js/ui/urlState.js`.
+- **Change:**
+  - `js/core/brightStarCatalog.js`: 393 IAU/HYG-named stars with
+    apparent magnitude ≤ 8, J2000.0. Schema matches
+    `CEL_NAV_STARS` (id, name, raH, decD, mag). Built from the
+    HYG v41 dataset via a one-shot fetch.
+  - `js/core/galaxiesExtra.js`: 200 brightest galaxies from
+    OpenNGC (V-Mag, fallback B-Mag).
+  - `js/core/quasarsExtra.js`: 200 brightest quasars from
+    Véron-Cetty / Véron 2010 (VizieR VII/258).
+  - `galaxies.js` and `quasars.js` now concat their extras into
+    the existing exported `GALAXIES` / `QUASARS` arrays.
+  - `app.js`: imports `BRIGHT_STAR_CATALOG`, defaults
+    `ShowBsc: false`, `GPOverrideBsc: false`. Adds
+    `c.BscStars = ShowBsc ? BRIGHT_STAR_CATALOG.map(projectStar) : []`,
+    a `bsc` entry in `starCategories` for GP-path generation,
+    and a BSC branch + `bsc` color in the tracker-info lookup.
+  - `js/render/index.js`: new `bscStars` `CatalogPointStars`
+    layer with `maxCount: 512`, paired with `ShowBsc`. Existing
+    galaxy / quasar layers bumped to `maxCount: 256`.
+  - `js/ui/controlPanel.js`: new "Bright Star Catalog" Tracker
+    sub-menu with Show / GP-Override / Enable All / Disable All
+    and a sorted button grid. `BODY_SEARCH_INDEX` and
+    `resolveTargetAngles` extended to include BSC entries.
+    `Disable All` button added to every existing Tracker
+    sub-menu (Celestial Bodies, Cel Nav, Constellations, Black
+    Holes, Quasars, Galaxies, Satellites).
+  - `js/ui/urlState.js`: `ShowBsc` and `GPOverrideBsc` added to
+    `PERSISTED_KEYS`.
+- **Revert:** `git checkout v-s000367 -- js/core/galaxies.js
+  js/core/quasars.js js/core/app.js js/render/index.js
+  js/ui/controlPanel.js js/ui/urlState.js`; `rm
+  js/core/brightStarCatalog.js js/core/galaxiesExtra.js
+  js/core/quasarsExtra.js`.
+
 ## S367 — Sun / Moon analemma demos with stair-stepped DateTime
 
 - **Date:** 2026-04-24

@@ -1,7 +1,9 @@
 // Notable quasars / AGN, J2000.0.
 // Entry shape matches CEL_NAV_STARS / CATALOGUED_STARS.
 
-export const QUASARS = [
+import { QUASARS_EXTRA } from './quasarsExtra.js';
+
+const QUASARS_BASE = [
   { id: 'q_3c273',      name: '3C 273',          raH: 12.48528, decD:   2.05241, mag: 12.9 },
   { id: 'q_3c48',       name: '3C 48',           raH:  1.62817, decD:  33.15983, mag: 16.2 },
   { id: 'q_3c279',      name: '3C 279',          raH: 12.93631, decD:  -5.78931, mag: 17.8 },
@@ -22,6 +24,8 @@ export const QUASARS = [
   { id: 'q_pks1510',    name: 'PKS 1510-089',    raH: 15.22031, decD:  -9.09589, mag: 16.5 },
   { id: 'q_bllac',      name: 'BL Lacertae',     raH: 22.04575, decD:  42.27778, mag: 14.4 },
 ];
+
+export const QUASARS = [...QUASARS_BASE, ...QUASARS_EXTRA];
 
 const _QSO_BY_ID = new Map(QUASARS.map((q) => [q.id, q]));
 export function quasarById(id) { return _QSO_BY_ID.get(id) || null; }

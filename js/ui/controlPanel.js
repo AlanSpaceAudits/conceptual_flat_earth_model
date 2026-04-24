@@ -10,6 +10,7 @@ import { BLACK_HOLES } from '../core/blackHoles.js';
 import { QUASARS }     from '../core/quasars.js';
 import { GALAXIES }    from '../core/galaxies.js';
 import { SATELLITES }  from '../core/satellites.js';
+import { BRIGHT_STAR_CATALOG } from '../core/brightStarCatalog.js';
 import { listProjections, PROJECTIONS } from '../core/projections.js';
 import { Autoplay } from './autoplay.js';
 
@@ -38,6 +39,7 @@ const BODY_SEARCH_INDEX = (() => {
   for (const q of QUASARS)           out.push({ id: `star:${q.id}`, name: q.name, color: '#40e0d0' });
   for (const g of GALAXIES)          out.push({ id: `star:${g.id}`, name: g.name, color: '#ff80c0' });
   for (const s of SATELLITES)        out.push({ id: `star:${s.id}`, name: s.name, color: '#66ff88' });
+  for (const s of BRIGHT_STAR_CATALOG) out.push({ id: `star:${s.id}`, name: s.name, color: '#fff5d8' });
   return out;
 })();
 
@@ -48,7 +50,7 @@ function resolveTargetAngles(targetId, c) {
   if (c.Planets && c.Planets[targetId]) return c.Planets[targetId].anglesGlobe || null;
   if (targetId.startsWith('star:')) {
     const id = targetId.slice(5);
-    for (const list of [c.CelNavStars, c.CataloguedStars, c.BlackHoles, c.Quasars, c.Galaxies]) {
+    for (const list of [c.CelNavStars, c.CataloguedStars, c.BlackHoles, c.Quasars, c.Galaxies, c.BscStars]) {
       if (!list) continue;
       const f = list.find((x) => x.id === id);
       if (f) return f.anglesGlobe || null;
@@ -697,6 +699,12 @@ const FIELD_GROUPS = [
               ]),
             ],
           }) },
+        { label: '', buttonLabel: 'Disable All',
+          onClick: (m) => {
+            const ids = new Set(['sun','moon','mercury','venus','mars','jupiter','saturn','uranus','neptune']);
+            const cur = Array.isArray(m.state.TrackerTargets) ? m.state.TrackerTargets : [];
+            m.setState({ TrackerTargets: cur.filter((t) => !ids.has(t)) });
+          } },
         { key: 'TrackerTargets', label: '', buttonGrid: [
           { value: 'sun',     label: 'Sun',     color: '#ffc844' },
           { value: 'moon',    label: 'Moon',    color: '#f4f4f4' },
@@ -721,6 +729,12 @@ const FIELD_GROUPS = [
               ]),
             ],
           }) },
+        { label: '', buttonLabel: 'Disable All',
+          onClick: (m) => {
+            const ids = new Set(CEL_NAV_STARS.map((s) => `star:${s.id}`));
+            const cur = Array.isArray(m.state.TrackerTargets) ? m.state.TrackerTargets : [];
+            m.setState({ TrackerTargets: cur.filter((t) => !ids.has(t)) });
+          } },
         { key: 'TrackerTargets', label: '', buttonGrid:
           [...CEL_NAV_STARS]
             .sort((a, b) => a.name.localeCompare(b.name))
@@ -743,6 +757,15 @@ const FIELD_GROUPS = [
                 ]),
               ],
             });
+          } },
+        { label: '', buttonLabel: 'Disable All',
+          onClick: (m) => {
+            const celnavIds = new Set(CEL_NAV_STARS.map((s) => s.id));
+            const ids = new Set(
+              CATALOGUED_STARS.filter((s) => !celnavIds.has(s.id)).map((s) => `star:${s.id}`),
+            );
+            const cur = Array.isArray(m.state.TrackerTargets) ? m.state.TrackerTargets : [];
+            m.setState({ TrackerTargets: cur.filter((t) => !ids.has(t)) });
           } },
         { key: 'TrackerTargets', label: '', buttonGrid:
           (() => {
@@ -770,6 +793,12 @@ const FIELD_GROUPS = [
               ]),
             ],
           }) },
+        { label: '', buttonLabel: 'Disable All',
+          onClick: (m) => {
+            const ids = new Set(BLACK_HOLES.map((b) => `star:${b.id}`));
+            const cur = Array.isArray(m.state.TrackerTargets) ? m.state.TrackerTargets : [];
+            m.setState({ TrackerTargets: cur.filter((t) => !ids.has(t)) });
+          } },
         { key: 'TrackerTargets', label: '', buttonGrid:
           [...BLACK_HOLES]
             .sort((a, b) => a.name.localeCompare(b.name))
@@ -788,6 +817,12 @@ const FIELD_GROUPS = [
               ]),
             ],
           }) },
+        { label: '', buttonLabel: 'Disable All',
+          onClick: (m) => {
+            const ids = new Set(QUASARS.map((q) => `star:${q.id}`));
+            const cur = Array.isArray(m.state.TrackerTargets) ? m.state.TrackerTargets : [];
+            m.setState({ TrackerTargets: cur.filter((t) => !ids.has(t)) });
+          } },
         { key: 'TrackerTargets', label: '', buttonGrid:
           [...QUASARS]
             .sort((a, b) => a.name.localeCompare(b.name))
@@ -806,6 +841,12 @@ const FIELD_GROUPS = [
               ]),
             ],
           }) },
+        { label: '', buttonLabel: 'Disable All',
+          onClick: (m) => {
+            const ids = new Set(GALAXIES.map((g) => `star:${g.id}`));
+            const cur = Array.isArray(m.state.TrackerTargets) ? m.state.TrackerTargets : [];
+            m.setState({ TrackerTargets: cur.filter((t) => !ids.has(t)) });
+          } },
         { key: 'TrackerTargets', label: '', buttonGrid:
           [...GALAXIES]
             .sort((a, b) => a.name.localeCompare(b.name))
@@ -824,10 +865,40 @@ const FIELD_GROUPS = [
               ]),
             ],
           }) },
+        { label: '', buttonLabel: 'Disable All',
+          onClick: (m) => {
+            const ids = new Set(SATELLITES.map((x) => `star:${x.id}`));
+            const cur = Array.isArray(m.state.TrackerTargets) ? m.state.TrackerTargets : [];
+            m.setState({ TrackerTargets: cur.filter((t) => !ids.has(t)) });
+          } },
         { key: 'TrackerTargets', label: '', buttonGrid:
           [...SATELLITES]
             .sort((a, b) => a.name.localeCompare(b.name))
             .map((x) => ({ value: `star:${x.id}`, label: x.name, color: '#66ff88' })),
+        },
+      ]},
+      { title: 'Bright Star Catalog', rows: [
+        { key: 'ShowBsc', label: 'Show', bool: true },
+        { key: 'GPOverrideBsc', label: 'GP Override', bool: true },
+        { label: '', buttonLabel: 'Enable All',
+          onClick: (m) => m.setState({
+            TrackerTargets: [
+              ...new Set([
+                ...(Array.isArray(m.state.TrackerTargets) ? m.state.TrackerTargets : []),
+                ...BRIGHT_STAR_CATALOG.map((x) => `star:${x.id}`),
+              ]),
+            ],
+          }) },
+        { label: '', buttonLabel: 'Disable All',
+          onClick: (m) => {
+            const ids = new Set(BRIGHT_STAR_CATALOG.map((x) => `star:${x.id}`));
+            const cur = Array.isArray(m.state.TrackerTargets) ? m.state.TrackerTargets : [];
+            m.setState({ TrackerTargets: cur.filter((t) => !ids.has(t)) });
+          } },
+        { key: 'TrackerTargets', label: '', buttonGrid:
+          [...BRIGHT_STAR_CATALOG]
+            .sort((a, b) => a.name.localeCompare(b.name))
+            .map((x) => ({ value: `star:${x.id}`, label: x.name, color: '#fff5d8' })),
         },
       ]},
     ],

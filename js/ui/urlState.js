@@ -17,7 +17,7 @@ const PERSISTED_KEYS = [
   'ShowCelestialPoles', 'DarkBackground',
   'ShowLiveEphemeris', 'MoonPhaseExpanded',
   'ShowSatellites', 'ShowCelestialBodies', 'ShowCelNav',
-  'ShowBlackHoles', 'ShowQuasars', 'ShowGalaxies',
+  'ShowBlackHoles', 'ShowQuasars', 'ShowGalaxies', 'ShowBsc',
   'ShowGPPath',
   'ShowSunAnalemma', 'ShowMoonAnalemma',
   'DynamicStars',
@@ -34,7 +34,7 @@ const PERSISTED_KEYS = [
   'ShowEphemerisReadings', 'SpecifiedTrackerMode', 'TrackerGPOverride',
   'GPOverridePlanets', 'GPOverrideCelNav', 'GPOverrideConstellations',
   'GPOverrideBlackHoles', 'GPOverrideQuasars', 'GPOverrideGalaxies',
-  'GPOverrideSatellites',
+  'GPOverrideSatellites', 'GPOverrideBsc',
   'StarApplyPrecession', 'StarApplyNutation', 'StarApplyAberration',
   'StarTrepidation',
 ];

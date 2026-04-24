@@ -21,6 +21,7 @@ import { CATALOGUED_STARS, cataloguedStarById } from './constellations.js';
 import { BLACK_HOLES, blackHoleById } from './blackHoles.js';
 import { QUASARS,      quasarById }    from './quasars.js';
 import { GALAXIES,     galaxyById }    from './galaxies.js';
+import { BRIGHT_STAR_CATALOG, bscStarById } from './brightStarCatalog.js';
 import { SATELLITES,   satelliteById, satelliteSubPoint } from './satellites.js';
 import {
   compTransMatCelestToGlobe, compTransMatLocalFeToGlobalFe, compTransMatVaultToFe,
@@ -126,12 +127,14 @@ function defaultState() {
     ShowBlackHoles:          true,
     ShowQuasars:             true,
     ShowGalaxies:            true,
+    ShowBsc:                 false,
     GPOverridePlanets:         false,
     GPOverrideCelNav:          false,
     GPOverrideConstellations:  false,
     GPOverrideBlackHoles:      false,
     GPOverrideQuasars:         false,
     GPOverrideGalaxies:        false,
+    GPOverrideBsc:             false,
     GPOverrideSatellites:      false,
 
     InsideVault: false,
@@ -569,6 +572,7 @@ export class FeModel extends EventTarget {
     c.BlackHoles      = BLACK_HOLES.map(projectStar);
     c.Quasars         = QUASARS.map(projectStar);
     c.Galaxies        = GALAXIES.map(projectStar);
+    c.BscStars        = s.ShowBsc ? BRIGHT_STAR_CATALOG.map(projectStar) : [];
 
     // Satellites: sub-point (lat, lon) computed per-frame from
     // two-body Kepler; projected through the same vault /
@@ -681,6 +685,7 @@ export class FeModel extends EventTarget {
         [BLACK_HOLES,      0x9966ff, 'bh'],
         [QUASARS,          0x40e0d0, 'q'],
         [GALAXIES,         0xff80c0, 'gal'],
+        [BRIGHT_STAR_CATALOG, 0xfff5d8, 'bsc'],
       ];
       for (const [list, color, prefix] of starCategories) {
         for (const star of list) {
@@ -805,6 +810,11 @@ export class FeModel extends EventTarget {
           def   = satelliteById(starId);
           if (entry) cat = 'satellite';
         }
+        if (!entry) {
+          entry = c.BscStars.find((x) => x.id === starId);
+          def   = bscStarById(starId);
+          if (entry) cat = 'bsc';
+        }
         if (entry && def) {
           // Star RA/Dec is pipeline-independent; all five readings share it.
           const gpColorByCat = {
@@ -814,6 +824,7 @@ export class FeModel extends EventTarget {
             quasar:     0x40e0d0,  // cyan
             galaxy:     0xff80c0,  // pink
             satellite:  0x66ff88,  // lime green
+            bsc:        0xfff5d8,  // pale ivory
           };
           info = {
             target, name: def.name, category: 'star', subCategory: cat, mag: def.mag,

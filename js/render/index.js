@@ -101,16 +101,29 @@ export class Renderer {
       color: 0x40e0d0,
       domeSize: 4,
       sphereSize: 3.5,
+      maxCount: 256,
       clippingPlanes: clipPlanes,
       showKey: 'ShowQuasars',
     });
     this.sm.world.add(this.quasarStars.group);
+
+    this.bscStars = new CatalogPointStars({
+      sourceKey: 'BscStars',
+      color: 0xfff5d8,
+      domeSize: 3,
+      sphereSize: 2.5,
+      maxCount: 512,
+      clippingPlanes: clipPlanes,
+      showKey: 'ShowBsc',
+    });
+    this.sm.world.add(this.bscStars.group);
 
     this.galaxyStars = new CatalogPointStars({
       sourceKey: 'Galaxies',
       color: 0xff80c0,
       domeSize: 4,
       sphereSize: 3.5,
+      maxCount: 256,
       clippingPlanes: clipPlanes,
       showKey: 'ShowGalaxies',
     });
@@ -381,6 +394,7 @@ export class Renderer {
     this.blackHoleStars.update(m);
     this.quasarStars.update(m);
     this.galaxyStars.update(m);
+    this.bscStars.update(m);
     this.satelliteStars.update(m);
     this.gpPathOverlay.update(m);
     this.starfieldChart.update(m);

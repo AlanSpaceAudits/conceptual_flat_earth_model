@@ -483,6 +483,15 @@ Format:
   is active.
 - **Revert:** `git checkout v-s000243 -- js/ui/controlPanel.js`.
 
+## S252 — Info tab: Aether Cosmology CZ-SK section
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/ui/controlPanel.js`.
+- **Change:** new collapsible section "Aether Cosmology CZ-SK"
+  inserted between Globebusters and Discord. Links: Kick, YouTube,
+  Instagram, Facebook, Telegram.
+- **Revert:** `git checkout v-s000251 -- js/ui/controlPanel.js`.
+
 ## S251 — Info tab: Globebusters section
 
 - **Date:** 2026-04-24

@@ -977,6 +977,13 @@ export function buildControlPanel(host, model, demos) {
       { label: 'S14 Playlist', href: 'https://www.youtube.com/watch?v=ghuXev6qft4&list=PLvq003QsCfCuID9WbOsL-ci501yAey2SE' },
       { label: 'S15 Playlist', href: 'https://www.youtube.com/watch?v=1NFQNT3to5s&list=PLvq003QsCfCv3v-i7hYPtqcofn_huOSUZ' },
     ]);
+    makeSection('Aether Cosmology CZ-SK', [
+      { label: 'Kick',      href: 'https://kick.com/aethercosmologyczsk' },
+      { label: 'YouTube',   href: 'https://www.youtube.com/@AetherCosmologyCZSK' },
+      { label: 'Instagram', href: 'https://www.instagram.com/domo_noglobe/' },
+      { label: 'Facebook',  href: 'https://www.facebook.com/people/Domo-Noglobe/61583879655677/' },
+      { label: 'Telegram',  href: 'https://t.me/AetherCosmologyczsk' },
+    ]);
     makeSection('Discord', [
       { label: 'Aether Cosmology', href: 'https://discord.gg/aethercosmology' },
     ]);

@@ -500,6 +500,34 @@ Format:
 - **Revert:** `git checkout v-s000256 -- js/render/worldObjects.js
   js/render/constellations.js`.
 
+## S292 — Free-cam mode when leaving Optical with a tracked body
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/core/app.js`, `js/main.js`,
+  `js/render/scene.js`, `js/ui/mouseHandler.js`.
+- **Change:**
+  - New session-only state `FreeCamActive` (default `false`).
+  - `main.js` transition handler now flips `FreeCamActive: true`
+    on Optical→Heavenly when `FollowTarget` is set (previously
+    it just snapped the preset). Entering Optical clears the
+    flag.
+  - `scene.js` Heavenly-mode camera math branches when
+    `FreeCamActive` and `FollowTarget` are both set: the
+    same spherical offset (`CameraDirection / CameraHeight /
+    CameraDistance / Zoom`) is applied *around the tracked
+    body's ground point* instead of the disc origin, and
+    `lookAt` is pinned to the GP. The GP is computed by a new
+    `resolveTargetGp()` helper that mirrors `app.update()`'s
+    `gpLat / gpLon` formulas for sun / moon / planets /
+    catalogued bodies. Falls back to the old orbit math when
+    the target can't be resolved.
+  - `mouseHandler.js` drag handler now clears both
+    `FollowTarget` and `FreeCamActive` on any real drag, so
+    manual camera input breaks the lock and snaps back to the
+    normal observer-anchored orbit view.
+- **Revert:** `git checkout v-s000291 -- js/core/app.js
+  js/main.js js/render/scene.js js/ui/mouseHandler.js`.
+
 ## S291 — Move permanent night button next to vault swap
 
 - **Date:** 2026-04-24

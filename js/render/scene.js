@@ -4,6 +4,52 @@
 
 import * as THREE from 'three';
 import { ToRad } from '../math/utils.js';
+import { canonicalLatLongToDisc } from '../core/canonical.js';
+import { FE_RADIUS } from '../core/constants.js';
+
+// Resolve a tracker target id to its ground-point { lat, lon } in
+// degrees using the same formulas `app.update()` applies to
+// TrackerInfos. Returns null if the id can't be found in the current
+// computed snapshot.
+function resolveTargetGp(targetId, c) {
+  if (!targetId) return null;
+  const wrapLon = (x) => ((x + 180) % 360 + 360) % 360 - 180;
+  if (targetId === 'sun' && c.SunCelestLatLong) {
+    return {
+      lat: c.SunCelestLatLong.lat,
+      lon: wrapLon(c.SunRA * 180 / Math.PI - c.SkyRotAngle),
+    };
+  }
+  if (targetId === 'moon' && c.MoonCelestLatLong) {
+    return {
+      lat: c.MoonCelestLatLong.lat,
+      lon: wrapLon(c.MoonRA * 180 / Math.PI - c.SkyRotAngle),
+    };
+  }
+  if (c.Planets && c.Planets[targetId]) {
+    const p = c.Planets[targetId];
+    return {
+      lat: p.celestLatLong.lat,
+      lon: wrapLon(p.ra * 180 / Math.PI - c.SkyRotAngle),
+    };
+  }
+  if (targetId.startsWith('star:')) {
+    const id = targetId.slice(5);
+    for (const list of [
+      c.CelNavStars, c.CataloguedStars, c.BlackHoles, c.Quasars, c.Galaxies,
+    ]) {
+      if (!list) continue;
+      const f = list.find((x) => x.id === id);
+      if (f) {
+        return {
+          lat: f.celestLatLong.lat,
+          lon: wrapLon(f.ra * 180 / Math.PI - c.SkyRotAngle),
+        };
+      }
+    }
+  }
+  return null;
+}
 
 export class SceneManager {
   constructor(canvas, model) {
@@ -127,6 +173,24 @@ export class SceneManager {
     const dir = ToRad(s.CameraDirection);
     const hgt = ToRad(s.CameraHeight);
     const dist = s.CameraDistance / Math.max(0.1, s.Zoom);
+
+    // Free-cam: orbit the tracked body's ground point instead of the
+    // disc origin. Same spherical offset (dir / hgt / dist), applied
+    // around (gp_x, gp_y, 0), with the look-at pinned on the GP so the
+    // body stays in screen centre. Falls back to the normal orbit math
+    // if the target can't be resolved.
+    if (s.FreeCamActive && s.FollowTarget) {
+      const gp = resolveTargetGp(s.FollowTarget, this.model.computed);
+      if (gp) {
+        const gpXY = canonicalLatLongToDisc(gp.lat, gp.lon, FE_RADIUS);
+        const cx = gpXY[0] + dist * Math.cos(hgt) * Math.cos(dir);
+        const cy = gpXY[1] + dist * Math.cos(hgt) * Math.sin(dir);
+        const cz = 0       + dist * Math.sin(hgt);
+        this.camera.position.set(cx, cy, cz);
+        this.camera.lookAt(gpXY[0], gpXY[1], 0);
+        return;
+      }
+    }
 
     const x = dist * Math.cos(hgt) * Math.cos(dir);
     const y = dist * Math.cos(hgt) * Math.sin(dir);

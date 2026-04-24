@@ -95,7 +95,12 @@ model.addEventListener('update', () => {
       CameraHeight:   HEAVENLY_TRACK_PITCH,
       CameraDistance: HEAVENLY_TRACK_DIST,
       Zoom:           HEAVENLY_TRACK_ZOOM,
+      FreeCamActive:  true,
     });
+  }
+  if (now && _prevInsideVault === false && model.state.FreeCamActive) {
+    // Entering Optical cancels free-cam (Optical handles its own follow).
+    model.setState({ FreeCamActive: false });
   }
   _prevInsideVault = now;
 });

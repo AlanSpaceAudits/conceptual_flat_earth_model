@@ -198,6 +198,7 @@ function defaultState() {
     MouseAzimuth:   null,
 
     FollowTarget:   null,
+    FreeCamActive:  false,
   };
 }
 

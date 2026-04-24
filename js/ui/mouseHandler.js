@@ -297,9 +297,10 @@ export function attachMouseHandler(canvas, model) {
       return;
     }
 
-    if (dragDist >= CLICK_DRAG_PX && model.state.FollowTarget) {
+    if (dragDist >= CLICK_DRAG_PX
+        && (model.state.FollowTarget || model.state.FreeCamActive)) {
       // Any real drag breaks the follow — user is steering manually.
-      model.setState({ FollowTarget: null });
+      model.setState({ FollowTarget: null, FreeCamActive: false });
     }
 
     if (model.state.InsideVault) {

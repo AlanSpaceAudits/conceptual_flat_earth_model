@@ -500,6 +500,15 @@ Format:
 - **Revert:** `git checkout v-s000256 -- js/render/worldObjects.js
   js/render/constellations.js`.
 
+## S293 — Permanent night button back to compass-controls, before N
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/ui/controlPanel.js`.
+- **Change:** `.night-btn` removed from `.time-controls` and
+  appended as the first child of `.compass-controls`, so the
+  button order in the right-hand group is `🌙 N E S W`.
+- **Revert:** `git checkout v-s000292 -- js/ui/controlPanel.js`.
+
 ## S292 — Free-cam mode when leaving Optical with a tracked body
 
 - **Date:** 2026-04-24

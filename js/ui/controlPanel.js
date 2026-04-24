@@ -854,6 +854,11 @@ export function buildControlPanel(host, model, demos) {
   btnFf.textContent = '⏩';  btnFf.title = 'Fast forward';
   const speedReadout = document.createElement('span');
   speedReadout.className = 'time-speed';
+  timeControls.append(btnVault, btnRew, btnPlay, btnFf, speedReadout);
+
+  const compassControls = document.createElement('div');
+  compassControls.className = 'compass-controls';
+
   const btnNight = document.createElement('button');
   btnNight.className = 'time-btn night-btn';
   btnNight.type = 'button';
@@ -862,11 +867,8 @@ export function buildControlPanel(host, model, demos) {
   btnNight.addEventListener('click', () => {
     model.setState({ PermanentNight: !model.state.PermanentNight });
   });
+  compassControls.appendChild(btnNight);
 
-  timeControls.append(btnVault, btnNight, btnRew, btnPlay, btnFf, speedReadout);
-
-  const compassControls = document.createElement('div');
-  compassControls.className = 'compass-controls';
   const compassBtns = [
     { label: 'N', heading: 0   },
     { label: 'E', heading: 90  },

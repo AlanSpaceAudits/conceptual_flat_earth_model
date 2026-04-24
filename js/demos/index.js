@@ -22,9 +22,20 @@ export class Demos {
     this._queueCursor = 0;
 
     // Poll the animator each rAF; when it stops while a queue is
-    // active, advance.
+    // active, advance. When it stops with no queue pending, snap the
+    // sim back onto the DE405 default (date + BodySource) so the next
+    // user interaction isn't stuck on whatever pipeline the finished
+    // demo left active.
+    let wasPlaying = false;
     const tick = () => {
-      if (this._queue && !this.animator.isPlaying() && this._queueCursor < this._queue.length) {
+      const nowPlaying = this.animator.isPlaying();
+      if (wasPlaying && !nowPlaying) {
+        const queueDone = !this._queue
+          || this._queueCursor >= this._queue.length;
+        if (queueDone) this._snapToDefaultEphemeris();
+      }
+      wasPlaying = nowPlaying;
+      if (this._queue && !nowPlaying && this._queueCursor < this._queue.length) {
         const next = this._queue[this._queueCursor++];
         // Defer to microtask so any state-mutation hooks settle.
         Promise.resolve().then(() => this._playSingle(next, /* fromQueue */ true));
@@ -32,6 +43,16 @@ export class Demos {
       requestAnimationFrame(tick);
     };
     requestAnimationFrame(tick);
+  }
+
+  // When a demo ends, reset DateTime + BodySource to the DE405 defaults
+  // so post-demo exploration isn't anchored on Ptolemy-era dates or a
+  // pipeline with known timing drift.
+  _snapToDefaultEphemeris() {
+    this.model.setState({
+      DateTime:   812.88,
+      BodySource: 'astropixels',
+    });
   }
 
   _playSingle(index, fromQueue = false) {

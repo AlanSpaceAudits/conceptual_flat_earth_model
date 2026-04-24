@@ -500,6 +500,19 @@ Format:
 - **Revert:** `git checkout v-s000256 -- js/render/worldObjects.js
   js/render/constellations.js`.
 
+## S301 — Reset to DE405 default time + source when demos end
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/demos/index.js`.
+- **Change:** Demo manager RAF tick tracks `wasPlaying` and, when
+  the animator transitions from playing → stopped with no queue
+  item pending, calls a new `_snapToDefaultEphemeris()` that
+  sets `DateTime: 812.88` (2019-03-23, inside DE405's tabulated
+  range) and `BodySource: 'astropixels'`. Covers manual Stop,
+  natural task-queue end, and end-of-queue in a "Play all"
+  sequence.
+- **Revert:** `git checkout v-s000300 -- js/demos/index.js`.
+
 ## S300 — Hover tooltip stacks Name / Azi / Alt on three lines
 
 - **Date:** 2026-04-24

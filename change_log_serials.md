@@ -500,6 +500,28 @@ Format:
 - **Revert:** `git checkout v-s000256 -- js/render/worldObjects.js
   js/render/constellations.js`.
 
+## S266 — Render black holes + quasars on heavenly dome and optical vault
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/render/worldObjects.js`, `js/render/index.js`.
+- **Change:**
+  - New `CatalogPointStars` class in `worldObjects.js` — generic
+    two-layer (dome + sphere) point renderer parameterised by
+    `sourceKey` (which `computed.*` array to read), `color`,
+    `domeSize`, `sphereSize`, `idPrefix`. Same visibility gates
+    as `CelNavStars`: ShowStars / DynamicStars / NightFactor for
+    both layers, ShowTruePositions + !InsideVault for the dome,
+    ShowOpticalVault for the sphere. Below-horizon entries parked
+    at z = -1000 so the disc clip plane hides them. Not gated on
+    StarfieldType. STM filters to TrackerTargets by `${idPrefix}:${id}`.
+  - `render/index.js` instantiates two `CatalogPointStars` layers —
+    `blackHoleStars` (sourceKey `BlackHoles`, color `0x9966ff`
+    purple) and `quasarStars` (sourceKey `Quasars`, color
+    `0x40e0d0` cyan). Both added to the scene and updated each
+    frame alongside `celNavStars`.
+- **Revert:** `git checkout v-s000265 -- js/render/worldObjects.js
+  js/render/index.js`.
+
 ## S265 — Promote Cel Nav / Constellations / Black Holes / Quasars to their own sub-menus
 
 - **Date:** 2026-04-24

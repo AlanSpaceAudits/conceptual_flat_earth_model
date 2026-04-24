@@ -3967,3 +3967,123 @@ export class CelNavStars {
     this.spherePoints.geometry.attributes.position.needsUpdate = true;
   }
 }
+
+// Generic catalogue renderer for exotic bodies (black holes, quasars).
+// Reads `computed[sourceKey]` (populated by app.update() via projectStar)
+// and paints two layers using the same dome + sphere pattern as
+// CelNavStars. Not gated on StarfieldType — these always show when
+// ShowStars is on; STM mode filters to TrackerTargets.
+export class CatalogPointStars {
+  constructor({
+    sourceKey,
+    idPrefix = 'star',
+    color = 0xffffff,
+    domeSize = 4,
+    sphereSize = 3.5,
+    maxCount = 64,
+    clippingPlanes = [],
+  } = {}) {
+    this.sourceKey  = sourceKey;
+    this.idPrefix   = idPrefix;
+    this._maxStars  = maxCount;
+
+    this.group = new THREE.Group();
+    this.group.name = `catalog-${sourceKey.toLowerCase()}`;
+
+    this._domePositions   = new Float32Array(maxCount * 3);
+    this._spherePositions = new Float32Array(maxCount * 3);
+
+    const domeGeom = new THREE.BufferGeometry();
+    domeGeom.setAttribute('position', new THREE.BufferAttribute(this._domePositions, 3));
+    domeGeom.setDrawRange(0, 0);
+    this.domePoints = new THREE.Points(
+      domeGeom,
+      new THREE.PointsMaterial({
+        color,
+        size: domeSize, sizeAttenuation: false,
+        transparent: true, opacity: 1,
+        clippingPlanes,
+      }),
+    );
+    this.domePoints.frustumCulled = false;
+    this.group.add(this.domePoints);
+
+    const sphGeom = new THREE.BufferGeometry();
+    sphGeom.setAttribute('position', new THREE.BufferAttribute(this._spherePositions, 3));
+    sphGeom.setDrawRange(0, 0);
+    this.spherePoints = new THREE.Points(
+      sphGeom,
+      new THREE.PointsMaterial({
+        color,
+        size: sphereSize, sizeAttenuation: false,
+        transparent: true, opacity: 1,
+        depthTest: false, depthWrite: false,
+        clippingPlanes,
+      }),
+    );
+    this.spherePoints.renderOrder = 55;
+    this.spherePoints.frustumCulled = false;
+    this.group.add(this.spherePoints);
+  }
+
+  update(model) {
+    const s = model.state;
+    const c = model.computed;
+    const entries = c[this.sourceKey];
+
+    const nightAlpha = s.DynamicStars ? (c.NightFactor || 0) : 1.0;
+    const visibilityGate = s.DynamicStars ? nightAlpha > 0.01 : true;
+    const showStars = !!entries && s.ShowStars && visibilityGate;
+
+    this.domePoints.visible   = showStars && (s.ShowTruePositions !== false) && !s.InsideVault;
+    this.domePoints.material.opacity   = nightAlpha;
+    this.spherePoints.visible = showStars && s.ShowOpticalVault;
+    this.spherePoints.material.opacity = nightAlpha;
+
+    if (!showStars) {
+      this.domePoints.geometry.setDrawRange(0, 0);
+      this.spherePoints.geometry.setDrawRange(0, 0);
+      return;
+    }
+
+    const n = Math.min(entries.length, this._maxStars);
+    const dp = this._domePositions;
+    const sp = this._spherePositions;
+    const stm = !!s.SpecifiedTrackerMode;
+    const trackerSet = stm
+      ? new Set(Array.isArray(s.TrackerTargets) ? s.TrackerTargets : [])
+      : null;
+
+    for (let i = 0; i < n; i++) {
+      const star = entries[i];
+      const isTracked = !stm || trackerSet.has(`${this.idPrefix}:${star.id}`);
+      if (!isTracked) {
+        dp[i * 3    ] = 0;
+        dp[i * 3 + 1] = 0;
+        dp[i * 3 + 2] = -1000;
+        sp[i * 3    ] = 0;
+        sp[i * 3 + 1] = 0;
+        sp[i * 3 + 2] = -1000;
+        continue;
+      }
+      dp[i * 3    ] = star.vaultCoord[0];
+      dp[i * 3 + 1] = star.vaultCoord[1];
+      dp[i * 3 + 2] = star.vaultCoord[2];
+      const localGlobe = M.Trans(c.TransMatCelestToGlobe, star.celestCoord);
+      if (localGlobe[0] <= 0) {
+        sp[i * 3    ] = 0;
+        sp[i * 3 + 1] = 0;
+        sp[i * 3 + 2] = -1000;
+      } else {
+        sp[i * 3    ] = star.opticalVaultCoord[0];
+        sp[i * 3 + 1] = star.opticalVaultCoord[1];
+        sp[i * 3 + 2] = star.opticalVaultCoord[2];
+      }
+    }
+
+    this.domePoints.geometry.setDrawRange(0, n);
+    this.domePoints.geometry.attributes.position.needsUpdate = true;
+    this.spherePoints.geometry.setDrawRange(0, n);
+    this.spherePoints.geometry.attributes.position.needsUpdate = true;
+  }
+}

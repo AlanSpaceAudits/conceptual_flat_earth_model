@@ -7,7 +7,7 @@ import {
   DiscBase, DiscGrid, Shadow, EclipseShadow, VaultOfHeavens, ObserversOpticalVault,
   CelestialMarker, Observer, Stars, LatitudeLines, GroundPoint,
   CelestialPoles, DeclinationCircles, Yggdrasil, MtMeru, ToroidalVortex,
-  LongitudeRing, CelNavStars, TrackedGroundPoints,
+  LongitudeRing, CelNavStars, TrackedGroundPoints, CatalogPointStars,
 } from './worldObjects.js';
 import { loadLandGeo, buildGeoJsonLand, buildImageMap, buildBlankMap } from './earthMap.js';
 import { Constellations } from './constellations.js';
@@ -84,6 +84,24 @@ export class Renderer {
     // procedural `stars` cloud.
     this.celNavStars = new CelNavStars(clipPlanes);
     this.sm.world.add(this.celNavStars.group);
+
+    this.blackHoleStars = new CatalogPointStars({
+      sourceKey: 'BlackHoles',
+      color: 0x9966ff,
+      domeSize: 4,
+      sphereSize: 3.5,
+      clippingPlanes: clipPlanes,
+    });
+    this.sm.world.add(this.blackHoleStars.group);
+
+    this.quasarStars = new CatalogPointStars({
+      sourceKey: 'Quasars',
+      color: 0x40e0d0,
+      domeSize: 4,
+      sphereSize: 3.5,
+      clippingPlanes: clipPlanes,
+    });
+    this.sm.world.add(this.quasarStars.group);
 
     this.constellations = new Constellations(clipPlanes);
     this.sm.world.add(this.constellations.group);
@@ -322,6 +340,8 @@ export class Renderer {
     this.observersOpticalVault.update(m);
     this.stars.update(m);
     this.celNavStars.update(m);
+    this.blackHoleStars.update(m);
+    this.quasarStars.update(m);
     this.starfieldChart.update(m);
     this.constellations.update(m);
     // When a chart starfield is active, hide both the heavenly-vault and

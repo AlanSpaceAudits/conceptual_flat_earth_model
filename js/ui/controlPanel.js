@@ -184,7 +184,7 @@ function attachFeatureSearch(host, openFeature) {
   const input = document.createElement('input');
   input.type = 'search';
   input.className = 'body-search-input';
-  input.placeholder = 'Search settings (e.g. "ray", "vault")';
+  input.placeholder = 'Search visibility (ray, vault, star …)';
   input.autocomplete = 'off';
   input.spellcheck = false;
   wrap.appendChild(input);
@@ -202,29 +202,31 @@ function attachFeatureSearch(host, openFeature) {
 
   const buildIndex = () => {
     const out = [];
-    for (const tab of FIELD_GROUPS) {
-      for (const g of tab.groups) {
+    // Only index the Show tab — that's where the visibility toggles
+    // live, which is what users mean by "feature search".
+    const showTab = FIELD_GROUPS.find((t) => t.tab === 'Show');
+    if (!showTab) return out;
+    for (const g of showTab.groups) {
+      out.push({
+        kind: 'group',
+        tab: showTab.tab,
+        group: g.title,
+        label: g.title,
+        matchText: g.title.toLowerCase(),
+      });
+      for (const row of g.rows) {
+        const parts = [];
+        if (row.label) parts.push(row.label);
+        if (row.buttonLabel) parts.push(row.buttonLabel);
+        if (!parts.length) continue;
+        const label = parts.join(' / ');
         out.push({
-          kind: 'group',
-          tab: tab.tab,
+          kind: 'row',
+          tab: showTab.tab,
           group: g.title,
-          label: g.title,
-          matchText: g.title.toLowerCase(),
+          label,
+          matchText: (label + ' ' + g.title).toLowerCase(),
         });
-        for (const row of g.rows) {
-          const parts = [];
-          if (row.label) parts.push(row.label);
-          if (row.buttonLabel) parts.push(row.buttonLabel);
-          if (!parts.length) continue;
-          const label = parts.join(' / ');
-          out.push({
-            kind: 'row',
-            tab: tab.tab,
-            group: g.title,
-            label,
-            matchText: (label + ' ' + g.title).toLowerCase(),
-          });
-        }
       }
     }
     return out;

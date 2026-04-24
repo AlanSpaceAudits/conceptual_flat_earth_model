@@ -532,6 +532,17 @@ Format:
   js/render/index.js js/ui/controlPanel.js js/ui/urlState.js`;
   delete `js/core/satellites.js`.
 
+## S319 — Scope feature-search to the Show tab
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/ui/controlPanel.js`.
+- **Change:** `attachFeatureSearch()`'s `buildIndex()` now only
+  scans the Show tab's groups / rows — the other tabs
+  (View, Time, Tracker) don't hold visibility toggles so they
+  were cluttering results. Placeholder rewritten to
+  `Search visibility (ray, vault, star …)`.
+- **Revert:** `git checkout v-s000318 -- js/ui/controlPanel.js`.
+
 ## S318 — Feature-search box next to body search
 
 - **Date:** 2026-04-24

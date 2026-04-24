@@ -534,7 +534,7 @@ const FIELD_GROUPS = [
         { key: 'TrackerGPOverride',   label: 'GP Override',          bool: true },
       ]},
       { title: 'Celestial Bodies', rows: [
-        { key: 'TrackerTargets', label: 'Planets', buttonGrid: [
+        { key: 'TrackerTargets', label: '', buttonGrid: [
           { value: 'sun',     label: 'Sun',     color: '#ffc844' },
           { value: 'moon',    label: 'Moon',    color: '#f4f4f4' },
           { value: 'mercury', label: 'Mercury', color: '#d0b090' },

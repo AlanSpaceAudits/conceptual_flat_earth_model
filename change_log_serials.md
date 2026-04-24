@@ -500,6 +500,17 @@ Format:
 - **Revert:** `git checkout v-s000256 -- js/render/worldObjects.js
   js/render/constellations.js`.
 
+## S304 — Drop redundant "Planets" label from Celestial Bodies grid
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/ui/controlPanel.js`.
+- **Change:** The Celestial Bodies button-grid row passes
+  `label: ''`, same treatment Cel Nav / Constellations / Black
+  Holes / Quasars / Galaxies already got; the containing group
+  is already called "Celestial Bodies" so the second label was
+  noise.
+- **Revert:** `git checkout v-s000303 -- js/ui/controlPanel.js`.
+
 ## S303 — Body-search box on the far-left of the bottom bar
 
 - **Date:** 2026-04-24

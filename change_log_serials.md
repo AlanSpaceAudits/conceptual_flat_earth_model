@@ -483,6 +483,18 @@ Format:
   is active.
 - **Revert:** `git checkout v-s000243 -- js/ui/controlPanel.js`.
 
+## S248 — New default camera angles
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/core/app.js`, `js/ui/urlState.js`.
+- **Change:**
+  - `CameraDirection`: −95.4 → **−98.9**
+  - `CameraHeight`:     7.5 → **12.6**
+  - `Zoom`:             3.19 → **4.67**
+  - URL schema bumped 231 → 248 so the new defaults apply over
+    stale URL hashes.
+- **Revert:** `git checkout v-s000247 -- js/core/app.js js/ui/urlState.js`.
+
 ## S247 — Info tab with external links
 
 - **Date:** 2026-04-24

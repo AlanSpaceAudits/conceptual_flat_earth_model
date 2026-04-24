@@ -2958,6 +2958,19 @@ export class Observer {
       const tail = new THREE.Mesh(tailGeo, fur);
       tail.rotation.y = 0.25;
       add(tail, -0.018, 0, 0.008);
+    } else if (kind === 'nikki') {
+      const tex = new THREE.TextureLoader().load('assets/observer_nikki.png');
+      tex.colorSpace = THREE.SRGBColorSpace;
+      const mat = new THREE.SpriteMaterial({
+        map: tex, transparent: true, depthTest: true, depthWrite: false,
+      });
+      const sprite = new THREE.Sprite(mat);
+      const h = 0.10;
+      const aspect = 1920 / 1080;
+      sprite.scale.set(h * aspect, h, 1);
+      sprite.position.set(0, 0, h / 2);
+      sprite.renderOrder = 110;
+      this.figureGroup.add(sprite);
     }
 
     // Paint the figure after the celestial markers (sun/moon/planet dots

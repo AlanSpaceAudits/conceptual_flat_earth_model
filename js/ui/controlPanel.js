@@ -494,6 +494,7 @@ const FIELD_GROUPS = [
           { value: 'owl',      label: 'Owl' },
           { value: 'frog',     label: 'Frog' },
           { value: 'kangaroo', label: 'Kangaroo' },
+          { value: 'nikki',    label: 'Not Nikki Minaj' },
           { value: 'none',     label: 'None' },
         ]},
         // step 0.0001° ≈ 0.36" so the number field gives

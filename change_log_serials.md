@@ -532,6 +532,23 @@ Format:
   js/render/index.js js/ui/controlPanel.js js/ui/urlState.js`;
   delete `js/core/satellites.js`.
 
+## S366 — Add "Not Nikki Minaj" ObserverFigure (sprite-based)
+
+- **Date:** 2026-04-24
+- **Files changed:** `assets/observer_nikki.png` (new, copied
+  from `~/Pictures/maps/Nicki_Minaj_maps.png`),
+  `js/render/worldObjects.js`, `js/ui/controlPanel.js`.
+- **Change:**
+  - New `nikki` branch in `_buildFigure`: `THREE.TextureLoader`
+    + `THREE.Sprite` with `assets/observer_nikki.png`. Sprite
+    height 0.10 disc-units, aspect 1920/1080, centred at
+    `z = h/2`, `renderOrder = 110`.
+  - `ObserverFigure` dropdown gains
+    `{ value: 'nikki', label: 'Not Nikki Minaj' }` between
+    Kangaroo and None.
+- **Revert:** `git checkout v-s000365 -- js/render/worldObjects.js
+  js/ui/controlPanel.js`; `rm assets/observer_nikki.png`.
+
 ## S365 — Strip prompt-paraphrase + contradictory-framing language from S359 / S364
 
 - **Date:** 2026-04-24

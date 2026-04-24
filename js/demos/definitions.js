@@ -101,9 +101,53 @@ const GENERAL_DEMOS = [
       Tval('Time', 24, 2 * T8, 0, 'linear'),
     ],
   },
+];
+
+// 24-hour sun demos grouped under their own sub-menu. Order matches
+// the UI section: two 24h overhead-sun demos first, then the two
+// season-spanning midnight-sun demos.
+const SUN_24H_DEMOS = [
+  {
+    name: "24h sun at 82°30'N (Alert, Nunavut)",
+    group: '24h-sun',
+    intro: {
+      ObserverLat: 82.505, ObserverLong: -62.335,
+      BodySource: 'astropixels',
+      DateTime: 3093,                        // 2025-06-21 00:00 UTC
+      InsideVault: false,
+      CameraDirection: -62.335, CameraHeight: 70, CameraDistance: 10, Zoom: 1.4,
+      VaultSize: 1, VaultHeight: 0.45,
+      ObserverHeading: 180,                  // face south
+      ShowSunTrack: true, ShowGPPath: true,
+      ShowShadow: true, ShowTruePositions: true,
+    },
+    tasks: () => [
+      Ttxt('82°30′N · Alert, Nunavut · 2025-06-21 solstice — sun stays above the horizon for the full 24 h sidereal day.'),
+      Tval('DateTime', 3094, 4 * T5, T1, 'linear'),
+    ],
+  },
+  {
+    name: "24h sun at 79°46'S 83°15'W (West Antarctica)",
+    group: '24h-sun',
+    intro: {
+      ObserverLat: -79.76806, ObserverLong: -83.26167,
+      BodySource: 'astropixels',
+      DateTime: 3276,                        // 2025-12-21 00:00 UTC
+      InsideVault: false,
+      CameraDirection: -83.262, CameraHeight: 70, CameraDistance: 10, Zoom: 1.4,
+      VaultSize: 1, VaultHeight: 0.45,
+      ObserverHeading: 0,                    // face north
+      ShowSunTrack: true, ShowGPPath: true,
+      ShowShadow: true, ShowTruePositions: true,
+    },
+    tasks: () => [
+      Ttxt('79°46′S 83°15′W · West Antarctica · 2025-12-21 solstice — sun circles overhead for the whole 24 h without setting.'),
+      Tval('DateTime', 3277, 4 * T5, T1, 'linear'),
+    ],
+  },
   {
     name: 'Midnight sun at 75°N: start to end',
-    group: 'general',
+    group: '24h-sun',
     intro: {
       ObserverLat: 75, ObserverLong: 0,
       BodySource: 'astropixels',
@@ -129,46 +173,8 @@ const GENERAL_DEMOS = [
     ],
   },
   {
-    name: "24h sun at 82°30'N (Alert, Nunavut)",
-    group: 'general',
-    intro: {
-      ObserverLat: 82.505, ObserverLong: -62.335,
-      BodySource: 'astropixels',
-      DateTime: 3093,                        // 2025-06-21 00:00 UTC
-      InsideVault: false,
-      CameraDirection: -62.335, CameraHeight: 70, CameraDistance: 10, Zoom: 1.4,
-      VaultSize: 1, VaultHeight: 0.45,
-      ObserverHeading: 180,                  // face south
-      ShowSunTrack: true, ShowGPPath: true,
-      ShowShadow: true, ShowTruePositions: true,
-    },
-    tasks: () => [
-      Ttxt('82°30′N · Alert, Nunavut · 2025-06-21 solstice — sun stays above the horizon for the full 24 h sidereal day.'),
-      Tval('DateTime', 3094, 4 * T5, T1, 'linear'),
-    ],
-  },
-  {
-    name: "24h sun at 79°46'S 83°15'W (West Antarctica)",
-    group: 'general',
-    intro: {
-      ObserverLat: -79.76806, ObserverLong: -83.26167,
-      BodySource: 'astropixels',
-      DateTime: 3276,                        // 2025-12-21 00:00 UTC
-      InsideVault: false,
-      CameraDirection: -83.262, CameraHeight: 70, CameraDistance: 10, Zoom: 1.4,
-      VaultSize: 1, VaultHeight: 0.45,
-      ObserverHeading: 0,                    // face north
-      ShowSunTrack: true, ShowGPPath: true,
-      ShowShadow: true, ShowTruePositions: true,
-    },
-    tasks: () => [
-      Ttxt('79°46′S 83°15′W · West Antarctica · 2025-12-21 solstice — sun circles overhead for the whole 24 h without setting.'),
-      Tval('DateTime', 3277, 4 * T5, T1, 'linear'),
-    ],
-  },
-  {
     name: 'Midnight sun at 75°S: start to end',
-    group: 'general',
+    group: '24h-sun',
     intro: {
       ObserverLat: -75, ObserverLong: 0,
       BodySource: 'astropixels',
@@ -199,6 +205,7 @@ const GENERAL_DEMOS = [
 // → lunar eclipses → FE prediction track. Each entry carries a
 // `group` field so the UI can render section headings.
 export const DEMOS = [
+  ...SUN_24H_DEMOS,
   ...GENERAL_DEMOS,
   ...SOLAR_ECLIPSE_DEMOS,
   ...LUNAR_ECLIPSE_DEMOS,
@@ -207,6 +214,7 @@ export const DEMOS = [
 
 // Section metadata for the UI.
 export const DEMO_GROUPS = [
+  { id: '24h-sun',         label: '24 h Sun' },
   { id: 'general',         label: 'General' },
   { id: 'solar-eclipses',  label: 'Solar Eclipses (AstroPixels / DE405, 2021-2040)' },
   { id: 'lunar-eclipses',  label: 'Lunar Eclipses (AstroPixels / DE405, 2021-2040)' },

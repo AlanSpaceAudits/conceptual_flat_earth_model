@@ -532,6 +532,22 @@ Format:
   js/render/index.js js/ui/controlPanel.js js/ui/urlState.js`;
   delete `js/core/satellites.js`.
 
+## S326 — Group all four sun-above-horizon demos under a new "24 h Sun" section
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/demos/definitions.js`.
+- **Change:**
+  - Extracted the two 24-hour-sun demos (Alert, West Antarctica)
+    and the two midnight-sun demos (75°N, 75°S) out of
+    `GENERAL_DEMOS` into a new `SUN_24H_DEMOS` array, all
+    tagged `group: '24h-sun'`. Order inside the section is
+    Alert → West Antarctica → Midnight 75°N → Midnight 75°S.
+  - `DEMO_GROUPS` gains `{ id: '24h-sun', label: '24 h Sun' }`
+    at the top of the list; `DEMOS` spreads `SUN_24H_DEMOS`
+    before `GENERAL_DEMOS` so the new section renders above
+    the General one.
+- **Revert:** `git checkout v-s000325 -- js/demos/definitions.js`.
+
 ## S325 — 24h-sun demos at Alert (82°30′N) and West Antarctica (79°46′S 83°15′W)
 
 - **Date:** 2026-04-24

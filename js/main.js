@@ -7,6 +7,7 @@ import { attachKeyboardHandler } from './ui/keyboardHandler.js';
 import { buildControlPanel, buildHud, buildTrackerHud } from './ui/controlPanel.js';
 import { Demos } from './demos/index.js';
 import { attachUrlState } from './ui/urlState.js';
+import { setActiveProjection } from './core/canonical.js';
 
 const model = new FeModel();
 const canvas = document.getElementById('feCanvas');
@@ -35,6 +36,14 @@ try {
   warn.textContent = 'WebGL could not be initialised. The controls still work; the 3D view is disabled.';
   canvas.parentElement.appendChild(warn);
 }
+
+// Route MapProjection → canonical.js' active-projection slot so every
+// overlay that calls canonicalLatLongToDisc re-projects together.
+const refreshActiveProjection = () => {
+  setActiveProjection(model.state.MapProjection || 'ae');
+};
+model.addEventListener('update', refreshActiveProjection);
+refreshActiveProjection();
 
 model.update();
 model.dispatchEvent(new CustomEvent('update'));

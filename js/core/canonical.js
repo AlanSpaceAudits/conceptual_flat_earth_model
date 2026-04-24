@@ -1,27 +1,23 @@
-// Canonical terrestrial coordinate shell.
+// Canonical disc-coordinate router.
 //
-// Single authoritative (lat, lon) ↔ disc-coordinate mapping for every
-// overlay that needs a ground-frame position: tropics, graticule,
-// ground points, sun / moon / planet vault markers, sun / moon tracks,
-// the longitude ring on the disc rim, and any future ephemeris-driven
-// overlay.
+// Any overlay that converts (lat, lon) → disc position in world coords
+// calls `canonicalLatLongToDisc`. Historically that was hardcoded to
+// azimuthal-equidistant; now it delegates to whichever projection is
+// active per `state.MapProjection`. Every body / GP / ray / land
+// contour re-projects automatically when the active projection swaps.
 //
-// The mapping is azimuthal-equidistant by construction:
-//     r = feRadius · (90 − latDeg) / 180
-//     x = r · cos(lon),  y = r · sin(lon)
-//
-// It has no dependency on the currently-selected map projection. Map
-// artwork is a visual underlay consumed only by `js/render/earthMap.js`
-// and the projection-registry it reads from; nothing else may treat
-// `projection.project(...)` as a source of coordinate truth.
-//
-// Rule: overlays import `canonicalLatLongToDisc`. The projection
-// registry is strictly the province of the underlay builder.
+// The active id is set by a state listener in `js/main.js` so this
+// module stays free of cross-imports into app/UI layers.
 
-import { ToRad } from '../math/utils.js';
+import { getProjection } from './projections.js';
+
+let activeId = 'ae';
+
+export function setActiveProjection(id) {
+  activeId = id || 'ae';
+}
 
 export function canonicalLatLongToDisc(latDeg, longDeg, feRadius = 1) {
-  const r = feRadius * (90 - latDeg) / 180;
-  const lo = ToRad(longDeg);
-  return [r * Math.cos(lo), r * Math.sin(lo), 0];
+  const proj = getProjection(activeId);
+  return proj.project(latDeg, longDeg, feRadius);
 }

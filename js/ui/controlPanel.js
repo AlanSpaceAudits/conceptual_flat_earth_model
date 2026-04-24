@@ -1374,7 +1374,11 @@ export function buildControlPanel(host, model, demos) {
   const cycleRow = document.createElement('div');
   cycleRow.className = 'cycle-row';
 
-  const MAP_CYCLE = ['ae', 'hellerick', 'proportional', 'blank'];
+  const MAP_CYCLE = [
+    'ae', 'ae_dual', 'hellerick', 'proportional', 'blank',
+    'equirect', 'mercator', 'mollweide', 'robinson', 'winkel_tripel',
+    'hammer', 'aitoff', 'sinusoidal', 'equal_earth', 'eckert4',
+  ];
   const btnMap = document.createElement('button');
   btnMap.className = 'time-btn map-btn';
   btnMap.type = 'button';

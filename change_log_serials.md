@@ -532,6 +532,41 @@ Format:
   js/render/index.js js/ui/controlPanel.js js/ui/urlState.js`;
   delete `js/core/satellites.js`.
 
+## S362 — Projection registry expansion: 15 entries, delegated canonical math
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/core/canonical.js`,
+  `js/core/projections.js`, `js/main.js`,
+  `js/ui/controlPanel.js`, `js/ui/urlState.js`.
+- **Change:**
+  - `canonicalLatLongToDisc` (in `canonical.js`) no longer
+    hardcodes the AE formula. It now delegates to whichever
+    projection `state.MapProjection` selects, via a new
+    `setActiveProjection(id)` setter. `main.js` wires a state
+    listener so swapping the projection rewires every disc
+    overlay that flows through the canonical helper — land
+    contours, ground points, lat circles, observer placement,
+    free-cam GP anchor, GP Path polylines — they all reproject
+    together.
+  - `projections.js` gains 11 new entries joining the 4 existing
+    ones, for 15 total:
+    `ae`, `ae_dual` (equatorial AE, dual-pole / "heart" disc),
+    `hellerick`, `proportional`, `blank`,
+    `equirect`, `mercator`, `mollweide`, `robinson`,
+    `winkel_tripel`, `hammer`, `aitoff`, `sinusoidal`,
+    `equal_earth`, `eckert4`.
+    Each carries a forward `project(lat, lon, r)` normalised so
+    the widest axis lands at `r`. Non-azimuthal projections
+    include inline Newton iteration / lookup tables as needed.
+  - 🗺 compass-bar cycle button walks the full 15-projection
+    list.
+  - `URL_SCHEMA_VERSION` bumped `335 → 362` so any saved
+    `MapProjection` with a value outside the old four-entry
+    set gets cleanly re-validated on load.
+- **Revert:** `git checkout v-s000361 -- js/core/canonical.js
+  js/core/projections.js js/main.js js/ui/controlPanel.js
+  js/ui/urlState.js`.
+
 ## S361 — "Enable All" button per Tracker sub-menu
 
 - **Date:** 2026-04-24

@@ -532,6 +532,21 @@ Format:
   js/render/index.js js/ui/controlPanel.js js/ui/urlState.js`;
   delete `js/core/satellites.js`.
 
+## S349 — Align compass sub-grids to same vertical span
+
+- **Date:** 2026-04-24
+- **Files changed:** `css/styles.css`.
+- **Change:** `.compass-controls` switched to
+  `align-items: stretch`. All three sub-grids (mode-grid,
+  cycle-row, cardinal-grid) now explicitly carry
+  `grid-template-rows: repeat(2, 1fr)` with `grid-auto-rows:
+  1fr`, so each occupies the same 2-row vertical span and
+  their buttons line up on the same bands. The cycle-row
+  became 2×2 (🗺 ✨ / 🧭 blank) so it no longer towers above
+  the other grids. Cardinal button `min-width` bumped 28 → 32
+  to match the rest.
+- **Revert:** `git checkout v-s000348 -- css/styles.css`.
+
 ## S348 — 🧭 compass button toggles azimuth degree rings
 
 - **Date:** 2026-04-24

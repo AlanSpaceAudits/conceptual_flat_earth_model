@@ -327,28 +327,21 @@ header .info-popup p:last-child { margin-bottom: 0; }
 
 #bottom-bar .compass-controls {
   display: flex;
-  align-items: center;
+  align-items: stretch;
   gap: 6px;
   flex: 0 0 auto;
   margin-left: 12px;
 }
-#bottom-bar .mode-grid {
+#bottom-bar .mode-grid,
+#bottom-bar .cycle-row,
+#bottom-bar .cardinal-grid {
   display: grid;
-  grid-template-columns: repeat(3, auto);
-  grid-auto-rows: auto;
+  grid-auto-rows: 1fr;
   gap: 2px;
 }
-#bottom-bar .mode-grid .time-btn {
-  min-width: 32px;
-  padding: 2px 6px;
-  margin: 0;
-}
-#bottom-bar .cycle-row {
-  display: grid;
-  grid-template-columns: auto;
-  grid-auto-rows: auto;
-  gap: 2px;
-}
+#bottom-bar .mode-grid { grid-template-columns: repeat(3, auto); grid-template-rows: repeat(2, 1fr); }
+#bottom-bar .cycle-row { grid-template-columns: repeat(2, auto); grid-template-rows: repeat(2, 1fr); }
+#bottom-bar .mode-grid .time-btn,
 #bottom-bar .cycle-row .time-btn {
   min-width: 32px;
   padding: 2px 6px;
@@ -360,13 +353,11 @@ header .info-popup p:last-child { margin-bottom: 0; }
   background: rgba(255, 154, 60, 0.10);
 }
 #bottom-bar .cardinal-grid {
-  display: grid;
   grid-template-columns: repeat(2, auto);
-  grid-auto-rows: auto;
-  gap: 2px;
+  grid-template-rows: repeat(2, 1fr);
 }
 #bottom-bar .cardinal-grid .time-btn {
-  min-width: 28px;
+  min-width: 32px;
   padding: 2px 6px;
   margin: 0;
   font-weight: 600;

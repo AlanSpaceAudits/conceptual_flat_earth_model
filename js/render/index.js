@@ -112,6 +112,18 @@ export class Renderer {
     });
     this.sm.world.add(this.galaxyStars.group);
 
+    // Satellites ride the same generic renderer but default off
+    // (visibility is state-gated via ShowSatellites — the computed
+    // array is simply empty when the user hasn't enabled them).
+    this.satelliteStars = new CatalogPointStars({
+      sourceKey: 'Satellites',
+      color: 0x66ff88,
+      domeSize: 4,
+      sphereSize: 3.5,
+      clippingPlanes: clipPlanes,
+    });
+    this.sm.world.add(this.satelliteStars.group);
+
     this.constellations = new Constellations(clipPlanes);
     this.sm.world.add(this.constellations.group);
 
@@ -353,6 +365,7 @@ export class Renderer {
     this.blackHoleStars.update(m);
     this.quasarStars.update(m);
     this.galaxyStars.update(m);
+    this.satelliteStars.update(m);
     this.starfieldChart.update(m);
     this.constellations.update(m);
     // When a chart starfield is active, hide both the heavenly-vault and

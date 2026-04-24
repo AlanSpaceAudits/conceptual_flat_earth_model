@@ -9,6 +9,7 @@ import { CATALOGUED_STARS } from '../core/constellations.js';
 import { BLACK_HOLES } from '../core/blackHoles.js';
 import { QUASARS }     from '../core/quasars.js';
 import { GALAXIES }    from '../core/galaxies.js';
+import { SATELLITES }  from '../core/satellites.js';
 import { listProjections } from '../core/projections.js';
 import { Autoplay } from './autoplay.js';
 
@@ -36,6 +37,7 @@ const BODY_SEARCH_INDEX = (() => {
   for (const b of BLACK_HOLES)       out.push({ id: `star:${b.id}`, name: b.name, color: '#9966ff' });
   for (const q of QUASARS)           out.push({ id: `star:${q.id}`, name: q.name, color: '#40e0d0' });
   for (const g of GALAXIES)          out.push({ id: `star:${g.id}`, name: g.name, color: '#ff80c0' });
+  for (const s of SATELLITES)        out.push({ id: `star:${s.id}`, name: s.name, color: '#66ff88' });
   return out;
 })();
 
@@ -177,7 +179,7 @@ function resolveTrackName(targetId) {
   if (PLANET_NAMES[targetId]) return PLANET_NAMES[targetId];
   if (targetId.startsWith('star:')) {
     const id = targetId.slice(5);
-    for (const arr of [CEL_NAV_STARS, CATALOGUED_STARS, BLACK_HOLES, QUASARS, GALAXIES]) {
+    for (const arr of [CEL_NAV_STARS, CATALOGUED_STARS, BLACK_HOLES, QUASARS, GALAXIES, SATELLITES]) {
       const hit = arr.find((e) => e.id === id);
       if (hit) return hit.name;
     }
@@ -587,6 +589,14 @@ const FIELD_GROUPS = [
           [...GALAXIES]
             .sort((a, b) => a.name.localeCompare(b.name))
             .map((g) => ({ value: `star:${g.id}`, label: g.name, color: '#ff80c0' })),
+        },
+      ]},
+      { title: 'Satellites', rows: [
+        { key: 'ShowSatellites', label: 'Show Satellites', bool: true },
+        { key: 'TrackerTargets', label: '', buttonGrid:
+          [...SATELLITES]
+            .sort((a, b) => a.name.localeCompare(b.name))
+            .map((x) => ({ value: `star:${x.id}`, label: x.name, color: '#66ff88' })),
         },
       ]},
     ],

@@ -500,6 +500,53 @@ Format:
 - **Revert:** `git checkout v-s000256 -- js/render/worldObjects.js
   js/render/constellations.js`.
 
+## S312 — Satellites catalogue + ShowSatellites toggle + tracker sub-menu
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/core/app.js`, `js/core/satellites.js` (new),
+  `js/render/index.js`, `js/ui/controlPanel.js`, `js/ui/urlState.js`.
+- **Change:**
+  - New `satellites.js` carrying 12 entries (ISS, Hubble,
+    Tiangong, 8 Starlink-shell representatives spread over
+    RAAN / mean anomaly, James Webb) with simplified two-body
+    orbital elements. `satelliteSubPoint(sat, utcDate)` returns
+    the geographic (lat, lon) via a near-circular Kepler +
+    GMST rotation. Accuracy drifts ~1°/day from the 2024-04-15
+    epoch — fine for conceptual display, not precise tracking.
+  - New session state `ShowSatellites` (default `false`,
+    persisted in URL).
+  - `app.update()` builds `c.Satellites` each frame only when
+    `ShowSatellites` is on; fed through the same
+    vault / local-globe / optical-vault machinery as the star
+    catalogues.
+  - `render/index.js` adds a `CatalogPointStars` layer for
+    Satellites (`0x66ff88` lime-green).
+  - Tracker `star:<id>` resolver extended with a satellites
+    branch; new category key `satellite` with matching
+    GP colour.
+  - Tracker tab gets a "Satellites" sub-menu (with an inline
+    "Show Satellites" boolean since the data is off by
+    default) and the body-search index + name resolver
+    include satellites.
+- **Revert:** `git checkout v-s000311 -- js/core/app.js
+  js/render/index.js js/ui/controlPanel.js js/ui/urlState.js`;
+  delete `js/core/satellites.js`.
+
+## S313 — Heavenly hover / click picks up optical-vault projections too
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/ui/mouseHandler.js`.
+- **Change:** `collectHeavenlyCandidates()` now emits up to two
+  hit coords per body — `domeCoord` when `ShowTruePositions` is
+  on and `opticalCoord` when `ShowOpticalVault` is on and the
+  body sits above the observer's horizon.
+  `findNearestInHeavenly()` projects whichever is available and
+  picks the nearer screen-space hit, so users can click the
+  cap-projected dot in Heavenly without having to turn on true
+  positions first. `resolveTargetAngles` extended with
+  `c.Satellites`.
+- **Revert:** `git checkout v-s000312 -- js/ui/mouseHandler.js`.
+
 ## S311 — Quick-toggle button for true-position markers
 
 - **Date:** 2026-04-24

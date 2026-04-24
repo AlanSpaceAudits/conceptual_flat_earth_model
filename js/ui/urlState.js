@@ -16,6 +16,7 @@ const PERSISTED_KEYS = [
   'ShowLongitudeRing', 'ShowAzimuthRing', 'ShowOpticalVaultGrid',
   'ShowCelestialPoles', 'DarkBackground',
   'ShowLiveEphemeris', 'MoonPhaseExpanded',
+  'ShowSatellites',
   'DynamicStars',
   'TimezoneOffsetMinutes',
   'StarfieldVaultHeight', 'MoonVaultHeight', 'SunVaultHeight',

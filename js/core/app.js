@@ -21,6 +21,7 @@ import { CATALOGUED_STARS, cataloguedStarById } from './constellations.js';
 import { BLACK_HOLES, blackHoleById } from './blackHoles.js';
 import { QUASARS,      quasarById }    from './quasars.js';
 import { GALAXIES,     galaxyById }    from './galaxies.js';
+import { SATELLITES,   satelliteById, satelliteSubPoint } from './satellites.js';
 import {
   compTransMatCelestToGlobe, compTransMatLocalFeToGlobalFe, compTransMatVaultToFe,
   celestCoordToLocalGlobeCoord, coordToLatLong, localGlobeCoordToAngles,
@@ -115,6 +116,7 @@ function defaultState() {
     DarkBackground:          true,
     ShowLiveEphemeris:       false,
     MoonPhaseExpanded:       false,
+    ShowSatellites:          false,
 
     InsideVault: false,
 
@@ -516,6 +518,42 @@ export class FeModel extends EventTarget {
     c.Quasars         = QUASARS.map(projectStar);
     c.Galaxies        = GALAXIES.map(projectStar);
 
+    // Satellites: sub-point (lat, lon) computed per-frame from
+    // two-body Kepler; projected through the same vault /
+    // local-globe / optical-vault machinery as stars. Only built
+    // when ShowSatellites is on so the 12-entry catalogue isn't
+    // iterated every frame for no reason.
+    const SAT_VAULT_HEIGHT = 0.15;
+    if (s.ShowSatellites) {
+      const projectSatellite = (sat) => {
+        const sub = satelliteSubPoint(sat, utcDate);
+        const decRad = sub.lat * Math.PI / 180;
+        const raRad  = (sub.lon + c.SkyRotAngle) * Math.PI / 180;
+        const celestCoord   = equatorialToCelestCoord({ ra: raRad, dec: decRad });
+        const celestLatLong = coordToLatLong(celestCoord);
+        const vaultCoord    = vaultCoordToGlobalFeCoord(
+          vaultCoordAt(celestLatLong.lat, celestLatLong.lng, SAT_VAULT_HEIGHT, FE_RADIUS),
+          c.TransMatVaultToFe,
+        );
+        const localGlobe  = celestCoordToLocalGlobeCoord(celestCoord, c.TransMatCelestToGlobe);
+        const anglesGlobe = localGlobeCoordToAngles(localGlobe);
+        const opticalVaultCoord = localGlobeCoordToGlobalFeCoord(
+          opticalVaultProject(localGlobe, c.OpticalVaultRadius, c.OpticalVaultHeightEffective),
+          c.TransMatLocalFeToGlobalFe,
+        );
+        return {
+          id: sat.id, name: sat.name,
+          ra: raRad, dec: decRad,
+          celestCoord, celestLatLong,
+          vaultCoord, opticalVaultCoord,
+          anglesGlobe,
+        };
+      };
+      c.Satellites = SATELLITES.map(projectSatellite);
+    } else {
+      c.Satellites = [];
+    }
+
     c.TrackerInfos = [];
     const targets = Array.isArray(s.TrackerTargets) ? [...s.TrackerTargets] : [];
     const followOnlyIds = new Set();
@@ -617,6 +655,11 @@ export class FeModel extends EventTarget {
           def   = galaxyById(starId);
           if (entry) cat = 'galaxy';
         }
+        if (!entry) {
+          entry = c.Satellites.find((x) => x.id === starId);
+          def   = satelliteById(starId);
+          if (entry) cat = 'satellite';
+        }
         if (entry && def) {
           // Star RA/Dec is pipeline-independent; all five readings share it.
           const gpColorByCat = {
@@ -625,6 +668,7 @@ export class FeModel extends EventTarget {
             blackhole:  0x9966ff,  // purple
             quasar:     0x40e0d0,  // cyan
             galaxy:     0xff80c0,  // pink
+            satellite:  0x66ff88,  // lime green
           };
           info = {
             target, name: def.name, category: 'star', subCategory: cat, mag: def.mag,

@@ -500,6 +500,23 @@ Format:
 - **Revert:** `git checkout v-s000256 -- js/render/worldObjects.js
   js/render/constellations.js`.
 
+## S265 — Promote Cel Nav / Constellations / Black Holes / Quasars to their own sub-menus
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/ui/controlPanel.js`.
+- **Change:** Tracker tab now has six top-level collapsible groups
+  instead of two:
+  - Ephemeris
+  - Celestial Bodies (Clear All Tracked + Specified Tracker Mode +
+    GP Override + Planets button grid)
+  - Cel Nav
+  - Constellations (still contains cel-nav crossovers — toggles
+    stay in sync with the Cel Nav buttons that share a `star:<id>`)
+  - Black Holes
+  - Quasars
+  Mutually exclusive — opening one collapses the others.
+- **Revert:** `git checkout v-s000264 -- js/ui/controlPanel.js`.
+
 ## S264 — Black-hole + quasar catalogues; Tracker split into sub-lists
 
 - **Date:** 2026-04-24

@@ -368,14 +368,18 @@ const FIELD_GROUPS = [
           { value: 'uranus',  label: 'Uranus',  color: '#a8d8e0' },
           { value: 'neptune', label: 'Neptune', color: '#7fa6e8' },
         ]},
+      ]},
+      { title: 'Cel Nav', rows: [
         { key: 'TrackerTargets', label: 'Cel Nav', buttonGrid:
           [...CEL_NAV_STARS]
             .sort((a, b) => a.name.localeCompare(b.name))
             .map((s) => ({ value: `star:${s.id}`, label: s.name, color: '#ffe8a0' })),
         },
-        // Constellations includes every cel-nav crossover + the
-        // constellation-only stars. Clicking either copy toggles the
-        // same TrackerTargets entry, so both buttons stay in sync.
+      ]},
+      // Cel-nav crossovers appear in both this list and the Cel Nav
+      // list; clicking either toggles the same `star:<id>` so both
+      // buttons stay in sync.
+      { title: 'Constellations', rows: [
         { key: 'TrackerTargets', label: 'Constellations', buttonGrid:
           (() => {
             const celnavIds = new Set(CEL_NAV_STARS.map((s) => s.id));
@@ -388,11 +392,15 @@ const FIELD_GROUPS = [
               }));
           })(),
         },
+      ]},
+      { title: 'Black Holes', rows: [
         { key: 'TrackerTargets', label: 'Black Holes', buttonGrid:
           [...BLACK_HOLES]
             .sort((a, b) => a.name.localeCompare(b.name))
             .map((b) => ({ value: `star:${b.id}`, label: b.name, color: '#9966ff' })),
         },
+      ]},
+      { title: 'Quasars', rows: [
         { key: 'TrackerTargets', label: 'Quasars', buttonGrid:
           [...QUASARS]
             .sort((a, b) => a.name.localeCompare(b.name))

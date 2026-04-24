@@ -77,7 +77,7 @@ function paramsToPatch(params) {
 }
 
 // Bump when a default changes and existing URL hashes should drop that key.
-const URL_SCHEMA_VERSION = '331';
+const URL_SCHEMA_VERSION = '334';
 const VERSION_GATED_KEYS = new Set([
   'ShowLiveEphemeris', 'MoonPhaseExpanded',
   'BodySource',

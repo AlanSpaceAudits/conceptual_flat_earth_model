@@ -117,7 +117,7 @@ function defaultState() {
     DarkBackground:          true,
     ShowLiveEphemeris:       false,
     MoonPhaseExpanded:       false,
-    ShowSatellites:          false,
+    ShowSatellites:          true,
     GPPathPlanets:           false,
     GPPathCelNav:            false,
     GPPathConstellations:    false,

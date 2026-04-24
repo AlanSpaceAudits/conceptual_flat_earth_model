@@ -532,6 +532,17 @@ Format:
   js/render/index.js js/ui/controlPanel.js js/ui/urlState.js`;
   delete `js/core/satellites.js`.
 
+## S334 — Default ShowSatellites true
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/core/app.js`, `js/ui/urlState.js`.
+- **Change:** `ShowSatellites` default flipped `false` → `true`;
+  default `TrackerTargets` already contains the satellite ids
+  (S330) so the 12 entries render on first load. URL schema
+  bumped `331` → `334` so the old default is dropped.
+- **Revert:** `git checkout v-s000333 -- js/core/app.js
+  js/ui/urlState.js`.
+
 ## S333 — Constellations renderer respects tracker filtering + STM focus
 
 - **Date:** 2026-04-24

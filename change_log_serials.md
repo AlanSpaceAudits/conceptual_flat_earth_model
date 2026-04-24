@@ -463,3 +463,13 @@ Format:
   collapses it. Time tab's Calendar and Autoplay groups are
   registered in the same set.
 - **Revert:** `git checkout v-s000241 -- js/ui/controlPanel.js`.
+
+## S243 — Keep tab popup open during canvas interaction
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/ui/controlPanel.js`.
+- **Change:** removed the `host.pointerdown` outside-click handler
+  that auto-closed the active popup. The popup now stays open while
+  the pointer drags / wheels on the canvas. Close paths are the tab
+  button (re-click same tab) or clicking a different tab.
+- **Revert:** `git checkout v-s000242 -- js/ui/controlPanel.js`.

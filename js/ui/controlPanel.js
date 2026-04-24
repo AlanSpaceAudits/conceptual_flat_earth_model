@@ -956,15 +956,9 @@ export function buildControlPanel(host, model, demos) {
   autoplay.onChange(refreshTimeControls);
   refreshTimeControls();
 
-  // Close open popup when clicking outside bar/popup (canvas click).
-  host.addEventListener('pointerdown', (e) => {
-    if (activeIdx < 0) return;
-    if (bar.contains(e.target)) return;
-    if (tabEntries[activeIdx].popup.contains(e.target)) return;
-    tabEntries[activeIdx].popup.hidden = true;
-    tabEntries[activeIdx].btn.setAttribute('aria-selected', 'false');
-    activeIdx = -1;
-  });
+  // The popup stays open while the user interacts with the canvas
+  // (drag to move camera, wheel to zoom, etc.). Close only via the
+  // tab button (click same tab again, or click a different one).
 }
 
 // Phase name for a given lit fraction + waxing flag.

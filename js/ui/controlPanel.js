@@ -819,6 +819,26 @@ export function buildControlPanel(host, model, demos) {
   const tabEntries = [];
   let activeIdx = -1;
 
+  // Anchor the popup horizontally to its tab button. The popup's
+  // right edge aligns with the tab's right edge; width defaults to
+  // `row + padding` but grows for the Tracker tab so the 100-button
+  // grid stays legible.
+  const positionPopup = (tabIdx) => {
+    const entry = tabEntries[tabIdx];
+    const btn = entry.btn;
+    const popup = entry.popup;
+    const tabLabel = btn.textContent.trim();
+    const wide = tabLabel === 'Tracker' || tabLabel === 'Demos';
+    const targetWidth = Math.min(window.innerWidth - 24, wide ? 560 : 380);
+    const hostRect = host.getBoundingClientRect();
+    const btnRect  = btn.getBoundingClientRect();
+    // Right-anchor to the tab's right edge (relative to host).
+    const rightFromHost = Math.max(8, hostRect.right - btnRect.right);
+    popup.style.right = `${rightFromHost}px`;
+    popup.style.left  = 'auto';
+    popup.style.width = `${targetWidth}px`;
+  };
+
   const openTab = (i) => {
     if (activeIdx === i) {
       tabEntries[i].popup.hidden = true;
@@ -830,10 +850,16 @@ export function buildControlPanel(host, model, demos) {
       tabEntries[activeIdx].popup.hidden = true;
       tabEntries[activeIdx].btn.setAttribute('aria-selected', 'false');
     }
+    positionPopup(i);
     tabEntries[i].popup.hidden = false;
     tabEntries[i].btn.setAttribute('aria-selected', 'true');
     activeIdx = i;
   };
+
+  // Keep the open popup anchored if the window resizes.
+  window.addEventListener('resize', () => {
+    if (activeIdx >= 0) positionPopup(activeIdx);
+  });
 
   const registerTab = (label, buildInto) => {
     const btn = document.createElement('button');

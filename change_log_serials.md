@@ -435,3 +435,19 @@ Format:
   and not returning when pitch changed.
 - **Revert:** `git checkout v-s000239 -- js/render/constellations.js
   js/render/worldObjects.js`.
+
+## S241 — Anchor tab popup to its originating tab button
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/ui/controlPanel.js`, `css/styles.css`.
+- **Change:**
+  - `.tab-popup` is now `position: absolute; bottom: 0;` with
+    rounded top corners and a soft shadow. Width is fixed per
+    open, not `left:0 / right:0` full-bleed.
+  - `positionPopup(i)` on open: measures the tab's bounding rect,
+    pins the popup's right edge to the tab's right edge, sets
+    width to 380 px (Tracker / Demos get 560 px for the large
+    button grid / demo list). Re-anchors on window resize while
+    a popup is open.
+- **Revert:** `git checkout v-s000240 -- js/ui/controlPanel.js
+  css/styles.css`.

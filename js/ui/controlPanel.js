@@ -336,11 +336,12 @@ const FIELD_GROUPS = [
   // a coloured GP on the disc.
   {
     tab: 'Tracker', groups: [
-      { title: 'Object', rows: [
+      { title: 'Celestial Bodies', rows: [
         // one-shot clear button so a doesn't have to
         // click every active pill to turn it off.
         { label: '', buttonLabel: 'Clear All Tracked',
           onClick: (m) => m.setState({ TrackerTargets: [] }) },
+        { key: 'SpecifiedTrackerMode', label: 'Specified Tracker Mode', bool: true },
         { key: 'TrackerTargets', label: 'Track', buttonGrid: [
           // per-button text colour. Sun / moon / planet
           // colours match the in-scene marker pigments defined in
@@ -391,11 +392,6 @@ const FIELD_GROUPS = [
         // Stars are always compact (az + el only) since their RA/Dec
         // is pipeline-independent.
         { key: 'ShowEphemerisReadings', label: 'Ephemeris comparison', bool: true },
-        // "Specified Tracker Mode": sky collapses to just the
-        // tracked objects + their GPs. Everything else (non-tracked
-        // sun/moon/planets, non-tracked stars, random starfield,
-        // constellation lines) hides.
-        { key: 'SpecifiedTrackerMode', label: 'Specified Tracker Mode', bool: true },
         // star correction toggles. Four independent
         // checkboxes; the first three apply precession / nutation /
         // aberration individually. "Trepidation" is the combined-

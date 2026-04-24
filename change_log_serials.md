@@ -500,6 +500,17 @@ Format:
 - **Revert:** `git checkout v-s000256 -- js/render/worldObjects.js
   js/render/constellations.js`.
 
+## S259 — Rename Tracker "Object" → "Celestial Bodies"; move Specified Tracker Mode
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/ui/controlPanel.js`.
+- **Change:**
+  - Tracker tab's first group renamed `Object → Celestial Bodies`.
+  - `SpecifiedTrackerMode` toggle moved out of the Ephemeris group
+    and into Celestial Bodies, placed between the `Clear All Tracked`
+    button and the button grid.
+- **Revert:** `git checkout v-s000258 -- js/ui/controlPanel.js`.
+
 ## S258 — Revert S257 dark-side gate
 
 - **Date:** 2026-04-24

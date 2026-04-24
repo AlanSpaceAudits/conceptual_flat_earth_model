@@ -854,7 +854,16 @@ export function buildControlPanel(host, model, demos) {
   btnFf.textContent = '⏩';  btnFf.title = 'Fast forward';
   const speedReadout = document.createElement('span');
   speedReadout.className = 'time-speed';
-  timeControls.append(btnVault, btnRew, btnPlay, btnFf, speedReadout);
+  const btnNight = document.createElement('button');
+  btnNight.className = 'time-btn night-btn';
+  btnNight.type = 'button';
+  btnNight.textContent = '🌙';
+  btnNight.title = 'Toggle permanent night';
+  btnNight.addEventListener('click', () => {
+    model.setState({ PermanentNight: !model.state.PermanentNight });
+  });
+
+  timeControls.append(btnVault, btnNight, btnRew, btnPlay, btnFf, speedReadout);
 
   const compassControls = document.createElement('div');
   compassControls.className = 'compass-controls';
@@ -877,15 +886,6 @@ export function buildControlPanel(host, model, demos) {
     return b;
   });
 
-  const btnNight = document.createElement('button');
-  btnNight.className = 'time-btn night-btn';
-  btnNight.type = 'button';
-  btnNight.textContent = '🌙';
-  btnNight.title = 'Toggle permanent night';
-  btnNight.addEventListener('click', () => {
-    model.setState({ PermanentNight: !model.state.PermanentNight });
-  });
-  compassControls.appendChild(btnNight);
 
   const tabsBar = document.createElement('div');
   tabsBar.className = 'tabs';

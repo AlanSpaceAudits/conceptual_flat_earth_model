@@ -500,6 +500,15 @@ Format:
 - **Revert:** `git checkout v-s000256 -- js/render/worldObjects.js
   js/render/constellations.js`.
 
+## S291 — Move permanent night button next to vault swap
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/ui/controlPanel.js`.
+- **Change:** `.night-btn` moved from `.compass-controls` to
+  `.time-controls`, placed immediately after `btnVault` so the
+  two mode toggles sit together.
+- **Revert:** `git checkout v-s000290 -- js/ui/controlPanel.js`.
+
 ## S290 — Clicked target is the hovered target
 
 - **Date:** 2026-04-24

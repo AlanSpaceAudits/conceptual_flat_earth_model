@@ -532,6 +532,18 @@ Format:
   js/render/index.js js/ui/controlPanel.js js/ui/urlState.js`;
   delete `js/core/satellites.js`.
 
+## S316 — Free-cam tracks satellites (ISS, Starlink, JWST)
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/render/scene.js`.
+- **Change:** `resolveTargetGp()`'s `star:<id>` lookup list
+  was missing `c.Satellites`, so clicking ISS / Starlink
+  fell through to the fallback orbit camera instead of
+  anchoring on the satellite's sub-point. Added `c.Satellites`
+  to the scan; free-cam now follows satellites' GPs the same
+  way it follows stars and planets.
+- **Revert:** `git checkout v-s000315 -- js/render/scene.js`.
+
 ## S315 — Per-category GP Override; Satellites require explicit selection
 
 - **Date:** 2026-04-24

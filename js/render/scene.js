@@ -37,6 +37,7 @@ function resolveTargetGp(targetId, c) {
     const id = targetId.slice(5);
     for (const list of [
       c.CelNavStars, c.CataloguedStars, c.BlackHoles, c.Quasars, c.Galaxies,
+      c.Satellites,
     ]) {
       if (!list) continue;
       const f = list.find((x) => x.id === id);

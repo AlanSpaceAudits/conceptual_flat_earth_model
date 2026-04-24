@@ -483,6 +483,16 @@ Format:
   is active.
 - **Revert:** `git checkout v-s000243 -- js/ui/controlPanel.js`.
 
+## S246 — Info bar shows active ephemeris
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/ui/controlPanel.js`.
+- **Change:** added `ephem: NAME` slot to the end of `#info-bar`.
+  Maps BodySource id to display name: heliocentric → HelioC,
+  geocentric → GeoC, ptolemy → Ptolemy, astropixels → DE405,
+  vsop87 → VSOP87. Live-refreshes on model update.
+- **Revert:** `git checkout v-s000245 -- js/ui/controlPanel.js`.
+
 ## S245 — Show tab regrouped into top-down subcategories
 
 - **Date:** 2026-04-24

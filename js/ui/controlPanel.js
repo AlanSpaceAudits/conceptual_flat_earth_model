@@ -756,6 +756,8 @@ export function buildControlPanel(host, model, demos) {
     <span class="info-sep">│</span>
     <span class="info-slot" data-k="mel">Mouse El: —</span>
     <span class="info-slot" data-k="maz">Mouse Az: —</span>
+    <span class="info-sep">│</span>
+    <span class="info-slot" data-k="eph">ephem: —</span>
   `;
   const slotLat = infoBar.querySelector('[data-k="lat"]');
   const slotLon = infoBar.querySelector('[data-k="lon"]');
@@ -763,9 +765,17 @@ export function buildControlPanel(host, model, demos) {
   const slotAz  = infoBar.querySelector('[data-k="az"]');
   const slotMel = infoBar.querySelector('[data-k="mel"]');
   const slotMaz = infoBar.querySelector('[data-k="maz"]');
+  const slotEph = infoBar.querySelector('[data-k="eph"]');
   const fmtLat = (v) => `Lat ${v >= 0 ? '+' : ''}${v.toFixed(4)}°`;
   const fmtLon = (v) => `Lon ${v >= 0 ? '+' : ''}${v.toFixed(4)}°`;
   const fmtSignedDeg = (v) => `${v >= 0 ? '+' : ''}${v.toFixed(2)}°`;
+  const EPHEM_NAMES = {
+    heliocentric: 'HelioC',
+    geocentric:   'GeoC',
+    ptolemy:      'Ptolemy',
+    astropixels:  'DE405',
+    vsop87:       'VSOP87',
+  };
   const refreshInfoBar = () => {
     const s = model.state;
     slotLat.textContent = fmtLat(s.ObserverLat);
@@ -778,6 +788,7 @@ export function buildControlPanel(host, model, demos) {
     slotMaz.textContent = Number.isFinite(s.MouseAzimuth)
       ? `Mouse Az: ${s.MouseAzimuth.toFixed(2)}°`
       : 'Mouse Az: —';
+    slotEph.textContent = `ephem: ${EPHEM_NAMES[s.BodySource] || s.BodySource || '—'}`;
   };
   model.addEventListener('update', refreshInfoBar);
   refreshInfoBar();

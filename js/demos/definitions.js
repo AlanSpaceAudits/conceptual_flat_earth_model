@@ -162,8 +162,8 @@ const SUN_24H_DEMOS = [
       ShowShadow: true, ShowTruePositions: true,
     },
     tasks: () => [
-      Ttxt('82°30′N · Alert, Nunavut · 2025-06-21 solstice · Optical view locked on the sun — watch it loop 360° without setting.'),
-      Tval('DateTime', 3094, 4 * T5, T1, 'linear'),
+      Ttxt('82°30′N · Alert, Nunavut · 2025-06-21 solstice · Optical view locked on the sun — two weeks of continuous midnight-sun without setting.'),
+      Tval('DateTime', 3107, 40 * 1000, T1, 'linear'),
     ],
   },
   {
@@ -183,8 +183,8 @@ const SUN_24H_DEMOS = [
       ShowShadow: true, ShowTruePositions: true,
     },
     tasks: () => [
-      Ttxt('79°46′S 83°15′W · West Antarctica · 2024-12-21 solstice · Optical view locked on the sun — elevation dips to ~13° at the "midnight" pass but never sets.'),
-      Tval('DateTime', 2912, 4 * T5, T1, 'linear'),
+      Ttxt('79°46′S 83°15′W · West Antarctica · 2024-12-21 solstice · Optical view locked on the sun — two weeks of continuous midnight-sun. Elevation dips to ~13° at each "midnight" pass but never sets.'),
+      Tval('DateTime', 2925, 40 * 1000, T1, 'linear'),
     ],
   },
   {

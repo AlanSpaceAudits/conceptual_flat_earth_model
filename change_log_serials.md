@@ -532,6 +532,21 @@ Format:
   js/render/index.js js/ui/controlPanel.js js/ui/urlState.js`;
   delete `js/core/satellites.js`.
 
+## S359 — Extend Alert + Antarctica 24h-sun demos from 1 day to 14 days
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/demos/definitions.js`.
+- **Change:** Alert (`3093 → 3107`) and West Antarctica
+  (`2911 → 2925`) 24h-sun demos now tween 14 days of
+  continuous midnight sun instead of a single 24-hour sidereal
+  day. Tween duration 40 s (~0.35 days/sec) so each sun loop
+  takes ~3 s of real time — smooth enough to watch the sun
+  sweep around the sky multiple times. Fixes the earlier
+  confusion where the demo ended after 24 h and the snap back
+  to DE405 default made it look like the sun was "going below
+  horizon" inside the demo.
+- **Revert:** `git checkout v-s000358 -- js/demos/definitions.js`.
+
 ## S358 — 24h-sun demos start Optical tracking the sun; only sun visible
 
 - **Date:** 2026-04-24

@@ -23,7 +23,7 @@ const T1 = 1000, T3 = 3000, T5 = 5000, T8 = 8000;
 // behaviour is preserved in the registry's 2024-04-08 demo entry.
 const GENERAL_DEMOS = [
   {
-    name: 'North-pole GP trace (tracked bodies)',
+    name: 'North-pole GP trace — slow → 5.33× ramp',
     group: 'general',
     intro: {
       InsideVault: false,
@@ -40,9 +40,13 @@ const GENERAL_DEMOS = [
     },
     tasks: (m) => {
       const start = m.state.DateTime;
+      // Cubic ease-in from 0 → 53.3 days over 30 s. Instantaneous
+      // rate at t=1 is 3·53.3/30 ≈ 5.33 days/sec, so the trace
+      // starts nearly still and accelerates to the authored peak
+      // speed by the end. User can still ½× / 2× from there.
       return [
-        Ttxt('Heavenly vault, camera looking straight down at the north pole (disc centre). 24-hour GP traces follow every body you have selected in Tracker — watch them sweep in real time.'),
-        Tval('DateTime', start + 7, 8 * T5, T1, 'linear'),
+        Ttxt('Heavenly vault, looking straight down at the north pole. GP traces for every tracked body — starts almost still, accelerates to 5.33× (53 days over 30 s).'),
+        Tval('DateTime', start + 53.3, 30 * 1000, T1, 'accel'),
       ];
     },
   },

@@ -5,6 +5,13 @@
 const EASING = {
   linear: (t) => t,
   cosine: (t) => 0.5 - 0.5 * Math.cos(Math.PI * Math.min(1, Math.max(0, t))),
+  // Cubic ease-in — value changes slowly at start, accelerates to
+  // the end. Used for orbital-trace demos where time should ramp up
+  // naturally from a crawl to the authored finishing rate.
+  accel: (t) => {
+    const u = Math.min(1, Math.max(0, t));
+    return u * u * u;
+  },
 };
 
 export class Animator {

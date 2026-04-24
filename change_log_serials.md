@@ -532,6 +532,24 @@ Format:
   js/render/index.js js/ui/controlPanel.js js/ui/urlState.js`;
   delete `js/core/satellites.js`.
 
+## S354 — North-pole GP trace demo ramps from near-still to 5.33 days/sec
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/demos/animation.js`, `js/demos/definitions.js`.
+- **Change:**
+  - `animation.js` EASING map gains `accel` (cubic ease-in):
+    `t → t³`. Value changes slowly at the start and
+    accelerates to the final rate.
+  - The existing North-pole GP trace demo renamed to
+    `North-pole GP trace — slow → 5.33× ramp`. Single Tval on
+    `DateTime` advances 53.3 days over 30 s using the new
+    `accel` easing — the instantaneous rate at the end of the
+    tween is `3 × 53.3 / 30 ≈ 5.33 days/sec`, so the GP
+    polylines start nearly still and visibly accelerate. User
+    can still ½× / 2× from the transport bar to scale further.
+- **Revert:** `git checkout v-s000353 -- js/demos/animation.js
+  js/demos/definitions.js`.
+
 ## S353 — 24h-sun demo intros no longer auto-enable GP Path
 
 - **Date:** 2026-04-24

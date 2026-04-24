@@ -336,50 +336,6 @@ const FIELD_GROUPS = [
   // a coloured GP on the disc.
   {
     tab: 'Tracker', groups: [
-      { title: 'Celestial Bodies', rows: [
-        // one-shot clear button so a doesn't have to
-        // click every active pill to turn it off.
-        { label: '', buttonLabel: 'Clear All Tracked',
-          onClick: (m) => m.setState({ TrackerTargets: [] }) },
-        { key: 'SpecifiedTrackerMode', label: 'Specified Tracker Mode', bool: true },
-        { key: 'TrackerGPOverride',   label: 'GP Override',          bool: true },
-        { key: 'TrackerTargets', label: 'Track', buttonGrid: [
-          // per-button text colour. Sun / moon / planet
-          // colours match the in-scene marker pigments defined in
-          // `render/index.js`. Cel-nav stars render white, non-cel-
-          // nav (catalogued) stars render warm-yellow, matching the
-          // two starfield layers. Cel-nav wins when a star appears
-          // in both lists — `CELNAV_IDS` below is the master set.
-          { value: 'sun',     label: 'Sun',     color: '#ffc844' },
-          { value: 'moon',    label: 'Moon',    color: '#f4f4f4' },
-          { value: 'mercury', label: 'Mercury', color: '#d0b090' },
-          { value: 'venus',   label: 'Venus',   color: '#fff0c8' },
-          { value: 'mars',    label: 'Mars',    color: '#d05040' },
-          { value: 'jupiter', label: 'Jupiter', color: '#ffa060' },
-          { value: 'saturn',  label: 'Saturn',  color: '#e4c888' },
-          // 
-          { value: 'uranus',  label: 'Uranus',  color: '#a8d8e0' },
-          { value: 'neptune', label: 'Neptune', color: '#7fa6e8' },
-          // merge cel-nav almanac stars with the non-cel-nav
-          // catalogued stars (Orion belt, dipper arm, σ Oct, etc.)
-          // and sort alphabetically so everything is trackable.
-          ...(() => {
-            const celnavIds = new Set(CEL_NAV_STARS.map((s) => s.id));
-            return [...CEL_NAV_STARS, ...CATALOGUED_STARS]
-              .sort((a, b) => a.name.localeCompare(b.name))
-              .map((s) => ({
-                value: `star:${s.id}`,
-                label: s.name,
-                // colour swap: cel-nav stars now read in the
-                // warm-yellow pigment the constellation layer used to
-                // own; catalogued stars take the white. Mirrors the
-                // in-field swap (cel-nav starfield 0xffe8a0,
-                // constellation starfield 0xffffff).
-                color: celnavIds.has(s.id) ? '#ffe8a0' : '#ffffff',
-              }));
-          })(),
-        ]},
-      ]},
       { title: 'Ephemeris', rows: [
         { key: 'BodySource', label: 'Source', select: [
           { value: 'heliocentric', label: 'HelioC   (Schlyter Kepler + Sun-geo)' },
@@ -388,25 +344,38 @@ const FIELD_GROUPS = [
           { value: 'astropixels',  label: 'DE405    (Espenak AstroPixels)' },
           { value: 'vsop87',       label: 'VSOP87   (Bretagnon & Francou)' },
         ]},
-        // when on, the Tracker HUD shows the full RA/Dec
-        // comparison block from all 5 pipelines for sun/moon/planets.
-        // Stars are always compact (az + el only) since their RA/Dec
-        // is pipeline-independent.
         { key: 'ShowEphemerisReadings', label: 'Ephemeris comparison', bool: true },
-        // star correction toggles. Four independent
-        // checkboxes; the first three apply precession / nutation /
-        // aberration individually. "Trepidation" is the combined-
-        // correction label — when checked it forces all three
-        // corrections on. The name references the medieval Arabic
-        // "trepidation of the equinoxes", a hypothetical extra
-        // oscillation bolted onto precession to match observation;
-        // here it labels "the compound apparent wobble as a single
-        // phenomenon", the pedagogical counterpart to viewing the
-        // three individual corrections one at a time.
         { key: 'StarApplyPrecession', label: 'Precession',  bool: true },
         { key: 'StarApplyNutation',   label: 'Nutation',    bool: true },
         { key: 'StarApplyAberration', label: 'Aberration',  bool: true },
         { key: 'StarTrepidation',     label: 'Trepidation', bool: true },
+      ]},
+      { title: 'Celestial Bodies', rows: [
+        { label: '', buttonLabel: 'Clear All Tracked',
+          onClick: (m) => m.setState({ TrackerTargets: [] }) },
+        { key: 'SpecifiedTrackerMode', label: 'Specified Tracker Mode', bool: true },
+        { key: 'TrackerGPOverride',   label: 'GP Override',          bool: true },
+        { key: 'TrackerTargets', label: 'Track', buttonGrid: [
+          { value: 'sun',     label: 'Sun',     color: '#ffc844' },
+          { value: 'moon',    label: 'Moon',    color: '#f4f4f4' },
+          { value: 'mercury', label: 'Mercury', color: '#d0b090' },
+          { value: 'venus',   label: 'Venus',   color: '#fff0c8' },
+          { value: 'mars',    label: 'Mars',    color: '#d05040' },
+          { value: 'jupiter', label: 'Jupiter', color: '#ffa060' },
+          { value: 'saturn',  label: 'Saturn',  color: '#e4c888' },
+          { value: 'uranus',  label: 'Uranus',  color: '#a8d8e0' },
+          { value: 'neptune', label: 'Neptune', color: '#7fa6e8' },
+          ...(() => {
+            const celnavIds = new Set(CEL_NAV_STARS.map((s) => s.id));
+            return [...CEL_NAV_STARS, ...CATALOGUED_STARS]
+              .sort((a, b) => a.name.localeCompare(b.name))
+              .map((s) => ({
+                value: `star:${s.id}`,
+                label: s.name,
+                color: celnavIds.has(s.id) ? '#ffe8a0' : '#ffffff',
+              }));
+          })(),
+        ]},
       ]},
     ],
   },

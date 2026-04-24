@@ -500,6 +500,14 @@ Format:
 - **Revert:** `git checkout v-s000256 -- js/render/worldObjects.js
   js/render/constellations.js`.
 
+## S262 — Swap Tracker group order: Ephemeris above Celestial Bodies
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/ui/controlPanel.js`.
+- **Change:** the Tracker tab now lists `Ephemeris` as the first
+  collapsible group and `Celestial Bodies` second.
+- **Revert:** `git checkout v-s000261 -- js/ui/controlPanel.js`.
+
 ## S261 — Tracker "GP Override" checkbox
 
 - **Date:** 2026-04-24

@@ -320,9 +320,7 @@ export class LongitudeRing {
   }
   update(model) {
     // Hidden in Optical-vault mode so it doesn't compete with the
-    // compass-azimuth ring on the observer's cap. In orbital /
-    // Heavenly mode both rings are visible — they measure different
-    // things but the user can see them together.
+    // compass-azimuth ring on the observer's cap.
     const inVault = !!model.state.InsideVault;
     this.group.visible = !inVault && (model.state.ShowLongitudeRing !== false);
   }
@@ -1350,7 +1348,7 @@ export class ObserversOpticalVault {
     // user has zoomed past the coarse-ring threshold; below that FOV
     // the coarse 15° ring is hidden so the refined cadence owns the
     // visual field.
-    this._updateRefinedScale(s);
+    this._updateRefinedScale(s, c);
     // S007 — emit the right-side 0°–90° elevation scale each frame.
     // Companion to the bottom azimuth band; shares colour-distinct
     // palette, same ringR, same eyeH compensation, same cadence
@@ -1481,27 +1479,65 @@ export class ObserversOpticalVault {
       cardH = 0.05;
     }
     const bandFovDeg = Math.max(0.005, Math.min(75, 75 / Math.max(0.2, s.OpticalZoom || 5.09)));
-    const bandElev   = this._labelBandElevRad(s, bandFovDeg);
+    // S206c — gate the Optical pitch-tracking / lowest-visible-ring
+    // rule on first-person mode. In Heavenly (orbit camera) mode
+    // `state.CameraHeight` is the ORBIT elevation above the disc,
+    // not a first-person pitch. Feeding it into `_labelBandElevRad`
+    // as if it were pitch pushes the azimuth-degree ring far up the
+    // cap (e.g. CameraHeight = 25° → bandElev snaps to 20°), which
+    // looks like labels "spreading out" when the user returns from
+    // Optical to Heavenly. In Heavenly the correct behaviour is
+    // horizon-hug: small fixed elevation offset so the degree ring
+    // sits on the cap's rim as it does in Optical at pitch 0.
+    const bandElev = s.InsideVault
+      ? this._labelBandElevRad(s, bandFovDeg)
+      : 0.03;
     const cosE = Math.cos(bandElev);
     const sinE = Math.sin(bandElev);
     const eyeH = 0.012;
     const rSafe = Math.max(1e-6, r);
+    // S206c (follow-up) — snap cardinals + coarse azimuth labels to
+    // the optical-vault cap surface in Heavenly. The Optical reading-
+    // band sits at world radius 1.14 (inside the cap, floats around
+    // the observer) which is correct first-person but produces a
+    // giant outer ring orbiting the small cap when viewed from
+    // outside. In Heavenly we instead use the cap's flattened-vault
+    // projection (e' = atan((h/r)·tan E)) to land the label on the
+    // cap surface at the same azimuth, so the degree ring snaps to
+    // the visible rim of the cap rather than floating beyond it.
+    let posXY, posZ;
+    if (s.InsideVault) {
+      posXY = cardR * cosE;
+      posZ  = cardR * sinE + eyeH;
+    } else {
+      const ePrime = Math.atan((h / Math.max(1e-9, r)) * Math.tan(bandElev));
+      posXY = r * Math.cos(ePrime);
+      posZ  = h * Math.sin(ePrime);
+    }
     for (const sp of this._cardinalSprites) {
       const b = sp.userData.baseDir;
       sp.position.set(
-        (cardR / rSafe) * cosE * b[0],
-        (cardR / rSafe) * cosE * b[1],
-        (cardR * sinE + eyeH) / rSafe,
+        (posXY / rSafe) * b[0],
+        (posXY / rSafe) * b[1],
+        posZ / rSafe,
       );
       setSpriteScale(sp, cardH);
     }
     // Coarse 15° azimuth labels share the band with the cardinals.
+    let aziXY, aziZ;
+    if (s.InsideVault) {
+      aziXY = 1.14 * cosE;
+      aziZ  = 1.14 * sinE + eyeH;
+    } else {
+      aziXY = posXY;
+      aziZ  = posZ;
+    }
     for (const sp of this._azimuthLabels) {
       const phi = sp.userData.basePhi;
       sp.position.set(
-        (1.14 / rSafe) * cosE * Math.cos(phi),
-        (1.14 / rSafe) * cosE * Math.sin(phi),
-        (1.14 * sinE + eyeH) / rSafe,
+        (aziXY / rSafe) * Math.cos(phi),
+        (aziXY / rSafe) * Math.sin(phi),
+        aziZ / rSafe,
       );
     }
 
@@ -1552,10 +1588,32 @@ export class ObserversOpticalVault {
   // comfortable reading strip rather than an edge-hugging line.
   // 85° cap still prevents zenith pile-up.
   _labelBandElevRad(s, fovDeg) {
+    // S206 (v2) — anchor the horizontal band to the LOWEST VISIBLE
+    // altitude ring on the current cadence grid, replacing the
+    // continuous `max(floor, track)` formula. Rule:
+    //   • bottomView = pitch − fov/2, clamped ≥ 0
+    //   • elevCadence from `elevCadenceForFov(fov)`: 15° / 5° / 1°
+    //   • lowestRingE = smallest cadence multiple ≥ bottomView
+    //     (so the ring is actually inside the view, not below it)
+    //   • labelElev   = lowestRingE + 0.5 % of FOV
+    // When the horizon is in view (pitch < fov/2 → bottomView ≤ 0),
+    // `lowestRingE` is 0 and labels sit just above the horizon, which
+    // is the existing behaviour. When the user tilts up past the
+    // horizon, labels snap to ride just above the next cadence-
+    // multiple elevation ring instead of floating at a loose 5%-of-
+    // FOV offset — a true "just above the lowest visible longitude
+    // band" anchor. 85° cap still prevents zenith pile-up.
+    // S206a — drop the small 0.5%-of-FOV margin so the bottom label
+    // strip sits EXACTLY on the lowest visible elevation ring rather
+    // than a hair above it. With the grid now extending to the
+    // horizontal screen edges (the other half of S206a), the strip
+    // reads as a proper row along the ring rather than floating
+    // above a truncated grid segment.
     const pitchDeg = Math.max(0, Math.min(90, s.CameraHeight || 0));
-    const floorDeg = 0.03 * fovDeg;
-    const trackDeg = pitchDeg - 0.35 * fovDeg;
-    const elevDeg  = Math.min(85, Math.max(floorDeg, trackDeg));
+    const bottomView = Math.max(0, pitchDeg - fovDeg / 2);
+    const elevCad = elevCadenceForFov(fovDeg);
+    const lowestRingE = Math.ceil(bottomView / elevCad) * elevCad;
+    const elevDeg  = Math.min(85, lowestRingE);
     return elevDeg * Math.PI / 180;
   }
 
@@ -1593,31 +1651,39 @@ export class ObserversOpticalVault {
     const fovRad = fov * Math.PI / 180;
     const aspect = Math.max(0.5, Math.min(4, c && c.ViewAspect ? c.ViewAspect : 16 / 9));
     const hFovRad = 2 * Math.atan(Math.tan(fovRad / 2) * aspect);
-    const azOffsetDeg = (0.80 * hFovRad / 2) * 180 / Math.PI;
+    const hFovHalfDeg = (hFovRad / 2) * 180 / Math.PI;
 
+    // S206a (follow-up 2) — approaching-meridian anchor + per-label
+    // inverse-projection solve.
+    //
+    // Column snaps to the meridian CLOSEST to the right edge of the
+    // viewport on the current cadence grid. For each elevation
+    // label, the azimuth is solved so the projected screen-X matches
+    // the approaching meridian's screen-X; labels whose geometry
+    // can't reach the target X at the current pitch clamp to the
+    // nearest achievable azimuth (instead of vanishing). Fixed 75°
+    // ceiling prevents near-zenith instability.
     const heading = ((s.ObserverHeading || 0) % 360 + 360) % 360;
-    const labelAz = heading + azOffsetDeg;
-    const phi = Math.atan2(Math.sin(labelAz * Math.PI / 180),
-                          -Math.cos(labelAz * Math.PI / 180));
-    const cosPhi = Math.cos(phi);
-    const sinPhi = Math.sin(phi);
+    const refined = refinedAzCadenceForFov(fov);
+    const cadenceAz = refined ? refined.labelEvery : 15;
+    const rightEdgeAz = heading + hFovHalfDeg;
+    const approachingAz = Math.round(rightEdgeAz / cadenceAz) * cadenceAz;
+
+    // Target screen-X as tan(horizontal-angle). Clamp just inside
+    // the frustum so the column stays visible while the meridian
+    // is still approaching from outside.
+    const tanHalfH = Math.tan(hFovRad / 2);
+    const rawT = Math.tan((approachingAz - heading) * Math.PI / 180);
+    const maxT = 0.98 * tanHalfH;
+    const T    = Math.max(-maxT, Math.min(maxT, rawT));
+
+    const P = Math.max(0, Math.min(90, s.CameraHeight || 0)) * Math.PI / 180;
+    const cosP = Math.cos(P), sinP = Math.sin(P);
+    const R    = Math.sqrt(1 + T * T * cosP * cosP);
+    const delta = Math.atan2(T * cosP, 1);
 
     const cadDeg = elevCadenceForFov(fov);
-    // Per-cadence cap: 75° at the coarse 15° regime (matches the
-    // user's "complete it all the way to 75°" spec), 85° at the
-    // refined 5° / 1° regimes.
-    const cap = (cadDeg === 15) ? 75 : 85;
-
-    // S008b — labels now sit on the FLATTENED VAULT (scale r, r, h),
-    // not on a unit-radius hemisphere. Previously labels were at
-    // (1.14·cosE·cosφ, 1.14·cosE·sinφ, 1.14·sinE + eyeH), which
-    // projected at TRUE astronomical elevation `e` from the camera —
-    // but the actual altitude rings live on the flattened vault and
-    // project at `atan((h/r)·tan(e))`. At `e = 30°` that's a ~8° gap
-    // in the view. Putting the label on the vault ring's own world
-    // coordinate puts the label exactly on the line in the view.
-    // Tiny `+ 0.002` z-lift avoids the label sprite landing exactly
-    // on the ring stroke.
+    const cap = 75;   // fixed elevation ceiling across cadences
     const r = (c && c.OpticalVaultRadius != null) ? c.OpticalVaultRadius : 0.5;
     const h = (c && c.OpticalVaultHeight != null) ? c.OpticalVaultHeight : 0.35;
     const HARD_MIN = 1e-6;
@@ -1631,6 +1697,20 @@ export class ObserversOpticalVault {
       const eRad = e * Math.PI / 180;
       const cosE = Math.cos(eRad);
       const sinE = Math.sin(eRad);
+
+      // Flattened-vault direction elevation e' = atan((h/r)·tan E).
+      const ePrime = Math.atan((h / Math.max(1e-9, r)) * Math.tan(eRad));
+      const tanEp  = Math.tan(ePrime);
+      // Clamp sinArg to [-1, 1]: labels whose rings can't reach the
+      // target screen-X at the current pitch land at the closest
+      // achievable azimuth rather than vanishing.
+      const sinArgRaw = T * tanEp * sinP / R;
+      const sinArg = Math.max(-1, Math.min(1, sinArgRaw));
+      const A_rel = Math.asin(sinArg) + delta;
+      const labelAz = heading * Math.PI / 180 + A_rel;
+      const phi = Math.atan2(Math.sin(labelAz), -Math.cos(labelAz));
+      const cosPhi = Math.cos(phi);
+      const sinPhi = Math.sin(phi);
       const labelXY = r * cosE;
       const labelZ  = h * sinE;
       sp.position.set(
@@ -1638,12 +1718,6 @@ export class ObserversOpticalVault {
         labelXY * sinPhi,
         labelZ + 0.002,
       );
-      // Distance-aware screen-fraction sizing. `dist` is the label's
-      // approximate distance from the camera (camera near observer
-      // origin); scaling by dist keeps each label at a consistent
-      // ~4 % of view height regardless of which vault ring it sits
-      // on (high-elev rings sit closer to the camera so absolute
-      // world height shrinks accordingly).
       const dist = Math.sqrt(labelXY * labelXY + labelZ * labelZ);
       const labelH = Math.max(HARD_MIN, 0.04 * dist * fovRad);
       setSpriteScale(sp, labelH);
@@ -1680,7 +1754,7 @@ export class ObserversOpticalVault {
     this._refinedActiveAz = activeAz;
   }
 
-  _updateRefinedScale(s) {
+  _updateRefinedScale(s, c) {
     const active = !!s.InsideVault && (s.ShowAzimuthRing !== false);
     if (!active) {
       this.refinedAzGroup.visible = false;
@@ -1812,9 +1886,19 @@ export class ObserversOpticalVault {
     if (key === this._refineKey) return;
     this._refineKey = key;
 
-    // Emit ticks across heading ± window. `fov` is the full horizontal
-    // field angle; 0.7·fov overrun gives a small margin either side.
-    const halfWindow = Math.min(180, fov * 0.7 + cad.major);
+    // S206a — windowing driven by HORIZONTAL FOV (viewport width),
+    // not vertical FOV. At 16:9 hFov ≈ 1.78·vFov; the old
+    // `fov·0.7 + cad.major` formula fell short of the viewport's right
+    // edge in the 5°–8° vertical-FOV band (cadence 1°) and at the top
+    // of the 5° cadence band, leaving the refined grid short of the
+    // screen edges — so the right-edge labels tried to anchor to
+    // meridians that weren't actually emitted. Fix: use `hFov/2` plus
+    // a two-cadence-multiple margin so the grid provably extends past
+    // the viewport in every FOV + aspect combination.
+    const fovRadLocal = fov * Math.PI / 180;
+    const aspectLocal = Math.max(0.5, Math.min(4, c && c.ViewAspect ? c.ViewAspect : 16 / 9));
+    const hFovDegLocal = 2 * Math.atan(Math.tan(fovRadLocal / 2) * aspectLocal) * 180 / Math.PI;
+    const halfWindow = Math.min(180, hFovDegLocal / 2 + 2 * cad.major);
     const minAz = headingNow - halfWindow;
     const maxAz = headingNow + halfWindow;
 

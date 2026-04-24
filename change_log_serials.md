@@ -2256,3 +2256,164 @@ S010–S017 work. Tracked for a later serial.
 - **Revert path:** remove the `ShowEclipseShadow` state field;
   restore the direct `eclipseShadow.update(m)` + darken pipe in
   `render/index.js`; remove this entry.
+
+## S206 — Dynamic right-edge vertical strip + lowest-visible-ring anchoring for the bottom azimuth band
+
+- **Date:** 2026-04-23
+- **Files changed:**
+  - `js/render/worldObjects.js` — two function-body refactors in
+    the optical-vault overlay; no structural additions, no new
+    state.
+- **Revision history:**
+  - **v1** moved the fixed offsets (`0.80 → 0.95` of half-hFOV;
+    `0.03 → 0.01` of FOV above horizon; `0.35 → 0.45` of FOV above
+    view-bottom). Closer to target, but still used continuous
+    offsets — not grid-anchored, so labels floated between
+    intersections rather than sitting on them.
+  - **v2** replaced both continuous offsets with grid-snap
+    anchoring. Labels began sitting on actual ring × meridian
+    intersections, computed each frame from viewport geometry.
+    However the grid itself was windowed in VERTICAL FOV
+    (`fov · 0.7 + cad.major`), which falls short of the viewport's
+    right edge in the 5°–8° FOV band and the top of the 5° cadence
+    band, so labels anchored to meridians that weren't actually
+    emitted.
+  - **S206a (current)** fixes the windowing with horizontal FOV,
+    switches the right-edge label from `floor` to `round` to track
+    approaching meridians, and drops the small bottom-label margin
+    so labels sit exactly on the lowest visible ring.
+- **S206a details (three linked edits, all in
+  `js/render/worldObjects.js`):**
+  1. **Meridian windowing uses hFov**
+     (`_updateRefinedScale(s, c)` — new second arg for
+     `c.ViewAspect`). Replaced
+     `halfWindow = fov · 0.7 + cad.major` with
+     `halfWindow = hFov / 2 + 2 · cad.major`, where `hFov` is the
+     true horizontal field angle derived from `fov` and the
+     viewport aspect. Guarantees the emitted meridian arcs extend
+     at least two cadence multiples past the screen edges at every
+     FOV × aspect combination, so the edge strips have real grid
+     lines to anchor to.
+  2. **Right-edge labels anchor to the approaching meridian via
+     per-label azimuth solve** (`_updateElevScale`).
+     - `approachingAz = round((heading + hFov/2) / cadenceAz) · cadenceAz`
+       selects the meridian closest to the right edge (inside or
+       just outside).
+     - Per-label azimuth solve places each elevation's label so
+       its projected screen-X matches the approaching meridian's
+       screen-X: solve `sin A′ − T cos P cos A′ = T tan e′ sin P`
+       for `A′ = atan2(T cos P, 1) + asin(T·tan e′·sin P / R)`,
+       where `T = tan(approachingAz − heading)` (clamped to just
+       inside the frustum), `R = √(1 + T² cos² P)`, and
+       `e′ = atan((h/r)·tan E)` is the flattened-vault direction
+       elevation for the ring at true elevation E.
+     - `sinArg` clamped to `[−1, +1]` instead of hiding: labels
+       whose rings can't reach the target screen-X at the current
+       pitch land at the closest achievable azimuth rather than
+       vanishing.
+     - Fixed `cap = 75°` elevation ceiling across all cadences
+       (was 75° coarse / 85° refined). Stops labels from riding
+       off the top of the view at steep pitch and keeps the column
+       clear of the zenith convergence zone.
+     - **ff3 (reverted)**: a camera-frame positioning attempt with
+       hard-fixed `x_cam` and clamped `y_cam` was tried and
+       reverted at user request ("didn't work"). Current shipped
+       form is the ff2 per-label azimuth solver above.
+- **S206c (2026-04-24) — Optical → Heavenly transition fix +
+  about.md feature breakdown.**
+  - **Bug:** transitioning back from Optical Vault to Heavenly Vault
+    spread the azimuth-degree ring out up the optical-vault cap. In
+    `ObserversOpticalVault.update()` the band elevation for the
+    cardinals + coarse-azimuth labels is sourced from
+    `_labelBandElevRad(s, fovDeg)`, which uses
+    `state.CameraHeight` as first-person pitch. In Heavenly mode
+    the same key is the ORBIT elevation above the disc (typically
+    25–45°), so the S206a "lowest visible ring" rule snapped
+    `bandElev` to 20°, 45°, etc. — labels rode the cap instead of
+    its rim.
+  - **Fix:** single conditional in `_updateCardinals`:
+        const bandElev = s.InsideVault
+          ? this._labelBandElevRad(s, bandFovDeg)
+          : 0.03;
+    Optical still uses the full S206a pitch-tracking / lowest-ring
+    rule; Heavenly falls back to a small fixed 0.03 rad (≈ 1.7°)
+    horizon offset so the degree ring always sits on the cap's rim
+    when viewed from the orbit camera. No mode-specific anchoring
+    differences beyond that; degree values, spacing, and
+    attachment to the shared azimuth framework are unchanged.
+  - **Files changed:** `js/render/worldObjects.js` (one conditional
+    added in `ObserversOpticalVault.update` around the
+    `bandElev` assignment); `about.md` (rewritten — see below).
+  - **Documentation:** `about.md` rewritten end-to-end to
+    document the current feature set. Now includes a full tab-by-
+    tab breakdown of View / Time / Show / Tracker / Demos,
+    individual control descriptions, HUD-panel rundown, URL-state
+    persistence note, and third-party credits (Espenak, van Gent,
+    Bretagnon & Francou, Sonia Keys + commenthol, Meeus, Shane,
+    Bislin). Going forward, `about.md` is the source-of-truth
+    feature doc; new features get a corresponding entry there as
+    part of the same serial.
+  - **Revert path (S206c only):** remove the `s.InsideVault ? … : 0.03`
+    ternary and restore
+    `const bandElev = this._labelBandElevRad(s, bandFovDeg);`;
+    replace `about.md` with the pre-S206c version from git; remove
+    this sub-block.
+  - **S206c (follow-up, 2026-04-24) — snap labels to the cap rim
+    in Heavenly.** Initial S206c fix corrected the elevation offset
+    but the cardinals + coarse azimuth labels still floated at
+    world radius **1.14** while the optical-vault cap's horizontal
+    rim is at world radius `r ≈ 0.5`. From the orbit camera that
+    produced a giant outer ring of degree numerals around the
+    small cap (image #173 in Alan's review). Replaced the
+    radius-1.14 placement in Heavenly with a flattened-vault
+    projection onto the cap surface:
+        if (s.InsideVault) {
+          posXY = cardR * cosE;
+          posZ  = cardR * sinE + eyeH;
+        } else {
+          const ePrime = Math.atan((h / r) * Math.tan(bandElev));
+          posXY = r * Math.cos(ePrime);
+          posZ  = h * Math.sin(ePrime);
+        }
+    Same `e' = atan((h/r)·tan E)` projection the elevation-scale
+    labels already use (`_updateElevScale`), so the degree ring
+    now coincides with the cap rim at the chosen `bandElev`
+    (≈ 1.7°). Optical view is unchanged: it still uses
+    `cardR = 1.14` / `1.14` for the floating reading-band.
+    **Files:** `js/render/worldObjects.js` (~30 lines around the
+    cardinals + azi-label position loops in `update()`).
+    **Revert path (follow-up only):** restore the original
+    `(cardR / rSafe) * cosE * b[i]` and
+    `(1.14 / rSafe) * cosE * Math.cos(phi)` position formulas;
+    drop the `posXY / posZ / aziXY / aziZ` block.
+  3. **Bottom label strip sits on the ring**
+     (`_labelBandElevRad`). Removed the residual `0.5 % of FOV`
+     margin so `labelElev = lowestRingE` exactly. When horizon is
+     visible → labels on the horizon; when tilted up past horizon
+     → labels sit on the next visible ring (no floating gap).
+- **What changed visually (v2 + S206a combined):**
+  - Right-edge 0° / 15° / 30° / 45° / 60° / 75° labels: on a real
+    meridian at the right edge of the viewport. Labels track the
+    **closest** cadence-grid meridian as the user pans; the strip
+    rides the edge instead of lagging inward.
+  - Bottom azimuth degree labels + N / E / S / W cardinals: sit
+    exactly on the lowest visible elevation ring (no residual
+    margin). With horizon in view → labels ON the horizon; when
+    tilted up past horizon → labels on the next visible ring
+    (15° / 30° / etc. at coarse cadence; 5° or 1° at refined).
+  - **Grid extends to the screen edges** in every FOV regime —
+    previously the 5°–8° vertical-FOV band (1° cadence) and the
+    top of the 5° cadence band produced a narrow central grid
+    strip; now meridians are emitted across the full horizontal
+    FOV + 2 cadence units of margin.
+- **What did NOT change:**
+  - Ring / meridian geometry; cadence ladder; labelled angular
+    values; orientation persistence; zoom ladder; active-meridian
+    highlight; refined-az ticks; tracker HUD; eclipse demos.
+- **Revert path (S206a):** restore `halfWindow = fov · 0.7 + cad.major`
+  and the `_updateRefinedScale(s)` one-arg signature; restore
+  `Math.floor` on the right-edge label snap; restore
+  `labelElev = lowestRingE + 0.005 · fovDeg`.
+- **Revert path (full S206):** also restore the continuous-offset
+  calculations (`azOffsetDeg = 0.80 · hFov/2`; `floorDeg = 0.03 · fov`;
+  `trackDeg = pitch − 0.35 · fov`); remove this entry.

@@ -500,6 +500,18 @@ Format:
 - **Revert:** `git checkout v-s000256 -- js/render/worldObjects.js
   js/render/constellations.js`.
 
+## S295 — New Tracker Options sub-menu
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/ui/controlPanel.js`.
+- **Change:** Tracker tab gets a new "Tracker Options" group
+  between "Ephemeris" and "Celestial Bodies". It holds the
+  three rows that previously sat at the top of "Celestial
+  Bodies": Clear All Tracked button, Specified Tracker Mode
+  checkbox, GP Override checkbox. "Celestial Bodies" now
+  contains only the Planets button grid.
+- **Revert:** `git checkout v-s000294 -- js/ui/controlPanel.js`.
+
 ## S294 — Reorder compass buttons N E S W → N S E W
 
 - **Date:** 2026-04-24

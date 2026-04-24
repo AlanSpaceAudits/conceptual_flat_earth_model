@@ -374,11 +374,13 @@ const FIELD_GROUPS = [
         { key: 'StarApplyAberration', label: 'Aberration',  bool: true },
         { key: 'StarTrepidation',     label: 'Trepidation', bool: true },
       ]},
-      { title: 'Celestial Bodies', rows: [
+      { title: 'Tracker Options', rows: [
         { label: '', buttonLabel: 'Clear All Tracked',
           onClick: (m) => m.setState({ TrackerTargets: [] }) },
         { key: 'SpecifiedTrackerMode', label: 'Specified Tracker Mode', bool: true },
         { key: 'TrackerGPOverride',   label: 'GP Override',          bool: true },
+      ]},
+      { title: 'Celestial Bodies', rows: [
         { key: 'TrackerTargets', label: 'Planets', buttonGrid: [
           { value: 'sun',     label: 'Sun',     color: '#ffc844' },
           { value: 'moon',    label: 'Moon',    color: '#f4f4f4' },

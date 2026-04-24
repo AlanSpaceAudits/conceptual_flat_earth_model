@@ -532,6 +532,19 @@ Format:
   js/render/index.js js/ui/controlPanel.js js/ui/urlState.js`;
   delete `js/core/satellites.js`.
 
+## S375 — Add .nojekyll to fix Pages 404 on _namedStarsHyg.js
+
+- **Date:** 2026-04-24
+- **Files changed:** `.nojekyll` (new),
+  `change_log_serials.md`.
+- **Change:** GitHub Pages' default Jekyll build silently
+  drops files whose names start with `_` (treats them as
+  partials), causing `js/core/_namedStarsHyg.js` to 404 on
+  the deployed site even though it lives in the repo. Adding
+  an empty `.nojekyll` at the project root disables the Jekyll
+  pass and makes Pages serve the file tree verbatim.
+- **Revert:** `rm .nojekyll`.
+
 ## S374 — HQ AE polar (day / night) added
 
 - **Date:** 2026-04-24

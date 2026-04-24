@@ -252,6 +252,13 @@ function defaultState() {
     // may set these per-event if wanted.
     EclipseSunRadiusFE:      null,
     EclipseMoonRadiusFE:     null,
+    // S205 — eclipse ground-shadow feature temporarily disabled.
+    // S202's derived cone-plane shadow + observer darkening only run
+    // when this flag is true. Default `false` → feature is inert
+    // until we return to it. The eclipse demos themselves continue
+    // to run (date lists, ephemeris-linked playback, Meeus warning,
+    // autoplay queue) — just without the on-disc shadow render.
+    ShowEclipseShadow:       false,
     // S201 — deprecated ground-radius overrides from the circular
     // decal. Kept for URL-state back-compat; the S202 renderer
     // ignores them.

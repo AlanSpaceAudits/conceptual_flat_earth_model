@@ -246,11 +246,20 @@ export class Renderer {
     }
     this.discGrid.update(m);
     this.shadow.update(m);
-    this.eclipseShadow.update(m);
-    // S201 — observer darkening inside the solar shadow path.
-    // Compute the factor here and feed SceneManager to dim lights.
-    const eclipseDark = this.eclipseShadow.computeObserverDarkFactor(m);
-    this.sm.setEclipseDarkFactor?.(eclipseDark);
+    // S205 — eclipse shadow + observer darkening feature-flagged off
+    // by default (`state.ShowEclipseShadow`). The mesh + darken
+    // calculations are skipped entirely; the rest of the eclipse
+    // demo system (date selection, ephemeris-linked playback,
+    // Meeus warning banner, autoplay queue) continues to run.
+    // Re-enable by flipping the state default to true.
+    if (s.ShowEclipseShadow) {
+      this.eclipseShadow.update(m);
+      const eclipseDark = this.eclipseShadow.computeObserverDarkFactor(m);
+      this.sm.setEclipseDarkFactor?.(eclipseDark);
+    } else {
+      this.eclipseShadow.group.visible = false;
+      this.sm.setEclipseDarkFactor?.(0);
+    }
     this.latLines.update(m);
     this.longitudeRing.update(m);
 

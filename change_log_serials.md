@@ -2225,3 +2225,34 @@ S010–S017 work. Tracked for a later serial.
 - **S202 live instant-shadow unchanged.** Other unrelated serials
   (S200 demo system, S201 pause/resume + Meeus banner, S202 cone-
   plane live shadow, S203 FE Saros predictor if present) untouched.
+
+## S205 — Disable eclipse ground-shadow feature (temporary)
+
+- **Date:** 2026-04-23
+- **Files changed:**
+  - `js/core/app.js` — new state field `ShowEclipseShadow`, default
+    `false`.
+  - `js/render/index.js` — `Renderer.frame()` gates the S202
+    `eclipseShadow.update(m)` call + the
+    `computeObserverDarkFactor` → `SceneManager.setEclipseDarkFactor`
+    pipe on `state.ShowEclipseShadow`. When false, the shadow
+    group is hidden and the dark factor is forced to 0.
+- **What still works:** the eclipse demo system itself is
+  unaffected — date selection, ephemeris-linked refinement,
+  ephemeris-driven sun/moon playback, Meeus warning banner,
+  pause/resume, autoplay queue all continue to run. Eclipse state
+  fields (`EclipseActive`, `EclipseKind`, `EclipseMagnitude`, etc.)
+  are still set by the demo intro; just no ground render or scene
+  dim.
+- **Why:** temporary shelving. S201's first shadow attempt was a
+  circular decal; S202 replaced it with a derived cone-plane
+  ellipse; S204 added a full path sweep and was reverted. Disabling
+  the rendered feature for now so it doesn't distract from other
+  work on the sim. Will return to it with fresh direction on what
+  the visual should look like.
+- **Re-enable:** flip `ShowEclipseShadow` default to `true` in
+  `app.js`, or add a `row.bool` toggle to the Ephemeris group in
+  `controlPanel.js` so it can be switched live.
+- **Revert path:** remove the `ShowEclipseShadow` state field;
+  restore the direct `eclipseShadow.update(m)` + darken pipe in
+  `render/index.js`; remove this entry.

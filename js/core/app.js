@@ -114,7 +114,7 @@ function defaultState() {
     ShowCelestialPoles:      false,
     DarkBackground:          true,
     ShowLiveEphemeris:       false,
-    MoonPhaseExpanded:       true,
+    MoonPhaseExpanded:       false,
 
     InsideVault: false,
 

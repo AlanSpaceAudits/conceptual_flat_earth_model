@@ -500,6 +500,17 @@ Format:
 - **Revert:** `git checkout v-s000256 -- js/render/worldObjects.js
   js/render/constellations.js`.
 
+## S275 — Default moon-phase widget to collapsed
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/core/app.js`, `js/ui/urlState.js`.
+- **Change:** `MoonPhaseExpanded` default flipped `true` → `false`
+  so the moon canvas + label are hidden on first load; only the
+  "Live Moon Phases" header is visible until the user clicks it.
+  `URL_SCHEMA_VERSION` bumped `274` → `275` to drop stale hashes.
+- **Revert:** `git checkout v-s000274 -- js/core/app.js
+  js/ui/urlState.js`.
+
 ## S274 — Collapsible moon-phase widget; Live Ephem button flows inside #hud
 
 - **Date:** 2026-04-24

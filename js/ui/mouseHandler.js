@@ -83,7 +83,7 @@ function resolveTargetAngles(targetId, c) {
   if (targetId.startsWith('star:')) {
     const id = targetId.slice(5);
     for (const list of [
-      c.CelNavStars, c.CataloguedStars, c.BlackHoles, c.Quasars, c.Galaxies,
+      c.CelNavStars, c.CataloguedStars, c.BlackHoles, c.Quasars, c.Galaxies, c.Satellites,
     ]) {
       if (!list) continue;
       const found = list.find((x) => x.id === id);
@@ -159,39 +159,55 @@ function displayNameFor(id, c) {
 // its angles so the tooltip still shows az/el. STM hides anything not
 // in the allow-set (TrackerTargets ∪ FollowTarget) to match the
 // render-layer visibility rules.
+// Each candidate carries up to two world-space hit-test coordinates:
+// `domeCoord` (vault-of-heavens true-source position — only valid when
+// ShowTruePositions is on) and `opticalCoord` (the observer's optical
+// vault projection — only valid when ShowOpticalVault is on and the
+// body is above the horizon). findNearestInHeavenly projects whichever
+// is available and picks the closer screen-space match, so users can
+// click either layer in Heavenly / free-cam mode.
 function collectHeavenlyCandidates(c, state) {
-  // Dome markers are hidden when ShowTruePositions is off, so nothing
-  // to hover; return early. InsideVault callers never use this path.
-  if (state.ShowTruePositions === false) return [];
   const stm = !!state.SpecifiedTrackerMode;
   const allow = stm
     ? new Set(Array.isArray(state.TrackerTargets) ? state.TrackerTargets : [])
     : null;
   if (stm && state.FollowTarget) allow.add(state.FollowTarget);
   const passes = (id) => !stm || allow.has(id);
+  const domeOn    = state.ShowTruePositions !== false;
+  const opticalOn = !!state.ShowOpticalVault;
+  if (!domeOn && !opticalOn) return [];
+
+  const pushBody = (out, id, domeCoord, opticalCoord, angles) => {
+    if (!passes(id)) return;
+    const above = angles && angles.elevation > 0;
+    const dome = domeOn ? domeCoord : null;
+    const optical = (opticalOn && above) ? opticalCoord : null;
+    if (!dome && !optical) return;
+    out.push({ id, domeCoord: dome, opticalCoord: optical, angles });
+  };
 
   const out = [];
-  if (c.SunVaultCoord && passes('sun')) {
-    out.push({ id: 'sun', coord: c.SunVaultCoord, angles: c.SunAnglesGlobe });
+  if (c.SunVaultCoord) {
+    pushBody(out, 'sun', c.SunVaultCoord, c.SunOpticalVaultCoord, c.SunAnglesGlobe);
   }
-  if (c.MoonVaultCoord && passes('moon')) {
-    out.push({ id: 'moon', coord: c.MoonVaultCoord, angles: c.MoonAnglesGlobe });
+  if (c.MoonVaultCoord) {
+    pushBody(out, 'moon', c.MoonVaultCoord, c.MoonOpticalVaultCoord, c.MoonAnglesGlobe);
   }
   if (state.ShowPlanets && c.Planets) {
     for (const [name, p] of Object.entries(c.Planets)) {
-      if (!p || !p.vaultCoord || !passes(name)) continue;
-      out.push({ id: name, coord: p.vaultCoord, angles: p.anglesGlobe });
+      if (!p || !p.vaultCoord) continue;
+      pushBody(out, name, p.vaultCoord, p.opticalVaultCoord, p.anglesGlobe);
     }
   }
   if (state.ShowStars) {
     for (const list of [
-      c.CelNavStars, c.CataloguedStars, c.BlackHoles, c.Quasars, c.Galaxies,
+      c.CelNavStars, c.CataloguedStars, c.BlackHoles, c.Quasars, c.Galaxies, c.Satellites,
     ]) {
       if (!list) continue;
       for (const s of list) {
         const id = `star:${s.id}`;
-        if (!s.vaultCoord || !passes(id)) continue;
-        out.push({ id, coord: s.vaultCoord, angles: s.anglesGlobe });
+        if (!s.vaultCoord) continue;
+        pushBody(out, id, s.vaultCoord, s.opticalVaultCoord, s.anglesGlobe);
       }
     }
   }
@@ -232,10 +248,20 @@ function findNearestInHeavenly(mouseX, mouseY, canvas, c, state, camera) {
   const candidates = collectHeavenlyCandidates(c, state);
   let best = null, bestD = HEAVENLY_HIT_PX;
   for (const cand of candidates) {
-    const pt = projectToCanvasPixels(cand.coord, camera, canvas);
-    if (!pt) continue;
-    const d = Math.hypot(pt.x - mouseX, pt.y - mouseY);
-    if (d < bestD) { bestD = d; best = { id: cand.id, angles: cand.angles }; }
+    if (cand.domeCoord) {
+      const pt = projectToCanvasPixels(cand.domeCoord, camera, canvas);
+      if (pt) {
+        const d = Math.hypot(pt.x - mouseX, pt.y - mouseY);
+        if (d < bestD) { bestD = d; best = { id: cand.id, angles: cand.angles }; }
+      }
+    }
+    if (cand.opticalCoord) {
+      const pt = projectToCanvasPixels(cand.opticalCoord, camera, canvas);
+      if (pt) {
+        const d = Math.hypot(pt.x - mouseX, pt.y - mouseY);
+        if (d < bestD) { bestD = d; best = { id: cand.id, angles: cand.angles }; }
+      }
+    }
   }
   return best;
 }

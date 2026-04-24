@@ -532,6 +532,20 @@ Format:
   js/render/index.js js/ui/controlPanel.js js/ui/urlState.js`;
   delete `js/core/satellites.js`.
 
+## S324 — Pause during a demo no longer triggers the DE405-default reset
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/demos/index.js`.
+- **Change:** The S301 snap-to-DE405 tick was firing on any
+  `isPlaying() → !isPlaying()` transition, which includes the
+  pause state. Now tracks `animator.running` separately: the
+  reset only fires when `running` flips true → false (actual
+  end of demo / explicit stop). Pause via the bar's ▶/⏸ no
+  longer resets time; End Demo still stops and resets.
+  Queue-advance also guards on `!isPaused()` so a paused demo
+  doesn't fall through to the next queued entry.
+- **Revert:** `git checkout v-s000323 -- js/demos/index.js`.
+
 ## S323 — Feature-search swaps the active popup to the target tab
 
 - **Date:** 2026-04-24

@@ -21,21 +21,25 @@ export class Demos {
     this._queue = null;
     this._queueCursor = 0;
 
-    // Poll the animator each rAF; when it stops while a queue is
-    // active, advance. When it stops with no queue pending, snap the
-    // sim back onto the DE405 default (date + BodySource) so the next
-    // user interaction isn't stuck on whatever pipeline the finished
-    // demo left active.
+    // Poll the animator each rAF. Two separate transitions matter:
+    //   running → !running  → demo truly ended (queue empty, or
+    //     stop() called). Snap to DE405 default ONLY here, so
+    //     pausing via the bar's ▶/⏸ button doesn't reset time.
+    //   wasPlaying && !nowPlaying while running → advance queue.
     let wasPlaying = false;
+    let wasRunning = false;
     const tick = () => {
+      const nowRunning = this.animator.running;
       const nowPlaying = this.animator.isPlaying();
-      if (wasPlaying && !nowPlaying) {
+      if (wasRunning && !nowRunning) {
         const queueDone = !this._queue
           || this._queueCursor >= this._queue.length;
         if (queueDone) this._snapToDefaultEphemeris();
       }
+      wasRunning = nowRunning;
       wasPlaying = nowPlaying;
-      if (this._queue && !nowPlaying && this._queueCursor < this._queue.length) {
+      if (this._queue && !nowPlaying && !this.animator.isPaused()
+          && this._queueCursor < this._queue.length) {
         const next = this._queue[this._queueCursor++];
         // Defer to microtask so any state-mutation hooks settle.
         Promise.resolve().then(() => this._playSingle(next, /* fromQueue */ true));

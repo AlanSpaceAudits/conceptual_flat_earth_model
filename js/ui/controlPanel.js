@@ -1236,6 +1236,16 @@ export function buildControlPanel(host, model, demos) {
   });
   compassControls.appendChild(btnTrue);
 
+  const btnObserver = document.createElement('button');
+  btnObserver.className = 'time-btn observer-btn';
+  btnObserver.type = 'button';
+  btnObserver.textContent = '📍';
+  btnObserver.title = 'Jump to Observer (lat / long / elevation / heading)';
+  btnObserver.addEventListener('click', () => {
+    featureOpen.fn('View', 'Observer');
+  });
+  compassControls.appendChild(btnObserver);
+
   const compassBtns = [
     { label: 'N', heading: 0   },
     { label: 'S', heading: 180 },

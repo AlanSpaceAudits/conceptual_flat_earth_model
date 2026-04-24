@@ -532,6 +532,19 @@ Format:
   js/render/index.js js/ui/controlPanel.js js/ui/urlState.js`;
   delete `js/core/satellites.js`.
 
+## S336 — 📍 quick-button jumps straight to Observer in the View tab
+
+- **Date:** 2026-04-24
+- **Files changed:** `css/styles.css`, `js/ui/controlPanel.js`.
+- **Change:** New `.observer-btn` (📍) appended to
+  `.compass-controls` after the 🌙 / 🎯 / ◉ group. Click calls
+  the same `featureOpen.fn` the feature-search uses, passing
+  `('View', 'Observer')`: opens the View tab popup and expands
+  the Observer group so lat / long / elevation / heading are
+  visible instantly.
+- **Revert:** `git checkout v-s000335 -- css/styles.css
+  js/ui/controlPanel.js`.
+
 ## S335 — Move True Positions + GP Path to Tracker Options; single master toggle
 
 - **Date:** 2026-04-24

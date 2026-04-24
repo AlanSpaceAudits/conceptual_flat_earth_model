@@ -12,6 +12,27 @@ import { GALAXIES }    from '../core/galaxies.js';
 import { listProjections } from '../core/projections.js';
 import { Autoplay } from './autoplay.js';
 
+const PLANET_NAMES = {
+  mercury: 'Mercury', venus: 'Venus', mars: 'Mars', jupiter: 'Jupiter',
+  saturn: 'Saturn', uranus: 'Uranus', neptune: 'Neptune',
+};
+
+function resolveTrackName(targetId) {
+  if (!targetId) return null;
+  if (targetId === 'sun')  return 'Sun';
+  if (targetId === 'moon') return 'Moon';
+  if (PLANET_NAMES[targetId]) return PLANET_NAMES[targetId];
+  if (targetId.startsWith('star:')) {
+    const id = targetId.slice(5);
+    for (const arr of [CEL_NAV_STARS, CATALOGUED_STARS, BLACK_HOLES, QUASARS, GALAXIES]) {
+      const hit = arr.find((e) => e.id === id);
+      if (hit) return hit.name;
+    }
+    return id;
+  }
+  return targetId;
+}
+
 // Eclipse cache: the search costs ~10ms worst case, so we memoise until the
 // current DateTime passes the cached event (or jumps backward).
 let _eclipseCache = null;
@@ -755,26 +776,32 @@ export function buildControlPanel(host, model, demos) {
   const infoBar = document.createElement('div');
   infoBar.id = 'info-bar';
   infoBar.innerHTML = `
-    <span class="info-slot" data-k="lat">—</span>
-    <span class="info-slot" data-k="lon">—</span>
-    <span class="info-slot" data-k="el">—</span>
-    <span class="info-slot" data-k="az">—</span>
-    <span class="info-sep">│</span>
-    <span class="info-slot" data-k="mel">Mouse El: —</span>
-    <span class="info-slot" data-k="maz">Mouse Az: —</span>
-    <span class="info-sep">│</span>
-    <span class="info-slot" data-k="eph">ephem: —</span>
-    <span class="info-sep">│</span>
-    <span class="info-slot" data-k="time">—</span>
+    <div class="info-row info-row-top">
+      <span class="info-slot" data-k="lat">—</span>
+      <span class="info-slot" data-k="lon">—</span>
+      <span class="info-slot" data-k="el">—</span>
+      <span class="info-slot" data-k="az">—</span>
+      <span class="info-sep">│</span>
+      <span class="info-slot" data-k="mel">Mouse El: —</span>
+      <span class="info-slot" data-k="maz">Mouse Az: —</span>
+      <span class="info-sep">│</span>
+      <span class="info-slot" data-k="eph">ephem: —</span>
+      <span class="info-sep">│</span>
+      <span class="info-slot" data-k="time">—</span>
+    </div>
+    <div class="info-row info-row-bot">
+      <span class="info-slot info-track" data-k="track">Tracking: —</span>
+    </div>
   `;
-  const slotLat  = infoBar.querySelector('[data-k="lat"]');
-  const slotLon  = infoBar.querySelector('[data-k="lon"]');
-  const slotEl   = infoBar.querySelector('[data-k="el"]');
-  const slotAz   = infoBar.querySelector('[data-k="az"]');
-  const slotMel  = infoBar.querySelector('[data-k="mel"]');
-  const slotMaz  = infoBar.querySelector('[data-k="maz"]');
-  const slotEph  = infoBar.querySelector('[data-k="eph"]');
-  const slotTime = infoBar.querySelector('[data-k="time"]');
+  const slotLat   = infoBar.querySelector('[data-k="lat"]');
+  const slotLon   = infoBar.querySelector('[data-k="lon"]');
+  const slotEl    = infoBar.querySelector('[data-k="el"]');
+  const slotAz    = infoBar.querySelector('[data-k="az"]');
+  const slotMel   = infoBar.querySelector('[data-k="mel"]');
+  const slotMaz   = infoBar.querySelector('[data-k="maz"]');
+  const slotEph   = infoBar.querySelector('[data-k="eph"]');
+  const slotTime  = infoBar.querySelector('[data-k="time"]');
+  const slotTrack = infoBar.querySelector('[data-k="track"]');
   const fmtLat = (v) => `Lat ${v >= 0 ? '+' : ''}${v.toFixed(4)}°`;
   const fmtLon = (v) => `Lon ${v >= 0 ? '+' : ''}${v.toFixed(4)}°`;
   const fmtSignedDeg = (v) => `${v >= 0 ? '+' : ''}${v.toFixed(2)}°`;
@@ -799,6 +826,7 @@ export function buildControlPanel(host, model, demos) {
       : 'Mouse Az: —';
     slotEph.textContent = `ephem: ${EPHEM_NAMES[s.BodySource] || s.BodySource || '—'}`;
     slotTime.textContent = dateTimeToString(s.DateTime);
+    slotTrack.textContent = `Tracking: ${resolveTrackName(s.FollowTarget) || '—'}`;
   };
   model.addEventListener('update', refreshInfoBar);
   refreshInfoBar();

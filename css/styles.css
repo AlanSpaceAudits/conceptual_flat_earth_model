@@ -55,7 +55,7 @@ header .info-popup p:last-child { margin-bottom: 0; }
 #logo {
   position: absolute;
   right: 16px;
-  bottom: 86px;
+  bottom: 104px;
   width: clamp(40px, 12vmin, 180px);
   height: clamp(40px, 12vmin, 180px);
   pointer-events: none;
@@ -195,12 +195,13 @@ header .info-popup p:last-child { margin-bottom: 0; }
 #info-bar {
   position: absolute;
   left: 0; right: 0; bottom: 44px;
-  height: 26px;
+  height: 44px;
   border-top: 1px solid var(--border);
   display: flex;
-  align-items: center;
-  gap: 18px;
-  padding: 0 14px;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  padding: 2px 14px;
   font: 12px/1 ui-monospace, Menlo, monospace;
   color: #d6deed;
   background: transparent;
@@ -208,18 +209,20 @@ header .info-popup p:last-child { margin-bottom: 0; }
   z-index: 31;
   text-shadow: 0 0 2px rgba(0, 0, 0, 0.9);
 }
+#info-bar .info-row { display: flex; align-items: center; gap: 18px; }
 #info-bar .info-slot { white-space: nowrap; }
 #info-bar .info-sep { color: rgba(214, 222, 237, 0.35); }
+#info-bar .info-track { color: #f4a640; }
 
 #bottom-bar {
   position: absolute;
   bottom: 0; left: 0; right: 0;
-  height: 70px;
+  height: 88px;
   box-sizing: border-box;
   display: flex;
   align-items: center;
   gap: 18px;
-  padding: 26px 14px 0;
+  padding: 44px 14px 0;
   background: rgba(14, 18, 26, 0.92);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
@@ -296,7 +299,7 @@ header .info-popup p:last-child { margin-bottom: 0; }
 
 #tab-popups {
   position: absolute;
-  left: 0; right: 0; bottom: 70px;
+  left: 0; right: 0; bottom: 88px;
   height: 0;   /* anchor only; popups position themselves */
   z-index: 25;
   pointer-events: none;

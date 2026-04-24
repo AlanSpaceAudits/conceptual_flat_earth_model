@@ -500,6 +500,24 @@ Format:
 - **Revert:** `git checkout v-s000256 -- js/render/worldObjects.js
   js/render/constellations.js`.
 
+## S286 — Info bar gets a second row with "Tracking: <name>"
+
+- **Date:** 2026-04-24
+- **Files changed:** `css/styles.css`, `js/ui/controlPanel.js`.
+- **Change:**
+  - `#info-bar` switched to `flex-direction: column` with two
+    `.info-row` children. Top row holds the original slots
+    (Lat, Lon, El, Az, Mouse El/Az, ephem, time). New bottom
+    row holds a `Tracking: —` slot that reads from
+    `state.FollowTarget` and resolves the id to a display name
+    via a new `resolveTrackName()` helper (maps sun / moon /
+    planets / all five star catalogues).
+  - `#info-bar` height 26 → 44 px; `#bottom-bar` height 70 → 88
+    px with `padding-top: 44px`; `#tab-popups` bottom 70 → 88;
+    `#logo` bottom 86 → 104.
+- **Revert:** `git checkout v-s000285 -- css/styles.css
+  js/ui/controlPanel.js`.
+
 ## S285 — N / E / S / W quick-turn buttons on the bottom bar
 
 - **Date:** 2026-04-24

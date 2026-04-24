@@ -500,6 +500,14 @@ Format:
 - **Revert:** `git checkout v-s000256 -- js/render/worldObjects.js
   js/render/constellations.js`.
 
+## S308 — Mirror trimmed Walter Bislin credit into README.md
+
+- **Date:** 2026-04-24
+- **Files changed:** `README.md`.
+- **Change:** Walter Bislin bullet reduced to "visualization
+  inspiration" to match `about.md`.
+- **Revert:** `git checkout v-s000307 -- README.md`.
+
 ## S307 — Trim Walter Bislin credit to "visualization inspiration"
 
 - **Date:** 2026-04-24

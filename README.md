@@ -39,8 +39,7 @@ pointed the way:
 
 * **Shane St. Pierre** — for the conceptual framing and the push to actually
   build a working, interactive demonstration of the model.
-* **Walter Bislin** — for the original numerical constants, projection
-  choices, and the visual conventions that this port preserves.
+* **Walter Bislin** — visualization inspiration.
 * **Fred Espenak** — for the public geocentric ephemeris tables on
   [AstroPixels](https://www.astropixels.com/ephemeris/ephemeris.html),
   computed from JPL DE405 and bundled here as the "DE405" ephemeris

@@ -500,6 +500,21 @@ Format:
 - **Revert:** `git checkout v-s000256 -- js/render/worldObjects.js
   js/render/constellations.js`.
 
+## S306 — Move body-search box next to the View tab
+
+- **Date:** 2026-04-24
+- **Files changed:** `css/styles.css`, `js/ui/controlPanel.js`.
+- **Change:**
+  - Search box extracted from `.bar-left` and dropped into a
+    new `.search-host` container between `.compass-controls`
+    and `.tabs`, so the input sits immediately to the left of
+    the View tab.
+  - Width tightened 260 → 220 px; `.bar-left` goes back to
+    simple spacer duty, `.search-host` uses `flex: 0 0 auto`
+    with 8 px right margin.
+- **Revert:** `git checkout v-s000305 -- css/styles.css
+  js/ui/controlPanel.js`.
+
 ## S305 — Hover + click work in Heavenly / free-cam mode too
 
 - **Date:** 2026-04-24

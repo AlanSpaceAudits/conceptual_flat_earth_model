@@ -232,7 +232,8 @@ header .info-popup p:last-child { margin-bottom: 0; }
 }
 #bottom-bar .bar-left { flex: 1 1 0; min-width: 0; display: flex; align-items: center; }
 
-.body-search { position: relative; width: 260px; max-width: 40%; }
+#bottom-bar .search-host { flex: 0 0 auto; margin-right: 8px; }
+.body-search { position: relative; width: 220px; }
 .body-search-input {
   width: 100%;
   box-sizing: border-box;

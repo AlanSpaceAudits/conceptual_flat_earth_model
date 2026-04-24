@@ -991,7 +991,6 @@ export function buildControlPanel(host, model, demos) {
 
   const barLeft = document.createElement('div');
   barLeft.className = 'bar-left';
-  attachBodySearch(barLeft, model);
 
   const timeControls = document.createElement('div');
   timeControls.className = 'time-controls';
@@ -1055,11 +1054,15 @@ export function buildControlPanel(host, model, demos) {
   });
 
 
+  const searchHost = document.createElement('div');
+  searchHost.className = 'search-host';
+  attachBodySearch(searchHost, model);
+
   const tabsBar = document.createElement('div');
   tabsBar.className = 'tabs';
   tabsBar.setAttribute('role', 'tablist');
 
-  bar.append(barLeft, timeControls, compassControls, tabsBar);
+  bar.append(barLeft, timeControls, compassControls, searchHost, tabsBar);
 
   const refreshVaultBtn = () => {
     const inVault = !!model.state.InsideVault;

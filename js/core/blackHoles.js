@@ -1,0 +1,23 @@
+// Notable black holes, J2000.0.
+//   raH   — right ascension, hours (0 ≤ raH < 24)
+//   decD  — declination, degrees (−90 ≤ decD ≤ +90)
+//   mag   — apparent visual magnitude of host/vicinity (nullable)
+// Entry shape matches CEL_NAV_STARS / CATALOGUED_STARS so they flow
+// through the same projectStar() helper in app.update().
+
+export const BLACK_HOLES = [
+  { id: 'bh_sgra',      name: 'Sgr A*',       raH: 17.76224, decD: -29.00781, mag: null },
+  { id: 'bh_m87',       name: 'M87*',         raH: 12.51373, decD:  12.39112, mag: 8.6  },
+  { id: 'bh_m31',       name: 'M31*',         raH:  0.71232, decD:  41.26887, mag: 3.44 },
+  { id: 'bh_cygx1',     name: 'Cygnus X-1',   raH: 19.97237, decD:  35.20161, mag: 8.95 },
+  { id: 'bh_v404cyg',   name: 'V404 Cygni',   raH: 20.40133, decD:  33.86722, mag: 18.4 },
+  { id: 'bh_ngc4258',   name: 'NGC 4258',     raH: 12.31595, decD:  47.30387, mag: 8.4  },
+  { id: 'bh_a0620',     name: 'A0620-00',     raH:  6.37733, decD:  -0.34761, mag: null },
+  { id: 'bh_ngc1275',   name: 'NGC 1275',     raH:  3.33003, decD:  41.51169, mag: 11.9 },
+  { id: 'bh_ngc5128',   name: 'NGC 5128',     raH: 13.42489, decD: -43.01910, mag: 6.8  },
+  { id: 'bh_m81',       name: 'M81*',         raH:  9.92587, decD:  69.06529, mag: 6.94 },
+  { id: 'bh_3c273',     name: '3C 273 BH',    raH: 12.48528, decD:   2.05241, mag: 12.9 },
+];
+
+const _BH_BY_ID = new Map(BLACK_HOLES.map((b) => [b.id, b]));
+export function blackHoleById(id) { return _BH_BY_ID.get(id) || null; }

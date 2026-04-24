@@ -500,6 +500,38 @@ Format:
 - **Revert:** `git checkout v-s000256 -- js/render/worldObjects.js
   js/render/constellations.js`.
 
+## S264 — Black-hole + quasar catalogues; Tracker split into sub-lists
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/core/blackHoles.js` (new),
+  `js/core/quasars.js` (new), `js/core/app.js`,
+  `js/ui/controlPanel.js`.
+- **Change:**
+  - New catalogues `BLACK_HOLES` (11 entries: Sgr A*, M87*, M31*,
+    Cygnus X-1, V404 Cygni, NGC 4258, A0620-00, NGC 1275, NGC 5128
+    / Centaurus A, M81*, 3C 273 BH) and `QUASARS` (19 entries:
+    3C 273, 3C 48, 3C 279, 3C 351, S5 0014+81, TON 618, OJ 287,
+    APM 08279+5255, 3C 454.3, PKS 2000-330, 3C 345, 3C 147,
+    PG 1634+706, Twin Quasar, Mrk 421, Mrk 501, 3C 66A,
+    PKS 1510-089, BL Lacertae). Each shaped like `CEL_NAV_STARS`
+    so the existing `projectStar()` works unchanged.
+  - `app.update()` builds `c.BlackHoles` and `c.Quasars` every
+    frame with the shared projection.
+  - Tracker `star:<id>` resolver searches cel-nav → catalogued →
+    black holes → quasars in order. New per-category GP colours:
+    `celnav #ffe8a0`, `catalogued #ffffff`, `blackhole #9966ff`,
+    `quasar #40e0d0`.
+  - Celestial Bodies group's single mega-grid split into five
+    labelled grids: Planets, Cel Nav, Constellations (still
+    includes cel-nav crossovers — clicking either copy toggles
+    the same `star:<id>` entry so both stay in sync),
+    Black Holes, Quasars.
+  - Ids prefixed (`bh_*`, `q_*`) so they don't collide with
+    star ids.
+- **Revert:** `git checkout v-s000263 -- js/core/app.js
+  js/ui/controlPanel.js`; delete `js/core/blackHoles.js` and
+  `js/core/quasars.js`.
+
 ## S263 — New default camera angles
 
 - **Date:** 2026-04-24

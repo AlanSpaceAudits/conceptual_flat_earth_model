@@ -6,6 +6,8 @@ import { TIME_ORIGIN } from '../core/constants.js';
 import { findNextEclipses } from '../core/ephemeris.js';
 import { CEL_NAV_SELECT_OPTIONS, CEL_NAV_STARS } from '../core/celnavStars.js';
 import { CATALOGUED_STARS } from '../core/constellations.js';
+import { BLACK_HOLES } from '../core/blackHoles.js';
+import { QUASARS }     from '../core/quasars.js';
 import { listProjections } from '../core/projections.js';
 import { Autoplay } from './autoplay.js';
 
@@ -355,7 +357,7 @@ const FIELD_GROUPS = [
           onClick: (m) => m.setState({ TrackerTargets: [] }) },
         { key: 'SpecifiedTrackerMode', label: 'Specified Tracker Mode', bool: true },
         { key: 'TrackerGPOverride',   label: 'GP Override',          bool: true },
-        { key: 'TrackerTargets', label: 'Track', buttonGrid: [
+        { key: 'TrackerTargets', label: 'Planets', buttonGrid: [
           { value: 'sun',     label: 'Sun',     color: '#ffc844' },
           { value: 'moon',    label: 'Moon',    color: '#f4f4f4' },
           { value: 'mercury', label: 'Mercury', color: '#d0b090' },
@@ -365,7 +367,17 @@ const FIELD_GROUPS = [
           { value: 'saturn',  label: 'Saturn',  color: '#e4c888' },
           { value: 'uranus',  label: 'Uranus',  color: '#a8d8e0' },
           { value: 'neptune', label: 'Neptune', color: '#7fa6e8' },
-          ...(() => {
+        ]},
+        { key: 'TrackerTargets', label: 'Cel Nav', buttonGrid:
+          [...CEL_NAV_STARS]
+            .sort((a, b) => a.name.localeCompare(b.name))
+            .map((s) => ({ value: `star:${s.id}`, label: s.name, color: '#ffe8a0' })),
+        },
+        // Constellations includes every cel-nav crossover + the
+        // constellation-only stars. Clicking either copy toggles the
+        // same TrackerTargets entry, so both buttons stay in sync.
+        { key: 'TrackerTargets', label: 'Constellations', buttonGrid:
+          (() => {
             const celnavIds = new Set(CEL_NAV_STARS.map((s) => s.id));
             return [...CEL_NAV_STARS, ...CATALOGUED_STARS]
               .sort((a, b) => a.name.localeCompare(b.name))
@@ -375,7 +387,17 @@ const FIELD_GROUPS = [
                 color: celnavIds.has(s.id) ? '#ffe8a0' : '#ffffff',
               }));
           })(),
-        ]},
+        },
+        { key: 'TrackerTargets', label: 'Black Holes', buttonGrid:
+          [...BLACK_HOLES]
+            .sort((a, b) => a.name.localeCompare(b.name))
+            .map((b) => ({ value: `star:${b.id}`, label: b.name, color: '#9966ff' })),
+        },
+        { key: 'TrackerTargets', label: 'Quasars', buttonGrid:
+          [...QUASARS]
+            .sort((a, b) => a.name.localeCompare(b.name))
+            .map((q) => ({ value: `star:${q.id}`, label: q.name, color: '#40e0d0' })),
+        },
       ]},
     ],
   },

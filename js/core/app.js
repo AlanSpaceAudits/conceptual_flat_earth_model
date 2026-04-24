@@ -18,6 +18,8 @@ import {
 import { apparentStarPosition } from './ephemerisCommon.js';
 import { CEL_NAV_STARS, celNavStarById } from './celnavStars.js';
 import { CATALOGUED_STARS, cataloguedStarById } from './constellations.js';
+import { BLACK_HOLES, blackHoleById } from './blackHoles.js';
+import { QUASARS,      quasarById }    from './quasars.js';
 import {
   compTransMatCelestToGlobe, compTransMatLocalFeToGlobalFe, compTransMatVaultToFe,
   celestCoordToLocalGlobeCoord, coordToLatLong, localGlobeCoordToAngles,
@@ -504,6 +506,8 @@ export class FeModel extends EventTarget {
     };
     c.CelNavStars     = CEL_NAV_STARS.map(projectStar);
     c.CataloguedStars = CATALOGUED_STARS.map(projectStar);
+    c.BlackHoles      = BLACK_HOLES.map(projectStar);
+    c.Quasars         = QUASARS.map(projectStar);
 
     c.TrackerInfos = [];
     const targets = Array.isArray(s.TrackerTargets) ? s.TrackerTargets : [];
@@ -580,17 +584,33 @@ export class FeModel extends EventTarget {
         const starId = target.slice(5);
         let entry = c.CelNavStars.find((x) => x.id === starId);
         let def   = celNavStarById(starId);
-        let isCelnav = true;
+        let cat   = 'celnav';
         if (!entry) {
           entry = c.CataloguedStars.find((x) => x.id === starId);
           def   = cataloguedStarById(starId);
-          isCelnav = false;
+          if (entry) cat = 'catalogued';
+        }
+        if (!entry) {
+          entry = c.BlackHoles.find((x) => x.id === starId);
+          def   = blackHoleById(starId);
+          if (entry) cat = 'blackhole';
+        }
+        if (!entry) {
+          entry = c.Quasars.find((x) => x.id === starId);
+          def   = quasarById(starId);
+          if (entry) cat = 'quasar';
         }
         if (entry && def) {
           // Star RA/Dec is pipeline-independent; all five readings share it.
+          const gpColorByCat = {
+            celnav:     0xffe8a0,  // warm yellow
+            catalogued: 0xffffff,  // white
+            blackhole:  0x9966ff,  // purple
+            quasar:     0x40e0d0,  // cyan
+          };
           info = {
             target, name: def.name, category: 'star', mag: def.mag,
-            gpColor: isCelnav ? 0xffe8a0 : 0xffffff,
+            gpColor: gpColorByCat[cat] || 0xffffff,
             azimuth: entry.anglesGlobe.azimuth,
             elevation: entry.anglesGlobe.elevation,
             helioReading:      { ra: entry.ra, dec: entry.dec },

@@ -76,13 +76,15 @@ export class Constellations {
     this._sphStarPos = new Float32Array(this._nStars * 3);
     const sphStarGeom = new THREE.BufferGeometry();
     sphStarGeom.setAttribute('position', new THREE.BufferAttribute(this._sphStarPos, 3));
+    // Below-horizon endpoints are parked at z=-1000 in the update()
+    // loop; no clipping plane needed here, and leaving it out avoids
+    // per-fragment clip artefacts on the optical-vault line segments.
     this.sphereStars = new THREE.Points(
       sphStarGeom,
       new THREE.PointsMaterial({
         color: 0xffffff, size: 3, sizeAttenuation: false,
         transparent: true, opacity: 1,
         depthTest: false, depthWrite: false,
-        clippingPlanes,
       }),
     );
     this.sphereStars.renderOrder = 57;
@@ -111,7 +113,6 @@ export class Constellations {
       new THREE.LineBasicMaterial({
         color: 0x88ccff, transparent: true, opacity: 0.75,
         depthTest: false, depthWrite: false,
-        clippingPlanes,
       }),
     );
     this.sphereLines.renderOrder = 56;

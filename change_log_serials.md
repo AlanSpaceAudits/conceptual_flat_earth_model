@@ -398,3 +398,14 @@ Format:
     `InsideVault`. `aria-pressed` mirrors state.
 - **Revert:** `git checkout v-s000236 -- js/ui/controlPanel.js
   css/styles.css`.
+
+## S238 — Drop clip plane from optical-vault constellation lines/points
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/render/constellations.js`.
+- **Change:** removed `clippingPlanes` from `sphereStars` and
+  `sphereLines` materials. Below-horizon endpoints are already parked
+  at z = −1000 in the update loop; the `clipBelowDisc` plane added
+  per-fragment clipping that broke constellation outlines at certain
+  camera pitches.
+- **Revert:** `git checkout v-s000237 -- js/render/constellations.js`.

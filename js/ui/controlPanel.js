@@ -695,7 +695,6 @@ const FIELD_GROUPS = [
         { key: 'TrackerGPOverride',    label: 'GP Override',              bool: true },
         { key: 'ShowTruePositions',    label: 'True Positions',           bool: true },
         { key: 'ShowGPPath',           label: 'GP Path (24 h)',           bool: true },
-        { key: 'ShowConstellationLines', label: 'Constellation outlines', bool: true },
       ]},
       { title: 'Celestial Bodies', rows: [
         { key: 'ShowCelestialBodies', label: 'Show', bool: true },
@@ -754,6 +753,7 @@ const FIELD_GROUPS = [
       ]},
       { title: 'Constellations', rows: [
         { key: 'ShowConstellations', label: 'Show', bool: true },
+        { key: 'ShowConstellationLines', label: 'Outlines', bool: true },
         { key: 'GPOverrideConstellations', label: 'GP Override', bool: true },
         { label: '', buttonLabel: 'Enable All',
           onClick: (m) => {

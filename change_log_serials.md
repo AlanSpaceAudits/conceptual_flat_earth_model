@@ -532,6 +532,17 @@ Format:
   js/render/index.js js/ui/controlPanel.js js/ui/urlState.js`;
   delete `js/core/satellites.js`.
 
+## S378 — Move ShowConstellationLines into the Constellations sub-menu
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/ui/controlPanel.js`,
+  `change_log_serials.md`.
+- **Change:** `ShowConstellationLines` (`Outlines`) row removed
+  from `Tracker Options` and reinstated inside the
+  `Constellations` Tracker sub-menu, between `Show` and
+  `GP Override`.
+- **Revert:** `git checkout v-s000377 -- js/ui/controlPanel.js`.
+
 ## S377 — Three AE Aries starfield charts; move Starfield group to Tracker tab
 
 - **Date:** 2026-04-24

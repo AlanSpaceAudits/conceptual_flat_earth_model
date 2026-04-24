@@ -532,6 +532,18 @@ Format:
   js/render/index.js js/ui/controlPanel.js js/ui/urlState.js`;
   delete `js/core/satellites.js`.
 
+## S340 — Feature search also indexes the Tracker tab
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/ui/controlPanel.js`.
+- **Change:** `attachFeatureSearch()`'s `buildIndex()` now walks
+  Show AND Tracker tabs (was Show-only since S319), so typing
+  "path" / "override" / "cel nav" / etc. lands on the Tracker
+  Options row or the relevant sub-menu, not just Show-tab
+  visibility toggles. Placeholder rewritten to
+  `Search Show / Tracker settings`.
+- **Revert:** `git checkout v-s000339 -- js/ui/controlPanel.js`.
+
 ## S339 — New demo: North-pole GP trace of tracked bodies
 
 - **Date:** 2026-04-24

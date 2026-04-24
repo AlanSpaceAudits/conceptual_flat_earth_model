@@ -500,6 +500,25 @@ Format:
 - **Revert:** `git checkout v-s000256 -- js/render/worldObjects.js
   js/render/constellations.js`.
 
+## S287 — Hover tooltip + larger click hitbox for celestial bodies
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/ui/mouseHandler.js`.
+- **Change:**
+  - Click-hit angular threshold widened from `clamp(fovV/15,
+    0.4°, 5°)` to `clamp(fovV/10, 1°, 8°)`. Users no longer have
+    to click a body exactly; a nearby click still snaps.
+  - New `#celestial-hover` tooltip element (auto-created in
+    `#view`). On pointer move over Optical mode, if the cursor
+    direction is within the same threshold of a visible body,
+    the tooltip floats next to the cursor showing
+    `Name · az X.XX° el ±Y.YY°`. Hidden while dragging, on
+    pointer-leave, or when no body is within range.
+  - `displayNameFor()` helper maps the tracker id back to the
+    catalogue name (sun / moon / planet / cel-nav / catalogued /
+    black hole / quasar / galaxy).
+- **Revert:** `git checkout v-s000286 -- js/ui/mouseHandler.js`.
+
 ## S286 — Info bar gets a second row with "Tracking: <name>"
 
 - **Date:** 2026-04-24

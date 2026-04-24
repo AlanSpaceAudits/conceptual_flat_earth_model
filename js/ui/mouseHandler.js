@@ -120,7 +120,7 @@ function collectClickables(c, state) {
 // FOV-scaled angular threshold. Ignores below-horizon objects since
 // they aren't drawn in Optical mode (nothing to click).
 function findNearestCelestial(clickAz, clickEl, c, state, fovV) {
-  const threshold = Math.max(0.4, Math.min(5, fovV / 15));
+  const threshold = Math.max(1, Math.min(8, fovV / 10));
   const candidates = collectClickables(c, state);
   let best = null, bestD = threshold;
   for (const opt of candidates) {
@@ -131,11 +131,59 @@ function findNearestCelestial(clickAz, clickEl, c, state, fovV) {
   return best;
 }
 
+const DISPLAY_NAMES = {
+  sun: 'Sun', moon: 'Moon',
+  mercury: 'Mercury', venus: 'Venus', mars: 'Mars', jupiter: 'Jupiter',
+  saturn: 'Saturn', uranus: 'Uranus', neptune: 'Neptune',
+};
+
+function displayNameFor(id, c) {
+  if (DISPLAY_NAMES[id]) return DISPLAY_NAMES[id];
+  if (id.startsWith('star:')) {
+    const starId = id.slice(5);
+    for (const list of [
+      c.CelNavStars, c.CataloguedStars, c.BlackHoles, c.Quasars, c.Galaxies,
+    ]) {
+      if (!list) continue;
+      const f = list.find((x) => x.id === starId);
+      if (f && f.name) return f.name;
+    }
+    return starId;
+  }
+  return id;
+}
+
+function ensureHoverTooltip() {
+  let el = document.getElementById('celestial-hover');
+  if (el) return el;
+  el = document.createElement('div');
+  el.id = 'celestial-hover';
+  el.style.cssText = [
+    'position: absolute',
+    'pointer-events: none',
+    'padding: 4px 8px',
+    'font: 12px/1.3 ui-monospace, Menlo, monospace',
+    'color: #f4f6fa',
+    'background: rgba(10, 14, 22, 0.92)',
+    'border: 1px solid rgba(244, 166, 64, 0.55)',
+    'border-radius: 4px',
+    'z-index: 40',
+    'white-space: nowrap',
+    'text-shadow: 0 0 2px rgba(0, 0, 0, 0.9)',
+    'display: none',
+  ].join(';');
+  const view = document.getElementById('view') || document.body;
+  view.appendChild(el);
+  return el;
+}
+
 export function attachMouseHandler(canvas, model) {
   let dragging = false;
   let lastX = 0, lastY = 0;
   let downX = 0, downY = 0;
   let dragDist = 0;
+  const hoverTip = ensureHoverTooltip();
+  const hideHover = () => { hoverTip.style.display = 'none'; };
 
   canvas.addEventListener('pointerdown', (e) => {
     dragging = true;
@@ -169,6 +217,7 @@ export function attachMouseHandler(canvas, model) {
   });
 
   canvas.addEventListener('pointerleave', () => {
+    hideHover();
     if (model.state.MouseElevation !== null
         || model.state.MouseAzimuth !== null) {
       model.setState({ MouseElevation: null, MouseAzimuth: null });
@@ -185,14 +234,39 @@ export function attachMouseHandler(canvas, model) {
 
     // Cursor elevation + azimuth readouts (Optical only).
     if (model.state.InsideVault) {
-      const { az, el } = canvasToSkyAngles(canvas, e.offsetX, e.offsetY, model.state);
-      if (model.state.MouseElevation !== el
-          || model.state.MouseAzimuth !== az) {
-        model.setState({ MouseElevation: el, MouseAzimuth: az });
+      const sky = canvasToSkyAngles(canvas, e.offsetX, e.offsetY, model.state);
+      if (model.state.MouseElevation !== sky.el
+          || model.state.MouseAzimuth !== sky.az) {
+        model.setState({ MouseElevation: sky.el, MouseAzimuth: sky.az });
       }
-    } else if (model.state.MouseElevation !== null
-               || model.state.MouseAzimuth !== null) {
-      model.setState({ MouseElevation: null, MouseAzimuth: null });
+      // Hover tooltip: when cursor is within the click-hit threshold
+      // of a celestial body, float its name + az/el next to the
+      // cursor. Skip while dragging so the tooltip doesn't chase pans.
+      if (!dragging) {
+        const hit = findNearestCelestial(
+          sky.az, sky.el, model.computed, model.state, sky.fovV,
+        );
+        if (hit) {
+          const name = displayNameFor(hit.id, model.computed);
+          const az = ((hit.angles.azimuth % 360) + 360) % 360;
+          const el = hit.angles.elevation;
+          hoverTip.textContent =
+            `${name}  ·  az ${az.toFixed(2)}°  el ${(el >= 0 ? '+' : '') + el.toFixed(2)}°`;
+          hoverTip.style.left = `${e.offsetX + 14}px`;
+          hoverTip.style.top  = `${e.offsetY + 14}px`;
+          hoverTip.style.display = '';
+        } else {
+          hideHover();
+        }
+      } else {
+        hideHover();
+      }
+    } else {
+      hideHover();
+      if (model.state.MouseElevation !== null
+          || model.state.MouseAzimuth !== null) {
+        model.setState({ MouseElevation: null, MouseAzimuth: null });
+      }
     }
 
     if (!dragging) return;

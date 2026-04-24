@@ -3777,14 +3777,20 @@ export class TrackedGroundPoints {
     const infos = c.TrackerInfos || [];
     // Tracker GPs follow the master `ShowGroundPoints` toggle by
     // default. `TrackerGPOverride` bypasses the master so every
-    // tracked target paints its GP regardless.
-    const showAll = !s.InsideVault && (!!s.ShowGroundPoints || !!s.TrackerGPOverride);
+    // tracked target paints its GP regardless. In Heavenly mode,
+    // follow-only entries (the synthesised `FollowTarget` row that
+    // isn't also in `TrackerTargets`) always render their GP so the
+    // user can see where the tracked body sits on the ground.
+    const baseShow = !s.InsideVault && (!!s.ShowGroundPoints || !!s.TrackerGPOverride);
+    const heavenly = !s.InsideVault;
 
     for (let i = 0; i < this._pool.length; i++) {
       const slot = this._pool[i];
       const line = this._lines[i];
       const info = infos[i];
-      if (!info || !showAll) {
+      const showThis = info
+        && (baseShow || (heavenly && info._followOnly));
+      if (!showThis) {
         slot.group.visible = false;
         line.visible = false;
         continue;

@@ -500,6 +500,26 @@ Format:
 - **Revert:** `git checkout v-s000256 -- js/render/worldObjects.js
   js/render/constellations.js`.
 
+## S296 — FollowTarget GP always visible in Heavenly mode
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/core/app.js`,
+  `js/render/worldObjects.js`, `js/ui/controlPanel.js`.
+- **Change:**
+  - `app.update()` now appends `FollowTarget` to the target
+    loop if it isn't already in `TrackerTargets`. The extra
+    entry is tagged `_followOnly: true` so consumers can choose
+    whether to treat it like a normal tracker row.
+  - `TrackedGroundPoints.update()` still gates the regular
+    tracker GPs on `ShowGroundPoints || TrackerGPOverride`, but
+    now always renders the GP (and its dashed vertical line) of
+    any `_followOnly` info while in Heavenly mode.
+  - `buildTrackerHud` filters `_followOnly` entries out before
+    rendering, so following a body doesn't add a phantom block
+    to the HUD.
+- **Revert:** `git checkout v-s000295 -- js/core/app.js
+  js/render/worldObjects.js js/ui/controlPanel.js`.
+
 ## S295 — New Tracker Options sub-menu
 
 - **Date:** 2026-04-24

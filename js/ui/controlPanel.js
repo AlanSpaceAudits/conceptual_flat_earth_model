@@ -1423,7 +1423,8 @@ export function buildTrackerHud(trackerEl, model) {
   const refresh = () => {
     refreshTabPressed();
     positionTrackerBelowHud();
-    const infos = model.computed.TrackerInfos || [];
+    const allInfos = model.computed.TrackerInfos || [];
+    const infos = allInfos.filter((i) => !i._followOnly);
     const showHud = !!model.state.ShowLiveEphemeris && infos.length > 0;
     if (!showHud) {
       trackerEl.style.display = 'none';

@@ -517,7 +517,12 @@ export class FeModel extends EventTarget {
     c.Galaxies        = GALAXIES.map(projectStar);
 
     c.TrackerInfos = [];
-    const targets = Array.isArray(s.TrackerTargets) ? s.TrackerTargets : [];
+    const targets = Array.isArray(s.TrackerTargets) ? [...s.TrackerTargets] : [];
+    const followOnlyIds = new Set();
+    if (s.FollowTarget && !targets.includes(s.FollowTarget)) {
+      targets.push(s.FollowTarget);
+      followOnlyIds.add(s.FollowTarget);
+    }
     const wrapLon = (x) => ((x + 180) % 360 + 360) % 360 - 180;
 
     for (const target of targets) {
@@ -641,6 +646,7 @@ export class FeModel extends EventTarget {
       if (info) {
         info.activeSource = bodySource;
         info.utcMs = utcDate.getTime();
+        info._followOnly = followOnlyIds.has(target);
         c.TrackerInfos.push(info);
       }
     }

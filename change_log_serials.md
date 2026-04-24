@@ -532,6 +532,16 @@ Format:
   js/render/index.js js/ui/controlPanel.js js/ui/urlState.js`;
   delete `js/core/satellites.js`.
 
+## S360 — Move Constellation outlines to Tracker Options
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/ui/controlPanel.js`.
+- **Change:** `ShowConstellationLines` row removed from the
+  Show tab (the Stars group is now empty and disappears),
+  added to Tracker Options after the GP Path row. Tracker is
+  the single place for every celestial-visibility knob now.
+- **Revert:** `git checkout v-s000359 -- js/ui/controlPanel.js`.
+
 ## S359 — Extend Alert + Antarctica 24h-sun demos from 1 day to 14 days
 
 - **Date:** 2026-04-24

@@ -604,9 +604,6 @@ const FIELD_GROUPS = [
         { key: 'ShowLongitudeRing',   label: 'Longitude ring',     bool: true },
         { key: 'ShowShadow',          label: 'Shadow',             bool: true },
       ]},
-      { title: 'Stars', rows: [
-        { key: 'ShowConstellationLines',   label: 'Constellation outlines', bool: true },
-      ]},
       { title: 'Rays', rows: [
         { key: 'ShowVaultRays',        label: 'Vault Rays',         bool: true },
         { key: 'ShowOpticalVaultRays', label: 'Optical Vault Rays', bool: true },
@@ -684,6 +681,7 @@ const FIELD_GROUPS = [
         { key: 'TrackerGPOverride',    label: 'GP Override',              bool: true },
         { key: 'ShowTruePositions',    label: 'True Positions',           bool: true },
         { key: 'ShowGPPath',           label: 'GP Path (24 h)',           bool: true },
+        { key: 'ShowConstellationLines', label: 'Constellation outlines', bool: true },
       ]},
       { title: 'Celestial Bodies', rows: [
         { key: 'ShowCelestialBodies', label: 'Show', bool: true },

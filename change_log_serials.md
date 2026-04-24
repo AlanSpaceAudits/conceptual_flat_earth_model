@@ -532,6 +532,30 @@ Format:
   js/render/index.js js/ui/controlPanel.js js/ui/urlState.js`;
   delete `js/core/satellites.js`.
 
+## S370 — Optical vault follows the active MapProjection
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/core/app.js`, `js/render/worldObjects.js`,
+  `change_log_serials.md`.
+- **Change:**
+  - `opticalVaultProject(localGlobe, R, H)` in `app.js` rewritten:
+    converts the local (zenith / east / north) direction to
+    (elevation, azimuth), routes through
+    `canonicalLatLongToDisc(elevation, azimuth, R*2)`, and packs
+    the projected `(x, y)` back into the local frame.
+    Vertical scale `H * sin(elev)` preserved. AE polar still
+    produces the original concentric-ring dome (horizon at
+    radius R); other projections warp the dome accordingly.
+  - `worldObjects.js` adds `buildProjectedHemisphereGeom(...)`:
+    same alt/az grid as `buildLatLongHemisphereGeom` but each
+    `(elev, az)` routed through `canonicalLatLongToDisc`.
+  - `ObserversOpticalVault` builds its wire grid via the new
+    function, caches `_lastProj`, and rebuilds the geometry in
+    `update()` whenever `state.MapProjection` changes — the
+    dome's gridlines warp with the disc's gridlines.
+- **Revert:** `git checkout v-s000369 -- js/core/app.js
+  js/render/worldObjects.js`.
+
 ## S369 — BSC becomes a union catalog; 🗺 button opens existing dropdown; FE grid order fix
 
 - **Date:** 2026-04-24

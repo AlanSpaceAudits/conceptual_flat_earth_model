@@ -1183,6 +1183,24 @@ export function buildHud(hudEl, model) {
 export function buildTrackerHud(trackerEl, model) {
   trackerEl.classList.add('tracker-hud');
 
+  // Vertical side tab that toggles `ShowLiveEphemeris`. Always present
+  // in the DOM; clicking shows/hides the multi-column HUD.
+  let tabBtn = document.getElementById('live-ephem-tab');
+  if (!tabBtn) {
+    tabBtn = document.createElement('button');
+    tabBtn.id = 'live-ephem-tab';
+    tabBtn.type = 'button';
+    tabBtn.textContent = 'Live Ephemeris Data';
+    document.body.appendChild(tabBtn);
+  }
+  tabBtn.addEventListener('click', () => {
+    model.setState({ ShowLiveEphemeris: !model.state.ShowLiveEphemeris });
+  });
+  const refreshTabPressed = () => {
+    tabBtn.setAttribute('aria-pressed',
+      model.state.ShowLiveEphemeris ? 'true' : 'false');
+  };
+
   const fmtDeg = (v, p = 1) => (v >= 0 ? '+' : '') + v.toFixed(p);
   const fmtHours = (raRad) => {
     // pipelines that don't carry this body return NaN so the
@@ -1264,14 +1282,18 @@ export function buildTrackerHud(trackerEl, model) {
   }
 
   const refresh = () => {
+    refreshTabPressed();
     const infos = model.computed.TrackerInfos || [];
-    if (infos.length === 0) {
+    const showHud = !!model.state.ShowLiveEphemeris && infos.length > 0;
+    if (!showHud) {
       trackerEl.style.display = 'none';
       for (const { block } of blockCache.values()) block.remove();
       blockCache.clear();
       return;
     }
     trackerEl.style.display = '';
+    trackerEl.classList.toggle('expanded',
+      model.state.ShowEphemerisReadings === true);
 
     const stamp = dateTimeToString(model.state.DateTime);
 

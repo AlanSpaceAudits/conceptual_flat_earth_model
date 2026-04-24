@@ -112,6 +112,7 @@ function defaultState() {
     ShowOpticalVaultGrid:    false,
     ShowCelestialPoles:      false,
     DarkBackground:          true,
+    ShowLiveEphemeris:       true,
 
     InsideVault: false,
 

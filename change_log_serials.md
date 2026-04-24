@@ -500,6 +500,27 @@ Format:
 - **Revert:** `git checkout v-s000256 -- js/render/worldObjects.js
   js/render/constellations.js`.
 
+## S267 — Multi-column Tracker HUD + Live Ephemeris Data side tab
+
+- **Date:** 2026-04-24
+- **Files changed:** `css/styles.css`, `js/core/app.js`,
+  `js/ui/controlPanel.js`, `js/ui/urlState.js`.
+- **Change:**
+  - Tracker HUD (`#tracker-hud`) switched from a single bordered
+    panel to a flex `column + wrap` container with `max-height:
+    calc(100vh - 260px)`. Each `.tracker-block` becomes its own
+    card (background / border / rounded corners). When the stack
+    exceeds viewport height blocks flow into a new column to the
+    right. Base card width 360 px; bumps to 460 px via
+    `#tracker-hud.expanded` when `ShowEphemerisReadings` is on.
+  - New vertical right-edge button `#live-ephem-tab` ("Live
+    Ephemeris Data") using `writing-mode: vertical-rl`. Always
+    rendered; click toggles new state `ShowLiveEphemeris`
+    (default `true`, persisted). HUD hidden whenever state is
+    false, regardless of TrackerTargets contents.
+- **Revert:** `git checkout v-s000266 -- css/styles.css
+  js/core/app.js js/ui/controlPanel.js js/ui/urlState.js`.
+
 ## S266 — Render black holes + quasars on heavenly dome and optical vault
 
 - **Date:** 2026-04-24

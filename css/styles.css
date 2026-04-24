@@ -132,6 +132,24 @@ header .info-popup p:last-child { margin-bottom: 0; }
 
 /* Bottom bar + per-tab popup panels. Bar sits at the bottom of #view,
    popups slide up above the bar when a tab is clicked. */
+#info-bar {
+  position: absolute;
+  left: 0; right: 0; bottom: 44px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 0 14px;
+  font: 12px/1 ui-monospace, Menlo, monospace;
+  color: #d6deed;
+  background: transparent;
+  pointer-events: none;
+  z-index: 28;
+  text-shadow: 0 0 2px rgba(0, 0, 0, 0.9);
+}
+#info-bar .info-slot { white-space: nowrap; }
+#info-bar .info-sep { color: rgba(214, 222, 237, 0.35); }
+
 #bottom-bar {
   position: absolute;
   bottom: 0; left: 0; right: 0;
@@ -375,7 +393,7 @@ footer#desc .desc-dynamic { color: var(--fg); }
   position: absolute;
   left: 0;
   right: 0;
-  bottom: 44px; /* clears the bottom bar */
+  bottom: 70px; /* clears the bottom bar + info bar */
   pointer-events: none;
   text-align: center;
   padding: 6px 10px;

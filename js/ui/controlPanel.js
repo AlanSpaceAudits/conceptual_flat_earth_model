@@ -732,6 +732,42 @@ export function buildControlPanel(host, model, demos) {
   const autoplay = new Autoplay(model);
   model._autoplay = autoplay;
 
+  const infoBar = document.createElement('div');
+  infoBar.id = 'info-bar';
+  infoBar.innerHTML = `
+    <span class="info-slot" data-k="lat">—</span>
+    <span class="info-slot" data-k="lon">—</span>
+    <span class="info-slot" data-k="el">—</span>
+    <span class="info-slot" data-k="az">—</span>
+    <span class="info-sep">│</span>
+    <span class="info-slot" data-k="mel">Mouse El: —</span>
+    <span class="info-slot" data-k="maz">Mouse Az: —</span>
+  `;
+  const slotLat = infoBar.querySelector('[data-k="lat"]');
+  const slotLon = infoBar.querySelector('[data-k="lon"]');
+  const slotEl  = infoBar.querySelector('[data-k="el"]');
+  const slotAz  = infoBar.querySelector('[data-k="az"]');
+  const slotMel = infoBar.querySelector('[data-k="mel"]');
+  const slotMaz = infoBar.querySelector('[data-k="maz"]');
+  const fmtLat = (v) => `Lat ${v >= 0 ? '+' : ''}${v.toFixed(4)}°`;
+  const fmtLon = (v) => `Lon ${v >= 0 ? '+' : ''}${v.toFixed(4)}°`;
+  const fmtSignedDeg = (v) => `${v >= 0 ? '+' : ''}${v.toFixed(2)}°`;
+  const refreshInfoBar = () => {
+    const s = model.state;
+    slotLat.textContent = fmtLat(s.ObserverLat);
+    slotLon.textContent = fmtLon(s.ObserverLong);
+    slotEl.textContent  = `El ${fmtSignedDeg(s.CameraHeight || 0)}`;
+    slotAz.textContent  = `Az ${(s.ObserverHeading || 0).toFixed(2)}°`;
+    slotMel.textContent = Number.isFinite(s.MouseElevation)
+      ? `Mouse El: ${fmtSignedDeg(s.MouseElevation)}`
+      : 'Mouse El: —';
+    slotMaz.textContent = Number.isFinite(s.MouseAzimuth)
+      ? `Mouse Az: ${s.MouseAzimuth.toFixed(2)}°`
+      : 'Mouse Az: —';
+  };
+  model.addEventListener('update', refreshInfoBar);
+  refreshInfoBar();
+
   const bar = document.createElement('div');
   bar.id = 'bottom-bar';
 
@@ -759,7 +795,7 @@ export function buildControlPanel(host, model, demos) {
   const popupsContainer = document.createElement('div');
   popupsContainer.id = 'tab-popups';
 
-  host.append(popupsContainer, bar);
+  host.append(popupsContainer, infoBar, bar);
 
   const tabEntries = [];
   let activeIdx = -1;

@@ -370,3 +370,17 @@ Format:
 - **Change:** `#logo` inline `bottom: 16px → 60px` (44 px bar + 16 px
   padding) so the logo clears the transport bar.
 - **Revert:** `git checkout v-s000234 -- index.html`.
+
+## S236 — Transparent info bar above the menu bar
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/ui/controlPanel.js`, `css/styles.css`.
+- **Change:** added `#info-bar` inside `#view`, pinned at
+  `bottom: 44 px` with `height: 26 px`, transparent background,
+  monospace. Slots: Lat, Lon, El (= CameraHeight), Az (=
+  ObserverHeading), separator, Mouse El, Mouse Az. Live-refreshed
+  on every model update. `pointer-events: none` so it doesn't
+  intercept canvas drags. Meeus warning bottom bumped `44 → 70 px`
+  to clear the new strip.
+- **Revert:** `git checkout v-s000235 -- js/ui/controlPanel.js
+  css/styles.css`.

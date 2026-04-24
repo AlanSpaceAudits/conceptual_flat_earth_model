@@ -532,6 +532,19 @@ Format:
   js/render/index.js js/ui/controlPanel.js js/ui/urlState.js`;
   delete `js/core/satellites.js`.
 
+## S361 — "Enable All" button per Tracker sub-menu
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/ui/controlPanel.js`.
+- **Change:** Each Tracker sub-menu (Celestial Bodies, Cel Nav,
+  Constellations, Black Holes, Quasars, Galaxies, Satellites)
+  gains an `Enable All` button between the Show / GP-Override
+  rows and the grid. Click merges every id from that category
+  into `TrackerTargets` (union with whatever's already there);
+  the grid buttons immediately pick up the accent-highlight
+  because their state refresh runs on the same model update.
+- **Revert:** `git checkout v-s000360 -- js/ui/controlPanel.js`.
+
 ## S360 — Move Constellation outlines to Tracker Options
 
 - **Date:** 2026-04-24

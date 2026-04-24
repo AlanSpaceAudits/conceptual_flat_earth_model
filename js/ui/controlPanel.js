@@ -686,6 +686,16 @@ const FIELD_GROUPS = [
       { title: 'Celestial Bodies', rows: [
         { key: 'ShowCelestialBodies', label: 'Show', bool: true },
         { key: 'GPOverridePlanets', label: 'GP Override', bool: true },
+        { label: '', buttonLabel: 'Enable All',
+          onClick: (m) => m.setState({
+            TrackerTargets: [
+              ...new Set([
+                ...(Array.isArray(m.state.TrackerTargets) ? m.state.TrackerTargets : []),
+                'sun', 'moon', 'mercury', 'venus', 'mars',
+                'jupiter', 'saturn', 'uranus', 'neptune',
+              ]),
+            ],
+          }) },
         { key: 'TrackerTargets', label: '', buttonGrid: [
           { value: 'sun',     label: 'Sun',     color: '#ffc844' },
           { value: 'moon',    label: 'Moon',    color: '#f4f4f4' },
@@ -701,6 +711,15 @@ const FIELD_GROUPS = [
       { title: 'Cel Nav', rows: [
         { key: 'ShowCelNav', label: 'Show', bool: true },
         { key: 'GPOverrideCelNav', label: 'GP Override', bool: true },
+        { label: '', buttonLabel: 'Enable All',
+          onClick: (m) => m.setState({
+            TrackerTargets: [
+              ...new Set([
+                ...(Array.isArray(m.state.TrackerTargets) ? m.state.TrackerTargets : []),
+                ...CEL_NAV_STARS.map((s) => `star:${s.id}`),
+              ]),
+            ],
+          }) },
         { key: 'TrackerTargets', label: '', buttonGrid:
           [...CEL_NAV_STARS]
             .sort((a, b) => a.name.localeCompare(b.name))
@@ -710,6 +729,20 @@ const FIELD_GROUPS = [
       { title: 'Constellations', rows: [
         { key: 'ShowConstellations', label: 'Show', bool: true },
         { key: 'GPOverrideConstellations', label: 'GP Override', bool: true },
+        { label: '', buttonLabel: 'Enable All',
+          onClick: (m) => {
+            const celnavIds = new Set(CEL_NAV_STARS.map((s) => s.id));
+            m.setState({
+              TrackerTargets: [
+                ...new Set([
+                  ...(Array.isArray(m.state.TrackerTargets) ? m.state.TrackerTargets : []),
+                  ...CATALOGUED_STARS
+                    .filter((s) => !celnavIds.has(s.id))
+                    .map((s) => `star:${s.id}`),
+                ]),
+              ],
+            });
+          } },
         { key: 'TrackerTargets', label: '', buttonGrid:
           (() => {
             const celnavIds = new Set(CEL_NAV_STARS.map((s) => s.id));
@@ -727,6 +760,15 @@ const FIELD_GROUPS = [
       { title: 'Black Holes', rows: [
         { key: 'ShowBlackHoles', label: 'Show', bool: true },
         { key: 'GPOverrideBlackHoles', label: 'GP Override', bool: true },
+        { label: '', buttonLabel: 'Enable All',
+          onClick: (m) => m.setState({
+            TrackerTargets: [
+              ...new Set([
+                ...(Array.isArray(m.state.TrackerTargets) ? m.state.TrackerTargets : []),
+                ...BLACK_HOLES.map((b) => `star:${b.id}`),
+              ]),
+            ],
+          }) },
         { key: 'TrackerTargets', label: '', buttonGrid:
           [...BLACK_HOLES]
             .sort((a, b) => a.name.localeCompare(b.name))
@@ -736,6 +778,15 @@ const FIELD_GROUPS = [
       { title: 'Quasars', rows: [
         { key: 'ShowQuasars', label: 'Show', bool: true },
         { key: 'GPOverrideQuasars', label: 'GP Override', bool: true },
+        { label: '', buttonLabel: 'Enable All',
+          onClick: (m) => m.setState({
+            TrackerTargets: [
+              ...new Set([
+                ...(Array.isArray(m.state.TrackerTargets) ? m.state.TrackerTargets : []),
+                ...QUASARS.map((q) => `star:${q.id}`),
+              ]),
+            ],
+          }) },
         { key: 'TrackerTargets', label: '', buttonGrid:
           [...QUASARS]
             .sort((a, b) => a.name.localeCompare(b.name))
@@ -745,6 +796,15 @@ const FIELD_GROUPS = [
       { title: 'Galaxies', rows: [
         { key: 'ShowGalaxies', label: 'Show', bool: true },
         { key: 'GPOverrideGalaxies', label: 'GP Override', bool: true },
+        { label: '', buttonLabel: 'Enable All',
+          onClick: (m) => m.setState({
+            TrackerTargets: [
+              ...new Set([
+                ...(Array.isArray(m.state.TrackerTargets) ? m.state.TrackerTargets : []),
+                ...GALAXIES.map((g) => `star:${g.id}`),
+              ]),
+            ],
+          }) },
         { key: 'TrackerTargets', label: '', buttonGrid:
           [...GALAXIES]
             .sort((a, b) => a.name.localeCompare(b.name))
@@ -754,6 +814,15 @@ const FIELD_GROUPS = [
       { title: 'Satellites', rows: [
         { key: 'ShowSatellites', label: 'Show Satellites', bool: true },
         { key: 'GPOverrideSatellites', label: 'GP Override', bool: true },
+        { label: '', buttonLabel: 'Enable All',
+          onClick: (m) => m.setState({
+            TrackerTargets: [
+              ...new Set([
+                ...(Array.isArray(m.state.TrackerTargets) ? m.state.TrackerTargets : []),
+                ...SATELLITES.map((x) => `star:${x.id}`),
+              ]),
+            ],
+          }) },
         { key: 'TrackerTargets', label: '', buttonGrid:
           [...SATELLITES]
             .sort((a, b) => a.name.localeCompare(b.name))

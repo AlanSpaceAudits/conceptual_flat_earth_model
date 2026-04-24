@@ -317,3 +317,12 @@ Format:
 - **Files changed:** `js/core/app.js`.
 - **Change:** `ShowVault: true → false`.
 - **Revert:** `git checkout v-s000230 -- js/core/app.js`.
+
+## S232 — URL schema bump for S231
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/ui/urlState.js`.
+- **Change:** `URL_SCHEMA_VERSION: '230' → '231'` so existing URL hashes
+  stamped at v=230 with `ShowVault=1` drop that key on restore and pick
+  up the S231 default (false).
+- **Revert:** `git checkout v-s000231 -- js/ui/urlState.js`.

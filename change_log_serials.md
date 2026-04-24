@@ -532,6 +532,19 @@ Format:
   js/render/index.js js/ui/controlPanel.js js/ui/urlState.js`;
   delete `js/core/satellites.js`.
 
+## S353 — 24h-sun demo intros no longer auto-enable GP Path
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/demos/definitions.js`.
+- **Change:** Both 24h-sun demos (Alert 82°30′N and West
+  Antarctica 79°46′S) had `ShowGPPath: true` baked into their
+  intros, which silently flipped the Tracker Options GP-Path
+  toggle on every time they played. Removed. Sun track still
+  shows (that's the whole point of the 24h-sun demo). Users
+  can enable GP Path separately from Tracker Options if they
+  want it.
+- **Revert:** `git checkout v-s000352 -- js/demos/definitions.js`.
+
 ## S352 — Shrink compass-grid buttons so both rows stay inside the transport band
 
 - **Date:** 2026-04-24

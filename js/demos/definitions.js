@@ -142,7 +142,7 @@ const SUN_24H_DEMOS = [
       CameraDirection: -62.335, CameraHeight: 70, CameraDistance: 10, Zoom: 1.4,
       VaultSize: 1, VaultHeight: 0.45,
       ObserverHeading: 180,                  // face south
-      ShowSunTrack: true, ShowGPPath: true,
+      ShowSunTrack: true,
       ShowShadow: true, ShowTruePositions: true,
     },
     tasks: () => [
@@ -161,7 +161,7 @@ const SUN_24H_DEMOS = [
       CameraDirection: -83.262, CameraHeight: 70, CameraDistance: 10, Zoom: 1.4,
       VaultSize: 1, VaultHeight: 0.45,
       ObserverHeading: 0,                    // face north
-      ShowSunTrack: true, ShowGPPath: true,
+      ShowSunTrack: true,
       ShowShadow: true, ShowTruePositions: true,
     },
     tasks: () => [

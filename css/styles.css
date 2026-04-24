@@ -354,6 +354,11 @@ header .info-popup p:last-child { margin-bottom: 0; }
   padding: 2px 6px;
   margin: 0;
 }
+#bottom-bar .az-ring-btn[aria-pressed="true"] {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(255, 154, 60, 0.10);
+}
 #bottom-bar .cardinal-grid {
   display: grid;
   grid-template-columns: repeat(2, auto);

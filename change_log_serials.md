@@ -532,6 +532,19 @@ Format:
   js/render/index.js js/ui/controlPanel.js js/ui/urlState.js`;
   delete `js/core/satellites.js`.
 
+## S348 — 🧭 compass button toggles azimuth degree rings
+
+- **Date:** 2026-04-24
+- **Files changed:** `css/styles.css`, `js/ui/controlPanel.js`.
+- **Change:** New `.az-ring-btn` (🧭) appended to `.cycle-row`
+  after 🗺 and ✨. One click flips both `ShowAzimuthRing` (the
+  Optical-cap degree labels) and `ShowLongitudeRing` (the
+  ground-compass ring) together, so the full azimuth-readout
+  set turns on / off as one unit. Active state picks up the
+  accent-border highlight.
+- **Revert:** `git checkout v-s000347 -- css/styles.css
+  js/ui/controlPanel.js`.
+
 ## S347 — 2×3 mode-button grid, cycle column, compass-rose cardinals
 
 - **Date:** 2026-04-24

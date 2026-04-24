@@ -1333,7 +1333,22 @@ export function buildControlPanel(host, model, demos) {
     model.setState({ StarfieldType: next });
   });
 
-  cycleRow.append(btnMap, btnStarfield);
+  const btnAzRing = document.createElement('button');
+  btnAzRing.className = 'time-btn az-ring-btn';
+  btnAzRing.type = 'button';
+  btnAzRing.textContent = '🧭';
+  btnAzRing.title = 'Toggle azimuth ring (degree markings on Optical cap + ground longitude ring)';
+  btnAzRing.addEventListener('click', () => {
+    const on = !!model.state.ShowAzimuthRing;
+    // Flip both rings together — compass button controls the whole
+    // "azimuth degree readout" set.
+    model.setState({
+      ShowAzimuthRing:   !on,
+      ShowLongitudeRing: !on,
+    });
+  });
+
+  cycleRow.append(btnMap, btnStarfield, btnAzRing);
   compassControls.appendChild(cycleRow);
 
   // Cardinals live in their own 2×2 sub-grid so the N / S / E / W
@@ -1404,6 +1419,8 @@ export function buildControlPanel(host, model, demos) {
       model.state.ShowTruePositions ? 'true' : 'false');
     btnFreeCamKb.setAttribute('aria-pressed',
       model.state.FreeCameraMode ? 'true' : 'false');
+    btnAzRing.setAttribute('aria-pressed',
+      (model.state.ShowAzimuthRing || model.state.ShowLongitudeRing) ? 'true' : 'false');
   };
   model.addEventListener('update', refreshCompass);
   refreshCompass();

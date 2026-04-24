@@ -500,6 +500,29 @@ Format:
 - **Revert:** `git checkout v-s000256 -- js/render/worldObjects.js
   js/render/constellations.js`.
 
+## S305 — Hover + click work in Heavenly / free-cam mode too
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/ui/mouseHandler.js`.
+- **Change:**
+  - New `collectHeavenlyCandidates()` gathers every visible body
+    in Heavenly (sun, moon, planets, cel-nav, catalogued, black
+    holes, quasars, galaxies), respecting `ShowStars` /
+    `ShowPlanets` and Specified-Tracker-Mode filtering
+    (`TrackerTargets ∪ FollowTarget`).
+  - `projectToCanvasPixels()` runs each candidate's world-space
+    `vaultCoord` through the active Three.js camera matrix and
+    returns canvas pixel coords. `findNearestInHeavenly()` then
+    picks the nearest within a 24 px screen-space threshold.
+  - Pointer-move in Heavenly / free-cam now shows the same
+    name / Azi / Alt tooltip; hover detection caches
+    `hoveredHit` exactly as in Optical.
+  - Pointer-up click engages tracking in Heavenly too: without
+    touching `ObserverHeading` / pitch, it sets `FollowTarget`,
+    flips `FreeCamActive`, and applies the bird's-eye preset
+    (`CameraHeight 80.3 / CameraDistance 10 / Zoom 4.67`).
+- **Revert:** `git checkout v-s000304 -- js/ui/mouseHandler.js`.
+
 ## S304 — Drop redundant "Planets" label from Celestial Bodies grid
 
 - **Date:** 2026-04-24

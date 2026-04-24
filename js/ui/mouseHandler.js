@@ -21,6 +21,7 @@ const FP_ZOOM_MIN = 0.2;
 const FP_ZOOM_MAX = 75;      // fov_min = 75/75 = 1°
 const CLICK_DRAG_PX   = 4;    // pointer movement below this counts as click
 const CLICK_EPS_DEG   = 0.01; // heading/pitch diff for follow setState skip
+const HEAVENLY_HIT_PX = 24;   // screen-space hover radius in Heavenly / free-cam
 
 function opticalCadenceStepDeg(fovDeg) {
   if (fovDeg >= 8) return 5;
@@ -153,6 +154,84 @@ function displayNameFor(id, c) {
   return id;
 }
 
+// Candidates for Heavenly / free-cam hover testing. Each entry
+// carries the tracker id, its 3D vault position (world coords), and
+// its angles so the tooltip still shows az/el. STM hides anything not
+// in the allow-set (TrackerTargets ∪ FollowTarget) to match the
+// render-layer visibility rules.
+function collectHeavenlyCandidates(c, state) {
+  const stm = !!state.SpecifiedTrackerMode;
+  const allow = stm
+    ? new Set(Array.isArray(state.TrackerTargets) ? state.TrackerTargets : [])
+    : null;
+  if (stm && state.FollowTarget) allow.add(state.FollowTarget);
+  const passes = (id) => !stm || allow.has(id);
+
+  const out = [];
+  if (c.SunVaultCoord && passes('sun')) {
+    out.push({ id: 'sun', coord: c.SunVaultCoord, angles: c.SunAnglesGlobe });
+  }
+  if (c.MoonVaultCoord && passes('moon')) {
+    out.push({ id: 'moon', coord: c.MoonVaultCoord, angles: c.MoonAnglesGlobe });
+  }
+  if (state.ShowPlanets && c.Planets) {
+    for (const [name, p] of Object.entries(c.Planets)) {
+      if (!p || !p.vaultCoord || !passes(name)) continue;
+      out.push({ id: name, coord: p.vaultCoord, angles: p.anglesGlobe });
+    }
+  }
+  if (state.ShowStars) {
+    for (const list of [
+      c.CelNavStars, c.CataloguedStars, c.BlackHoles, c.Quasars, c.Galaxies,
+    ]) {
+      if (!list) continue;
+      for (const s of list) {
+        const id = `star:${s.id}`;
+        if (!s.vaultCoord || !passes(id)) continue;
+        out.push({ id, coord: s.vaultCoord, angles: s.anglesGlobe });
+      }
+    }
+  }
+  return out;
+}
+
+// Project a world-space point through the active Three.js camera and
+// return the canvas-pixel coordinates. Returns null if the point is
+// behind the near plane (or camera isn't available yet).
+function projectToCanvasPixels(coord, camera, canvas) {
+  if (!camera) return null;
+  const w = canvas.clientWidth || 1;
+  const h = canvas.clientHeight || 1;
+  const x = coord[0], y = coord[1], z = coord[2];
+  // Inline matrix-project to avoid importing Three here.
+  const m = camera.matrixWorldInverse.elements;
+  const p = camera.projectionMatrix.elements;
+  const vx = m[0]*x + m[4]*y + m[8]*z  + m[12];
+  const vy = m[1]*x + m[5]*y + m[9]*z  + m[13];
+  const vz = m[2]*x + m[6]*y + m[10]*z + m[14];
+  const vw = m[3]*x + m[7]*y + m[11]*z + m[15];
+  const cx = p[0]*vx + p[4]*vy + p[8]*vz  + p[12]*vw;
+  const cy = p[1]*vx + p[5]*vy + p[9]*vz  + p[13]*vw;
+  const cz = p[2]*vx + p[6]*vy + p[10]*vz + p[14]*vw;
+  const cw = p[3]*vx + p[7]*vy + p[11]*vz + p[15]*vw;
+  if (cw <= 0) return null;
+  const ndcX = cx / cw, ndcY = cy / cw, ndcZ = cz / cw;
+  if (ndcZ >= 1) return null;
+  return { x: (ndcX + 1) * 0.5 * w, y: (1 - ndcY) * 0.5 * h };
+}
+
+function findNearestInHeavenly(mouseX, mouseY, canvas, c, state, camera) {
+  const candidates = collectHeavenlyCandidates(c, state);
+  let best = null, bestD = HEAVENLY_HIT_PX;
+  for (const cand of candidates) {
+    const pt = projectToCanvasPixels(cand.coord, camera, canvas);
+    if (!pt) continue;
+    const d = Math.hypot(pt.x - mouseX, pt.y - mouseY);
+    if (d < bestD) { bestD = d; best = { id: cand.id, angles: cand.angles }; }
+  }
+  return best;
+}
+
 function ensureHoverTooltip() {
   let el = document.getElementById('celestial-hover');
   if (el) return el;
@@ -214,26 +293,38 @@ export function attachMouseHandler(canvas, model) {
     dragging = false;
     try { canvas.releasePointerCapture(e.pointerId); } catch {}
     if (!wasClick) return;
-    if (!model.state.InsideVault) return;
     // Prefer the hovered hit (the body whose tooltip is currently
     // shown) over a fresh nearest-search — the user clicked the info
     // box they could see, even if another body is slightly nearer
     // the click pixel.
     let best = hoveredHit;
-    if (!best) {
+    if (!best && model.state.InsideVault) {
       const click = canvasToSkyAngles(canvas, e.offsetX, e.offsetY, model.state);
       best = findNearestCelestial(
         click.az, click.el, model.computed, model.state, click.fovV,
       );
     }
     if (!best) return;
-    const targetHeading = ((best.angles.azimuth % 360) + 360) % 360;
-    const targetPitch = Math.max(0, Math.min(89.9, best.angles.elevation));
-    model.setState({
-      FollowTarget: best.id,
-      ObserverHeading: targetHeading,
-      CameraHeight:    targetPitch,
-    });
+    if (model.state.InsideVault) {
+      const targetHeading = ((best.angles.azimuth % 360) + 360) % 360;
+      const targetPitch = Math.max(0, Math.min(89.9, best.angles.elevation));
+      model.setState({
+        FollowTarget: best.id,
+        ObserverHeading: targetHeading,
+        CameraHeight:    targetPitch,
+      });
+    } else {
+      // Heavenly / free-cam click: lock on without touching Optical
+      // heading/pitch; scene.js recenters the orbit around the body's
+      // GP because FreeCamActive is on.
+      model.setState({
+        FollowTarget:   best.id,
+        FreeCamActive:  true,
+        CameraHeight:   80.3,
+        CameraDistance: 10,
+        Zoom:           4.67,
+      });
+    }
   });
 
   canvas.addEventListener('pointerleave', () => {
@@ -285,10 +376,34 @@ export function attachMouseHandler(canvas, model) {
         hideHover();
       }
     } else {
-      hideHover();
+      // Heavenly / free-cam hover: use screen-space projection of each
+      // body's world-space vault position, not pinhole az/el.
       if (model.state.MouseElevation !== null
           || model.state.MouseAzimuth !== null) {
         model.setState({ MouseElevation: null, MouseAzimuth: null });
+      }
+      if (!dragging) {
+        const camera = window.renderer?.sm?.camera || null;
+        const hit = findNearestInHeavenly(
+          e.offsetX, e.offsetY, canvas, model.computed, model.state, camera,
+        );
+        if (hit) {
+          hoveredHit = hit;
+          const name = displayNameFor(hit.id, model.computed);
+          const az = ((hit.angles.azimuth % 360) + 360) % 360;
+          const el = hit.angles.elevation;
+          hoverTip.innerHTML =
+            `<div class="celestial-hover-name">${name}</div>`
+            + `<div>Azi: ${az.toFixed(2)}°</div>`
+            + `<div>Alt: ${(el >= 0 ? '+' : '') + el.toFixed(2)}°</div>`;
+          hoverTip.style.left = `${e.offsetX + 14}px`;
+          hoverTip.style.top  = `${e.offsetY + 14}px`;
+          hoverTip.style.display = '';
+        } else {
+          hideHover();
+        }
+      } else {
+        hideHover();
       }
     }
 

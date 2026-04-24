@@ -500,6 +500,23 @@ Format:
 - **Revert:** `git checkout v-s000256 -- js/render/worldObjects.js
   js/render/constellations.js`.
 
+## S309 — Default TrackerTargets empty so STM actually hides bodies
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/core/app.js`, `js/ui/urlState.js`.
+- **Change:** `TrackerTargets` default flipped from
+  `['sun','moon','mercury','venus','mars','jupiter','saturn',
+  'uranus','neptune']` to `[]`. The old default pre-populated
+  the STM allow-set with every luminary and planet, so toggling
+  the 🎯 quick-button whitelisted them all and nothing ever
+  hid. Now an un-curated session starts with an empty tracker
+  list, so clicking 🎯 with nothing selected leaves only the
+  `FollowTarget` (if any) visible, which is what the rest of
+  the STM flow expects. `URL_SCHEMA_VERSION` bumped
+  `275` → `309` to drop stale stored target lists.
+- **Revert:** `git checkout v-s000308 -- js/core/app.js
+  js/ui/urlState.js`.
+
 ## S308 — Mirror trimmed Walter Bislin credit into README.md
 
 - **Date:** 2026-04-24

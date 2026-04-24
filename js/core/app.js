@@ -177,7 +177,7 @@ function defaultState() {
     PermanentNight: false,
 
     // Ids: 'sun' / 'moon' / planet name / 'star:<id>'. Empty = HUD collapsed.
-    TrackerTargets: ['sun','moon','mercury','venus','mars','jupiter','saturn','uranus','neptune'],
+    TrackerTargets: [],
 
     ShowEphemerisReadings: false,
 

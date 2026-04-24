@@ -610,7 +610,7 @@ export class FeModel extends EventTarget {
             quasar:     0x40e0d0,  // cyan
           };
           info = {
-            target, name: def.name, category: 'star', mag: def.mag,
+            target, name: def.name, category: 'star', subCategory: cat, mag: def.mag,
             gpColor: gpColorByCat[cat] || 0xffffff,
             azimuth: entry.anglesGlobe.azimuth,
             elevation: entry.anglesGlobe.elevation,

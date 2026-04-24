@@ -500,6 +500,22 @@ Format:
 - **Revert:** `git checkout v-s000256 -- js/render/worldObjects.js
   js/render/constellations.js`.
 
+## S269 — Tracker HUD titles: distinguish black holes and quasars from stars
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/core/app.js`, `js/ui/controlPanel.js`.
+- **Change:**
+  - `app.update()` attaches `subCategory` (`celnav` / `catalogued`
+    / `blackhole` / `quasar`) to each star-category
+    `TrackerInfo`.
+  - Tracker HUD's parenthesised category label now maps
+    `subCategory === 'blackhole'` → "black hole" and
+    `subCategory === 'quasar'` → "quasar"; everything else in
+    category `star` still shows "star". Non-star categories
+    unchanged ("planet" / "luminary").
+- **Revert:** `git checkout v-s000268 -- js/core/app.js
+  js/ui/controlPanel.js`.
+
 ## S268 — Remove cel-nav duplicates from Constellations tracker menu
 
 - **Date:** 2026-04-24

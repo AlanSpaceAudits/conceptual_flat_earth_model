@@ -1315,9 +1315,12 @@ export function buildTrackerHud(trackerEl, model) {
       // if the cache got out of sync with the DOM.
       if (rec.block.parentNode !== trackerEl) trackerEl.appendChild(rec.block);
 
-      const cat = info.category === 'star'   ? 'star'
-                : info.category === 'planet' ? 'planet'
-                : 'luminary';
+      const cat = info.category === 'star'
+        ? (info.subCategory === 'blackhole' ? 'black hole'
+          : info.subCategory === 'quasar'   ? 'quasar'
+          : 'star')
+        : info.category === 'planet' ? 'planet'
+        : 'luminary';
       rec.title.textContent = `${info.name} (${cat})`;
       rec.azel.textContent  = `az ${fmtDmsDegAz(info.azimuth)}   el ${fmtDmsDegEl(info.elevation)}`;
       // ephemeris-comparison block hides entirely for stars

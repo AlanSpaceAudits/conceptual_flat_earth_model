@@ -500,6 +500,21 @@ Format:
 - **Revert:** `git checkout v-s000256 -- js/render/worldObjects.js
   js/render/constellations.js`.
 
+## S298 — Comprehensive about.md refresh
+
+- **Date:** 2026-04-24
+- **Files changed:** `about.md`.
+- **Change:** Full pass to match the current UI: bottom-bar +
+  tab-popup architecture, collapsible Live Moon Phases HUD,
+  multi-column Live Ephemeris tracker toggle, bottom info strip
+  with Tracking row, compass / perm-night / STM quick buttons,
+  click-to-track + hover tooltips + FollowTarget, free-cam
+  mode, Tracker Options sub-menu, Cel Nav / Constellations /
+  Black Holes / Quasars / Galaxies sub-menus, keyboard
+  shortcuts, URL schema version `275`. Credits and philosophy
+  sections unchanged.
+- **Revert:** `git checkout v-s000297 -- about.md`.
+
 ## S297 — Quick-button for Specified Tracker Mode on the bottom bar
 
 - **Date:** 2026-04-24

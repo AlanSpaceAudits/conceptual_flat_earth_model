@@ -19,165 +19,194 @@ All distances are unitless. `FE_RADIUS = 1`. Everything else is a ratio. The cod
 
 ---
 
-# The UI in detail
+# Layout
 
-The control panel has five tabs along the top: **View**, **Time**, **Show**, **Tracker**, **Demos**. The main canvas shows a 3D scene driven by those controls. A HUD in the top-left gives live readouts; a second HUD appears on the left when you track objects; a red warning banner pins to the bottom of the view when the active ephemeris depends on the low-accuracy Meeus moon.
+The main canvas fills the viewport. A collapsible HUD in the top-left gives live readouts; a second HUD can be toggled on the left to show per-tracked-target blocks; a bottom bar runs the width of the viewport with live slots on top and the mode / transport / tab controls below.
+
+- **Top-left HUD** — starts collapsed behind a `▶ Live Moon Phases` header. Expanding it reveals the date/time, sun az/el, moon az/el + phase percentage, next solar + lunar eclipse countdown, and the moon-phase canvas widget (phase illustration + illumination bar + phase name).
+- **Live Ephemeris Data button** — sits directly below the moon-phase header inside the HUD. Clicking toggles a multi-column tracker-HUD that appears under the main HUD; each tracked body becomes a bordered card with its own az/el and per-pipeline RA/Dec rows. When the stack is too tall for the viewport, cards flow into a new column to the right.
+- **Bottom info strip** — transparent band across the bottom of the canvas showing Lat · Lon · El · Az (observer pose), Mouse El / Mouse Az (Optical cursor readout), ephem (active source), and the current date/time. A second row below shows `Tracking: <name>` when a body is locked.
+- **Cadence chip (Optical only)** — tiny orange chip in the top-right giving the current zoom cadence (15° / 5° / 1°), FOV, and facing heading.
+
+## Bottom bar
+
+The dark bar anchors everything else. From left to right:
+
+- **Mode toggles** — vault swap (🌐 / 👁) flips between Heavenly and Optical views; 🌙 pins permanent night so stars stay visible through daylight.
+- **Transport controls** — ⏪ rewind, ▶ play/pause, ⏩ fast-forward. Speed presets stack on each press; the speed readout chip lives next to them.
+- **Compass quick-buttons** — 🎯 Specified-Tracker-Mode toggle, then **N / S / E / W** to snap `ObserverHeading` to a cardinal and drop any active follow. The active cardinal takes an accent border while the heading is within 0.5° of it.
+- **Tabs** — View, Time, Show, Tracker, Demos, Info. Each opens a popup anchored above its tab button.
+
+---
+
+# UI in detail
+
+Six tabs run along the right side of the bottom bar. Clicking one opens its popup above the bar; clicking it again or pressing <kbd>Esc</kbd> closes it. Only one popup is open at a time, and groups inside a popup are mutually exclusive — opening one collapses the others.
 
 ## View tab
 
 ### Observer
-- **Figure** — which little visible stand-in to place at the observer's position on the disc. Options: Male, Female, Turtle, Bear, Llama, Goose, Black Cat, Great Pyrenees, Owl, Frog, Kangaroo, None.
-- **ObserverLat / ObserverLong** — the observer's position on the FE disc graticule, in degrees. Sub-arcsecond granularity (step 0.0001°) so you can reproduce a Stellarium lat/lon exactly.
-- **Elevation** — observer height above the disc, 0–0.5 FE units. Lifts the camera in Optical mode (geometry stays disc-anchored).
-- **Facing** — compass heading 0–360°, clockwise from north. Drives which way the Optical camera looks and which meridian highlights as "active".
+- **Figure** — which little visible stand-in to place at the observer's position on the disc (Male, Female, Turtle, Bear, Llama, Goose, Black Cat, Great Pyrenees, Owl, Frog, Kangaroo, None).
+- **ObserverLat / ObserverLong** — observer's position on the FE disc graticule, in degrees, step 0.0001° so Stellarium lat/lon reproduces exactly.
+- **Elevation** — observer height above the disc (0–0.5 FE units). Lifts the Optical camera; geometry stays disc-anchored.
+- **Facing** — compass heading 0–360° CW from north. Drives the Optical camera and the active-meridian highlight.
 - **Nudge buttons** — quick ±1°, ±1′, ±1″ heading steps.
-- **Heavenly Vault / Optical Vault button** — the big mode toggle. Heavenly is the external orbit camera looking at the whole disc; Optical is first-person from the observer's eye.
+- **Arrow keys** — pan the observer lat/long; <kbd>Space</kbd> toggles play/pause.
 
-### Camera (Heavenly orbit camera)
+### Camera (Heavenly orbit)
 - **CameraDir** — orbit azimuth around the scene, −180° … +180°.
 - **CameraHeight** — orbit elevation, −30° … +89.9°.
 - **CameraDist** — orbit distance from the scene, 2–100 FE units.
-- **Zoom** — orbit-camera zoom, 0.1–10×. Note: in Optical mode a separate `OpticalZoom` is used; the two don't leak into each other.
+- **Zoom** — orbit-camera zoom, 0.1–10×. Optical uses its own `OpticalZoom`; the two don't leak into each other.
 
-### Vault of the Heavens (external / Heavenly)
-- **VaultSize** — horizontal radius of the dome shown in Heavenly mode.
-- **VaultHeight** — vertical extent (flattened cap ratio).
+### Vault of the Heavens
+- **VaultSize / VaultHeight** — horizontal radius and flattened-cap ratio for the Heavenly dome.
 
-### Optical Vault (first-person cap above observer)
-- **Size** — horizontal radius of the perceived cap.
-- **Height** — vertical extent of the cap *as seen from Heavenly view*. Starts at `Size` (hemisphere) by default; dragging it below makes the cap read as a flattened FE dome from outside. First-person Optical view is invariant to this slider — the cap is always a hemisphere there so elevation readings stay 1:1 with reported angles.
+### Optical Vault
+- **Size / Height** — horizontal radius and vertical extent of the Optical cap as seen from Heavenly view. First-person Optical view is invariant to `Height` — the cap is always a hemisphere there so elevation stays 1:1 with reported angles.
 
 ### Body Vaults
-Per-body vault heights for where each body's projected dot sits. Adjusting these changes how the body rides across the cap in first-person view.
-- **Starfield**, **Moon**, **Sun**, **Mercury**, **Venus**, **Mars**, **Jupiter**, **Saturn**.
+Per-body heights for where each projected dot sits: Starfield, Moon, Sun, Mercury, Venus, Mars, Jupiter, Saturn, Uranus, Neptune.
 
 ### Rays
-- **RayParam** — curvature parameter for the bezier-curved ray lines that connect the observer to the projected markers (0.5–2.0).
+- **RayParam** — curvature for the bezier ray lines between the observer and the projected markers (0.5–2.0).
 
 ---
 
 ## Time tab
 
-### Date / Time
-- **DayOfYear** — 0–365. Drives sun declination and season.
-- **Time** — 0–24 h. Drives sidereal rotation of the sky over the disc.
-- **DateTime** — absolute days since the sim's `TIME_ORIGIN` zero date. Sliding DateTime is the universal way to scrub time; autoplay drives this field.
+### Calendar
+- **Timezone** — offset from UTC in minutes.
+- **DateTime** — absolute instant; slider + direct date/time entry.
 
-The Time tab's right column includes a small **autoplay** module with play/pause and speed presets (Day / Year / Precession). When autoplay is running, DateTime advances at the selected rate and the whole sky moves accordingly.
+### Autoplay
+Play / pause and speed presets (Day / Year / Precession). Active speed persists across the bottom-bar transport buttons.
 
 ---
 
 ## Show tab
 
-### Visibility (boolean toggles)
-- **FE Grid** — disc graticule (lat / lon lines on the flat map).
-- **Tropics / Polar** — the five canonical latitude circles.
-- **Sun / Moon GP** — ground-point dots at the sub-solar and sub-lunar longitudes.
-- **Heavenly Vault** — the external dome shell.
-- **Vault Grid** — wireframe on the Heavenly dome.
-- **Shadow** — day-side / night-side terminator shading on the disc.
-- **Sun Track / Moon Track** — arc curves showing the body's 360° sky path at the current declination.
-- **Optical Vault** — the first-person cap markers (projected sun, moon, planets, stars).
-- **True Positions** — the heavenly-vault source markers in addition to their optical-vault projections.
-- **Facing Vector / N-S-E-W** — the heading arrow and cardinal labels in Optical mode.
-- **Declination Circles** — celestial-sphere declination rings.
-- **Stars** — the background starfield (whichever starfield type is selected under Starfield).
-- **Constellations** — filled / marked constellation stars.
-- **Constellation outlines** — stick-figure outlines of the constellations.
-- **Longitude ring (ground)** — the compass ring on the disc around the observer.
-- **Azimuth ring (vault)** — the degree labels on the Optical cap rim.
-- **Starfield Mode** — *Dynamic* (stars fade with day/night) vs *Static* (always visible).
-- **Vault Rays** — bezier rays from observer to true-position markers on the Heavenly vault.
-- **Optical Vault Rays** — bezier rays from observer to the optical-vault markers.
-- **Many Rays** — multi-ray variant for illustration.
-- **Planets** — toggle the five classical planet markers on/off.
-- **Logo** — the Aether Cosmology overlay in the corner.
+The `Visibility` group is now split into collapsible subgroups:
 
-### Cosmology
-- **Axis Mundi** dropdown: none, yggdrasil, meru (Mt Meru), vortex (single toroidal vortex), vortex2 (dual horn-torus). Cosmological centrepieces at the disc centre.
-
-### Map Projection
-- **Projection** — which base map to render on the disc: azimuthal equidistant (default), Mercator, Hellerick LAEA, proportional AE, blank, etc. Purely visual; graticule math is unchanged.
-
-### Starfield
-- **Starfield** — choose the starfield renderer:
-  - *Default (random)* — procedural star cloud.
-  - *Chart (dark)* / *Chart (light)* — textured star chart wrapped on the dome.
-  - *Cel Nav (named stars)* — the 58 Nautical Almanac navigational stars, labelled and drawn from a J2000 catalogue with optional precession / nutation / aberration corrections (see Tracker tab).
-- **Permanent night** — pin `NightFactor` to 1 so the starfield is always visible regardless of where the sun sits.
+- **Heavenly Vault** — vault, vault grid, true positions, sun / moon tracks.
+- **Optical Vault** — vault, grid, azimuth ring, facing vector, celestial poles, declination circles.
+- **Ground / Disc** — FE grid, tropics / polar circles, sun / moon GP, longitude ring, shadow.
+- **Stars** — random starfield, constellations, outlines.
+- **Rays** — vault rays, optical vault rays, projection rays, many rays.
+- **Cosmology** — Axis Mundi (none / yggdrasil / meru / vortex / vortex2).
+- **Map Projection** — azimuthal equidistant (default), Mercator, Hellerick LAEA, proportional AE, blank.
+- **Starfield** — starfield type (random / chart-dark / chart-light / Cel Nav), starfield mode (dynamic / static), permanent night.
+- **Misc** — planets, dark background, logo.
 
 ---
 
 ## Tracker tab
 
-### Object
-- **Track** — a grid of toggle buttons for what to track. Each button is on/off; multiple can be active. The tracked list drives the second HUD panel (appears on the left of the canvas when anything is tracked) with live azimuth, elevation, RA, and Dec readouts per target, plus per-pipeline readings (see Ephemeris below). Options:
-  - Sun, Moon, Mercury, Venus, Mars, Jupiter, Saturn.
-  - All 58 Nautical-Almanac Cel Nav stars (Acamar → Zubenelgenubi).
+Seven top-level collapsible groups, mutually exclusive:
 
 ### Ephemeris
-- **Source** — which of five ephemeris pipelines drives the sun / moon / planet positions in the main scene. All five run every frame; the Source selector only chooses which drives the primary sky render. The Tracker HUD shows the reading from every pipeline side-by-side so discrepancies are visible.
-  - **HelioC** — Schlyter simplified Kepler, composed with the Sun's geocentric orbit. ~5′ accuracy at modern dates; historical source pipeline.
-  - **GeoC** — Earth-focus Kepler (single ellipse per planet, no Sun stage). Inaccurate by design; the "no heliocentric intermediate" pedagogical pipeline.
-  - **Ptolemy** — deferent + epicycle from *Almagest* (ported from R.H. van Gent). ~1° accuracy at antiquity; drifts to ~5–10° at modern dates — that drift IS the point.
-  - **DE405** — Fred Espenak's AstroPixels tabulated ephemeris. Daily rows 2019–2030. Matches Stellarium to sub-arcsecond inside the tabulated range. **Default.**
-  - **VSOP87** — Bretagnon & Francou 1988 analytical theory, MIT-licensed port via commenthol. Works at any date; arcsecond-class for planets; delegates Moon to Meeus.
+- **Source** — which of five ephemeris pipelines drives sun / moon / planet positions. All five run every frame; the Tracker HUD shows every pipeline side-by-side so discrepancies are visible.
+  - **HelioC** — Schlyter simplified Kepler composed with the Sun's geocentric orbit.
+  - **GeoC** — Earth-focus Kepler (single ellipse per planet, no Sun stage).
+  - **Ptolemy** — deferent + epicycle from *Almagest*.
+  - **DE405** — Fred Espenak's AstroPixels daily ephemeris 2019–2030. **Default.**
+  - **VSOP87** — Bretagnon & Francou 1988 analytical theory. Delegates moon to Meeus.
+- **Ephemeris comparison** — show the full per-pipeline RA / Dec rows for each tracker block.
+- **Precession / Nutation / Aberration / Trepidation** — classical corrections brought to J2000 star positions.
 
-- **Star correction checkboxes** — toggle the three classical corrections that bring catalogue J2000 positions up to apparent-of-date:
-  - **Precession** — Lieske 1977 / IAU 1976 (Meeus 21.4). The ~20′-per-26-year secular drift.
-  - **Nutation** — Meeus 22.A two-term low-accuracy model. ±9″ wobble driven by the Moon's node.
-  - **Aberration** — Meeus 23.2 first-order annual aberration. ±20.5″ ellipse from Earth's orbital motion.
-  - **Trepidation** — master "apply all three as one combined wobble" label. When checked it forces all three on regardless of their individual states. Historical name nod to the medieval trepidation-of-the-equinoxes hypothesis.
+### Tracker Options
+- **Clear All Tracked** — empty the target list.
+- **Specified Tracker Mode** — only tracked bodies render; all other celestial objects hide. Mirrored by the 🎯 quick-button on the bar.
+- **GP Override** — tracker GPs paint regardless of the master `Show Ground Points` toggle.
 
-If the active Source uses the Meeus moon (HelioC, GeoC, VSOP87), a red warning banner appears at the bottom of the canvas noting the ~2.5° Meeus-moon timing error. DE405 (Astropixels) and Ptolemy have their own moons and don't trigger the banner.
+### Celestial Bodies
+Multi-select button grid for the classical bodies: Sun, Moon, Mercury, Venus, Mars, Jupiter, Saturn, Uranus, Neptune.
+
+### Cel Nav
+All 58 Nautical-Almanac navigational stars, alphabetised, each a warm-yellow toggle.
+
+### Constellations
+Named catalogued stars minus cel-nav crossovers (which live in their own sub-menu).
+
+### Black Holes
+Sgr A*, M87*, M31*, Cygnus X-1, V404 Cygni, NGC 4258, A0620-00, NGC 1275, NGC 5128, M81*, 3C 273 BH.
+
+### Quasars
+3C 273, 3C 48, 3C 279, 3C 351, S5 0014+81, TON 618, OJ 287, APM 08279+5255, 3C 454.3, PKS 2000-330, 3C 345, 3C 147, PG 1634+706, Twin Quasar, Mrk 421, Mrk 501, 3C 66A, PKS 1510-089, BL Lacertae.
+
+### Galaxies
+M31, M32, M33, M51, M63, M64, M77, M81, M82, M87, M101, M104, M110, NGC 253, NGC 4565, NGC 4631, NGC 5128, LMC, SMC, Cartwheel.
+
+Each catalogued body renders on the heavenly dome and the Optical vault in a distinct colour (cel nav warm-yellow, catalogued white, black holes purple, quasars cyan, galaxies pink). Tracking a body from any sub-menu produces a coloured GP on the disc when Heavenly mode is active.
 
 ---
 
 ## Demos tab
 
-A scripted-animation browser. The list is rendered by the Demos module; sections collapse by default for the long eclipse lists. Controls at the top:
-- **Stop** — halt the current demo.
-- **Pause / Resume** — freeze the tween queue without clearing state; the observer can move lat/long or switch Heavenly/Optical while paused, then resume from the same eclipse moment.
-- **Prev / Next** — step through the current list or active queue.
-
-Sections:
+Scripted-animation browser. Controls along the top: **Stop**, **Pause / Resume**, **Prev / Next**. Sections:
 
 ### General (6 entries)
-Everyday sky demos: equinox-at-equator, summer and winter solstice at 45°N, one-month moon phase cycle, an observer travelling equator→pole→equator, and 78°N summer-solstice 24-hour-daylight.
+Everyday sky demos: equinox-at-equator, summer and winter solstice at 45°N, one-month moon phase cycle, an observer travelling equator→pole→equator, 78°N summer-solstice 24-hour-daylight.
 
 ### Solar Eclipses (AstroPixels / DE405, 2021-2040) — 44 entries
-One per real solar eclipse in Fred Espenak's tabulation. Each entry's name is the date plus type (Total / Annular / Partial / Hybrid), central duration, magnitude, and Saros series. Playing a demo:
-- Reads the currently-selected BodySource from the Tracker tab
-- Refines the syzygy time using THAT pipeline's own sun + moon
-- Plants the observer at that pipeline's subsolar point at that moment
-- Tweens DateTime through the eclipse window
-- Under DE405 the demo lands on the real eclipse; under Ptolemy it lands on Ptolemy's own ~5-10° off prediction in the Almagest frame. Each pipeline tells its own story.
-
-A **Play all in Solar Eclipses** button queues the full list; autoplay advances to the next demo when one finishes.
+One per real solar eclipse in Fred Espenak's tabulation. Each entry includes date, type (Total / Annular / Partial / Hybrid), central duration, magnitude, and Saros. Playing a demo reads the active BodySource, refines the syzygy time using that pipeline's own sun + moon, plants the observer at that pipeline's subsolar point, and tweens DateTime through the eclipse window. Under DE405 the demo lands on the real eclipse; under Ptolemy it lands on Ptolemy's own ~5–10° off prediction. **Play all** queues the full list.
 
 ### Lunar Eclipses (AstroPixels / DE405, 2021-2040) — 67 entries
-Same structure as Solar Eclipses. Includes Total, Partial, and Penumbral events (the 22 penumbrals that ChatGPT's OCR of Espenak's table missed — reincluded here because they're real events in the canonical table).
+Same structure, including the 22 penumbrals that earlier data-capture rounds missed.
 
 ### FE Eclipse Predictions (placeholder)
-One advisory entry. Structural hook for a future FE eclipse predictor based on Shane St. Pierre / Dimbleby's *All Past Time* Saros-harmonic method (three lunar periodicities → Saros → 120° westward shift → Exeligmos → Dimbleby's team of 70 → 651-year grand cycle). Not yet implemented; the placeholder ensures the track exists in the UI without faking predictions from the mainstream table.
+Structural hook for a future FE eclipse predictor based on Shane St. Pierre / Dimbleby's Saros-harmonic method. Not yet implemented.
+
+---
+
+## Info tab
+
+External-link groups for communities and creators around this work:
+
+- **Space Audits** (Alan's links)
+- **Shane St. Pierre** — blog, videos, books
+- **Man of Stone**
+- **Globebusters**
+- **Aether Cosmology CZ-SK**
+- **Discord** — multiple invites including Aether Cosmology and Earth Awakenings
+- **Clubhouse** — `#FlatEarthGang` room tag
+- **Twitter Community** — FE Community Friday X Spaces hosted by Ken and Brian
+
+---
+
+# Interactive tracking (Optical mode)
+
+- **Hover** — the cursor shows a tooltip next to any celestial body in range (`Name · az X.XX° el ±Y.YY°`). The click-hit box scales with FOV so you don't have to land pixel-perfect.
+- **Click to lock** — clicking a body (within the same threshold) snaps `ObserverHeading` and `CameraHeight` to it and sets `FollowTarget`. Subsequent time advances re-aim the camera every frame. Below-horizon targets pin pitch to 0 so the camera keeps swinging with the azimuth along the horizon.
+- **Overlap resolution** — whichever body is currently showing the hover tooltip is the one that gets locked on click, even if another body is slightly nearer the click pixel.
+- **Break the lock** — any real drag (≥ 4 pixels) clears `FollowTarget` and resumes manual control. The bottom-bar compass buttons clear it too.
+
+# Free-cam mode (Heavenly with tracking)
+
+Switching from Optical to Heavenly while `FollowTarget` is set activates a bird's-eye free-cam. The orbit camera reconfigures to `CameraHeight: 80.3°`, `CameraDistance: 10`, `Zoom: 4.67` and re-anchors around the tracked body's ground point: the same `CameraDirection` / `CameraHeight` / `CameraDistance` / `Zoom` offset now applies *around the GP* instead of the disc origin, with `lookAt` pinned on the GP so the body stays screen-centre as time advances. The tracked body's GP always paints on the disc while free-cam is active regardless of the master `Show Ground Points` toggle. Any real drag in Heavenly breaks free-cam and restores the normal observer-anchored orbit view.
 
 ---
 
 # HUD panels
 
-- **Main HUD (top-left)** — running sun / moon azimuth-elevation readout, local time, a live moon-phase icon, and a countdown to the next solar and lunar eclipse.
-- **Tracker HUD (left, conditional)** — appears while anything is in the Tracker's Object list. One block per tracked target showing:
-  - Azimuth / elevation readout in Stellarium-style DMS format (`+280°53′58.9″`)
-  - Per-pipeline RA / Dec rows so Helio / GeoC / Ptolemy / DE405 / VSOP87 can be visually compared side by side
-- **Meeus warning banner (bottom, conditional)** — red text when the active BodySource relies on Meeus moon.
-- **Cadence chip (top-right, Optical only)** — tiny label showing the active Optical reading cadence (15° coarse, 5° refined, 1° fine) plus the current FOV and facing.
-- **Dynamic description footer** — a one-line running summary under the canvas: observer latitude, sun status (within/beyond optical vault, twilight stage, etc.). Demos override this with narrative text during playback.
+- **Main HUD (top-left, collapsible)** — behind the `Live Moon Phases` header: DateTime, sun and moon az/el, moon phase %, next solar + lunar eclipse countdowns, moon-phase canvas (illustration + illumination bar + phase name).
+- **Live Ephemeris tracker HUD** — toggled by the button under the HUD. One card per tracked body (and per `FollowTarget`, unless tagged follow-only) with az/el and up to five per-pipeline RA/Dec rows. Cards flow into multiple columns when the stack exceeds viewport height.
+- **Bottom info strip** — two rows: live observer pose + mouse readouts + active ephemeris + current time on top, `Tracking: <name>` on the bottom.
+- **Meeus warning banner** — red text at the bottom of the view when the active BodySource relies on the Meeus moon (HelioC, GeoC, VSOP87).
+- **Cadence chip (Optical only)** — tiny readout showing active cadence (15° / 5° / 1°), current FOV, and facing heading.
+- **Dynamic description footer** — one-line status under the canvas (observer latitude + sun status + twilight stage). Demos override this with narrative text during playback.
 
 ---
 
+# Keyboard
+
+- **Arrow keys** — move the observer's lat / long.
+- **<kbd>Space</kbd>** — toggle play / pause.
+- **<kbd>Esc</kbd>** — close the currently open tab popup.
+
 # Orientation persistence
 
-Every panel slider's state lives in the URL hash, so every sim state can be shared as a link. The URL is versioned (`v=201`) — when defaults change between releases, old URLs gracefully fall back to the new default rather than pinning you to the outdated value.
+Every slider's state lives in the URL hash so any sim state can be shared as a link. The URL is versioned (`v=275` at the time of writing) — when a default changes between releases, the version bump tells the loader to drop the stale keys and use the new default rather than pinning you to an old value.
 
 ---
 

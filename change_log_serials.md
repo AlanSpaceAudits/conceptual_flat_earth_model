@@ -532,6 +532,19 @@ Format:
   js/render/index.js js/ui/controlPanel.js js/ui/urlState.js`;
   delete `js/core/satellites.js`.
 
+## S342 — Quick-cycle buttons for Map projection + Starfield
+
+- **Date:** 2026-04-24
+- **Files changed:** `css/styles.css`, `js/ui/controlPanel.js`.
+- **Change:** Two new buttons appended to `.compass-controls`
+  after 📍:
+  - **🗺** cycles `MapProjection` through
+    `ae → hellerick → proportional → blank → ae …`.
+  - **✨** cycles `StarfieldType` through
+    `random → chart-dark → chart-light → celnav → random …`.
+- **Revert:** `git checkout v-s000341 -- css/styles.css
+  js/ui/controlPanel.js`.
+
 ## S341 — Bump TrackedGroundPoints pool 16 → 256
 
 - **Date:** 2026-04-24

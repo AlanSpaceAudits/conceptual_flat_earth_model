@@ -357,6 +357,8 @@ header .info-popup p:last-child { margin-bottom: 0; }
   background: rgba(255, 154, 60, 0.10);
 }
 #bottom-bar .observer-btn { min-width: 32px; padding: 4px 6px; margin-left: 4px; }
+#bottom-bar .map-btn { min-width: 32px; padding: 4px 6px; margin-left: 4px; }
+#bottom-bar .starfield-btn { min-width: 32px; padding: 4px 6px; margin-left: 4px; }
 
 #bottom-bar .tabs {
   display: flex;

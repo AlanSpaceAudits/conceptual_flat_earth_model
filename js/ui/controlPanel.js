@@ -1261,6 +1261,34 @@ export function buildControlPanel(host, model, demos) {
   });
   compassControls.appendChild(btnObserver);
 
+  const MAP_CYCLE = ['ae', 'hellerick', 'proportional', 'blank'];
+  const btnMap = document.createElement('button');
+  btnMap.className = 'time-btn map-btn';
+  btnMap.type = 'button';
+  btnMap.textContent = '🗺';
+  btnMap.title = 'Cycle map projection';
+  btnMap.addEventListener('click', () => {
+    const cur = model.state.MapProjection || 'ae';
+    const idx = MAP_CYCLE.indexOf(cur);
+    const next = MAP_CYCLE[(idx + 1) % MAP_CYCLE.length];
+    model.setState({ MapProjection: next });
+  });
+  compassControls.appendChild(btnMap);
+
+  const STARFIELD_CYCLE = ['random', 'chart-dark', 'chart-light', 'celnav'];
+  const btnStarfield = document.createElement('button');
+  btnStarfield.className = 'time-btn starfield-btn';
+  btnStarfield.type = 'button';
+  btnStarfield.textContent = '✨';
+  btnStarfield.title = 'Cycle starfield (random / chart dark / chart light / cel nav)';
+  btnStarfield.addEventListener('click', () => {
+    const cur = model.state.StarfieldType || 'random';
+    const idx = STARFIELD_CYCLE.indexOf(cur);
+    const next = STARFIELD_CYCLE[(idx + 1) % STARFIELD_CYCLE.length];
+    model.setState({ StarfieldType: next });
+  });
+  compassControls.appendChild(btnStarfield);
+
   const compassBtns = [
     { label: 'N', heading: 0   },
     { label: 'S', heading: 180 },

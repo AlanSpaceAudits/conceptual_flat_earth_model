@@ -572,6 +572,18 @@ header .info-popup p:last-child { margin-bottom: 0; }
   background: var(--row); color: var(--fg); border: 1px solid var(--border);
   border-radius: 3px; padding: 3px 5px; font: inherit;
 }
+.row.pair-select {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: start;
+  gap: 6px;
+}
+.row.pair-select select.sel {
+  width: 100%;
+  background: var(--row); color: var(--fg);
+  border: 1px solid var(--border);
+  border-radius: 3px; padding: 3px 5px; font: inherit;
+}
 .row.bool select.sel:focus { border-color: var(--accent); outline: none; }
 .row.datetime { grid-template-columns: 96px 1fr 1fr; }
 .row.datetime input[type="date"],

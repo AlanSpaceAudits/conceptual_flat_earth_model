@@ -623,8 +623,10 @@ const FIELD_GROUPS = [
           select: ['none', 'yggdrasil', 'meru', 'vortex', 'vortex2', 'discworld'] },
       ]},
       { title: 'Map Projection', rows: [
-        { key: 'MapProjection', label: 'HQ Map Art',  select: listHqMaps() },
-        { key: 'MapProjection', label: 'Generated',   select: listGeneratedProjections() },
+        { key: 'MapProjection', pairSelect: true,
+          left:  { label: 'HQ Map Art', select: listHqMaps() },
+          right: { label: 'Generated',  select: listGeneratedProjections() },
+        },
       ]},
       { title: 'Starfield', rows: [
         { key: 'StarfieldType', label: 'Starfield', select: [
@@ -1193,10 +1195,53 @@ function boolRow(model, row) {
   return el;
 }
 
+// Two select dropdowns side-by-side, both bound to the same model
+// state key. Used when a single state field has two distinct
+// option sources that the user wants to pick from independently.
+function pairSelectRow(model, row) {
+  const el = document.createElement('div');
+  el.className = 'row pair-select';
+  const left  = `<option value="">— ${row.left.label} —</option>`
+    + row.left.select.map((o) => {
+        const v = typeof o === 'string' ? o : o.value;
+        const l = typeof o === 'string' ? o : (o.label ?? o.value);
+        return `<option value="${v}">${l}</option>`;
+      }).join('');
+  const right = `<option value="">— ${row.right.label} —</option>`
+    + row.right.select.map((o) => {
+        const v = typeof o === 'string' ? o : o.value;
+        const l = typeof o === 'string' ? o : (o.label ?? o.value);
+        return `<option value="${v}">${l}</option>`;
+      }).join('');
+  el.innerHTML = `
+    <select class="sel pair-left">${left}</select>
+    <select class="sel pair-right">${right}</select>
+  `;
+  const selL = el.querySelector('.pair-left');
+  const selR = el.querySelector('.pair-right');
+  const leftValues  = new Set(row.left.select.map((o) => typeof o === 'string' ? o : o.value));
+  const rightValues = new Set(row.right.select.map((o) => typeof o === 'string' ? o : o.value));
+  function refresh() {
+    const cur = String(model.state[row.key]);
+    selL.value = leftValues.has(cur)  ? cur : '';
+    selR.value = rightValues.has(cur) ? cur : '';
+  }
+  selL.addEventListener('change', () => {
+    if (selL.value) model.setState({ [row.key]: selL.value });
+  });
+  selR.addEventListener('change', () => {
+    if (selR.value) model.setState({ [row.key]: selR.value });
+  });
+  model.addEventListener('update', refresh);
+  refresh();
+  return el;
+}
+
 // Dispatch a field-group row definition to the right row-builder.
 function buildRow(model, row) {
   if (row.bool) return boolRow(model, row);
   if (row.boolSelect) return boolSelectRow(model, row);
+  if (row.pairSelect) return pairSelectRow(model, row);
   if (row.select) return selectRow(model, row);
   if (row.buttonGrid) return buttonGridRow(model, row);
   if (row.cardinal) return cardinalRow(model, row);

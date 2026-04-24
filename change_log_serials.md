@@ -532,6 +532,25 @@ Format:
   js/render/index.js js/ui/controlPanel.js js/ui/urlState.js`;
   delete `js/core/satellites.js`.
 
+## S373 — Map Projection dropdowns side-by-side, equal width
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/ui/controlPanel.js`, `css/styles.css`,
+  `change_log_serials.md`.
+- **Change:**
+  - New `pairSelectRow` row builder in `controlPanel.js` renders
+    two `<select>`s side-by-side bound to one state key. Each
+    side prefixes a `— <label> —` placeholder option so the
+    inactive side reads as empty without dropping out of the
+    DOM. Selecting either side writes its value to the model.
+  - Map Projection group switched from two stacked rows to one
+    `pairSelect` row.
+  - `css/styles.css`: new `.row.pair-select` rule —
+    `grid-template-columns: 1fr 1fr` so the two selects share
+    the row width equally and share a top edge.
+- **Revert:** `git checkout v-s000372 -- js/ui/controlPanel.js
+  css/styles.css`.
+
 ## S372 — Map Projection menu split: HQ raster maps vs Generated math
 
 - **Date:** 2026-04-24

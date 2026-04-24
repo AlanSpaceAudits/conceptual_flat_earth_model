@@ -500,6 +500,25 @@ Format:
 - **Revert:** `git checkout v-s000256 -- js/render/worldObjects.js
   js/render/constellations.js`.
 
+## S261 — Tracker "GP Override" checkbox
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/core/app.js`, `js/render/worldObjects.js`,
+  `js/ui/controlPanel.js`, `js/ui/urlState.js`.
+- **Change:**
+  - New state field `TrackerGPOverride: false`.
+  - New checkbox in Tracker → Celestial Bodies labelled
+    "GP Override", sitting between `Specified Tracker Mode` and the
+    track button grid.
+  - `TrackedGroundPoints.update` now paints tracker GPs when
+    `ShowGroundPoints || TrackerGPOverride` (plus `!InsideVault`).
+    With the default master toggle off, GP Override lets the user
+    see every tracked target's GP without re-enabling the global
+    ground-points layer.
+  - `TrackerGPOverride` added to `PERSISTED_KEYS`.
+- **Revert:** `git checkout v-s000260 -- js/core/app.js
+  js/render/worldObjects.js js/ui/controlPanel.js js/ui/urlState.js`.
+
 ## S260 — TrackedGroundPoints follows ShowGroundPoints toggle
 
 - **Date:** 2026-04-24

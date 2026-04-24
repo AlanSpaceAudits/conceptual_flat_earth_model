@@ -26,7 +26,7 @@ const PERSISTED_KEYS = [
   'MapProjection',
   'StarfieldType',
   'BodySource', 'PermanentNight', 'TrackerTargets',
-  'ShowEphemerisReadings', 'SpecifiedTrackerMode',
+  'ShowEphemerisReadings', 'SpecifiedTrackerMode', 'TrackerGPOverride',
   'StarApplyPrecession', 'StarApplyNutation', 'StarApplyAberration',
   'StarTrepidation',
 ];

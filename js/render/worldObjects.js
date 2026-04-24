@@ -3775,10 +3775,10 @@ export class TrackedGroundPoints {
     const s = model.state;
     const c = model.computed;
     const infos = c.TrackerInfos || [];
-    // Tracker GPs now follow the master `ShowGroundPoints` toggle so
-    // planet / star tracker dots hide when the user turns the toggle
-    // off, matching the built-in sun/moon GP behaviour.
-    const showAll = !s.InsideVault && !!s.ShowGroundPoints;
+    // Tracker GPs follow the master `ShowGroundPoints` toggle by
+    // default. `TrackerGPOverride` bypasses the master so every
+    // tracked target paints its GP regardless.
+    const showAll = !s.InsideVault && (!!s.ShowGroundPoints || !!s.TrackerGPOverride);
 
     for (let i = 0; i < this._pool.length; i++) {
       const slot = this._pool[i];

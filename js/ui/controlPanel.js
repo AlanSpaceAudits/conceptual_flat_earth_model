@@ -342,6 +342,7 @@ const FIELD_GROUPS = [
         { label: '', buttonLabel: 'Clear All Tracked',
           onClick: (m) => m.setState({ TrackerTargets: [] }) },
         { key: 'SpecifiedTrackerMode', label: 'Specified Tracker Mode', bool: true },
+        { key: 'TrackerGPOverride',   label: 'GP Override',          bool: true },
         { key: 'TrackerTargets', label: 'Track', buttonGrid: [
           // per-button text colour. Sun / moon / planet
           // colours match the in-scene marker pigments defined in

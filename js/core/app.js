@@ -179,6 +179,10 @@ function defaultState() {
     // When true, only tracked bodies + their GPs render.
     SpecifiedTrackerMode: false,
 
+    // When true, tracker GP dots/lines render for every tracked
+    // target regardless of the master `ShowGroundPoints` toggle.
+    TrackerGPOverride: false,
+
     Description: '',
     PointerFrom: [0, 0],
     PointerTo:   [0, 0],

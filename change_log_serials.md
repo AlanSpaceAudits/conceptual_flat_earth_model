@@ -310,3 +310,10 @@ Format:
 - URL schema bumped 211 → 230; gated keys expanded to cover every
   changed default.
 - Revert: `git checkout v-s000229 -- js/core/app.js js/ui/urlState.js`.
+
+## S231 — Heavenly Vault default off
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/core/app.js`.
+- **Change:** `ShowVault: true → false`.
+- **Revert:** `git checkout v-s000230 -- js/core/app.js`.

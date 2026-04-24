@@ -87,7 +87,7 @@ function defaultState() {
 
     ShowFeGrid:     false,
     ShowShadow:     true,
-    ShowVault:      true,
+    ShowVault:      false,
     ShowVaultGrid:   false,
     ShowTruePositions: false,
     ShowSunTrack:   false,

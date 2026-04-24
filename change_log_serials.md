@@ -532,6 +532,18 @@ Format:
   js/render/index.js js/ui/controlPanel.js js/ui/urlState.js`;
   delete `js/core/satellites.js`.
 
+## S376 — Restore black-disc option to HQ Map Art
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/core/projections.js`,
+  `change_log_serials.md`.
+- **Change:** new `hq_blank` projection entry tagged
+  `category: 'hq'` with `renderStyle: 'blank'`, using the same
+  AE polar math as the default `ae` entry. Appears as
+  "Blank (black disc)" at the top of the HQ Map Art dropdown.
+  The original `blank` entry under Generated is unchanged.
+- **Revert:** `git checkout v-s000375 -- js/core/projections.js`.
+
 ## S375 — Add .nojekyll to fix Pages 404 on _namedStarsHyg.js
 
 - **Date:** 2026-04-24

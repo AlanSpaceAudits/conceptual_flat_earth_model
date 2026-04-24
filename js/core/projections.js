@@ -322,6 +322,14 @@ export const PROJECTIONS = {
   },
 
   // -- HQ raster maps ------------------------------------------------
+  hq_blank: {
+    id: 'hq_blank', name: 'Blank (black disc)',
+    category: 'hq',
+    imageAsset: null, imageInscribedRadius: 0.5, renderStyle: 'blank',
+    notes: 'Solid-black disc; AE polar math drives the FE grid.',
+    project(lat, lon, r = 1) { return polarFromRadial(lat, lon, r, RADIAL_AE); },
+  },
+
   hq_equirect_day: {
     id: 'hq_equirect_day', name: 'HQ Equirectangular (day)',
     category: 'hq',

@@ -971,6 +971,9 @@ export function buildControlPanel(host, model, demos) {
       { label: 'Rumble',    href: 'https://rumble.com/c/c-7782904?e9s=src_v1_cmd' },
       { label: 'Telegram',  href: 'https://t.me/+CVNNswIjrT45OTA0' },
     ]);
+    makeSection('Discord', [
+      { label: 'Aether Cosmology', href: 'https://discord.gg/aethercosmology' },
+    ]);
   });
 
   // Wire the bar's time controls into Autoplay.

@@ -483,6 +483,15 @@ Format:
   is active.
 - **Revert:** `git checkout v-s000243 -- js/ui/controlPanel.js`.
 
+## S250 — Info tab: Discord section
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/ui/controlPanel.js`.
+- **Change:** added a fourth collapsible section "Discord" under the
+  three-person list with one link: Aether Cosmology →
+  `https://discord.gg/aethercosmology`.
+- **Revert:** `git checkout v-s000249 -- js/ui/controlPanel.js`.
+
 ## S249 — Info tab: per-person link sub-menus
 
 - **Date:** 2026-04-24

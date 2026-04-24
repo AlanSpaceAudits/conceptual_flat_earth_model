@@ -15,7 +15,7 @@ const PERSISTED_KEYS = [
   'ShowConstellations', 'ShowConstellationLines',
   'ShowLongitudeRing', 'ShowAzimuthRing', 'ShowOpticalVaultGrid',
   'ShowCelestialPoles', 'DarkBackground',
-  'ShowLiveEphemeris',
+  'ShowLiveEphemeris', 'MoonPhaseExpanded',
   'DynamicStars',
   'TimezoneOffsetMinutes',
   'StarfieldVaultHeight', 'MoonVaultHeight', 'SunVaultHeight',
@@ -69,8 +69,9 @@ function paramsToPatch(params) {
 }
 
 // Bump when a default changes and existing URL hashes should drop that key.
-const URL_SCHEMA_VERSION = '263';
+const URL_SCHEMA_VERSION = '274';
 const VERSION_GATED_KEYS = new Set([
+  'ShowLiveEphemeris', 'MoonPhaseExpanded',
   'BodySource',
   'ObserverLat', 'ObserverLong', 'ObserverHeading',
   'CameraDirection', 'CameraHeight', 'Zoom',

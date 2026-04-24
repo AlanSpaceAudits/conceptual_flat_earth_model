@@ -113,7 +113,8 @@ function defaultState() {
     ShowOpticalVaultGrid:    false,
     ShowCelestialPoles:      false,
     DarkBackground:          true,
-    ShowLiveEphemeris:       true,
+    ShowLiveEphemeris:       false,
+    MoonPhaseExpanded:       true,
 
     InsideVault: false,
 

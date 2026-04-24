@@ -500,6 +500,29 @@ Format:
 - **Revert:** `git checkout v-s000256 -- js/render/worldObjects.js
   js/render/constellations.js`.
 
+## S274 — Collapsible moon-phase widget; Live Ephem button flows inside #hud
+
+- **Date:** 2026-04-24
+- **Files changed:** `css/styles.css`, `js/core/app.js`,
+  `js/ui/controlPanel.js`, `js/ui/urlState.js`.
+- **Change:**
+  - Moon-phase canvas + label wrapped in a collapsible. Clickable
+    "Live Moon Phases" header with triangle indicator toggles new
+    persisted state `MoonPhaseExpanded` (default `true`).
+  - `#live-ephem-tab` moved from absolute position inside `#view`
+    to inline button inside `#hud` as the last child. Collapsing
+    the moon widget pulls the tab up naturally.
+  - `ShowLiveEphemeris` default flipped `true` → `false`; the HUD
+    is hidden until the user clicks the tab.
+  - `buildTrackerHud` recomputes `#tracker-hud`'s `top` from
+    `#hud.getBoundingClientRect().bottom` on every model update,
+    and also via `ResizeObserver` on `#hud`, so the tracker HUD
+    follows the moon-phase collapse.
+  - `URL_SCHEMA_VERSION` bumped `263` → `274`; both new keys
+    added to `VERSION_GATED_KEYS` so old URLs drop stale defaults.
+- **Revert:** `git checkout v-s000273 -- css/styles.css
+  js/core/app.js js/ui/controlPanel.js js/ui/urlState.js`.
+
 ## S273 — Fix inverted moon-phase illumination fraction
 
 - **Date:** 2026-04-24

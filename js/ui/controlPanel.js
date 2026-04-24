@@ -1130,18 +1130,41 @@ export function buildHud(hudEl, model) {
     return d;
   });
 
-  // Moon phase widget: a small canvas with the phase visual + illumination
-  // bar, plus a label line for phase name + percentage.
-  const moonBox = document.createElement('div');
-  moonBox.className = 'line moon-phase-box';
+  // Collapsible moon-phase widget. Header toggles MoonPhaseExpanded;
+  // default expanded. When collapsed only the header shows so the
+  // Live Ephemeris Data button below shifts up.
+  const moonWrapper = document.createElement('div');
+  moonWrapper.className = 'moon-phase-wrapper';
+  const moonHeader = document.createElement('button');
+  moonHeader.type = 'button';
+  moonHeader.className = 'moon-phase-header';
+  const moonTri = document.createElement('span');
+  moonTri.className = 'tri';
+  moonHeader.append(moonTri, document.createTextNode(' Live Moon Phases'));
+  moonWrapper.appendChild(moonHeader);
+  const moonBody = document.createElement('div');
+  moonBody.className = 'moon-phase-body';
   const canvas = document.createElement('canvas');
   canvas.width = 132; canvas.height = 56;
   canvas.className = 'moon-phase-canvas';
   const moonLabel = document.createElement('div');
   moonLabel.className = 'moon-phase-label';
-  moonBox.appendChild(canvas);
-  moonBox.appendChild(moonLabel);
-  hudEl.appendChild(moonBox);
+  moonBody.appendChild(canvas);
+  moonBody.appendChild(moonLabel);
+  moonWrapper.appendChild(moonBody);
+  hudEl.appendChild(moonWrapper);
+
+  moonHeader.addEventListener('click', () => {
+    model.setState({ MoonPhaseExpanded: !model.state.MoonPhaseExpanded });
+  });
+  const refreshMoonCollapsible = () => {
+    const exp = !!model.state.MoonPhaseExpanded;
+    moonBody.style.display = exp ? '' : 'none';
+    moonTri.textContent = exp ? '▼' : '▶';
+    moonHeader.setAttribute('aria-expanded', exp ? 'true' : 'false');
+  };
+  model.addEventListener('update', refreshMoonCollapsible);
+  refreshMoonCollapsible();
 
   const fmt = (v, p = 1) => v.toFixed(p).padStart(6);
   const refresh = () => {
@@ -1201,8 +1224,10 @@ export function buildTrackerHud(trackerEl, model) {
     tabBtn.id = 'live-ephem-tab';
     tabBtn.type = 'button';
     tabBtn.textContent = 'Live Ephemeris Data';
-    const viewEl = document.getElementById('view') || document.body;
-    viewEl.appendChild(tabBtn);
+    const hudEl = document.getElementById('hud')
+      || document.getElementById('view')
+      || document.body;
+    hudEl.appendChild(tabBtn);
   }
   tabBtn.addEventListener('click', () => {
     model.setState({ ShowLiveEphemeris: !model.state.ShowLiveEphemeris });
@@ -1211,6 +1236,21 @@ export function buildTrackerHud(trackerEl, model) {
     tabBtn.setAttribute('aria-pressed',
       model.state.ShowLiveEphemeris ? 'true' : 'false');
   };
+
+  // Re-anchor #tracker-hud just below #hud so collapsing the
+  // moon-phase widget pulls the tracker HUD up with it.
+  const hudHost = document.getElementById('hud');
+  const viewHost = document.getElementById('view');
+  const positionTrackerBelowHud = () => {
+    if (!hudHost || !viewHost) return;
+    const hudRect  = hudHost.getBoundingClientRect();
+    const viewRect = viewHost.getBoundingClientRect();
+    trackerEl.style.top = `${Math.round(hudRect.bottom - viewRect.top + 8)}px`;
+  };
+  if (hudHost && typeof ResizeObserver !== 'undefined') {
+    new ResizeObserver(positionTrackerBelowHud).observe(hudHost);
+  }
+  window.addEventListener('resize', positionTrackerBelowHud);
 
   const fmtDeg = (v, p = 1) => (v >= 0 ? '+' : '') + v.toFixed(p);
   const fmtHours = (raRad) => {
@@ -1294,6 +1334,7 @@ export function buildTrackerHud(trackerEl, model) {
 
   const refresh = () => {
     refreshTabPressed();
+    positionTrackerBelowHud();
     const infos = model.computed.TrackerInfos || [];
     const showHud = !!model.state.ShowLiveEphemeris && infos.length > 0;
     if (!showHud) {

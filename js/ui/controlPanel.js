@@ -605,8 +605,6 @@ const FIELD_GROUPS = [
         { key: 'ShowShadow',          label: 'Shadow',             bool: true },
       ]},
       { title: 'Stars', rows: [
-        { key: 'ShowStars',                label: 'Stars',                  bool: true },
-        { key: 'ShowConstellations',       label: 'Constellations',         bool: true },
         { key: 'ShowConstellationLines',   label: 'Constellation outlines', bool: true },
       ]},
       { title: 'Rays', rows: [
@@ -666,8 +664,22 @@ const FIELD_GROUPS = [
         { key: 'StarTrepidation',     label: 'Trepidation', bool: true },
       ]},
       { title: 'Tracker Options', rows: [
-        { label: '', buttonLabel: 'Clear All Tracked',
+        { label: '', buttonLabel: 'Clear All',
           onClick: (m) => m.setState({ TrackerTargets: [] }) },
+        { label: '', buttonLabel: 'Track All',
+          onClick: (m) => m.setState({
+            TrackerTargets: [
+              'sun', 'moon',
+              'mercury', 'venus', 'mars', 'jupiter',
+              'saturn', 'uranus', 'neptune',
+              ...CEL_NAV_STARS.map((x) => `star:${x.id}`),
+              ...CATALOGUED_STARS.map((x) => `star:${x.id}`),
+              ...BLACK_HOLES.map((x) => `star:${x.id}`),
+              ...QUASARS.map((x) => `star:${x.id}`),
+              ...GALAXIES.map((x) => `star:${x.id}`),
+              ...SATELLITES.map((x) => `star:${x.id}`),
+            ],
+          }) },
         { key: 'SpecifiedTrackerMode', label: 'Specified Tracker Mode', bool: true },
         { key: 'TrackerGPOverride',   label: 'GP Override',          bool: true },
       ]},

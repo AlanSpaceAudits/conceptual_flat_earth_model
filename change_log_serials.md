@@ -532,6 +532,23 @@ Format:
   js/render/index.js js/ui/controlPanel.js js/ui/urlState.js`;
   delete `js/core/satellites.js`.
 
+## S327 — Move Stars/Constellations controls to Tracker; add Track-All button
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/ui/controlPanel.js`.
+- **Change:**
+  - Show tab's "Stars" group stripped down to just
+    "Constellation outlines". The per-category Show / selection
+    checkboxes in the Tracker sub-menus (Cel Nav,
+    Constellations, Black Holes, Quasars, Galaxies, Satellites)
+    now own category visibility.
+  - Tracker Options gains a "Track All" button beside the
+    existing "Clear All". Click seeds `TrackerTargets` with
+    every trackable id across sun, moon, planets, cel nav,
+    catalogued, black holes, quasars, galaxies, satellites.
+    "Clear All Tracked" renamed to "Clear All" for symmetry.
+- **Revert:** `git checkout v-s000326 -- js/ui/controlPanel.js`.
+
 ## S326 — Group all four sun-above-horizon demos under a new "24 h Sun" section
 
 - **Date:** 2026-04-24

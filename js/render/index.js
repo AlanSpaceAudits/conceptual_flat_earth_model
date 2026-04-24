@@ -526,19 +526,46 @@ export class Renderer {
     const c = this.model.computed;
     const obs = c.ObserverFeCoord;
 
-    const addRay = (target, color, opacity = 0.9) => {
-      // Bezier control point = half-way offset toward observer's local up
-      const mid = V.Scale(V.Add(obs, target), 0.5);
-      const up = [0, 0, s.VaultHeight * 0.15 * s.RayParameter];
-      const ctl = V.Add(mid, up);
+    // When the body is above the horizon the ray is a gentle
+    // quadratic bezier (one lift control). Below the horizon LoS is
+    // broken, so we fall back to a cubic bezier with two control
+    // points that arc sharply over the dome — the ray "wraps" across
+    // the vault instead of tunnelling through the disc. Lift scales
+    // with how far below the horizon the body sits.
+    const addRay = (target, color, opacity = 0.9, elevation = 90) => {
+      const baseLift = s.VaultHeight * 0.15 * s.RayParameter;
       const pts = [];
-      for (let i = 0; i <= 40; i++) {
-        const t = i / 40, u = 1 - t;
-        pts.push(
-          u * u * obs[0] + 2 * u * t * ctl[0] + t * t * target[0],
-          u * u * obs[1] + 2 * u * t * ctl[1] + t * t * target[1],
-          u * u * obs[2] + 2 * u * t * ctl[2] + t * t * target[2],
-        );
+      if (elevation >= 0) {
+        const mid = V.Scale(V.Add(obs, target), 0.5);
+        const ctl = V.Add(mid, [0, 0, baseLift]);
+        for (let i = 0; i <= 40; i++) {
+          const t = i / 40, u = 1 - t;
+          pts.push(
+            u * u * obs[0] + 2 * u * t * ctl[0] + t * t * target[0],
+            u * u * obs[1] + 2 * u * t * ctl[1] + t * t * target[1],
+            u * u * obs[2] + 2 * u * t * ctl[2] + t * t * target[2],
+          );
+        }
+      } else {
+        // Cubic arc: lift rises steeply near the observer, peaks over
+        // the dome top (zenith), then drops toward the body's true
+        // vault position on the far side of the sky.
+        const deep = Math.min(90, Math.abs(elevation));
+        const archHeight = s.VaultHeight * (0.6 + deep / 90) * s.RayParameter;
+        const c1 = [obs[0],    obs[1],    obs[2] + archHeight * 1.2];
+        const c2 = [target[0], target[1], target[2] + archHeight * 1.2];
+        for (let i = 0; i <= 60; i++) {
+          const t = i / 60, u = 1 - t;
+          const b0 = u * u * u;
+          const b1 = 3 * u * u * t;
+          const b2 = 3 * u * t * t;
+          const b3 = t * t * t;
+          pts.push(
+            b0 * obs[0] + b1 * c1[0] + b2 * c2[0] + b3 * target[0],
+            b0 * obs[1] + b1 * c1[1] + b2 * c2[1] + b3 * target[1],
+            b0 * obs[2] + b1 * c1[2] + b2 * c2[2] + b3 * target[2],
+          );
+        }
       }
       const geo = new THREE.BufferGeometry();
       geo.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
@@ -571,17 +598,19 @@ export class Renderer {
     const sunOn   = bodyCatOn && trackerSet.has('sun');
     const moonOn  = bodyCatOn && trackerSet.has('moon');
 
+    const sunElev  = c.SunAnglesGlobe.elevation;
+    const moonElev = c.MoonAnglesGlobe.elevation;
     // Vault rays to the true sun/moon position on the vault of the heavens
     // stay drawn regardless of horizon: the physical source is still there.
     if (s.ShowVaultRays) {
-      if (sunOn)  addRay(c.SunVaultCoord,  0xff8800);
-      if (moonOn) addRay(c.MoonVaultCoord, 0x88aacc);
+      if (sunOn)  addRay(c.SunVaultCoord,  0xff8800, 0.9, sunElev);
+      if (moonOn) addRay(c.MoonVaultCoord, 0x88aacc, 0.9, moonElev);
     }
     // Optical-vault rays represent what the observer sees, so they fade
     // smoothly with the body's elevation.
     if (s.ShowOpticalVaultRays) {
-      if (sunOn  && sunFade  > 0) addRay(c.SunOpticalVaultCoord,  0xcc6600, 0.7 * sunFade);
-      if (moonOn && moonFade > 0) addRay(c.MoonOpticalVaultCoord, 0x6688aa, 0.7 * moonFade);
+      if (sunOn  && sunFade  > 0) addRay(c.SunOpticalVaultCoord,  0xcc6600, 0.7 * sunFade,  sunElev);
+      if (moonOn && moonFade > 0) addRay(c.MoonOpticalVaultCoord, 0x6688aa, 0.7 * moonFade, moonElev);
     }
 
     // projection rays: straight segments from a body's true

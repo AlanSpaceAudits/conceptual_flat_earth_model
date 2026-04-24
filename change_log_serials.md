@@ -532,6 +532,23 @@ Format:
   js/render/index.js js/ui/controlPanel.js js/ui/urlState.js`;
   delete `js/core/satellites.js`.
 
+## S346 — Rays bend around the dome when the body is below the horizon
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/render/index.js`.
+- **Change:** `addRay()` now branches on the target's elevation.
+  Above the horizon, the existing quadratic Bezier with a
+  single lift control is used. Below the horizon, it switches
+  to a cubic Bezier with two tall control points — one
+  directly above the observer, one directly above the target —
+  so the ray rises steeply from the ground, arcs across the
+  dome, and drops down onto the body's far-side vault position
+  instead of tunnelling straight through the disc. Arc height
+  scales with how deep the elevation is (cap at 90° below).
+  Sun and moon vault / optical-vault rays now pass their
+  `elevation` so the curve chooses the right branch.
+- **Revert:** `git checkout v-s000345 -- js/render/index.js`.
+
 ## S345 — 🎛 quick-button jumps straight to Tracker Options
 
 - **Date:** 2026-04-24

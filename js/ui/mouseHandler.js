@@ -455,17 +455,9 @@ export function attachMouseHandler(canvas, model) {
       return;
     }
 
-    if (dragDist >= CLICK_DRAG_PX
-        && (model.state.FollowTarget || model.state.FreeCamActive)) {
-      // Any real drag breaks the follow — user is steering manually.
-      // Also drop Specified Tracker Mode so the rest of the sky comes
-      // back instead of leaving the user staring at an empty canvas.
-      model.setState({
-        FollowTarget: null,
-        FreeCamActive: false,
-        SpecifiedTrackerMode: false,
-      });
-    }
+    // Drag / zoom no longer clears tracking — users can pan and zoom
+    // freely while a body is locked. End tracking explicitly via the
+    // End Tracking button, Escape, or a cardinal quick-button.
 
     if (model.state.InsideVault) {
       // Drag right: heading+. Drag up: pitch+. Pitch clamped 0..90°.
@@ -506,6 +498,8 @@ export function attachMouseHandler(canvas, model) {
   model.addEventListener('update', () => {
     const s = model.state;
     if (!s.FollowTarget || !s.InsideVault) return;
+    // Let the user pan / drag without fighting the auto-recentre.
+    if (dragging) return;
     const angles = resolveTargetAngles(s.FollowTarget, model.computed);
     if (!angles) return;
     const targetHeading = ((angles.azimuth % 360) + 360) % 360;

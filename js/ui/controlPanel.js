@@ -1213,9 +1213,22 @@ export function buildControlPanel(host, model, demos) {
   btnEndDemo.addEventListener('click', () => {
     if (demos && typeof demos.stop === 'function') demos.stop();
   });
+  const btnEndTracking = document.createElement('button');
+  btnEndTracking.className = 'time-btn end-demo-btn end-tracking-btn';
+  btnEndTracking.type = 'button';
+  btnEndTracking.textContent = 'End Tracking';
+  btnEndTracking.title = 'Clear follow target (Esc also works)';
+  btnEndTracking.hidden = true;
+  btnEndTracking.addEventListener('click', () => {
+    model.setState({
+      FollowTarget: null,
+      FreeCamActive: false,
+      SpecifiedTrackerMode: false,
+    });
+  });
   const speedReadout = document.createElement('span');
   speedReadout.className = 'time-speed';
-  speedStack.append(btnEndDemo, speedReadout);
+  speedStack.append(btnEndDemo, btnEndTracking, speedReadout);
   timeControls.append(btnVault, btnRew, btnPlay, btnFf, btnSlow, btnSpeed, speedStack);
 
   const compassControls = document.createElement('div');
@@ -1274,6 +1287,16 @@ export function buildControlPanel(host, model, demos) {
     model.setState({ MapProjection: next });
   });
   compassControls.appendChild(btnMap);
+
+  const btnFreeCamKb = document.createElement('button');
+  btnFreeCamKb.className = 'time-btn freecam-btn';
+  btnFreeCamKb.type = 'button';
+  btnFreeCamKb.textContent = '🎥';
+  btnFreeCamKb.title = 'Free-camera mode — arrow keys rotate / tilt the orbit camera instead of moving the observer. Mouse drag / wheel still work as normal.';
+  btnFreeCamKb.addEventListener('click', () => {
+    model.setState({ FreeCameraMode: !model.state.FreeCameraMode });
+  });
+  compassControls.appendChild(btnFreeCamKb);
 
   const STARFIELD_CYCLE = ['random', 'chart-dark', 'chart-light', 'celnav'];
   const btnStarfield = document.createElement('button');
@@ -1350,6 +1373,8 @@ export function buildControlPanel(host, model, demos) {
       model.state.SpecifiedTrackerMode ? 'true' : 'false');
     btnTrue.setAttribute('aria-pressed',
       model.state.ShowTruePositions ? 'true' : 'false');
+    btnFreeCamKb.setAttribute('aria-pressed',
+      model.state.FreeCameraMode ? 'true' : 'false');
   };
   model.addEventListener('update', refreshCompass);
   refreshCompass();
@@ -1552,6 +1577,8 @@ export function buildControlPanel(host, model, demos) {
     const a = demos && demos.animator;
     const demoPlaying = !!a && (a.isPlaying() || a.isPaused());
     btnEndDemo.hidden = !demoPlaying;
+    btnEndTracking.hidden = !(model.state.FollowTarget
+                              || model.state.FreeCamActive);
     if (demoPlaying) {
       btnPlay.textContent = a.isPaused() ? '▶' : '⏸';
       speedReadout.textContent = `demo ${a.speedScale.toFixed(2)}×`;
@@ -1648,11 +1675,22 @@ export function buildControlPanel(host, model, demos) {
   //   - click a different tab (switches)
   //   - press Escape while any popup is open.
   window.addEventListener('keydown', (e) => {
-    if (e.key !== 'Escape' || activeIdx < 0) return;
-    const entry = tabEntries[activeIdx];
-    entry.popup.hidden = true;
-    entry.btn.setAttribute('aria-selected', 'false');
-    activeIdx = -1;
+    if (e.key !== 'Escape') return;
+    if (activeIdx >= 0) {
+      const entry = tabEntries[activeIdx];
+      entry.popup.hidden = true;
+      entry.btn.setAttribute('aria-selected', 'false');
+      activeIdx = -1;
+      return;
+    }
+    // No popup open: second Escape purpose is to end tracking.
+    if (model.state.FollowTarget || model.state.FreeCamActive) {
+      model.setState({
+        FollowTarget: null,
+        FreeCamActive: false,
+        SpecifiedTrackerMode: false,
+      });
+    }
   });
 }
 

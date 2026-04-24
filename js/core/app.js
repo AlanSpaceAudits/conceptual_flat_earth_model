@@ -225,6 +225,7 @@ function defaultState() {
 
     FollowTarget:   null,
     FreeCamActive:  false,
+    FreeCameraMode: false,
   };
 }
 

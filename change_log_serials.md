@@ -532,6 +532,33 @@ Format:
   js/render/index.js js/ui/controlPanel.js js/ui/urlState.js`;
   delete `js/core/satellites.js`.
 
+## S343 — End Tracking button + Esc-ends-tracking; Free-camera mode toggle
+
+- **Date:** 2026-04-24
+- **Files changed:** `css/styles.css`, `js/core/app.js`,
+  `js/ui/controlPanel.js`, `js/ui/keyboardHandler.js`,
+  `js/ui/mouseHandler.js`.
+- **Change:**
+  - Mouse-drag no longer clears `FollowTarget`,
+    `FreeCamActive`, or `SpecifiedTrackerMode`. Users can drag
+    and wheel-zoom freely while a body is locked.
+  - The follow listener skips re-aiming while a drag is in
+    progress, so the pan actually sticks visually; it resumes
+    re-centring after the drag ends.
+  - New `End Tracking` button stacked in `.speed-stack` next to
+    `End Demo`. Visible only while `FollowTarget` or
+    `FreeCamActive` is set; click clears both plus STM.
+  - Escape key extended: if no tab popup is open, Esc clears
+    tracking (same as the button).
+  - New state `FreeCameraMode` (default `false`) + 🎥 toggle
+    button in `.compass-controls`. When on, arrow keys drive
+    `CameraHeight` (↑/↓ pitch) and `CameraDirection` (←/→ yaw)
+    instead of moving the observer. Mouse drag + wheel still
+    work normally.
+- **Revert:** `git checkout v-s000342 -- css/styles.css
+  js/core/app.js js/ui/controlPanel.js js/ui/keyboardHandler.js
+  js/ui/mouseHandler.js`.
+
 ## S342 — Quick-cycle buttons for Map projection + Starfield
 
 - **Date:** 2026-04-24

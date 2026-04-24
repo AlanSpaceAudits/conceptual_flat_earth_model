@@ -16,6 +16,22 @@ const TICK_MS          = 150;
 const KEYS = new Set(['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight']);
 
 function patchFor(key, deg, state) {
+  if (state.FreeCameraMode) {
+    // Free-camera: arrows rotate / tilt the orbit camera instead of
+    // moving the observer. ↑/↓ tilts pitch; ←/→ yaws direction.
+    const hStep = deg * 0.5;  // camera moves a touch more slowly
+    switch (key) {
+      case 'ArrowUp':
+        return { CameraHeight: Math.min(89.9, (state.CameraHeight || 0) + hStep) };
+      case 'ArrowDown':
+        return { CameraHeight: Math.max(-30,   (state.CameraHeight || 0) - hStep) };
+      case 'ArrowRight':
+        return { CameraDirection: (state.CameraDirection || 0) + hStep };
+      case 'ArrowLeft':
+        return { CameraDirection: (state.CameraDirection || 0) - hStep };
+      default: return null;
+    }
+  }
   switch (key) {
     case 'ArrowUp':    return { ObserverLat:  state.ObserverLat  + deg };
     case 'ArrowDown':  return { ObserverLat:  state.ObserverLat  - deg };

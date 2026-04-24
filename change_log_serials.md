@@ -500,6 +500,16 @@ Format:
 - **Revert:** `git checkout v-s000256 -- js/render/worldObjects.js
   js/render/constellations.js`.
 
+## S268 — Remove cel-nav duplicates from Constellations tracker menu
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/ui/controlPanel.js`.
+- **Change:** Constellations buttonGrid now filters out any star
+  whose id is in `CEL_NAV_STARS`. Grid draws from
+  `CATALOGUED_STARS` minus cel-nav crossovers, all in white. Cel
+  Nav sub-menu remains the sole listing for navigational stars.
+- **Revert:** `git checkout v-s000267 -- js/ui/controlPanel.js`.
+
 ## S267 — Multi-column Tracker HUD + Live Ephemeris Data side tab
 
 - **Date:** 2026-04-24

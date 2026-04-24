@@ -376,19 +376,17 @@ const FIELD_GROUPS = [
             .map((s) => ({ value: `star:${s.id}`, label: s.name, color: '#ffe8a0' })),
         },
       ]},
-      // Cel-nav crossovers appear in both this list and the Cel Nav
-      // list; clicking either toggles the same `star:<id>` so both
-      // buttons stay in sync.
       { title: 'Constellations', rows: [
         { key: 'TrackerTargets', label: 'Constellations', buttonGrid:
           (() => {
             const celnavIds = new Set(CEL_NAV_STARS.map((s) => s.id));
-            return [...CEL_NAV_STARS, ...CATALOGUED_STARS]
+            return [...CATALOGUED_STARS]
+              .filter((s) => !celnavIds.has(s.id))
               .sort((a, b) => a.name.localeCompare(b.name))
               .map((s) => ({
                 value: `star:${s.id}`,
                 label: s.name,
-                color: celnavIds.has(s.id) ? '#ffe8a0' : '#ffffff',
+                color: '#ffffff',
               }));
           })(),
         },

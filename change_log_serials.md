@@ -500,6 +500,16 @@ Format:
 - **Revert:** `git checkout v-s000256 -- js/render/worldObjects.js
   js/render/constellations.js`.
 
+## S278 — Match Live Ephemeris button style to Live Moon Phases header
+
+- **Date:** 2026-04-24
+- **Files changed:** `css/styles.css`.
+- **Change:** `#live-ephem-tab` restyled to mirror
+  `.moon-phase-header`: full width, 11px/1.2 font, 2×6 padding,
+  transparent background, 4px radius, left-aligned text, hover
+  highlight. Visually the two rows are now the same size.
+- **Revert:** `git checkout v-s000277 -- css/styles.css`.
+
 ## S277 — Fold time / sun / moon lines into Live Moon Phases collapsible
 
 - **Date:** 2026-04-24

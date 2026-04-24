@@ -119,18 +119,21 @@ header .info-popup p:last-child { margin-bottom: 0; }
 
 #live-ephem-tab {
   display: block;
-  margin-top: 6px;
-  padding: 4px 10px;
-  font: 12px/1 ui-monospace, Menlo, monospace;
+  width: 100%;
+  margin-top: 4px;
+  padding: 2px 6px;
+  font: 11px/1.2 ui-monospace, Menlo, monospace;
   color: #f4a640;
-  background: rgba(10, 14, 22, 0.82);
+  background: transparent;
   border: 1px solid rgba(244, 166, 64, 0.45);
-  border-radius: 6px;
+  border-radius: 4px;
   cursor: pointer;
-  letter-spacing: 1px;
+  text-align: left;
+  letter-spacing: 0.5px;
   user-select: none;
   pointer-events: auto;
 }
+#live-ephem-tab:hover { background: rgba(244, 166, 64, 0.10); }
 #live-ephem-tab:hover { background: rgba(244, 166, 64, 0.18); }
 #live-ephem-tab[aria-pressed="true"] {
   color: #ffd37a;

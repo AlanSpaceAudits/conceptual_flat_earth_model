@@ -55,7 +55,7 @@ header .info-popup p:last-child { margin-bottom: 0; }
 #logo {
   position: absolute;
   right: 16px;
-  bottom: 60px;
+  bottom: 86px;
   width: clamp(80px, 14vmin, 180px);
   height: clamp(80px, 14vmin, 180px);
   pointer-events: none;
@@ -196,6 +196,7 @@ header .info-popup p:last-child { margin-bottom: 0; }
   position: absolute;
   left: 0; right: 0; bottom: 44px;
   height: 26px;
+  border-top: 1px solid var(--border);
   display: flex;
   align-items: center;
   gap: 18px;
@@ -213,11 +214,12 @@ header .info-popup p:last-child { margin-bottom: 0; }
 #bottom-bar {
   position: absolute;
   bottom: 0; left: 0; right: 0;
-  height: 44px;
+  height: 70px;
+  box-sizing: border-box;
   display: flex;
   align-items: center;
   gap: 18px;
-  padding: 0 14px;
+  padding: 26px 14px 0;
   background: rgba(14, 18, 26, 0.92);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
@@ -280,7 +282,7 @@ header .info-popup p:last-child { margin-bottom: 0; }
 
 #tab-popups {
   position: absolute;
-  left: 0; right: 0; bottom: 44px;
+  left: 0; right: 0; bottom: 70px;
   height: 0;   /* anchor only; popups position themselves */
   z-index: 25;
   pointer-events: none;

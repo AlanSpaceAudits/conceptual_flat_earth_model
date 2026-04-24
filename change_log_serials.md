@@ -500,6 +500,25 @@ Format:
 - **Revert:** `git checkout v-s000256 -- js/render/worldObjects.js
   js/render/constellations.js`.
 
+## S281 — Info bar moves into the dark bottom-bar area
+
+- **Date:** 2026-04-24
+- **Files changed:** `css/styles.css`.
+- **Change:**
+  - `#bottom-bar` height 44 px → 70 px with `box-sizing:
+    border-box` and `padding-top: 26px` so tab buttons sit in
+    the bottom 44 px band (same visual spot) while the top
+    26 px band is reserved for the info strip.
+  - `#info-bar` unchanged position (`bottom: 44px; height: 26px`)
+    now visually sits inside the dark bottom-bar area; added a
+    top border so the info strip is separated from the rest of
+    the canvas view.
+  - `#tab-popups` bottom offset bumped 44 px → 70 px so popups
+    anchor above the taller bar.
+  - `#logo` bottom offset bumped 60 px → 86 px to clear the new
+    bar height.
+- **Revert:** `git checkout v-s000280 -- css/styles.css`.
+
 ## S280 — AC logo scales to window size
 
 - **Date:** 2026-04-24

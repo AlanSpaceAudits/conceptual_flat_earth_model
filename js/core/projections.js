@@ -352,6 +352,26 @@ export const PROJECTIONS = {
     project: projectAEDual,
   },
 
+  hq_ae_polar_day: {
+    id: 'hq_ae_polar_day', name: 'HQ AE Polar (day)',
+    category: 'hq',
+    imageAsset: 'assets/map_hq_ae_polar_day.png',
+    imageNativeWidth: 2476, imageNativeHeight: 1246,
+    imageInscribedRadius: 0.5,
+    notes: 'Azimuthal-equidistant polar aspect, north pole at centre, daymap.',
+    project(lat, lon, r = 1) { return polarFromRadial(lat, lon, r, RADIAL_AE); },
+  },
+
+  hq_ae_polar_night: {
+    id: 'hq_ae_polar_night', name: 'HQ AE Polar (night)',
+    category: 'hq',
+    imageAsset: 'assets/map_hq_ae_polar_night.png',
+    imageNativeWidth: 2476, imageNativeHeight: 1246,
+    imageInscribedRadius: 0.5,
+    notes: 'Azimuthal-equidistant polar aspect, north pole at centre, nightmap.',
+    project(lat, lon, r = 1) { return polarFromRadial(lat, lon, r, RADIAL_AE); },
+  },
+
   hq_gleasons: {
     id: 'hq_gleasons', name: "HQ Gleason's Map",
     category: 'hq',

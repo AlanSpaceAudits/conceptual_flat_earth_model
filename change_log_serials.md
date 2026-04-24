@@ -532,6 +532,25 @@ Format:
   js/render/index.js js/ui/controlPanel.js js/ui/urlState.js`;
   delete `js/core/satellites.js`.
 
+## S374 — HQ AE polar (day / night) added
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/core/projections.js`,
+  `assets/map_hq_ae_polar_day.png` (new),
+  `assets/map_hq_ae_polar_night.png` (new),
+  `change_log_serials.md`.
+- **Change:**
+  - 2 HQ AE-polar rasters copied from `~/Pictures/maps/`
+    (`azi_EA0_E90_N0_Daytime.png`, `..._Nighttime.png`) to
+    `assets/map_hq_ae_polar_day.png` / `..._night.png`
+    (2476×1246 each).
+  - Two new HQ entries in `PROJECTIONS`: `hq_ae_polar_day`
+    and `hq_ae_polar_night`. Both use the same
+    `RADIAL_AE` polar math as the default `ae` entry, so
+    the FE grid lines up.
+- **Revert:** `git checkout v-s000373 -- js/core/projections.js`;
+  `rm assets/map_hq_ae_polar_*.png`.
+
 ## S373 — Map Projection dropdowns side-by-side, equal width
 
 - **Date:** 2026-04-24

@@ -500,6 +500,19 @@ Format:
 - **Revert:** `git checkout v-s000256 -- js/render/worldObjects.js
   js/render/constellations.js`.
 
+## S280 — AC logo scales to window size
+
+- **Date:** 2026-04-24
+- **Files changed:** `index.html`, `css/styles.css`.
+- **Change:** Inline `style="width:180px;height:180px;..."` on
+  `<img id="logo">` replaced with a rule in `styles.css`. Size
+  is now `clamp(80px, 14vmin, 180px)` so the logo tops out at
+  180×180 on large monitors and shrinks linearly on narrower
+  viewports, with an 80 px floor. All other inline style bits
+  (position, opacity, pointer-events, z-index) preserved in the
+  rule.
+- **Revert:** `git checkout v-s000279 -- index.html css/styles.css`.
+
 ## S279 — Show current date/time in the bottom info bar
 
 - **Date:** 2026-04-24

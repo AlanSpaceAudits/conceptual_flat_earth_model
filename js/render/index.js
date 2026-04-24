@@ -8,6 +8,7 @@ import {
   CelestialMarker, Observer, Stars, LatitudeLines, GroundPoint,
   CelestialPoles, DeclinationCircles, Yggdrasil, MtMeru, ToroidalVortex,
   LongitudeRing, CelNavStars, TrackedGroundPoints, CatalogPointStars,
+  GPPathOverlay,
 } from './worldObjects.js';
 import { loadLandGeo, buildGeoJsonLand, buildImageMap, buildBlankMap } from './earthMap.js';
 import { Constellations } from './constellations.js';
@@ -118,6 +119,9 @@ export class Renderer {
     // Satellites ride the same generic renderer but default off
     // (visibility is state-gated via ShowSatellites — the computed
     // array is simply empty when the user hasn't enabled them).
+    this.gpPathOverlay = new GPPathOverlay();
+    this.sm.world.add(this.gpPathOverlay.group);
+
     this.satelliteStars = new CatalogPointStars({
       sourceKey: 'Satellites',
       color: 0x66ff88,
@@ -371,6 +375,7 @@ export class Renderer {
     this.quasarStars.update(m);
     this.galaxyStars.update(m);
     this.satelliteStars.update(m);
+    this.gpPathOverlay.update(m);
     this.starfieldChart.update(m);
     this.constellations.update(m);
     // When a chart starfield is active, hide both the heavenly-vault and

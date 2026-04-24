@@ -13,13 +13,24 @@ export class Animator {
     this.queue = [];
     this.running = false;
     this.paused  = false;   // pause/resume without clearing queue
+    // Tempo multiplier for the ½× / 2× bar buttons. Wall-clock
+    // `elapsed` gets scaled by this before being fed to the tween
+    // queue, so the user can stretch (slow) or compress (speed up)
+    // the demo's intended pacing without touching any of the
+    // individual Tval durations.
+    this.speedScale = 1;
     this._now = null;
     this._frame = this._frame.bind(this);
+  }
+
+  setSpeedScale(mult) {
+    this.speedScale = Math.max(0.01, Math.min(64, mult));
   }
 
   play(tasks) {
     this.queue = tasks.slice();
     this.paused = false;
+    this.speedScale = 1;
     this._now = performance.now();
     if (!this.running) {
       this.running = true;
@@ -54,8 +65,9 @@ export class Animator {
   _frame(ts) {
     if (!this.running) return;
     if (this.paused)   return;   // rAF chain stays broken until resume()
-    const elapsed = ts - this._now;
+    const wall = ts - this._now;
     this._now = ts;
+    const elapsed = wall * (this.speedScale || 1);
 
     while (this.queue.length && this.queue[0].delay > 0) {
       this.queue[0].delay -= elapsed;

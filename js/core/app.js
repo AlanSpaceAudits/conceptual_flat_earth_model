@@ -30,6 +30,7 @@ import {
 import {
   feLatLongToGlobalFeCoord, celestLatLongToVaultCoord, vaultCoordAt,
 } from './feGeometry.js';
+import { canonicalLatLongToDisc } from './canonical.js';
 
 // Mirrors PLANET_STYLE colours in render/index.js and the Tracker
 // button grid. Keep in sync.
@@ -117,6 +118,7 @@ function defaultState() {
     ShowLiveEphemeris:       false,
     MoonPhaseExpanded:       false,
     ShowSatellites:          false,
+    ShowGPPath:              false,
     ShowCelestialBodies:     true,
     ShowCelNav:              true,
     ShowBlackHoles:          true,
@@ -564,6 +566,55 @@ export class FeModel extends EventTarget {
       c.Satellites = SATELLITES.map(projectSatellite);
     } else {
       c.Satellites = [];
+    }
+
+    // GP path overlay: sample each body's sub-point (lat = dec, lon =
+    // ra − gmst) at 48 half-hour intervals across the next 24 h and
+    // project through canonicalLatLongToDisc. Built only when the
+    // ShowGPPath master toggle is on so the extra ephemeris calls
+    // only happen when the visualisation is in use.
+    c.GPPaths = null;
+    if (s.ShowGPPath) {
+      const activeEph = bodySource === 'heliocentric' ? ephHelio
+                      : bodySource === 'geocentric'   ? ephGeo
+                      : bodySource === 'ptolemy'      ? ephPtol
+                      : bodySource === 'vsop87'       ? ephVsop
+                      :                                 ephApix;
+      const TWO_PI = 2 * Math.PI;
+      const gmstDegAt = (date) => {
+        const jd = date.getTime() / 86400000 + 2440587.5;
+        const T = (jd - 2451545.0) / 36525;
+        let g = (280.46061837 + 360.98564736629 * (jd - 2451545.0)
+                + 0.000387933 * T * T) % 360;
+        if (g < 0) g += 360;
+        return g;
+      };
+      const samplePath = (body) => {
+        const N = 48;
+        const pts = [];
+        for (let i = 0; i <= N; i++) {
+          const t = utcDate.getTime() + (i / N) * 86400000;
+          const d = new Date(t);
+          let eq;
+          try { eq = activeEph.bodyGeocentric(body, d); }
+          catch { return null; }
+          if (!eq || !Number.isFinite(eq.ra) || !Number.isFinite(eq.dec)) return null;
+          const gpLat = eq.dec * 180 / Math.PI;
+          const raDeg = ((eq.ra * 180 / Math.PI) % 360 + 360) % 360;
+          let gpLon = raDeg - gmstDegAt(d);
+          gpLon = ((gpLon + 180) % 360 + 360) % 360 - 180;
+          pts.push(canonicalLatLongToDisc(gpLat, gpLon, FE_RADIUS));
+        }
+        return pts;
+      };
+      const GP_BODIES = ['sun', 'moon', 'mercury', 'venus', 'mars',
+                         'jupiter', 'saturn', 'uranus', 'neptune'];
+      const paths = {};
+      for (const b of GP_BODIES) {
+        const p = samplePath(b);
+        if (p) paths[b] = p;
+      }
+      c.GPPaths = paths;
     }
 
     c.TrackerInfos = [];

@@ -532,6 +532,43 @@ Format:
   js/render/index.js js/ui/controlPanel.js js/ui/urlState.js`;
   delete `js/core/satellites.js`.
 
+## S321 — GP-path overlay + demo speed routed through transport buttons
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/core/app.js`, `js/core/canonical.js`,
+  `js/demos/animation.js`, `js/demos/definitions.js`,
+  `js/render/index.js`, `js/render/worldObjects.js`,
+  `js/ui/controlPanel.js`, `js/ui/urlState.js`.
+- **Change:**
+  - New `ShowGPPath` state (default `false`, persisted). When on,
+    `app.update()` samples each of sun / moon / 7 planets at 48
+    half-hour intervals across the next 24 hours using the
+    active `BodySource` ephemeris, builds per-body disc
+    polylines in `computed.GPPaths`, and the new
+    `GPPathOverlay` render class paints them on the disc (one
+    Line per body, per-body colour). Master toggle added to the
+    Show tab's Ground / Disc group as `GP Paths (24 h)`.
+  - `Animator` gets a `speedScale` field (default `1`, clamped
+    [0.01, 64]) and a `setSpeedScale()` method. `_frame()`
+    multiplies wall-clock elapsed by the scale before stepping
+    the task queue, so each demo's tween durations stretch /
+    compress without editing the task definitions. `play()`
+    resets `speedScale` to 1 so each demo starts at its
+    natural pace.
+  - Bottom-bar transport buttons now route to the demo animator
+    when one is running: ▶ / ⏸ pauses-resumes the demo, ½× /
+    2× halve / double `speedScale`. Readout chip shows
+    `demo N.NN×`. No demo running → the buttons keep their
+    original autoplay-control behaviour (including rewind-
+    direction magnitude for ½× / 2×).
+  - Midnight-sun demo Tval durations bumped from `T5` to
+    `2 × T8` so the default play is watchable; use 2× for
+    faster, ½× for slower.
+- **Revert:** `git checkout v-s000320 -- js/core/app.js
+  js/demos/animation.js js/demos/definitions.js
+  js/render/index.js js/render/worldObjects.js
+  js/ui/controlPanel.js js/ui/urlState.js`.
+
 ## S320 — Midnight-sun demos at 75°N and 75°S (DE405)
 
 - **Date:** 2026-04-24

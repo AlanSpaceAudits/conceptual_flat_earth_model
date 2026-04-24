@@ -4139,3 +4139,65 @@ export class CatalogPointStars {
     this.spherePoints.geometry.attributes.position.needsUpdate = true;
   }
 }
+
+// Per-body ground-point path overlay. Consumes `computed.GPPaths`
+// (built in app.update() when ShowGPPath is on) and paints a
+// polyline on the disc for each sampled body.
+const GP_PATH_COLORS = {
+  sun:     0xffc844,
+  moon:    0xf4f4f4,
+  mercury: 0xd0b090,
+  venus:   0xfff0c8,
+  mars:    0xd05040,
+  jupiter: 0xffa060,
+  saturn:  0xe4c888,
+  uranus:  0xa8d8e0,
+  neptune: 0x7fa6e8,
+};
+
+export class GPPathOverlay {
+  constructor() {
+    this.group = new THREE.Group();
+    this.group.name = 'gp-path-overlay';
+    this._lines = {};
+    const MAX_PTS = 64;
+    for (const [body, color] of Object.entries(GP_PATH_COLORS)) {
+      const buf = new Float32Array(MAX_PTS * 3);
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.BufferAttribute(buf, 3));
+      geo.setDrawRange(0, 0);
+      const mat = new THREE.LineBasicMaterial({
+        color, transparent: true, opacity: 0.7,
+        depthTest: false, depthWrite: false,
+      });
+      const line = new THREE.Line(geo, mat);
+      line.frustumCulled = false;
+      line.renderOrder = 41;
+      this.group.add(line);
+      this._lines[body] = { line, buf, maxPts: MAX_PTS };
+    }
+  }
+
+  update(model) {
+    const s = model.state;
+    const c = model.computed;
+    const on = !!s.ShowGPPath && !s.InsideVault && !!c.GPPaths;
+    this.group.visible = on;
+    if (!on) return;
+    for (const [body, rec] of Object.entries(this._lines)) {
+      const pts = c.GPPaths[body];
+      if (!pts || !pts.length) {
+        rec.line.geometry.setDrawRange(0, 0);
+        continue;
+      }
+      const n = Math.min(pts.length, rec.maxPts);
+      for (let i = 0; i < n; i++) {
+        rec.buf[i * 3    ] = pts[i][0];
+        rec.buf[i * 3 + 1] = pts[i][1];
+        rec.buf[i * 3 + 2] = 0.002;
+      }
+      rec.line.geometry.setDrawRange(0, n);
+      rec.line.geometry.attributes.position.needsUpdate = true;
+    }
+  }
+}

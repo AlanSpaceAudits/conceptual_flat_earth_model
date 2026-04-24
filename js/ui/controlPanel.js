@@ -600,6 +600,7 @@ const FIELD_GROUPS = [
         { key: 'ShowFeGrid',          label: 'FE Grid',            bool: true },
         { key: 'ShowLatitudeLines',   label: 'Tropics / Polar',    bool: true },
         { key: 'ShowGroundPoints',    label: 'Sun / Moon GP',      bool: true },
+        { key: 'ShowGPPath',          label: 'GP Paths (24 h)',    bool: true },
         { key: 'ShowLongitudeRing',   label: 'Longitude ring',     bool: true },
         { key: 'ShowShadow',          label: 'Shadow',             bool: true },
       ]},
@@ -1462,6 +1463,15 @@ export function buildControlPanel(host, model, demos) {
 
   // Wire the bar's time controls into Autoplay.
   const refreshTimeControls = () => {
+    if (demos && demos.animator) {
+      const a = demos.animator;
+      const demoPlaying = a.isPlaying() || a.isPaused();
+      if (demoPlaying) {
+        btnPlay.textContent = a.isPaused() ? '▶' : '⏸';
+        speedReadout.textContent = `demo ${a.speedScale.toFixed(2)}×`;
+        return;
+      }
+    }
     btnPlay.textContent = autoplay.playing ? '⏸' : '▶';
     const s = autoplay.speed;
     speedReadout.textContent = `${s >= 0 ? '+' : ''}${s.toFixed(3)} d/s`;
@@ -1472,7 +1482,21 @@ export function buildControlPanel(host, model, demos) {
   const clampSign = (v) => Math.sign(v) || 1;
   const clampMag  = (v) => Math.min(MAX_SPEED, Math.max(MIN_SPEED, Math.abs(v)));
 
+  // Helpers: route play/pause/slow/speed to the demo animator when a
+  // demo is active, so the transport bar behaves the same way in
+  // General, Eclipse, and any other demo context.
+  const demoActive = () => {
+    const a = demos && demos.animator;
+    return !!a && (a.isPlaying() || a.isPaused());
+  };
   btnPlay.addEventListener('click', () => {
+    if (demoActive()) {
+      const a = demos.animator;
+      if (a.isPaused()) a.resume();
+      else a.pause();
+      refreshTimeControls();
+      return;
+    }
     // Play/pause resets the speed multiplier back to the Day preset so
     // a fresh press always starts at a known cadence. Slow/Speed
     // buttons persist across a subsequent pause and resume on their
@@ -1496,9 +1520,16 @@ export function buildControlPanel(host, model, demos) {
     refreshTimeControls();
   });
   btnSlow.addEventListener('click', () => {
-    // Halve the current speed magnitude (direction preserved). If the
-    // user is paused, resume play at the new (slower) speed — the
-    // spec is "resumes at last slowed or sped speed" on click.
+    if (demoActive()) {
+      const a = demos.animator;
+      a.setSpeedScale(a.speedScale / 2);
+      if (a.isPaused()) a.resume();
+      refreshTimeControls();
+      return;
+    }
+    // Halve the current speed magnitude (direction preserved). Also
+    // works when rewinding: -1/24 → -1/48 (slower backward). If the
+    // user is paused, resume play at the new (slower) speed.
     const s = autoplay.speed || DEFAULT_SPEED;
     const next = clampSign(s) * clampMag(Math.abs(s) / 2);
     autoplay.setSpeed(next);
@@ -1506,8 +1537,16 @@ export function buildControlPanel(host, model, demos) {
     refreshTimeControls();
   });
   btnSpeed.addEventListener('click', () => {
-    // Double the current speed magnitude, same direction. Resume play
-    // at the new (faster) speed if paused.
+    if (demoActive()) {
+      const a = demos.animator;
+      a.setSpeedScale(a.speedScale * 2);
+      if (a.isPaused()) a.resume();
+      refreshTimeControls();
+      return;
+    }
+    // Double the current speed magnitude, same direction. Works for
+    // rewind too (-1/24 → -1/12 faster backward). Resume play if
+    // paused.
     const s = autoplay.speed || DEFAULT_SPEED;
     const next = clampSign(s) * clampMag(Math.abs(s) * 2);
     autoplay.setSpeed(next);
@@ -1515,6 +1554,7 @@ export function buildControlPanel(host, model, demos) {
     refreshTimeControls();
   });
   autoplay.onChange(refreshTimeControls);
+  model.addEventListener('update', refreshTimeControls);
   refreshTimeControls();
 
   // The popup stays open while the user interacts with the canvas

@@ -18,6 +18,7 @@ const PERSISTED_KEYS = [
   'ShowLiveEphemeris', 'MoonPhaseExpanded',
   'ShowSatellites', 'ShowCelestialBodies', 'ShowCelNav',
   'ShowBlackHoles', 'ShowQuasars', 'ShowGalaxies',
+  'ShowGPPath',
   'DynamicStars',
   'TimezoneOffsetMinutes',
   'StarfieldVaultHeight', 'MoonVaultHeight', 'SunVaultHeight',

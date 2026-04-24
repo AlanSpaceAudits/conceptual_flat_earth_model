@@ -1017,9 +1017,17 @@ export function buildControlPanel(host, model, demos) {
   const btnFf   = document.createElement('button');
   btnFf.className = 'time-btn';  btnFf.type = 'button';
   btnFf.textContent = '⏩';  btnFf.title = 'Fast forward';
+  const btnSlow = document.createElement('button');
+  btnSlow.className = 'time-btn';  btnSlow.type = 'button';
+  btnSlow.textContent = '½×';
+  btnSlow.title = 'Slow play speed (halve). Resumes at this speed if paused.';
+  const btnSpeed = document.createElement('button');
+  btnSpeed.className = 'time-btn';  btnSpeed.type = 'button';
+  btnSpeed.textContent = '2×';
+  btnSpeed.title = 'Speed up play (double). Resumes at this speed if paused.';
   const speedReadout = document.createElement('span');
   speedReadout.className = 'time-speed';
-  timeControls.append(btnVault, btnRew, btnPlay, btnFf, speedReadout);
+  timeControls.append(btnVault, btnRew, btnPlay, btnFf, btnSlow, btnSpeed, speedReadout);
 
   const compassControls = document.createElement('div');
   compassControls.className = 'compass-controls';
@@ -1283,7 +1291,16 @@ export function buildControlPanel(host, model, demos) {
     speedReadout.textContent = `${s >= 0 ? '+' : ''}${s.toFixed(3)} d/s`;
   };
   const DEFAULT_SPEED = 1 / 24; // Day preset: 1 sim-hour per real-second.
+  const MIN_SPEED = DEFAULT_SPEED / 128;
+  const MAX_SPEED = DEFAULT_SPEED * 128;
+  const clampSign = (v) => Math.sign(v) || 1;
+  const clampMag  = (v) => Math.min(MAX_SPEED, Math.max(MIN_SPEED, Math.abs(v)));
+
   btnPlay.addEventListener('click', () => {
+    // Play/pause resets the speed multiplier back to the Day preset so
+    // a fresh press always starts at a known cadence. Slow/Speed
+    // buttons persist across a subsequent pause and resume on their
+    // next click.
     autoplay.setSpeed(DEFAULT_SPEED);
     autoplay.toggle();
     refreshTimeControls();
@@ -1299,6 +1316,25 @@ export function buildControlPanel(host, model, demos) {
     const s = autoplay.speed;
     if (s < 0) autoplay.setSpeed(-s);
     else autoplay.setSpeed(s * 2);
+    if (!autoplay.playing) autoplay.play();
+    refreshTimeControls();
+  });
+  btnSlow.addEventListener('click', () => {
+    // Halve the current speed magnitude (direction preserved). If the
+    // user is paused, resume play at the new (slower) speed — the
+    // spec is "resumes at last slowed or sped speed" on click.
+    const s = autoplay.speed || DEFAULT_SPEED;
+    const next = clampSign(s) * clampMag(Math.abs(s) / 2);
+    autoplay.setSpeed(next);
+    if (!autoplay.playing) autoplay.play();
+    refreshTimeControls();
+  });
+  btnSpeed.addEventListener('click', () => {
+    // Double the current speed magnitude, same direction. Resume play
+    // at the new (faster) speed if paused.
+    const s = autoplay.speed || DEFAULT_SPEED;
+    const next = clampSign(s) * clampMag(Math.abs(s) * 2);
+    autoplay.setSpeed(next);
     if (!autoplay.playing) autoplay.play();
     refreshTimeControls();
   });

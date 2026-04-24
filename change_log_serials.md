@@ -532,6 +532,22 @@ Format:
   js/render/index.js js/ui/controlPanel.js js/ui/urlState.js`;
   delete `js/core/satellites.js`.
 
+## S314 — Transport controls add ½× / 2× buttons
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/ui/controlPanel.js`.
+- **Change:**
+  - Two new `.time-btn` buttons added after ⏩: `½×` (slow)
+    and `2×` (speed up). Each halves / doubles the current
+    autoplay speed magnitude (direction preserved) and clamps
+    between `DEFAULT_SPEED / 128` and `DEFAULT_SPEED × 128`.
+  - Either button also resumes play if the user was paused —
+    the spec is "click slow/speed after pause → resumes at the
+    new slowed/sped speed". Play/Pause (▶) still resets the
+    speed to the Day preset so a fresh ▶ press always starts
+    at a known 1 sim-hour per real-second cadence.
+- **Revert:** `git checkout v-s000313 -- js/ui/controlPanel.js`.
+
 ## S313 — Heavenly hover / click picks up optical-vault projections too
 
 - **Date:** 2026-04-24

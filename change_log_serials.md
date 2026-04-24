@@ -483,6 +483,16 @@ Format:
   is active.
 - **Revert:** `git checkout v-s000243 -- js/ui/controlPanel.js`.
 
+## S251 — Info tab: Globebusters section
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/ui/controlPanel.js`.
+- **Change:** new collapsible section "Globebusters" in the Info tab,
+  inserted before "Discord". Links: YouTube channel + S13 / S14 / S15
+  playlists. `pp` tracking param stripped from S13 to keep links
+  clean.
+- **Revert:** `git checkout v-s000250 -- js/ui/controlPanel.js`.
+
 ## S250 — Info tab: Discord section
 
 - **Date:** 2026-04-24

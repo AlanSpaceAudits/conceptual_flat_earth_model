@@ -971,6 +971,12 @@ export function buildControlPanel(host, model, demos) {
       { label: 'Rumble',    href: 'https://rumble.com/c/c-7782904?e9s=src_v1_cmd' },
       { label: 'Telegram',  href: 'https://t.me/+CVNNswIjrT45OTA0' },
     ]);
+    makeSection('Globebusters', [
+      { label: 'YouTube',     href: 'https://www.youtube.com/@GLOBEBUSTERS1' },
+      { label: 'S13 Playlist', href: 'https://www.youtube.com/watch?v=_hf7LduxSzY&list=PLvq003QsCfCuGpSNkPiNTtU1xtEuVFgTO' },
+      { label: 'S14 Playlist', href: 'https://www.youtube.com/watch?v=ghuXev6qft4&list=PLvq003QsCfCuID9WbOsL-ci501yAey2SE' },
+      { label: 'S15 Playlist', href: 'https://www.youtube.com/watch?v=1NFQNT3to5s&list=PLvq003QsCfCv3v-i7hYPtqcofn_huOSUZ' },
+    ]);
     makeSection('Discord', [
       { label: 'Aether Cosmology', href: 'https://discord.gg/aethercosmology' },
     ]);

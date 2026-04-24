@@ -33,8 +33,15 @@ const GENERAL_DEMOS = [
       CameraDistance: 20,
       Zoom: 1.5,
       VaultSize: 1, VaultHeight: 0.45,
+      // Render everything in the sky for the trace: dome true-
+      // positions + optical-vault projections + the GP polyline
+      // itself. User can still click ◉ to flip true positions
+      // off mid-demo — the animator only advances DateTime, it
+      // doesn't re-apply the intro, so toggles stick.
       ShowGPPath: true,
       ShowTruePositions: true,
+      ShowOpticalVault: true,
+      ShowStars: true,
       ShowSunTrack: false, ShowMoonTrack: false,
       ShowFeGrid: true,
     },
@@ -45,7 +52,7 @@ const GENERAL_DEMOS = [
       // starts nearly still and accelerates to the authored peak
       // speed by the end. User can still ½× / 2× from there.
       return [
-        Ttxt('Heavenly vault, looking straight down at the north pole. GP traces for every tracked body — starts almost still, accelerates to 5.33× (53 days over 30 s).'),
+        Ttxt('Heavenly vault, looking straight down at the north pole. True + optical positions on, GP traces for every tracked body — starts almost still, accelerates to 5.33× (53 days over 30 s).'),
         Tval('DateTime', start + 53.3, 30 * 1000, T1, 'accel'),
       ];
     },

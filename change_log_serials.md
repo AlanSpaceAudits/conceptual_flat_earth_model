@@ -532,6 +532,19 @@ Format:
   js/render/index.js js/ui/controlPanel.js js/ui/urlState.js`;
   delete `js/core/satellites.js`.
 
+## S355 — GP-trace demo intro: render everything in the sky, allow mid-demo toggle
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/demos/definitions.js`.
+- **Change:** `North-pole GP trace` demo intro expanded with
+  `ShowTruePositions`, `ShowOpticalVault`, and `ShowStars`
+  explicitly set so the full sky renders alongside the GP
+  paths. The animator only advances `DateTime` — intro state
+  runs once — so the ◉ bar button still flips
+  `ShowTruePositions` mid-demo without disrupting playback.
+  Narration updated.
+- **Revert:** `git checkout v-s000354 -- js/demos/definitions.js`.
+
 ## S354 — North-pole GP trace demo ramps from near-still to 5.33 days/sec
 
 - **Date:** 2026-04-24

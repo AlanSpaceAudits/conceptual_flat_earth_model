@@ -14,7 +14,7 @@ import { BRIGHT_STAR_CATALOG } from '../core/brightStarCatalog.js';
 import { NAMED_STARS_HYG }    from '../core/_namedStarsHyg.js';
 import { GALAXIES_EXTRA }     from '../core/galaxiesExtra.js';
 import { QUASARS_EXTRA }      from '../core/quasarsExtra.js';
-import { listProjections, PROJECTIONS } from '../core/projections.js';
+import { listProjections, listGeneratedProjections, listHqMaps, PROJECTIONS } from '../core/projections.js';
 import { Autoplay } from './autoplay.js';
 
 const PLANET_NAMES = {
@@ -623,7 +623,8 @@ const FIELD_GROUPS = [
           select: ['none', 'yggdrasil', 'meru', 'vortex', 'vortex2', 'discworld'] },
       ]},
       { title: 'Map Projection', rows: [
-        { key: 'MapProjection', label: 'Projection', select: listProjections() },
+        { key: 'MapProjection', label: 'HQ Map Art',  select: listHqMaps() },
+        { key: 'MapProjection', label: 'Generated',   select: listGeneratedProjections() },
       ]},
       { title: 'Starfield', rows: [
         { key: 'StarfieldType', label: 'Starfield', select: [

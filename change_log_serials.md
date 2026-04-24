@@ -532,6 +532,37 @@ Format:
   js/render/index.js js/ui/controlPanel.js js/ui/urlState.js`;
   delete `js/core/satellites.js`.
 
+## S372 — Map Projection menu split: HQ raster maps vs Generated math
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/core/projections.js`,
+  `js/ui/controlPanel.js`,
+  `assets/map_hq_equirect_day.jpg` (new),
+  `assets/map_hq_equirect_night.jpg` (new),
+  `assets/map_hq_ae_dual.png` (new),
+  `assets/map_hq_gleasons.png` (new),
+  `assets/map_hq_world_shaded.jpg` (new),
+  `assets/map_hq_ortho.png` (new),
+  `change_log_serials.md`.
+- **Change:**
+  - 6 HQ raster maps copied from `~/Pictures/maps/` into
+    `assets/` with `map_hq_*` prefixes.
+  - `projections.js`: every entry gains a `category` field
+    (`'generated'` or `'hq'`). New `projectOrthographic`
+    function plus a `'orthographic'` generated entry. Six new
+    HQ entries (`hq_equirect_day`, `hq_equirect_night`,
+    `hq_ae_dual`, `hq_gleasons`, `hq_world_shaded`,
+    `hq_ortho`) each carrying `imageAsset` + the matching
+    grid-math `project()` so FE coordinates align. New
+    exports `listGeneratedProjections()` and `listHqMaps()`.
+  - `controlPanel.js`: the "Map Projection" group now renders
+    two dropdowns — "HQ Map Art" (HQ entries) and
+    "Generated" (math entries). Both bind to
+    `state.MapProjection`; selecting either one writes the
+    chosen id.
+- **Revert:** `git checkout v-s000371 -- js/core/projections.js
+  js/ui/controlPanel.js`; `rm assets/map_hq_*`.
+
 ## S371 — Revert S370 optical-vault projection-coupling
 
 - **Date:** 2026-04-24

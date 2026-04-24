@@ -152,6 +152,16 @@ function projectEqualEarth(lat, lon, r = 1) {
   return [r * x / 2.7, r * y / 2.7, 0];
 }
 
+// Orthographic, centred on (0°, 0°). The far hemisphere collapses
+// onto its visible counterpart since cosC < 0 still produces a valid
+// (x, y) — the disc art clips at the inscribed circle anyway.
+function projectOrthographic(lat, lon, r = 1) {
+  const phi = lat * DEG, lam = lon * DEG;
+  const x = Math.cos(phi) * Math.sin(lam);
+  const y = Math.sin(phi);
+  return [r * x, r * y, 0];
+}
+
 // Eckert IV. Pseudocylindrical equal-area, pole-line.
 function projectEckertIV(lat, lon, r = 1) {
   const phi = lat * DEG, lam = lon * DEG;
@@ -173,10 +183,17 @@ function projectEckertIV(lat, lon, r = 1) {
 }
 
 // --- Registry -------------------------------------------------------
+//
+// Each entry tags `category`:
+//   'generated' — math projection synthesised from formulas + GeoJSON
+//   'hq'        — bundled high-quality raster map; project() gives the
+//                 matching grid math so FE coordinates align.
 
 export const PROJECTIONS = {
+  // -- Generated (math + GeoJSON) ------------------------------------
   ae: {
     id: 'ae', name: 'Default (AE)',
+    category: 'generated',
     imageAsset: null, imageInscribedRadius: 0.5,
     notes: 'Azimuthal-equidistant, polar aspect. Pole at disc centre.',
     project(lat, lon, r = 1) { return polarFromRadial(lat, lon, r, RADIAL_AE); },
@@ -184,6 +201,7 @@ export const PROJECTIONS = {
 
   blank: {
     id: 'blank', name: 'Blank (no features)',
+    category: 'generated',
     imageAsset: null, imageInscribedRadius: 0.5, renderStyle: 'blank',
     notes: 'Same math as AE; renders as solid black for coordinate inspection.',
     project(lat, lon, r = 1) { return polarFromRadial(lat, lon, r, RADIAL_AE); },
@@ -191,6 +209,7 @@ export const PROJECTIONS = {
 
   hellerick: {
     id: 'hellerick', name: 'Hellerick boreal',
+    category: 'generated',
     imageAsset: null, imageInscribedRadius: 0.5,
     notes: 'Lambert azimuthal equal-area, polar aspect.',
     project(lat, lon, r = 1) { return polarFromRadial(lat, lon, r, RADIAL_LAEA); },
@@ -198,6 +217,7 @@ export const PROJECTIONS = {
 
   proportional: {
     id: 'proportional', name: 'Proportional AE Map',
+    category: 'generated',
     imageAsset: 'assets/map_proportional.png',
     imageNativeWidth: 1920, imageNativeHeight: 1080,
     imageInscribedRadius: 0.5,
@@ -207,6 +227,7 @@ export const PROJECTIONS = {
 
   ae_dual: {
     id: 'ae_dual', name: 'AE Equatorial (dual-pole)',
+    category: 'generated',
     imageAsset: null, imageInscribedRadius: 0.5,
     notes: 'Azimuthal-equidistant centred at (0°, 0°), edge angle 180°. Both geographic poles fall on the vertical centre-line as distinct points.',
     project: projectAEDual,
@@ -214,6 +235,7 @@ export const PROJECTIONS = {
 
   equirect: {
     id: 'equirect', name: 'Equirectangular',
+    category: 'generated',
     imageAsset: null, imageInscribedRadius: 0.5,
     notes: 'Plate carrée: x = lon, y = lat. 2:1 aspect.',
     project: projectEquirect,
@@ -221,6 +243,7 @@ export const PROJECTIONS = {
 
   mercator: {
     id: 'mercator', name: 'Mercator',
+    category: 'generated',
     imageAsset: null, imageInscribedRadius: 0.5,
     notes: 'Conformal cylindrical; poles diverge, clamped to ±85°.',
     project: projectMercator,
@@ -228,6 +251,7 @@ export const PROJECTIONS = {
 
   mollweide: {
     id: 'mollweide', name: 'Mollweide',
+    category: 'generated',
     imageAsset: null, imageInscribedRadius: 0.5,
     notes: 'Pseudocylindrical equal-area ellipse, 2:1.',
     project: projectMollweide,
@@ -235,6 +259,7 @@ export const PROJECTIONS = {
 
   robinson: {
     id: 'robinson', name: 'Robinson',
+    category: 'generated',
     imageAsset: null, imageInscribedRadius: 0.5,
     notes: 'Pseudocylindrical compromise, 5°-spaced lookup table.',
     project: projectRobinson,
@@ -242,6 +267,7 @@ export const PROJECTIONS = {
 
   winkel_tripel: {
     id: 'winkel_tripel', name: 'Winkel Tripel',
+    category: 'generated',
     imageAsset: null, imageInscribedRadius: 0.5,
     notes: 'Mean of Aitoff and equirectangular at φ = acos(2/π); National Geographic standard.',
     project: projectWinkelTripel,
@@ -249,6 +275,7 @@ export const PROJECTIONS = {
 
   hammer: {
     id: 'hammer', name: 'Hammer',
+    category: 'generated',
     imageAsset: null, imageInscribedRadius: 0.5,
     notes: 'Lambert azimuthal equal-area, horizontally squashed 2:1.',
     project: projectHammer,
@@ -256,6 +283,7 @@ export const PROJECTIONS = {
 
   aitoff: {
     id: 'aitoff', name: 'Aitoff',
+    category: 'generated',
     imageAsset: null, imageInscribedRadius: 0.5,
     notes: 'Equirectangular scaled by sinc(α) over halved longitude.',
     project: projectAitoff,
@@ -263,6 +291,7 @@ export const PROJECTIONS = {
 
   sinusoidal: {
     id: 'sinusoidal', name: 'Sinusoidal',
+    category: 'generated',
     imageAsset: null, imageInscribedRadius: 0.5,
     notes: 'Equal-area with sine-curved meridians.',
     project: projectSinusoidal,
@@ -270,6 +299,7 @@ export const PROJECTIONS = {
 
   equal_earth: {
     id: 'equal_earth', name: 'Equal Earth',
+    category: 'generated',
     imageAsset: null, imageInscribedRadius: 0.5,
     notes: 'Equal-area polynomial, Savrič–Patterson–Jenny (2018).',
     project: projectEqualEarth,
@@ -277,9 +307,79 @@ export const PROJECTIONS = {
 
   eckert4: {
     id: 'eckert4', name: 'Eckert IV',
+    category: 'generated',
     imageAsset: null, imageInscribedRadius: 0.5,
     notes: 'Pseudocylindrical equal-area with pole-line.',
     project: projectEckertIV,
+  },
+
+  orthographic: {
+    id: 'orthographic', name: 'Orthographic',
+    category: 'generated',
+    imageAsset: null, imageInscribedRadius: 0.5,
+    notes: 'View of one hemisphere from infinity, centred on (0°, 0°).',
+    project: projectOrthographic,
+  },
+
+  // -- HQ raster maps ------------------------------------------------
+  hq_equirect_day: {
+    id: 'hq_equirect_day', name: 'HQ Equirectangular (day)',
+    category: 'hq',
+    imageAsset: 'assets/map_hq_equirect_day.jpg',
+    imageNativeWidth: 2048, imageNativeHeight: 1024,
+    imageInscribedRadius: 0.5,
+    notes: 'NASA Blue Marble equirectangular daymap.',
+    project: projectEquirect,
+  },
+
+  hq_equirect_night: {
+    id: 'hq_equirect_night', name: 'HQ Equirectangular (night)',
+    category: 'hq',
+    imageAsset: 'assets/map_hq_equirect_night.jpg',
+    imageNativeWidth: 2048, imageNativeHeight: 1024,
+    imageInscribedRadius: 0.5,
+    notes: 'NASA Black Marble equirectangular nightmap.',
+    project: projectEquirect,
+  },
+
+  hq_ae_dual: {
+    id: 'hq_ae_dual', name: 'HQ AE Equatorial (dual-pole)',
+    category: 'hq',
+    imageAsset: 'assets/map_hq_ae_dual.png',
+    imageNativeWidth: 2476, imageNativeHeight: 1246,
+    imageInscribedRadius: 0.5,
+    notes: 'Azimuthal-equidistant centred at (0°, 0°), edge angle 180°.',
+    project: projectAEDual,
+  },
+
+  hq_gleasons: {
+    id: 'hq_gleasons', name: "HQ Gleason's Map",
+    category: 'hq',
+    imageAsset: 'assets/map_hq_gleasons.png',
+    imageNativeWidth: 1920, imageNativeHeight: 1080,
+    imageInscribedRadius: 0.5,
+    notes: "Gleason's New Standard Map of the World — north-pole AE.",
+    project(lat, lon, r = 1) { return polarFromRadial(lat, lon, r, RADIAL_AE); },
+  },
+
+  hq_world_shaded: {
+    id: 'hq_world_shaded', name: 'HQ World Shaded Relief',
+    category: 'hq',
+    imageAsset: 'assets/map_hq_world_shaded.jpg',
+    imageNativeWidth: 7998, imageNativeHeight: 3999,
+    imageInscribedRadius: 0.5,
+    notes: 'High-resolution equirectangular shaded relief (~43 k px wide source).',
+    project: projectEquirect,
+  },
+
+  hq_ortho: {
+    id: 'hq_ortho', name: 'HQ Orthographic Globe',
+    category: 'hq',
+    imageAsset: 'assets/map_hq_ortho.png',
+    imageNativeWidth: 2476, imageNativeHeight: 1246,
+    imageInscribedRadius: 0.5,
+    notes: 'Orthographic globe view, centred on (0°, 0°).',
+    project: projectOrthographic,
   },
 };
 
@@ -289,4 +389,16 @@ export function getProjection(id) {
 
 export function listProjections() {
   return Object.values(PROJECTIONS).map((p) => ({ value: p.id, label: p.name }));
+}
+
+export function listGeneratedProjections() {
+  return Object.values(PROJECTIONS)
+    .filter((p) => p.category === 'generated')
+    .map((p) => ({ value: p.id, label: p.name }));
+}
+
+export function listHqMaps() {
+  return Object.values(PROJECTIONS)
+    .filter((p) => p.category === 'hq')
+    .map((p) => ({ value: p.id, label: p.name }));
 }

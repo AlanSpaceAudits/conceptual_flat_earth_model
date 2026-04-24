@@ -500,6 +500,15 @@ Format:
 - **Revert:** `git checkout v-s000256 -- js/render/worldObjects.js
   js/render/constellations.js`.
 
+## S294 — Reorder compass buttons N E S W → N S E W
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/ui/controlPanel.js`.
+- **Change:** Order of the compass-button definitions flipped
+  so the visible order is `🌙 N S E W` instead of
+  `🌙 N E S W`. Headings unchanged.
+- **Revert:** `git checkout v-s000293 -- js/ui/controlPanel.js`.
+
 ## S293 — Permanent night button back to compass-controls, before N
 
 - **Date:** 2026-04-24

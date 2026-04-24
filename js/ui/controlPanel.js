@@ -871,8 +871,8 @@ export function buildControlPanel(host, model, demos) {
 
   const compassBtns = [
     { label: 'N', heading: 0   },
-    { label: 'E', heading: 90  },
     { label: 'S', heading: 180 },
+    { label: 'E', heading: 90  },
     { label: 'W', heading: 270 },
   ].map(({ label, heading }) => {
     const b = document.createElement('button');

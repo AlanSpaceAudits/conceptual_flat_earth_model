@@ -196,6 +196,8 @@ function defaultState() {
     // Degrees; set by mouseHandler, null in Heavenly / off-canvas.
     MouseElevation: null,
     MouseAzimuth:   null,
+
+    FollowTarget:   null,
   };
 }
 

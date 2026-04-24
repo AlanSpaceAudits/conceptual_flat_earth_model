@@ -500,6 +500,34 @@ Format:
 - **Revert:** `git checkout v-s000256 -- js/render/worldObjects.js
   js/render/constellations.js`.
 
+## S284 — Click-to-snap and continuous follow in Optical mode
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/core/app.js`, `js/ui/mouseHandler.js`.
+- **Change:**
+  - New session-only state `FollowTarget` (default `null`).
+  - `pointerdown` / `pointerup` track drag distance; a pointer
+    event with total movement under 4 px counts as a click.
+  - On click in Optical mode (`InsideVault === true`) the
+    handler computes the click direction via the existing
+    pinhole math, then searches Sun / Moon / planets / all five
+    star catalogues for the nearest above-horizon body inside a
+    FOV-scaled angular threshold (`clamp(fovV/15, 0.4°, 5°)`).
+    If a match is found it sets `FollowTarget` to the body's
+    tracker id and snaps `ObserverHeading` to the body's
+    azimuth and `CameraHeight` to its elevation (clamped
+    `[0, 89.9]`). Clicks on empty sky don't move the camera.
+  - A continuous `update` listener re-aims the camera at
+    `FollowTarget` every frame. Below-horizon targets pin pitch
+    to 0 so the camera swings with the body's azimuth along the
+    horizon instead of looking underground. The listener calls
+    `setState(..., emit=false)` to avoid re-entrant updates and
+    skips when heading/pitch already match.
+  - Any real drag (≥ 4 px movement) clears `FollowTarget`, so
+    manual steering breaks the lock.
+- **Revert:** `git checkout v-s000283 -- js/core/app.js
+  js/ui/mouseHandler.js`.
+
 ## S283 — Lift #info-bar above #bottom-bar in z-stack
 
 - **Date:** 2026-04-24

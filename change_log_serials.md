@@ -532,6 +532,25 @@ Format:
   js/render/index.js js/ui/controlPanel.js js/ui/urlState.js`;
   delete `js/core/satellites.js`.
 
+## S332 — STM now focuses on FollowTarget; demo end clears tracks / GP paths
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/demos/index.js`, `js/render/index.js`,
+  `js/render/worldObjects.js`.
+- **Change:**
+  - `CatalogPointStars`, `CelNavStars`, and the sun / moon /
+    planet marker block all narrow the effective tracker set to
+    just `[FollowTarget]` when `SpecifiedTrackerMode` is on.
+    With the S330 always-require-membership rule STM was a no-op;
+    now 🎯 actually does something — focuses the scene on the
+    currently-locked body and hides everything else.
+  - `_snapToDefaultEphemeris` (fires when a demo ends)
+    additionally resets `ShowSunTrack`, `ShowMoonTrack`, and all
+    seven `GPPath<Category>` flags so demo-time visualisations
+    don't leak into normal exploration.
+- **Revert:** `git checkout v-s000331 -- js/demos/index.js
+  js/render/index.js js/render/worldObjects.js`.
+
 ## S331 — GP Path moves out of Show into every Tracker sub-menu
 
 - **Date:** 2026-04-24

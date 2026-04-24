@@ -56,6 +56,18 @@ export class Demos {
     this.model.setState({
       DateTime:   812.88,
       BodySource: 'astropixels',
+      // Demos often light up ShowSunTrack / ShowMoonTrack / GPPath*
+      // in their intros; reset them so post-demo exploration doesn't
+      // inherit those visualisations.
+      ShowSunTrack:  false,
+      ShowMoonTrack: false,
+      GPPathPlanets:        false,
+      GPPathCelNav:         false,
+      GPPathConstellations: false,
+      GPPathBlackHoles:     false,
+      GPPathQuasars:        false,
+      GPPathGalaxies:       false,
+      GPPathSatellites:     false,
     });
   }
 

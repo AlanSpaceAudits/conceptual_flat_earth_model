@@ -3957,12 +3957,14 @@ export class CelNavStars {
     const n = Math.min(stars.length, this._maxStars);
     const dp = this._domePositions;
     const sp = this._spherePositions;
-    // Tracker-as-source-of-truth: membership is always required.
-    // Show CelNav gates the category, TrackerTargets picks the
-    // individual stars.
+    // Tracker-as-source-of-truth: membership always required inside
+    // an active category. STM narrows to FollowTarget only when on.
+    const stm = !!s.SpecifiedTrackerMode;
     const targetArr = Array.isArray(s.TrackerTargets) ? s.TrackerTargets : [];
-    const trackerSet = new Set(targetArr);
-    if (s.FollowTarget) trackerSet.add(s.FollowTarget);
+    const trackerSet = stm
+      ? new Set(s.FollowTarget ? [s.FollowTarget] : [])
+      : new Set(targetArr);
+    if (!stm && s.FollowTarget) trackerSet.add(s.FollowTarget);
 
     for (let i = 0; i < n; i++) {
       const star = stars[i];
@@ -4095,14 +4097,15 @@ export class CatalogPointStars {
     const n = Math.min(entries.length, this._maxStars);
     const dp = this._domePositions;
     const sp = this._spherePositions;
-    // Tracker is the single source of truth: the Show checkbox gates
-    // the category on/off, and TrackerTargets membership decides
-    // which entries render inside it. No opt-in heuristic — empty
-    // selection with Show on = empty sky, Track-All seeds the full
-    // list back in.
+    // Tracker is the single source of truth: Show gates the category,
+    // TrackerTargets membership decides entries. STM narrows the set
+    // further — when on, only FollowTarget survives (focus mode).
+    const stm = !!s.SpecifiedTrackerMode;
     const targetArr = Array.isArray(s.TrackerTargets) ? s.TrackerTargets : [];
-    const trackerSet = new Set(targetArr);
-    if (s.FollowTarget) trackerSet.add(s.FollowTarget);
+    const trackerSet = stm
+      ? new Set(s.FollowTarget ? [s.FollowTarget] : [])
+      : new Set(targetArr);
+    if (!stm && s.FollowTarget) trackerSet.add(s.FollowTarget);
 
     for (let i = 0; i < n; i++) {
       const star = entries[i];

@@ -414,11 +414,14 @@ export class Renderer {
     // its id to `TrackerTargets`. The target id is the same id the
     // panel button grid emits ('sun', 'moon', planet name).
     const stm = !!s.SpecifiedTrackerMode;
-    const trackerSet = new Set(Array.isArray(s.TrackerTargets) ? s.TrackerTargets : []);
-    if (s.FollowTarget) trackerSet.add(s.FollowTarget);
+    const trackerSet = stm
+      ? new Set(s.FollowTarget ? [s.FollowTarget] : [])
+      : new Set(Array.isArray(s.TrackerTargets) ? s.TrackerTargets : []);
+    if (!stm && s.FollowTarget) trackerSet.add(s.FollowTarget);
     const bodyCategoryOn = s.ShowCelestialBodies !== false;
     // Tracker-as-source-of-truth: Show gates the category, membership
-    // always decides which bodies render inside it.
+    // always decides which bodies render inside it. STM narrows to
+    // FollowTarget when active.
     const showSun   = bodyCategoryOn && trackerSet.has('sun');
     const showMoon  = bodyCategoryOn && trackerSet.has('moon');
     this.sunMarker.group.visible  = showSun;

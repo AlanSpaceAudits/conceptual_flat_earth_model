@@ -152,15 +152,17 @@ const SUN_24H_DEMOS = [
       ObserverLat: 82.505, ObserverLong: -62.335,
       BodySource: 'astropixels',
       DateTime: 3093,                        // 2025-06-21 00:00 UTC
-      InsideVault: false,
-      CameraDirection: -62.335, CameraHeight: 70, CameraDistance: 10, Zoom: 1.4,
+      InsideVault: true,                     // Optical (first-person)
+      FollowTarget: 'sun',                   // camera auto-aims at sun
+      TrackerTargets: ['sun'],               // hide everything except sun
+      OpticalZoom: 1.0,
       VaultSize: 1, VaultHeight: 0.45,
-      ObserverHeading: 180,                  // face south
+      ObserverHeading: 180,
       ShowSunTrack: true,
       ShowShadow: true, ShowTruePositions: true,
     },
     tasks: () => [
-      Ttxt('82°30′N · Alert, Nunavut · 2025-06-21 solstice — sun stays above the horizon for the full 24 h sidereal day.'),
+      Ttxt('82°30′N · Alert, Nunavut · 2025-06-21 solstice · Optical view locked on the sun — watch it loop 360° without setting.'),
       Tval('DateTime', 3094, 4 * T5, T1, 'linear'),
     ],
   },
@@ -170,16 +172,18 @@ const SUN_24H_DEMOS = [
     intro: {
       ObserverLat: -79.76806, ObserverLong: -83.26167,
       BodySource: 'astropixels',
-      DateTime: 2911,                        // 2024-12-21 solstice — peak sun elevation
-      InsideVault: false,
-      CameraDirection: -83.262, CameraHeight: 70, CameraDistance: 10, Zoom: 1.4,
+      DateTime: 2911,                        // 2024-12-21 solstice
+      InsideVault: true,                     // Optical (first-person)
+      FollowTarget: 'sun',                   // camera auto-aims at sun
+      TrackerTargets: ['sun'],               // hide everything except sun
+      OpticalZoom: 1.0,
       VaultSize: 1, VaultHeight: 0.45,
-      ObserverHeading: 0,                    // face north
+      ObserverHeading: 0,
       ShowSunTrack: true,
       ShowShadow: true, ShowTruePositions: true,
     },
     tasks: () => [
-      Ttxt('79°46′S 83°15′W · West Antarctica · 2024-12-21 solstice — sun circles overhead for the whole 24 h without setting. Min elevation ≈ 13°, max ≈ 34°.'),
+      Ttxt('79°46′S 83°15′W · West Antarctica · 2024-12-21 solstice · Optical view locked on the sun — elevation dips to ~13° at the "midnight" pass but never sets.'),
       Tval('DateTime', 2912, 4 * T5, T1, 'linear'),
     ],
   },
@@ -190,10 +194,12 @@ const SUN_24H_DEMOS = [
       ObserverLat: 75, ObserverLong: 0,
       BodySource: 'astropixels',
       DateTime: 3021,                 // ~2025-04-10
-      ObserverHeading: 0,             // face geographic north
-      CameraDirection: 0, CameraHeight: 30, CameraDistance: 10, Zoom: 1.4,
+      ObserverHeading: 0,
+      InsideVault: true,              // Optical
+      FollowTarget: 'sun',
+      TrackerTargets: ['sun'],
+      OpticalZoom: 1.0,
       VaultSize: 1, VaultHeight: 0.45,
-      InsideVault: false,
       ShowSunTrack: true,
       ShowShadow: true,
       ShowTruePositions: true,
@@ -217,10 +223,12 @@ const SUN_24H_DEMOS = [
       ObserverLat: -75, ObserverLong: 0,
       BodySource: 'astropixels',
       DateTime: 3195,                 // ~2025-10-01
-      ObserverHeading: 180,           // face geographic south
-      CameraDirection: 180, CameraHeight: 30, CameraDistance: 10, Zoom: 1.4,
+      ObserverHeading: 180,
+      InsideVault: true,              // Optical
+      FollowTarget: 'sun',
+      TrackerTargets: ['sun'],
+      OpticalZoom: 1.0,
       VaultSize: 1, VaultHeight: 0.45,
-      InsideVault: false,
       ShowSunTrack: true,
       ShowShadow: true,
       ShowTruePositions: true,

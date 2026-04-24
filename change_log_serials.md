@@ -532,6 +532,24 @@ Format:
   js/render/index.js js/ui/controlPanel.js js/ui/urlState.js`;
   delete `js/core/satellites.js`.
 
+## S358 — 24h-sun demos start Optical tracking the sun; only sun visible
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/demos/definitions.js`.
+- **Change:** All four 24h-sun demos (Alert 82°30′N, West
+  Antarctica 79°46′S, Midnight sun 75°N, Midnight sun 75°S)
+  intro rewritten:
+  - `InsideVault: true` — start in Optical (first-person)
+    instead of Heavenly orbit.
+  - `FollowTarget: 'sun'` — Optical camera auto-aims at the
+    sun every frame; elevation re-clamps once per tick so the
+    sun stays locked in the view centre as it loops overhead.
+  - `TrackerTargets: ['sun']` — only the sun renders; every
+    other body / catalogue is hidden by the membership rule,
+    so the scene is unambiguously about the sun.
+  - `OpticalZoom: 1.0` — full-FOV entry.
+- **Revert:** `git checkout v-s000357 -- js/demos/definitions.js`.
+
 ## S357 — Discworld cosmology (A'Tuin + 4 elephants); Antarctic demo moves to solstice
 
 - **Date:** 2026-04-24

@@ -1034,6 +1034,16 @@ export function buildControlPanel(host, model, demos) {
   });
   compassControls.appendChild(btnStm);
 
+  const btnTrue = document.createElement('button');
+  btnTrue.className = 'time-btn true-btn';
+  btnTrue.type = 'button';
+  btnTrue.textContent = '◉';
+  btnTrue.title = 'Toggle true-position markers on the Heavenly vault';
+  btnTrue.addEventListener('click', () => {
+    model.setState({ ShowTruePositions: !model.state.ShowTruePositions });
+  });
+  compassControls.appendChild(btnTrue);
+
   const compassBtns = [
     { label: 'N', heading: 0   },
     { label: 'S', heading: 180 },
@@ -1087,6 +1097,8 @@ export function buildControlPanel(host, model, demos) {
       model.state.PermanentNight ? 'true' : 'false');
     btnStm.setAttribute('aria-pressed',
       model.state.SpecifiedTrackerMode ? 'true' : 'false');
+    btnTrue.setAttribute('aria-pressed',
+      model.state.ShowTruePositions ? 'true' : 'false');
   };
   model.addEventListener('update', refreshCompass);
   refreshCompass();

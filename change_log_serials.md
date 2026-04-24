@@ -500,6 +500,17 @@ Format:
 - **Revert:** `git checkout v-s000256 -- js/render/worldObjects.js
   js/render/constellations.js`.
 
+## S311 — Quick-toggle button for true-position markers
+
+- **Date:** 2026-04-24
+- **Files changed:** `css/styles.css`, `js/ui/controlPanel.js`.
+- **Change:** New `◉ .true-btn` appended to `.compass-controls`
+  after the 🎯 STM button. Clicking toggles
+  `ShowTruePositions`; accent-border highlight when active.
+  Matching CSS follows the `.stm-btn` pattern.
+- **Revert:** `git checkout v-s000310 -- css/styles.css
+  js/ui/controlPanel.js`.
+
 ## S310 — More reliable Heavenly / free-cam hover
 
 - **Date:** 2026-04-24

@@ -483,6 +483,20 @@ Format:
   is active.
 - **Revert:** `git checkout v-s000243 -- js/ui/controlPanel.js`.
 
+## S249 — Info tab: per-person link sub-menus
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/ui/controlPanel.js`.
+- **Change:** Info tab restructured into three collapsible sections,
+  each holding a list of external links. Sections are mutually
+  exclusive (same `popupGroups` set as the other tabs' groups).
+  - **Space Audits** — YouTube, Obsidian, X, Telegram, Website.
+  - **Shane St. Pierre** — X, YouTube, ADL.
+  - **Man of Stone** — X, Rumble, Telegram.
+  Previous Discord placeholder dropped. Links open in new tabs with
+  `rel=noopener noreferrer`.
+- **Revert:** `git checkout v-s000248 -- js/ui/controlPanel.js`.
+
 ## S248 — New default camera angles
 
 - **Date:** 2026-04-24

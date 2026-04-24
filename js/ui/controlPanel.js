@@ -936,26 +936,41 @@ export function buildControlPanel(host, model, demos) {
     });
   }
 
-  // External-link tab. Swap the `href` values below for the real
-  // targets; `#` entries fall through to the current page.
   registerTab('Info', (popup) => {
-    const links = [
-      { label: 'Space Audits',     href: 'https://www.youtube.com/@AlanSpaceAudits' },
-      { label: 'Shane St. Pierre', href: '#' },
-      { label: 'Discord',          href: '#' },
-    ];
-    const list = document.createElement('div');
-    list.className = 'info-links';
-    for (const l of links) {
-      const a = document.createElement('a');
-      a.className = 'info-link';
-      a.href = l.href;
-      a.target = '_blank';
-      a.rel = 'noopener noreferrer';
-      a.textContent = l.label;
-      list.appendChild(a);
-    }
-    popup.appendChild(list);
+    const popupGroups = new Set();
+    const makeSection = (title, links) => {
+      const g = buildGroup(model, title, [], popupGroups);
+      const list = document.createElement('div');
+      list.className = 'info-links';
+      for (const l of links) {
+        const a = document.createElement('a');
+        a.className = 'info-link';
+        a.href = l.href;
+        a.target = '_blank';
+        a.rel = 'noopener noreferrer';
+        a.textContent = l.label;
+        list.appendChild(a);
+      }
+      g.body.appendChild(list);
+      popup.appendChild(g.el);
+    };
+    makeSection('Space Audits', [
+      { label: 'YouTube',   href: 'https://www.youtube.com/@space_audits' },
+      { label: 'Obsidian',  href: 'https://publish.obsidian.md/spaceaudits' },
+      { label: 'X',         href: 'https://x.com/space_audits' },
+      { label: 'Telegram',  href: 'https://t.me/spaceaudits' },
+      { label: 'Website',   href: 'https://spaceaudits.net' },
+    ]);
+    makeSection('Shane St. Pierre', [
+      { label: 'X',         href: 'https://x.com/AntiDisinfo86' },
+      { label: 'YouTube',   href: 'https://www.youtube.com/@shanestpierre' },
+      { label: 'ADL',       href: 'https://adl.place' },
+    ]);
+    makeSection('Man of Stone', [
+      { label: 'X',         href: 'https://x.com/Inventionaire' },
+      { label: 'Rumble',    href: 'https://rumble.com/c/c-7782904?e9s=src_v1_cmd' },
+      { label: 'Telegram',  href: 'https://t.me/+CVNNswIjrT45OTA0' },
+    ]);
   });
 
   // Wire the bar's time controls into Autoplay.

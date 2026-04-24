@@ -362,3 +362,11 @@ Format:
   `#view`, plus `min-height: 0` on `#app` and `#view`. Prevents the
   canvas or popup from pushing content past the viewport.
 - **Revert:** `git checkout v-s000233 -- css/styles.css`.
+
+## S235 — Raise Aether Cosmology logo above the bottom bar
+
+- **Date:** 2026-04-24
+- **Files changed:** `index.html`.
+- **Change:** `#logo` inline `bottom: 16px → 60px` (44 px bar + 16 px
+  padding) so the logo clears the transport bar.
+- **Revert:** `git checkout v-s000234 -- index.html`.

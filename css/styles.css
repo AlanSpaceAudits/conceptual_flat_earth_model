@@ -292,6 +292,9 @@ header .info-popup p:last-child { margin-bottom: 0; }
   text-decoration: none;
   font: inherit;
   font-size: 13px;
+  line-height: 1.35;
+  white-space: normal;
+  overflow-wrap: anywhere;
   transition: border-color 0.1s, color 0.1s, background 0.1s;
 }
 .info-link:hover {

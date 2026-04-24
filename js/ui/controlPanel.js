@@ -991,6 +991,12 @@ export function buildControlPanel(host, model, demos) {
     makeSection('Clubhouse', [
       { label: '#FlatEarthGang', href: 'https://www.clubhouse.com/club/flatearthgang' },
     ]);
+    makeSection('Twitter Community', [
+      {
+        label: 'FE Community Friday X Spaces hosted by Ken and Brian',
+        href: 'https://x.com/ken_caudle',
+      },
+    ]);
   });
 
   // Wire the bar's time controls into Autoplay.

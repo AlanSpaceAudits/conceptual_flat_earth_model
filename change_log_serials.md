@@ -483,6 +483,20 @@ Format:
   is active.
 - **Revert:** `git checkout v-s000243 -- js/ui/controlPanel.js`.
 
+## S255 — Info tab: Twitter Community section + wrappable link labels
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/ui/controlPanel.js`, `css/styles.css`.
+- **Change:**
+  - New section "Twitter Community" at the end of the Info tab, one
+    link: "FE Community Friday X Spaces hosted by Ken and Brian" →
+    `https://x.com/ken_caudle`.
+  - `.info-link` CSS: `white-space: normal; overflow-wrap: anywhere;
+    line-height: 1.35;` so long labels wrap inside the link button
+    instead of stretching the popup.
+- **Revert:** `git checkout v-s000254 -- js/ui/controlPanel.js
+  css/styles.css`.
+
 ## S254 — Info tab: Clubhouse section
 
 - **Date:** 2026-04-24

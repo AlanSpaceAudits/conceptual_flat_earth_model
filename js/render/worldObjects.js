@@ -323,6 +323,23 @@ export class LongitudeRing {
     // compass-azimuth ring on the observer's cap.
     const inVault = !!model.state.InsideVault;
     this.group.visible = !inVault && (model.state.ShowLongitudeRing !== false);
+
+    // S206c (follow-up 3) — rotate the ring so the "0°" marker
+    // lands at the observer's compass-north direction. The disc-rim
+    // numerals are the projection-grid reference and the user wants
+    // them to read in the same heading frame as the cap-attached
+    // azimuth ring (which has 0° = compass-north of the observer).
+    //
+    // Geometry: the observer at (lat, long) sits at world position
+    //   (r_obs · cos long, r_obs · sin long, 0)
+    // with `r_obs = (90 − lat) / 180` (azimuthal-equidistant disc
+    // mapping in `canonicalLatLongToDisc`). Compass-north from
+    // there points toward the disc centre — world direction angle
+    // `long + π`. The ring's "0°" mark is at world angle `π` (from
+    // the `LONGITUDE_RING_ANCHOR_DEG = 180` anchor in
+    // `ringAngleRad`). Rotating the ring's group by `long` about
+    // +z moves "0°" from `π` to `π + long`, which matches.
+    this.group.rotation.set(0, 0, ToRad(model.state.ObserverLong || 0));
   }
 }
 

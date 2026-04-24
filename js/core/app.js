@@ -51,10 +51,14 @@ function heavenlyVaultCeiling(latDeg, domeSize, domeHeight, feRadius) {
 }
 
 // Default state. Distances all in FE_RADIUS units.
+//
+// S207 — testing-rebaseline defaults. The user wants a recognisable
+// out-of-the-box state on every page load so regressions are obvious
+// at a glance. See change_log_serials.md S207 for the full table.
 function defaultState() {
   return {
     // observer / camera
-    ObserverLat:   0.0,
+    ObserverLat:  45.0,
     ObserverLong: 15.0,
     // Compass heading of the observer's facing in their optical vault.
     // 0 = North, 90 = East, 180 = South, 270 = West. Drives the cardinal
@@ -66,56 +70,61 @@ function defaultState() {
     // downstream geometry (meridian arc, heading ray, cardinals) keeps
     // its ground-anchored math unchanged.
     ObserverElevation: 0,
-    CameraDirection: 30.0,
-    CameraHeight:    25.0,
+    CameraDirection: 14.0,
+    CameraHeight:    10.0,
     CameraDistance:  GEOMETRY.CameraDistanceDefault,
-    Zoom:             1.4,    // Heavenly orbit zoom — unaffected by Optical wheel.
+    Zoom:             4.67,   // Heavenly orbit zoom — unaffected by Optical wheel.
     // S002 — Optical-only zoom scalar. Drives only the first-person
     // FOV (`fov = 75° / OpticalZoom`). Default 5.09 is the value the
     // user wants on entering Optical Vault.
     OpticalZoom:      5.09,
 
-    // time — defaults to 2017-08-21 22:41 UTC (total solar eclipse reference).
-    DateTime:    232.9454, // days since 2017-01-01
-    DayOfYear:   232,
-    Time:        22.69,    // decimal hours
+    // S207 — time defaults to 2019-03-24 21:04 UTC (15:04 CST). The
+    // user's canonical testing moment is 03-24 15:04 local; bumped
+    // to 2019 so the date sits inside Espenak's DE405 / AstroPixels
+    // table (years 2019–2030 in `js/data/astropixels.js`). The 2017
+    // baseline made the DE405 pipeline return zeros for sun/moon.
+    // 2019 is two whole non-leap years past 2017-01-01:
+    //   730 + 82.878 = 812.878 days.
+    DateTime:    812.88,   // days since 2017-01-01
+    DayOfYear:   812,      // = floor(DateTime); not calendar DOY
+    Time:        21.07,    // decimal hours
 
     // geometry
     VaultSize:   GEOMETRY.VaultSizeDefault,
-    VaultHeight: GEOMETRY.VaultHeightDefault,
+    VaultHeight: 0.4,
 
     // Observer's optical vault — the flattened cap onto which sun/moon/
     // stars/planets project. Defaults to the NP→EQ radius (0.5) and a
-    // shallow cap height (0.35). Now adjustable so users can inflate or
-    // squash the dome to see how projected arcs change.
+    // shallow cap height (0.14, S207).
     OpticalVaultSize:   GEOMETRY.OpticalVaultRadiusFar,
-    OpticalVaultHeight: GEOMETRY.OpticalVaultHeightFar,
+    OpticalVaultHeight: 0.14,
 
     // ray curve shape
     RayParameter: 1.0,
     RayTarget:    0,  // 0 observer, 1 flat earth
     RaySource:    0,  // 0 sun, 1 moon, 2 star
 
-    // visibility toggles
+    // visibility toggles (S207 testing-rebaseline)
     ShowFeGrid:     true,
     ShowShadow:     true,
-    ShowVault:      true,
+    ShowVault:      false,
     ShowVaultGrid:   false,
     // True-source positions on the heavenly vault (sun/moon/planet dots
     // and halos). When off, only the projected optical-vault markers
     // remain — the observer sees their hemisphere of vision without the
     // underlying "real" sources above it.
-    ShowTruePositions: true,
+    ShowTruePositions: false,
     ShowSunTrack:   false,
     ShowMoonTrack:  false,
     ShowOpticalVault:     true,
     ShowStars:      true,
-    ShowVaultRays:   true,
-    ShowOpticalVaultRays: true,
+    ShowVaultRays:        false,
+    ShowOpticalVaultRays: false,
     ShowManyRays:   false,
     ShowLatitudeLines: true,
     ShowGroundPoints:  true,
-    ShowFacingVector:  false,
+    ShowFacingVector:  true,
     ShowDecCircles:    true,
     ShowLogo:          true,
     ShowConstellations:      true,
@@ -130,13 +139,14 @@ function defaultState() {
     // what's projected onto the optical vault remains visible.
     InsideVault: false,
 
-    // observer figure: 'male' | 'female' | 'astronaut' | 'child' | 'none'
-    ObserverFigure: 'male',
+    // observer figure: 'male' | 'female' | 'astronaut' | 'child' | 'llama' | 'none'
+    // S207 — testing-rebaseline default 'llama'.
+    ObserverFigure: 'llama',
 
     // Timezone offset applied to the calendar inputs, in minutes east of UTC
     // (e.g. -300 = UTC-5 / EST). DateTime itself remains in UTC; this is
-    // purely a display / input affordance.
-    TimezoneOffsetMinutes: 0,
+    // purely a display / input affordance. S207 — default CST (UTC-6).
+    TimezoneOffsetMinutes: -360,
 
     // Per-body vault heights (dimensionless, ratio of FE_RADIUS). Each
     // celestial body's vault is a spherical cap whose BASE sits on the
@@ -146,14 +156,18 @@ function defaultState() {
     // Starfield raised well above the observer's optical vault so it sits
     // clearly overhead. Body apexes bumped to keep room above the floor
     // for the seasonal elevation swing on the sun/moon vaults.
+    // S207 — planet vault heights flattened to a uniform 0.346 so the
+    // testing baseline reads the same for every planet. Sun/moon are
+    // recomputed from the active date in `update()` so their displayed
+    // values track the ephemeris regardless of these defaults.
     StarfieldVaultHeight: 0.28,
-    MoonVaultHeight:      0.40,
-    SunVaultHeight:       0.50,
-    MercuryVaultHeight:   0.55,
-    VenusVaultHeight:     0.58,
-    MarsVaultHeight:      0.61,
-    JupiterVaultHeight:   0.64,
-    SaturnVaultHeight:    0.67,
+    MoonVaultHeight:      0.346,
+    SunVaultHeight:       0.346,
+    MercuryVaultHeight:   0.346,
+    VenusVaultHeight:     0.346,
+    MarsVaultHeight:      0.346,
+    JupiterVaultHeight:   0.346,
+    SaturnVaultHeight:    0.346,
 
     ShowPlanets: true,
 
@@ -169,9 +183,10 @@ function defaultState() {
     // Visual map projection used for land + graticule + latitude circles
     // only. 'ae' preserves the model's native azimuthal-equidistant layout;
     // 'hellerick' swaps in a Lambert equal-area polar aspect for the
-    // Hellerick boreal look. All physics / ray / vault math still runs in
-    // the AE frame.
-    MapProjection: 'ae',
+    // Hellerick boreal look; 'blank' draws nothing. All physics / ray /
+    // vault math still runs in the AE frame. S207 default 'blank' so the
+    // disc starts feature-free for testing.
+    MapProjection: 'blank',
 
     // Starfield type for the heavenly-vault disc. 'random' uses the
     // procedural point cloud; 'chart-dark' / 'chart-light' swap in a polar
@@ -181,7 +196,9 @@ function defaultState() {
     // star is individually positioned from RA/Dec and projected into
     // both Heavenly and Optical vaults, replacing the procedural /
     // chart rendering when selected.
-    StarfieldType: 'random',
+    // S207 — testing default 'celnav' so named-star checks are
+    // available immediately on load.
+    StarfieldType: 'celnav',
 
     // S011 / S015 / S016 — five ephemeris pipelines. All computed every
     // frame and displayed side-by-side in the Tracker HUD; BodySource
@@ -268,13 +285,16 @@ function defaultState() {
     // S009 — force-full-night toggle so the user can test Cel Nav
     // starfield / body placement without waiting for the actual day/
     // night cycle. When true, NightFactor is pinned to 1.0 regardless
-    // of the sun's elevation.
-    PermanentNight: false,
+    // of the sun's elevation. S207 — default true so the testing
+    // baseline shows the celnav starfield without waiting for night.
+    PermanentNight: true,
 
     // S009a — multi-tracker: array of ids the HUD / disc-GP renders for.
     // Each id: 'sun' / 'moon' / planet name / 'star:<id>'. Empty array
     // collapses the tracker HUD and hides all tracked-object GPs.
-    TrackerTargets: [],
+    // S207 — default ['sun', 'moon'] so the tracker HUD is populated
+    // on load.
+    TrackerTargets: ['sun', 'moon'],
 
     // description / pointer
     Description: '',

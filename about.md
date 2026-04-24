@@ -1,6 +1,6 @@
 # FE Conceptual Model — a sandbox for a single observer's sky
 
-An interactive sandbox showing what one observer actually sees. No physical units, no assumed earth radius, no spherical trigonometry sneaking in through the back door. Everything is built around a single fictitious observer who ties the celestial sphere to the terrestrial graticule by relating a star's geocentric angle to the time it transits overhead.
+An interactive sandbox showing what one observer actually sees. No physical units, no assumed earth radius. Everything is built around a single fictitious observer who ties the celestial sphere to the terrestrial graticule by relating a star's geocentric angle to the time it transits overhead.
 
 Live at <https://alanspaceaudits.github.io/conceptual_flat_earth_model/>.
 
@@ -15,7 +15,7 @@ On the globe, an observer is always referencing where a star *isn't* at any give
 
 ## Unit discipline
 
-All distances are unitless. `FE_RADIUS = 1`. Everything else is a ratio. The codebase carries no earth radius, no AU, no kilometres, no great-circle trigonometry. Variable names containing `Globe` refer to the observer's local tangent frame (zenith / east / north), not to any spherical-earth geometry.
+All distances are unitless. `FE_RADIUS = 1`. Everything else is a ratio. The codebase carries no earth radius, no AU, no kilometres, no great-circle trigonometry. Variable names containing `Globe` refer to the observer's local tangent frame (zenith / east / north), not to any spherical-earth geometry — the spherical framework here is purely conceptual.
 
 ---
 

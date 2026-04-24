@@ -11,11 +11,18 @@ const PRESETS = [
 export class Autoplay {
   constructor(model) {
     this.model = model;
-    this.playing = false;
+    // S207 — testing-rebaseline default: autoplay starts running at
+    // the "Day" preset (1 simulated hour per real second) so the
+    // baseline view shows the sun/moon already moving on load.
+    this.playing = true;
     this.speed = PRESETS[0].days_per_sec;   // default: "Day"
     this._last = 0;
     this._tick = this._tick.bind(this);
     this._listeners = new Set();
+    if (this.playing) {
+      this._last = performance.now();
+      requestAnimationFrame(this._tick);
+    }
   }
 
   onChange(fn) { this._listeners.add(fn); return () => this._listeners.delete(fn); }

@@ -2386,6 +2386,28 @@ S010–S017 work. Tracked for a later serial.
     `(cardR / rSafe) * cosE * b[i]` and
     `(1.14 / rSafe) * cosE * Math.cos(phi)` position formulas;
     drop the `posXY / posZ / aziXY / aziZ` block.
+  - **S206c (follow-up 3, 2026-04-24) — align LongitudeRing 0° to
+    observer compass-north.** The disc-rim longitude numerals are
+    the projection grid reference and the user wants them to read
+    in the same heading frame as the cap-attached azimuth ring
+    (which has 0° = observer's compass-north). Previously the ring
+    was anchored to a fixed disc direction (the world 0° longitude
+    meridian), so as the observer moved east the ring's "0°" mark
+    no longer aligned with their compass-north and read as a
+    competing reference. Added one rotation in
+    `LongitudeRing.update`:
+        this.group.rotation.set(0, 0, ToRad(state.ObserverLong));
+    Geometry: observer at (lat, long) sits at world position
+    `(r_obs cos long, r_obs sin long, 0)` (azimuthal-equidistant);
+    compass-north from there points to the disc centre — world
+    angle `long + π`. The ring's "0°" mark is at world angle `π`
+    (from `LONGITUDE_RING_ANCHOR_DEG = 180`). Rotating by `long`
+    about +z moves it from `π` to `π + long`, matching.
+    **Files:** `js/render/worldObjects.js` (~15 lines added in
+    `LongitudeRing.update`).
+    **Revert path (follow-up 3 only):** drop the
+    `this.group.rotation.set(...)` call and the surrounding
+    comment block.
   3. **Bottom label strip sits on the ring**
      (`_labelBandElevRad`). Removed the residual `0.5 % of FOV`
      margin so `labelElev = lowestRingE` exactly. When horizon is
@@ -2417,3 +2439,78 @@ S010–S017 work. Tracked for a later serial.
 - **Revert path (full S206):** also restore the continuous-offset
   calculations (`azOffsetDeg = 0.80 · hFov/2`; `floorDeg = 0.03 · fov`;
   `trackDeg = pitch − 0.35 · fov`); remove this entry.
+
+## S207 — Testing-rebaseline default state
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/core/app.js` (defaultState), `js/ui/autoplay.js`
+  (constructor), `js/ui/urlState.js` (gate keys + bump schema +
+  drop demo auto-play).
+- **Purpose:** Make page refresh land on a recognisable, fixed
+  baseline state so regressions are obvious at a glance during
+  testing. Alan supplied screenshots of every tab as the spec.
+- **Default sweep (View / Time / Show / Tracker):**
+  - **View tab.** ObserverFigure `male → llama`; ObserverLat
+    `0 → 45`; ObserverLong stays `15`; CameraDirection `30 → 14`;
+    CameraHeight `25 → 10`; Zoom `1.4 → 4.67`; VaultHeight
+    `0.75 → 0.4`; OpticalVaultHeight `0.35 → 0.14`;
+    Mercury / Venus / Mars / Jupiter / Saturn vault heights all
+    flattened to `0.346`. Sun / Moon vault heights are recomputed
+    each frame from the active date — defaults set to `0.346`
+    for shape but overwritten on first `update()`.
+  - **Time tab.** DateTime `232.9454 → 812.88` (2019-03-24 21:04
+    UTC = 15:04 CST); DayOfYear `232 → 812`; Time `22.69 → 21.07`;
+    TimezoneOffsetMinutes `0 → −360` (CST). The user's canonical
+    testing moment is the 03-24 15:04 CST calendar date; bumped to
+    2019 (rather than 2017) so the date sits inside Espenak's
+    DE405 / AstroPixels coverage (years 2019–2030 in
+    `js/data/astropixels.js`) — the 2017 first pick made the
+    DE405 pipeline return `{ ra: 0, dec: 0 }` for sun/moon and
+    showed up as a stuck "DE405 RA 00ʰ00ᵐ00.0ˢ" row in the
+    tracker HUD. Autoplay constructor now starts in
+    `playing = true` and kicks off its rAF loop immediately
+    (Day preset = 1/24 d/s, i.e. 1 sim hour per real second).
+  - **Show tab.** ShowVault `true → false`; ShowTruePositions
+    `true → false`; ShowFacingVector `false → true`; ShowVaultRays
+    `true → false`; ShowOpticalVaultRays `true → false`;
+    MapProjection `'ae' → 'blank'`; StarfieldType
+    `'random' → 'celnav'`; PermanentNight `false → true`.
+  - **Tracker tab.** TrackerTargets `[] → ['sun', 'moon']`.
+    BodySource stays `'astropixels'`; Trepidation stays `true`
+    with the three component toggles all `false`.
+  - **Demos tab.** No defaults to set — but URL-restore no longer
+    auto-plays a demo. Previously a `demo=N` param (written by
+    `urlState.write` while a demo was playing) restarted the
+    demo on the next page load. Now the param is preserved for
+    shareable links but ignored on initial restore. Demos
+    require an explicit click.
+- **URL-state schema bumped 201 → 207a.** Every key whose default
+  changed in the sweep is added to `VERSION_GATED_KEYS`, so an
+  existing URL hash stamped with `v=201` (or the short-lived
+  intermediate `v=207` from the pre-DE405-coverage iteration) no
+  longer drags old values back over the new defaults. The bump
+  is `207 → 207a` specifically because the first S207 iteration
+  used the wrong default date (82.88 / 2017) which sits outside
+  Espenak's DE405 coverage — URLs written during that iteration
+  were stamped `v=207` and kept winning over the corrected
+  2019-03-24 default on reload.
+- **Forced synchronous URL re-stamp on schema mismatch.** With
+  the new autoplay-starts-running default, autoplay ticks at
+  ~60 Hz via `setState({ DateTime: … })`, which resets the 250 ms
+  debounce on `write()` every frame — so the debounced writer
+  NEVER settles. Without a forced write, a stale URL hash
+  survives every refresh and the schema gate has to re-fire
+  forever. `attachUrlState` now calls `write()` synchronously
+  when `urlV !== URL_SCHEMA_VERSION` so the new version + new
+  defaults get stamped exactly once and then persist.
+- **What did NOT change:** physics, geometry, ephemeris pipelines,
+  star-correction toggles, button layout, slider ranges, demo
+  registry, eclipse data, any rendering code. Strictly initial
+  state + autoplay start state + url-restore auto-play gate.
+- **Revert path:** restore the previous values in `defaultState()`
+  (see commit `3755653` for the pre-S207 snapshot); set
+  `Autoplay.constructor` `this.playing = false` and remove the
+  rAF kickoff; restore `if (demoIdx != null && demos)
+  demos.play(parseInt(demoIdx, 10));` in `urlState.attachUrlState`;
+  drop the schema bump and the new entries in
+  `VERSION_GATED_KEYS`.

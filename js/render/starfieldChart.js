@@ -94,22 +94,33 @@ export class StarfieldChart {
     this.group.visible = false;
 
     const loader = new THREE.TextureLoader();
-    this.texDark  = loader.load('assets/starfield_dark.png');
-    this.texLight = loader.load('assets/starfield_light.png');
-    // Source PNGs are 1920×1080 with the chart inscribed in the 1080×1080
-    // centre. Crop so the chart fills the disc edge-to-edge.
-    const cropX = 1080 / 1920;
-    const offX  = (1 - cropX) / 2;
-    for (const t of [this.texDark, this.texLight]) {
-      t.colorSpace = THREE.SRGBColorSpace;
-      t.minFilter  = THREE.LinearMipMapLinearFilter;
-      t.magFilter  = THREE.LinearFilter;
-      t.anisotropy = 4;
-      t.wrapS = THREE.ClampToEdgeWrapping;
-      t.wrapT = THREE.ClampToEdgeWrapping;
-      t.repeat.set(cropX, 1);
-      t.offset.set(offX, 0);
+    // Each entry: { url, width, height }. Inscribed-circle crop is
+    // computed per-entry so charts with different source aspect ratios
+    // all map onto the disc edge-to-edge.
+    const CHART_DEFS = {
+      'chart-dark':  { url: 'assets/starfield_dark.png',         width: 1920, height: 1080 },
+      'chart-light': { url: 'assets/starfield_light.png',        width: 1920, height: 1080 },
+      'ae_aries':    { url: 'assets/starfield_ae_aries.png',     width: 1920, height: 1080 },
+      'ae_aries_2':  { url: 'assets/starfield_ae_aries_2.png',   width: 2476, height: 1246 },
+      'ae_aries_3':  { url: 'assets/starfield_ae_aries_3.png',   width: 1920, height: 1080 },
+    };
+    this.charts = {};
+    for (const [type, def] of Object.entries(CHART_DEFS)) {
+      const tex = loader.load(def.url);
+      tex.colorSpace = THREE.SRGBColorSpace;
+      tex.minFilter  = THREE.LinearMipMapLinearFilter;
+      tex.magFilter  = THREE.LinearFilter;
+      tex.anisotropy = 4;
+      tex.wrapS = THREE.ClampToEdgeWrapping;
+      tex.wrapT = THREE.ClampToEdgeWrapping;
+      const cropX = def.height / def.width;
+      const offX  = (1 - cropX) / 2;
+      tex.repeat.set(cropX, 1);
+      tex.offset.set(offX, 0);
+      this.charts[type] = { tex, cropX, offX };
     }
+    this.texDark  = this.charts['chart-dark'].tex;
+    this.texLight = this.charts['chart-light'].tex;
 
     // Heavenly-vault disc.
     const domeGeom = new THREE.CircleGeometry(FE_RADIUS, 128);
@@ -132,12 +143,13 @@ export class StarfieldChart {
     // support, and the hemisphere already has z ≥ 0 at every vertex so the
     // clip-below-disc plane would never activate anyway.
     const localGeom = buildHemisphereGeom(32, 96);
+    const initChart = this.charts['chart-dark'];
     this.localMat = new THREE.ShaderMaterial({
       uniforms: {
         uChart:         { value: this.texDark },
         uGlobeToCelest: { value: new THREE.Matrix3() },
-        uTexRepeat:     { value: new THREE.Vector2(cropX, 1) },
-        uTexOffset:     { value: new THREE.Vector2(offX, 0) },
+        uTexRepeat:     { value: new THREE.Vector2(initChart.cropX, 1) },
+        uTexOffset:     { value: new THREE.Vector2(initChart.offX, 0) },
         uOpacity:       { value: 1 },
       },
       vertexShader: VERT_SHADER,
@@ -158,17 +170,18 @@ export class StarfieldChart {
     const s = model.state;
     const c = model.computed;
     const type = s.StarfieldType || 'random';
-    const isChart = type === 'chart-dark' || type === 'chart-light';
+    const chart = this.charts[type];
 
-    this.group.visible = isChart && (s.ShowStars !== false);
+    this.group.visible = !!chart && (s.ShowStars !== false);
     if (!this.group.visible) return;
 
-    const tex = type === 'chart-light' ? this.texLight : this.texDark;
-    if (this.domeMat.map !== tex) {
-      this.domeMat.map = tex;
+    if (this.domeMat.map !== chart.tex) {
+      this.domeMat.map = chart.tex;
       this.domeMat.needsUpdate = true;
     }
-    this.localMat.uniforms.uChart.value = tex;
+    this.localMat.uniforms.uChart.value = chart.tex;
+    this.localMat.uniforms.uTexRepeat.value.set(chart.cropX, 1);
+    this.localMat.uniforms.uTexOffset.value.set(chart.offX, 0);
 
     const nightAlpha = s.DynamicStars ? c.NightFactor : 1.0;
     this.domeMat.opacity = nightAlpha;

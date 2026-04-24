@@ -628,17 +628,6 @@ const FIELD_GROUPS = [
           right: { label: 'Generated',  select: listGeneratedProjections() },
         },
       ]},
-      { title: 'Starfield', rows: [
-        { key: 'StarfieldType', label: 'Starfield', select: [
-          { value: 'random',      label: 'Default (random)' },
-          { value: 'chart-dark',  label: 'Chart (dark)' },
-          { value: 'chart-light', label: 'Chart (light)' },
-          { value: 'celnav',      label: 'Cel Nav (named stars)' },
-        ]},
-        { key: 'DynamicStars', label: 'Starfield Mode',
-          boolSelect: { trueLabel: 'Dynamic (fade w/ day)', falseLabel: 'Static (always visible)' } },
-        { key: 'PermanentNight', label: 'Permanent night', bool: true },
-      ]},
       { title: 'Misc', rows: [
         { key: 'ShowPlanets',     label: 'Planets',          bool: true },
         { key: 'DarkBackground',  label: 'Dark Background',  bool: true },
@@ -670,6 +659,20 @@ const FIELD_GROUPS = [
         { key: 'StarApplyNutation',   label: 'Nutation',    bool: true },
         { key: 'StarApplyAberration', label: 'Aberration',  bool: true },
         { key: 'StarTrepidation',     label: 'Trepidation', bool: true },
+      ]},
+      { title: 'Starfield', rows: [
+        { key: 'StarfieldType', label: 'Starfield', select: [
+          { value: 'random',      label: 'Default (random)' },
+          { value: 'chart-dark',  label: 'Chart (dark)' },
+          { value: 'chart-light', label: 'Chart (light)' },
+          { value: 'celnav',      label: 'Cel Nav (named stars)' },
+          { value: 'ae_aries',    label: 'AE Aries' },
+          { value: 'ae_aries_2',  label: 'AE Aries 2' },
+          { value: 'ae_aries_3',  label: 'AE Aries 3' },
+        ]},
+        { key: 'DynamicStars', label: 'Starfield Mode',
+          boolSelect: { trueLabel: 'Dynamic (fade w/ day)', falseLabel: 'Static (always visible)' } },
+        { key: 'PermanentNight', label: 'Permanent night', bool: true },
       ]},
       { title: 'Tracker Options', rows: [
         { label: '', buttonLabel: 'Clear All',
@@ -1512,7 +1515,7 @@ export function buildControlPanel(host, model, demos) {
     }
   });
 
-  const STARFIELD_CYCLE = ['random', 'chart-dark', 'chart-light', 'celnav'];
+  const STARFIELD_CYCLE = ['random', 'chart-dark', 'chart-light', 'celnav', 'ae_aries', 'ae_aries_2', 'ae_aries_3'];
   const btnStarfield = document.createElement('button');
   btnStarfield.className = 'time-btn starfield-btn';
   btnStarfield.type = 'button';

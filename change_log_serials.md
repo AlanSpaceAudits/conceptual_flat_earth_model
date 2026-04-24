@@ -532,6 +532,34 @@ Format:
   js/render/index.js js/ui/controlPanel.js js/ui/urlState.js`;
   delete `js/core/satellites.js`.
 
+## S377 — Three AE Aries starfield charts; move Starfield group to Tracker tab
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/render/starfieldChart.js`,
+  `js/ui/controlPanel.js`,
+  `assets/starfield_ae_aries.png` (new),
+  `assets/starfield_ae_aries_2.png` (new),
+  `assets/starfield_ae_aries_3.png` (new),
+  `change_log_serials.md`.
+- **Change:**
+  - 3 new starfield textures copied from `~/Pictures/maps/`
+    (`AE_Aries.png`, `AE_Aries_5.png`, `AE_Aries_3.png`) to
+    `assets/starfield_ae_aries{,_2,_3}.png`.
+  - `StarfieldChart` constructor refactored to a chart map
+    keyed by StarfieldType id; each entry carries its own
+    width/height so the inscribed-circle crop is computed
+    per-chart rather than hard-coded for 1920×1080.
+    `update()` reads from the map and writes
+    `uTexRepeat` / `uTexOffset` per frame so charts with
+    different aspect ratios all sample correctly.
+  - `controlPanel.js`: Starfield group moved out of the Show
+    tab and into the Tracker tab, between "Ephemeris" and
+    "Tracker Options". `StarfieldType` select gains
+    `ae_aries`, `ae_aries_2`, `ae_aries_3`. `STARFIELD_CYCLE`
+    walks the same seven ids.
+- **Revert:** `git checkout v-s000376 -- js/render/starfieldChart.js
+  js/ui/controlPanel.js`; `rm assets/starfield_ae_aries*.png`.
+
 ## S376 — Restore black-disc option to HQ Map Art
 
 - **Date:** 2026-04-24

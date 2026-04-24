@@ -482,3 +482,27 @@ Format:
   popup is open hides it and deselects its tab. No-op if no popup
   is active.
 - **Revert:** `git checkout v-s000243 -- js/ui/controlPanel.js`.
+
+## S245 — Show tab regrouped into top-down subcategories
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/ui/controlPanel.js`.
+- **Change:** Show tab's flat `Visibility` group split into collapsible
+  subgroups, top-down:
+  - **Heavenly Vault** — vault, grid, true positions, sun/moon tracks.
+  - **Optical Vault** — vault, grid, azimuth ring, facing vector,
+    celestial poles, declination circles.
+  - **Ground / Disc** — FE grid, tropics/polar, sun/moon GP,
+    longitude ring, shadow.
+  - **Stars** — stars, constellations, outlines.
+  - **Rays** — vault rays, optical vault rays, projection rays,
+    many rays.
+  - **Cosmology** — axis mundi (unchanged).
+  - **Map Projection** — projection (unchanged).
+  - **Starfield** — starfield type, starfield mode, permanent night
+    (DynamicStars + PermanentNight moved into this group from the
+    flat list).
+  - **Misc** — planets, dark background, logo.
+- All rows still bind to the same state keys; only the grouping
+  changes.
+- **Revert:** `git checkout v-s000244 -- js/ui/controlPanel.js`.

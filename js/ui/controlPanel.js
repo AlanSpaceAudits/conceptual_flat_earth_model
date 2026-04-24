@@ -267,45 +267,38 @@ const FIELD_GROUPS = [
   },
   {
     tab: 'Show', groups: [
-      { title: 'Visibility', rows: [
+      { title: 'Heavenly Vault', rows: [
+        { key: 'ShowVault',           label: 'Heavenly Vault',     bool: true },
+        { key: 'ShowVaultGrid',       label: 'Vault Grid',         bool: true },
+        { key: 'ShowTruePositions',   label: 'True Positions',     bool: true },
+        { key: 'ShowSunTrack',        label: 'Sun Track',          bool: true },
+        { key: 'ShowMoonTrack',       label: 'Moon Track',         bool: true },
+      ]},
+      { title: 'Optical Vault', rows: [
+        { key: 'ShowOpticalVault',    label: 'Optical Vault',      bool: true },
+        { key: 'ShowOpticalVaultGrid', label: 'Optical Vault Grid', bool: true },
+        { key: 'ShowAzimuthRing',     label: 'Azimuth ring',       bool: true },
+        { key: 'ShowFacingVector',    label: 'Facing Vector / N-S-E-W', bool: true },
+        { key: 'ShowCelestialPoles',  label: 'Celestial Poles',    bool: true },
+        { key: 'ShowDecCircles',      label: 'Declination Circles',     bool: true },
+      ]},
+      { title: 'Ground / Disc', rows: [
         { key: 'ShowFeGrid',          label: 'FE Grid',            bool: true },
         { key: 'ShowLatitudeLines',   label: 'Tropics / Polar',    bool: true },
         { key: 'ShowGroundPoints',    label: 'Sun / Moon GP',      bool: true },
-        { key: 'ShowVault',           label: 'Heavenly Vault',     bool: true },
-        { key: 'ShowVaultGrid',       label: 'Vault Grid',         bool: true },
+        { key: 'ShowLongitudeRing',   label: 'Longitude ring',     bool: true },
         { key: 'ShowShadow',          label: 'Shadow',             bool: true },
-        { key: 'ShowSunTrack',        label: 'Sun Track',          bool: true },
-        { key: 'ShowMoonTrack',       label: 'Moon Track',         bool: true },
-        { key: 'ShowOpticalVault',    label: 'Optical Vault',      bool: true },
-        // grid-only toggle for the Optical Vault. When off the
-        // cap surface stays but the grid + azi/elev labels are hidden
-        // (the label hides are forced, overriding ShowAzimuthRing).
-        { key: 'ShowOpticalVaultGrid', label: 'Optical Vault Grid', bool: true },
-        { key: 'ShowTruePositions',   label: 'True Positions',     bool: true },
-        { key: 'ShowFacingVector',    label: 'Facing Vector / N-S-E-W', bool: true },
-        { key: 'ShowDecCircles',      label: 'Declination Circles',     bool: true },
-        // red dot at NCP, blue dot at SCP, projected onto the
-        // observer's optical vault.
-        { key: 'ShowCelestialPoles',  label: 'Celestial Poles',    bool: true },
-        { key: 'ShowStars',           label: 'Stars',              bool: true },
-        { key: 'ShowConstellations',      label: 'Constellations',        bool: true },
-        { key: 'ShowConstellationLines',  label: 'Constellation outlines', bool: true },
-        { key: 'ShowLongitudeRing',       label: 'Longitude ring (ground)', bool: true },
-        { key: 'ShowAzimuthRing',         label: 'Azimuth ring (vault)',    bool: true },
-        { key: 'DynamicStars',        label: 'Starfield Mode',
-          boolSelect: { trueLabel: 'Dynamic (fade w/ day)', falseLabel: 'Static (always visible)' } },
-        { key: 'ShowVaultRays',       label: 'Vault Rays',         bool: true },
+      ]},
+      { title: 'Stars', rows: [
+        { key: 'ShowStars',                label: 'Stars',                  bool: true },
+        { key: 'ShowConstellations',       label: 'Constellations',         bool: true },
+        { key: 'ShowConstellationLines',   label: 'Constellation outlines', bool: true },
+      ]},
+      { title: 'Rays', rows: [
+        { key: 'ShowVaultRays',        label: 'Vault Rays',         bool: true },
         { key: 'ShowOpticalVaultRays', label: 'Optical Vault Rays', bool: true },
-        { key: 'ShowManyRays',        label: 'Many Rays',          bool: true },
-        // true→projected ray per body (sun, moon, planets).
-        // Hidden when the body is below horizon.
-        { key: 'ShowProjectionRays',  label: 'Projection Rays',    bool: true },
-        { key: 'ShowPlanets',         label: 'Planets',            bool: true },
-        { key: 'ShowLogo',            label: 'Logo',               bool: true },
-        // swaps the scene background to the same night-sky
-        // colour the Optical vault fades to at night; LongitudeRing
-        // azi numerals + ticks auto-switch to white / pale grey.
-        { key: 'DarkBackground',      label: 'Dark Background',    bool: true },
+        { key: 'ShowProjectionRays',   label: 'Projection Rays',    bool: true },
+        { key: 'ShowManyRays',         label: 'Many Rays',          bool: true },
       ]},
       { title: 'Cosmology', rows: [
         { key: 'Cosmology', label: 'Axis Mundi',
@@ -321,9 +314,14 @@ const FIELD_GROUPS = [
           { value: 'chart-light', label: 'Chart (light)' },
           { value: 'celnav',      label: 'Cel Nav (named stars)' },
         ]},
-        // permanent night mode so starfield / body placement can
-        // be tested without waiting for the sun to set.
+        { key: 'DynamicStars', label: 'Starfield Mode',
+          boolSelect: { trueLabel: 'Dynamic (fade w/ day)', falseLabel: 'Static (always visible)' } },
         { key: 'PermanentNight', label: 'Permanent night', bool: true },
+      ]},
+      { title: 'Misc', rows: [
+        { key: 'ShowPlanets',     label: 'Planets',          bool: true },
+        { key: 'DarkBackground',  label: 'Dark Background',  bool: true },
+        { key: 'ShowLogo',        label: 'Logo',             bool: true },
       ]},
     ],
   },

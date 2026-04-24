@@ -957,8 +957,17 @@ export function buildControlPanel(host, model, demos) {
   refreshTimeControls();
 
   // The popup stays open while the user interacts with the canvas
-  // (drag to move camera, wheel to zoom, etc.). Close only via the
-  // tab button (click same tab again, or click a different one).
+  // (drag to move camera, wheel to zoom, etc.). Close paths:
+  //   - re-click the tab button (toggle off)
+  //   - click a different tab (switches)
+  //   - press Escape while any popup is open.
+  window.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape' || activeIdx < 0) return;
+    const entry = tabEntries[activeIdx];
+    entry.popup.hidden = true;
+    entry.btn.setAttribute('aria-selected', 'false');
+    activeIdx = -1;
+  });
 }
 
 // Phase name for a given lit fraction + waxing flag.

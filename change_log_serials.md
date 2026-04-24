@@ -473,3 +473,12 @@ Format:
   the pointer drags / wheels on the canvas. Close paths are the tab
   button (re-click same tab) or clicking a different tab.
 - **Revert:** `git checkout v-s000242 -- js/ui/controlPanel.js`.
+
+## S244 — Escape key closes the open popup
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/ui/controlPanel.js`.
+- **Change:** global `keydown` listener; pressing `Escape` while any
+  popup is open hides it and deselects its tab. No-op if no popup
+  is active.
+- **Revert:** `git checkout v-s000243 -- js/ui/controlPanel.js`.

@@ -68,7 +68,7 @@ function paramsToPatch(params) {
 }
 
 // Bump when a default changes and existing URL hashes should drop that key.
-const URL_SCHEMA_VERSION = '248';
+const URL_SCHEMA_VERSION = '263';
 const VERSION_GATED_KEYS = new Set([
   'BodySource',
   'ObserverLat', 'ObserverLong', 'ObserverHeading',

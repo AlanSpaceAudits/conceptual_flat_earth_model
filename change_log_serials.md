@@ -500,6 +500,16 @@ Format:
 - **Revert:** `git checkout v-s000256 -- js/render/worldObjects.js
   js/render/constellations.js`.
 
+## S263 — New default camera angles
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/core/app.js`, `js/ui/urlState.js`.
+- **Change:**
+  - `CameraDirection`: −98.9 → **−106.6**
+  - `CameraHeight`:    12.6 → **15.2**
+  - URL schema 248 → 263.
+- **Revert:** `git checkout v-s000262 -- js/core/app.js js/ui/urlState.js`.
+
 ## S262 — Swap Tracker group order: Ephemeris above Celestial Bodies
 
 - **Date:** 2026-04-24

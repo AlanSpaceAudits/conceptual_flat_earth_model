@@ -61,8 +61,8 @@ function defaultState() {
     // 0 = N, 90 = E, 180 = S, 270 = W.
     ObserverHeading: 357.3098,
     ObserverElevation: 0,
-    CameraDirection: -98.9,
-    CameraHeight:    12.6,
+    CameraDirection: -106.6,
+    CameraHeight:    15.2,
     CameraDistance:  GEOMETRY.CameraDistanceDefault,
     Zoom:             4.67,
     // Optical-only. fov = 75° / OpticalZoom.

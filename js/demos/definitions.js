@@ -26,8 +26,13 @@ const GENERAL_DEMOS = [
     name: 'North-pole GP trace — slow → 5.33× ramp',
     group: 'general',
     intro: {
+      // Observer parked near the north pole on summer solstice so
+      // the sun stays above the horizon for the full 53-day ramp
+      // and its optical-vault projection keeps rendering all demo.
+      ObserverLat: 82.505, ObserverLong: -62.335,
       InsideVault: false,
       BodySource: 'astropixels',
+      DateTime: 3093,                  // 2025-06-21 solstice
       CameraDirection: 0,
       CameraHeight: 89.9,              // straight-down on the disc
       CameraDistance: 20,
@@ -47,12 +52,10 @@ const GENERAL_DEMOS = [
     },
     tasks: (m) => {
       const start = m.state.DateTime;
-      // Cubic ease-in from 0 → 53.3 days over 30 s. Instantaneous
-      // rate at t=1 is 3·53.3/30 ≈ 5.33 days/sec, so the trace
-      // starts nearly still and accelerates to the authored peak
-      // speed by the end. User can still ½× / 2× from there.
+      // Cubic ease-in over 53.3 days / 30 s. Peak instantaneous
+      // rate = 3·53.3/30 ≈ 5.33 days/sec.
       return [
-        Ttxt('Heavenly vault, looking straight down at the north pole. True + optical positions on, GP traces for every tracked body — starts almost still, accelerates to 5.33× (53 days over 30 s).'),
+        Ttxt('82°N summer solstice · Heavenly vault looking straight down on the pole · true + optical positions + GP traces for every tracked body · ramps from near-still to 5.33× over 30 s.'),
         Tval('DateTime', start + 53.3, 30 * 1000, T1, 'accel'),
       ];
     },

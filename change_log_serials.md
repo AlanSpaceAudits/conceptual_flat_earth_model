@@ -532,6 +532,19 @@ Format:
   js/render/index.js js/ui/controlPanel.js js/ui/urlState.js`;
   delete `js/core/satellites.js`.
 
+## S356 — GP-trace demo: observer parked at polar summer so sun stays above horizon
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/demos/definitions.js`.
+- **Change:** The North-pole GP trace demo intro now sets
+  `ObserverLat: 82.505`, `ObserverLong: -62.335` (Alert,
+  Nunavut) and `DateTime: 3093` (2025-06-21 solstice). Sun's
+  declination stays above the 7.5° threshold for the full
+  53-day ramp, so it never drops below the horizon from the
+  observer and the optical-vault dot keeps rendering through
+  the whole demo. Narration updated.
+- **Revert:** `git checkout v-s000355 -- js/demos/definitions.js`.
+
 ## S355 — GP-trace demo intro: render everything in the sky, allow mid-demo toggle
 
 - **Date:** 2026-04-24

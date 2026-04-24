@@ -877,6 +877,16 @@ export function buildControlPanel(host, model, demos) {
     return b;
   });
 
+  const btnNight = document.createElement('button');
+  btnNight.className = 'time-btn night-btn';
+  btnNight.type = 'button';
+  btnNight.textContent = '🌙';
+  btnNight.title = 'Toggle permanent night';
+  btnNight.addEventListener('click', () => {
+    model.setState({ PermanentNight: !model.state.PermanentNight });
+  });
+  compassControls.appendChild(btnNight);
+
   const tabsBar = document.createElement('div');
   tabsBar.className = 'tabs';
   tabsBar.setAttribute('role', 'tablist');
@@ -902,6 +912,8 @@ export function buildControlPanel(host, model, demos) {
       const d = Math.min(Math.abs(heading - h), 360 - Math.abs(heading - h));
       b.setAttribute('aria-pressed', d < 0.5 ? 'true' : 'false');
     }
+    btnNight.setAttribute('aria-pressed',
+      model.state.PermanentNight ? 'true' : 'false');
   };
   model.addEventListener('update', refreshCompass);
   refreshCompass();

@@ -500,6 +500,29 @@ Format:
 - **Revert:** `git checkout v-s000256 -- js/render/worldObjects.js
   js/render/constellations.js`.
 
+## S290 — Clicked target is the hovered target
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/ui/mouseHandler.js`.
+- **Change:** `pointermove` caches the current `hoveredHit` (the
+  body whose tooltip is being drawn). On `pointerup`, the click
+  handler uses that cached hit first and only falls back to
+  `findNearestCelestial` if the cursor was off every body. Two
+  overlapping click-boxes no longer "steal" each other: the
+  info-box you see is exactly what gets locked.
+- **Revert:** `git checkout v-s000289 -- js/ui/mouseHandler.js`.
+
+## S289 — Permanent night toggle button on the bottom bar
+
+- **Date:** 2026-04-24
+- **Files changed:** `css/styles.css`, `js/ui/controlPanel.js`.
+- **Change:** New `🌙 .night-btn` appended to
+  `.compass-controls`, clicking toggles `PermanentNight`. Takes
+  the same accent highlight as the compass buttons and vault
+  swap when active. Matching CSS in `styles.css`.
+- **Revert:** `git checkout v-s000288 -- css/styles.css
+  js/ui/controlPanel.js`.
+
 ## S288 — Heavenly-vault preset snap when leaving Optical with a tracked body
 
 - **Date:** 2026-04-24

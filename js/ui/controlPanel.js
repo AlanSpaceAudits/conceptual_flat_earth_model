@@ -871,6 +871,16 @@ export function buildControlPanel(host, model, demos) {
   });
   compassControls.appendChild(btnNight);
 
+  const btnStm = document.createElement('button');
+  btnStm.className = 'time-btn stm-btn';
+  btnStm.type = 'button';
+  btnStm.textContent = '🎯';
+  btnStm.title = 'Specified Tracker Mode — show only tracked bodies';
+  btnStm.addEventListener('click', () => {
+    model.setState({ SpecifiedTrackerMode: !model.state.SpecifiedTrackerMode });
+  });
+  compassControls.appendChild(btnStm);
+
   const compassBtns = [
     { label: 'N', heading: 0   },
     { label: 'S', heading: 180 },
@@ -918,6 +928,8 @@ export function buildControlPanel(host, model, demos) {
     }
     btnNight.setAttribute('aria-pressed',
       model.state.PermanentNight ? 'true' : 'false');
+    btnStm.setAttribute('aria-pressed',
+      model.state.SpecifiedTrackerMode ? 'true' : 'false');
   };
   model.addEventListener('update', refreshCompass);
   refreshCompass();

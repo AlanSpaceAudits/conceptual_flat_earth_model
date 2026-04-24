@@ -500,6 +500,19 @@ Format:
 - **Revert:** `git checkout v-s000256 -- js/render/worldObjects.js
   js/render/constellations.js`.
 
+## S297 — Quick-button for Specified Tracker Mode on the bottom bar
+
+- **Date:** 2026-04-24
+- **Files changed:** `css/styles.css`, `js/ui/controlPanel.js`.
+- **Change:** New `🎯 .stm-btn` appended to `.compass-controls`
+  after `.night-btn`. Clicking toggles `SpecifiedTrackerMode`
+  which hides every celestial object not present in
+  `TrackerTargets`. Active state takes the same accent highlight
+  as the other mode toggles. The Tracker Options checkbox stays
+  as the verbose control.
+- **Revert:** `git checkout v-s000296 -- css/styles.css
+  js/ui/controlPanel.js`.
+
 ## S296 — FollowTarget GP always visible in Heavenly mode
 
 - **Date:** 2026-04-24

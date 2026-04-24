@@ -277,6 +277,12 @@ header .info-popup p:last-child { margin-bottom: 0; }
   color: var(--accent);
   background: rgba(255, 154, 60, 0.10);
 }
+#bottom-bar .stm-btn { min-width: 32px; padding: 4px 6px; margin-left: 4px; }
+#bottom-bar .stm-btn[aria-pressed="true"] {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(255, 154, 60, 0.10);
+}
 
 #bottom-bar .tabs {
   display: flex;

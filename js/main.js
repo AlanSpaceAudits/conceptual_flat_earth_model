@@ -12,8 +12,8 @@ const canvas = document.getElementById('feCanvas');
 
 // Build UI first so it renders even if WebGL fails.
 const demos = new Demos(model);
-const panelEl = document.getElementById('panel');
-buildControlPanel(panelEl, model, demos);
+const viewEl_panel = document.getElementById('view');
+buildControlPanel(viewEl_panel, model, demos);
 const hudEl = document.getElementById('hud');
 buildHud(hudEl, model);
 const trackerHudEl = document.getElementById('tracker-hud');

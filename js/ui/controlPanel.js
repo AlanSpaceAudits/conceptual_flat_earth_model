@@ -691,93 +691,193 @@ function boolRow(model, row) {
   return el;
 }
 
-export function buildControlPanel(panelEl, model, demos) {
-  const tabsBar = panelEl.querySelector('.tabs');
-  const body = panelEl.querySelector('.tab-body');
-  tabsBar.replaceChildren();
-  body.replaceChildren();
+// Dispatch a field-group row definition to the right row-builder.
+function buildRow(model, row) {
+  if (row.bool) return boolRow(model, row);
+  if (row.boolSelect) return boolSelectRow(model, row);
+  if (row.select) return selectRow(model, row);
+  if (row.buttonGrid) return buttonGridRow(model, row);
+  if (row.cardinal) return cardinalRow(model, row);
+  if (row.onClick) return clickRow(model, row);
+  if (row.action) return actionRow(model, row);
+  if (row.nudge) return nudgeRow(model, row);
+  if (row.readout) return readoutRow(model, row);
+  return numericRow(model, row);
+}
 
-  const tabPanels = [];
-  FIELD_GROUPS.forEach((tab, i) => {
+// Collapsible group inside a tab popup. Header click toggles body.
+function buildGroup(model, title, rows) {
+  const el = document.createElement('div');
+  el.className = 'group';
+  const header = document.createElement('button');
+  header.type = 'button';
+  header.className = 'group-header collapsed';
+  header.innerHTML = `<span class="group-arrow">▸</span><span>${title}</span>`;
+  const body = document.createElement('div');
+  body.className = 'group-body';
+  body.hidden = true;
+  header.addEventListener('click', () => {
+    const collapsed = header.classList.toggle('collapsed');
+    body.hidden = collapsed;
+  });
+  for (const row of rows) body.appendChild(buildRow(model, row));
+  el.append(header, body);
+  return { el, header, body };
+}
+
+// Bottom-bar + per-tab popup layout. `host` is the element the bar
+// and popups attach to (expected to be #view so they overlay the
+// canvas).
+export function buildControlPanel(host, model, demos) {
+  const autoplay = new Autoplay(model);
+  model._autoplay = autoplay;
+
+  const bar = document.createElement('div');
+  bar.id = 'bottom-bar';
+
+  const timeControls = document.createElement('div');
+  timeControls.className = 'time-controls';
+  const btnRew  = document.createElement('button');
+  btnRew.className = 'time-btn';  btnRew.type = 'button';
+  btnRew.textContent = '⏪';  btnRew.title = 'Rewind';
+  const btnPlay = document.createElement('button');
+  btnPlay.className = 'time-btn'; btnPlay.type = 'button';
+  btnPlay.textContent = '▶';  btnPlay.title = 'Play / Pause';
+  const btnFf   = document.createElement('button');
+  btnFf.className = 'time-btn';  btnFf.type = 'button';
+  btnFf.textContent = '⏩';  btnFf.title = 'Fast forward';
+  const speedReadout = document.createElement('span');
+  speedReadout.className = 'time-speed';
+  timeControls.append(btnRew, btnPlay, btnFf, speedReadout);
+
+  const tabsBar = document.createElement('div');
+  tabsBar.className = 'tabs';
+  tabsBar.setAttribute('role', 'tablist');
+
+  bar.append(timeControls, tabsBar);
+
+  const popupsContainer = document.createElement('div');
+  popupsContainer.id = 'tab-popups';
+
+  host.append(popupsContainer, bar);
+
+  const tabEntries = [];
+  let activeIdx = -1;
+
+  const openTab = (i) => {
+    if (activeIdx === i) {
+      tabEntries[i].popup.hidden = true;
+      tabEntries[i].btn.setAttribute('aria-selected', 'false');
+      activeIdx = -1;
+      return;
+    }
+    if (activeIdx >= 0) {
+      tabEntries[activeIdx].popup.hidden = true;
+      tabEntries[activeIdx].btn.setAttribute('aria-selected', 'false');
+    }
+    tabEntries[i].popup.hidden = false;
+    tabEntries[i].btn.setAttribute('aria-selected', 'true');
+    activeIdx = i;
+  };
+
+  const registerTab = (label, buildInto) => {
     const btn = document.createElement('button');
-    btn.textContent = tab.tab;
+    btn.className = 'tab-btn';
+    btn.type = 'button';
     btn.setAttribute('role', 'tab');
-    btn.setAttribute('aria-selected', i === 0 ? 'true' : 'false');
+    btn.setAttribute('aria-selected', 'false');
+    btn.textContent = label;
     tabsBar.appendChild(btn);
 
-    const panel = document.createElement('div');
-    panel.hidden = i !== 0;
-    tabPanels.push(panel);
-    body.appendChild(panel);
+    const popup = document.createElement('div');
+    popup.className = 'tab-popup';
+    popup.hidden = true;
+    popupsContainer.appendChild(popup);
 
-    tab.groups.forEach((g) => {
-      const t = document.createElement('div');
-      t.className = 'group-title';
-      t.textContent = g.title;
-      panel.appendChild(t);
-      g.rows.forEach((row) => {
-        let rowEl;
-        if (row.bool) rowEl = boolRow(model, row);
-        else if (row.boolSelect) rowEl = boolSelectRow(model, row);
-        else if (row.select) rowEl = selectRow(model, row);
-        else if (row.buttonGrid) rowEl = buttonGridRow(model, row);
-        else if (row.cardinal) rowEl = cardinalRow(model, row);
-        else if (row.onClick) rowEl = clickRow(model, row);
-        else if (row.action) rowEl = actionRow(model, row);
-        else if (row.nudge) rowEl = nudgeRow(model, row);
-        else if (row.readout) rowEl = readoutRow(model, row);
-        else rowEl = numericRow(model, row);
-        panel.appendChild(rowEl);
-      });
+    buildInto(popup);
+
+    const idx = tabEntries.length;
+    tabEntries.push({ btn, popup });
+    btn.addEventListener('click', () => openTab(idx));
+  };
+
+  for (const tab of FIELD_GROUPS) {
+    registerTab(tab.tab, (popup) => {
+      for (const g of tab.groups) {
+        const { el } = buildGroup(model, g.title, g.rows);
+        popup.appendChild(el);
+      }
+      if (tab.tab === 'Time') {
+        const cal = buildGroup(model, 'Calendar', []);
+        cal.body.appendChild(timezoneRow(model));
+        cal.body.appendChild(dateTimeRow(model));
+        popup.appendChild(cal.el);
+
+        const autoGroup = document.createElement('div');
+        autoGroup.className = 'group';
+        const autoHeader = document.createElement('button');
+        autoHeader.type = 'button';
+        autoHeader.className = 'group-header collapsed';
+        autoHeader.innerHTML = `<span class="group-arrow">▸</span><span>Autoplay</span>`;
+        const autoBody = document.createElement('div');
+        autoBody.className = 'group-body';
+        autoBody.hidden = true;
+        autoHeader.addEventListener('click', () => {
+          const collapsed = autoHeader.classList.toggle('collapsed');
+          autoBody.hidden = collapsed;
+        });
+        autoplay.renderInto(autoBody);
+        autoGroup.append(autoHeader, autoBody);
+        popup.appendChild(autoGroup);
+      }
     });
-
-    // Time tab gets the calendar date/time row, then Autoplay.
-    if (tab.tab === 'Time') {
-      const calTitle = document.createElement('div');
-      calTitle.className = 'group-title';
-      calTitle.textContent = 'Calendar';
-      panel.appendChild(calTitle);
-      panel.appendChild(timezoneRow(model));
-      panel.appendChild(dateTimeRow(model));
-
-      const autoTitle = document.createElement('div');
-      autoTitle.className = 'group-title';
-      autoTitle.textContent = 'Autoplay';
-      panel.appendChild(autoTitle);
-      const autoHost = document.createElement('div');
-      panel.appendChild(autoHost);
-      const autoplay = new Autoplay(model);
-      autoplay.renderInto(autoHost);
-      // expose so /main.js and debugging can reach it
-      model._autoplay = autoplay;
-    }
-
-    btn.addEventListener('click', () => {
-      tabPanels.forEach((p, j) => { p.hidden = j !== i; });
-      [...tabsBar.children].forEach((b, j) => {
-        b.setAttribute('aria-selected', j === i ? 'true' : 'false');
-      });
-    });
-  });
+  }
 
   if (demos) {
-    const tab = document.createElement('button');
-    tab.textContent = 'Demos';
-    tab.setAttribute('role', 'tab');
-    tab.setAttribute('aria-selected', 'false');
-    tabsBar.appendChild(tab);
-    const panel = document.createElement('div');
-    panel.hidden = true;
-    body.appendChild(panel);
-    demos.renderInto(panel);
-    tab.addEventListener('click', () => {
-      tabPanels.forEach((p) => { p.hidden = true; });
-      panel.hidden = false;
-      [...tabsBar.children].forEach((b) => b.setAttribute('aria-selected', 'false'));
-      tab.setAttribute('aria-selected', 'true');
+    registerTab('Demos', (popup) => {
+      const host = document.createElement('div');
+      host.className = 'demos-host';
+      popup.appendChild(host);
+      demos.renderInto(host);
     });
-    tabPanels.push(panel);
   }
+
+  // Wire the bar's time controls into Autoplay.
+  const refreshTimeControls = () => {
+    btnPlay.textContent = autoplay.playing ? '⏸' : '▶';
+    const s = autoplay.speed;
+    speedReadout.textContent = `${s >= 0 ? '+' : ''}${s.toFixed(3)} d/s`;
+  };
+  btnPlay.addEventListener('click', () => {
+    autoplay.toggle();
+    refreshTimeControls();
+  });
+  btnRew.addEventListener('click', () => {
+    const s = autoplay.speed;
+    if (s > 0) autoplay.setSpeed(-s);
+    else autoplay.setSpeed(s * 2);
+    if (!autoplay.playing) autoplay.play();
+    refreshTimeControls();
+  });
+  btnFf.addEventListener('click', () => {
+    const s = autoplay.speed;
+    if (s < 0) autoplay.setSpeed(-s);
+    else autoplay.setSpeed(s * 2);
+    if (!autoplay.playing) autoplay.play();
+    refreshTimeControls();
+  });
+  autoplay.onChange(refreshTimeControls);
+  refreshTimeControls();
+
+  // Close open popup when clicking outside bar/popup (canvas click).
+  host.addEventListener('pointerdown', (e) => {
+    if (activeIdx < 0) return;
+    if (bar.contains(e.target)) return;
+    if (tabEntries[activeIdx].popup.contains(e.target)) return;
+    tabEntries[activeIdx].popup.hidden = true;
+    tabEntries[activeIdx].btn.setAttribute('aria-selected', 'false');
+    activeIdx = -1;
+  });
 }
 
 // Phase name for a given lit fraction + waxing flag.

@@ -13,8 +13,8 @@ html, body { margin: 0; padding: 0; background: var(--bg); color: var(--fg); fon
 
 #app {
   display: grid;
-  grid-template-areas: "header header" "view panel" "desc desc";
-  grid-template-columns: 1fr 340px;
+  grid-template-areas: "header" "view" "desc";
+  grid-template-columns: 1fr;
   grid-template-rows: auto 1fr auto;
   height: 100vh;
 }
@@ -122,11 +122,127 @@ header .info-popup p:last-child { margin-bottom: 0; }
   color: #f4a640;
 }
 
-#panel { grid-area: panel; background: var(--panel); border-left: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; }
-#panel .tabs { display: flex; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
-#panel .tabs button { flex: 1 1 auto; padding: 8px; background: transparent; border: 0; border-right: 1px solid var(--border); color: var(--muted); cursor: pointer; font: inherit; }
-#panel .tabs button[aria-selected="true"] { color: var(--accent); background: var(--row); }
-#panel .tab-body { overflow: auto; padding: 8px; }
+/* Bottom bar + per-tab popup panels. Bar sits at the bottom of #view,
+   popups slide up above the bar when a tab is clicked. */
+#bottom-bar {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 0 14px;
+  background: rgba(14, 18, 26, 0.92);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-top: 1px solid var(--border);
+  z-index: 30;
+  pointer-events: auto;
+}
+#bottom-bar .time-controls { display: flex; align-items: center; gap: 4px; }
+#bottom-bar .time-btn {
+  background: var(--row);
+  color: var(--fg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 4px 10px;
+  min-width: 34px;
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  transition: border-color 0.1s, color 0.1s;
+}
+#bottom-bar .time-btn:hover { border-color: var(--accent); color: var(--accent); }
+#bottom-bar .time-speed {
+  font: 11px/1 ui-monospace, Menlo, monospace;
+  color: var(--muted);
+  min-width: 78px;
+  padding-left: 6px;
+}
+
+#bottom-bar .tabs {
+  display: flex;
+  gap: 2px;
+  flex: 1;
+  justify-content: flex-end;
+}
+#bottom-bar .tab-btn {
+  background: transparent;
+  color: var(--muted);
+  border: 0;
+  border-radius: 4px;
+  padding: 6px 14px;
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  letter-spacing: 0.02em;
+  transition: background 0.12s, color 0.12s;
+}
+#bottom-bar .tab-btn:hover { color: var(--fg); background: rgba(255, 255, 255, 0.04); }
+#bottom-bar .tab-btn[aria-selected="true"] {
+  color: var(--accent);
+  background: rgba(255, 154, 60, 0.14);
+}
+
+#tab-popups {
+  position: absolute;
+  left: 0; right: 0; bottom: 44px;
+  z-index: 25;
+  pointer-events: none;
+}
+.tab-popup {
+  pointer-events: auto;
+  background: rgba(20, 24, 33, 0.97);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-top: 1px solid var(--border);
+  padding: 12px 16px 16px;
+  max-height: min(60vh, 560px);
+  overflow-y: auto;
+  animation: popup-slide 0.15s ease-out;
+}
+@keyframes popup-slide {
+  from { transform: translateY(16px); opacity: 0; }
+  to   { transform: translateY(0); opacity: 1; }
+}
+
+/* Collapsible groups inside a popup. */
+.tab-popup .group { margin-bottom: 8px; }
+.tab-popup .group-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 6px 10px;
+  background: var(--row);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  cursor: pointer;
+  user-select: none;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent);
+  text-align: left;
+}
+.tab-popup .group-header:hover { background: rgba(255, 154, 60, 0.08); }
+.tab-popup .group-arrow {
+  display: inline-block;
+  transition: transform 0.12s;
+  font-size: 10px;
+  color: var(--muted);
+}
+.tab-popup .group-header:not(.collapsed) .group-arrow {
+  transform: rotate(90deg);
+  color: var(--accent);
+}
+.tab-popup .group-body {
+  padding: 8px 12px 2px;
+  max-width: 720px;
+}
+
+/* Override the old full-panel `.group-title` style — it's gone now. */
+.group-title { display: none; }
 
 .row {
   display: grid;
@@ -251,7 +367,7 @@ footer#desc .desc-dynamic { color: var(--fg); }
   position: absolute;
   left: 0;
   right: 0;
-  bottom: 0;
+  bottom: 44px; /* clears the bottom bar */
   pointer-events: none;
   text-align: center;
   padding: 6px 10px;

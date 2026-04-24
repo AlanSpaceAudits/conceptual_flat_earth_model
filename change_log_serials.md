@@ -326,3 +326,30 @@ Format:
   stamped at v=230 with `ShowVault=1` drop that key on restore and pick
   up the S231 default (false).
 - **Revert:** `git checkout v-s000231 -- js/ui/urlState.js`.
+
+## S233 — Bottom-bar layout + time transport controls
+
+- **Date:** 2026-04-24
+- **Files changed:** `index.html`, `js/main.js`, `js/ui/controlPanel.js`,
+  `css/styles.css`.
+- **Change:**
+  - Removed side `<aside id="panel">`; grid is now single-column
+    `header / view / desc`.
+  - Added `#bottom-bar` (built by `buildControlPanel`) pinned to the
+    bottom of `#view`: rewind / play-pause / fast-forward buttons +
+    live speed readout on the left, tab buttons on the right.
+  - Each tab button toggles a `.tab-popup` that slides up above the
+    bar and overlays the canvas. Clicking the same tab closes the
+    popup; clicking another switches. Clicking the canvas outside
+    popup/bar also closes.
+  - Inside each popup, every group (Observer, Camera, Vault of the
+    Heavens, Optical Vault, Body Vaults, Rays, etc.) is now a
+    collapsible `.group`: header click toggles body visibility,
+    arrow rotates. Groups start collapsed.
+  - Time tab grew a collapsible `Autoplay` group hosting the
+    existing `Autoplay` panel.
+  - Rewind button: negates speed if positive; grows magnitude if
+    already negative. FF: mirror. Both auto-start playback.
+  - Meeus warning bottom offset bumped `0 → 44px` to clear the bar.
+- **Revert:** `git checkout v-s000232 -- index.html js/main.js
+  js/ui/controlPanel.js css/styles.css`.

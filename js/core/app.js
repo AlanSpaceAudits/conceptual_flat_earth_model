@@ -193,7 +193,17 @@ function defaultState() {
     PermanentNight: false,
 
     // Ids: 'sun' / 'moon' / planet name / 'star:<id>'. Empty = HUD collapsed.
-    TrackerTargets: [],
+    TrackerTargets: [
+      'sun', 'moon',
+      'mercury', 'venus', 'mars', 'jupiter',
+      'saturn', 'uranus', 'neptune',
+      ...CEL_NAV_STARS.map((x) => `star:${x.id}`),
+      ...CATALOGUED_STARS.map((x) => `star:${x.id}`),
+      ...BLACK_HOLES.map((x) => `star:${x.id}`),
+      ...QUASARS.map((x) => `star:${x.id}`),
+      ...GALAXIES.map((x) => `star:${x.id}`),
+      ...SATELLITES.map((x) => `star:${x.id}`),
+    ],
 
     ShowEphemerisReadings: false,
 

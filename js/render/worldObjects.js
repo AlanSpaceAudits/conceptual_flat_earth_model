@@ -3957,21 +3957,16 @@ export class CelNavStars {
     const n = Math.min(stars.length, this._maxStars);
     const dp = this._domePositions;
     const sp = this._spherePositions;
-    // Opt-in filtering parallel to CatalogPointStars: if any cel-nav
-    // star is in TrackerTargets the renderer filters to membership;
-    // empty selection shows all. STM forces membership as before.
-    const stm = !!s.SpecifiedTrackerMode;
+    // Tracker-as-source-of-truth: membership is always required.
+    // Show CelNav gates the category, TrackerTargets picks the
+    // individual stars.
     const targetArr = Array.isArray(s.TrackerTargets) ? s.TrackerTargets : [];
     const trackerSet = new Set(targetArr);
     if (s.FollowTarget) trackerSet.add(s.FollowTarget);
-    const hasCatTarget = stars.some(
-      (e) => trackerSet.has(`star:${e.id}`),
-    );
-    const membership = stm || hasCatTarget;
 
     for (let i = 0; i < n; i++) {
       const star = stars[i];
-      const isTracked = !membership || trackerSet.has(`star:${star.id}`);
+      const isTracked = trackerSet.has(`star:${star.id}`);
       if (!isTracked) {
         dp[i * 3    ] = 0;
         dp[i * 3 + 1] = 0;
@@ -4100,23 +4095,18 @@ export class CatalogPointStars {
     const n = Math.min(entries.length, this._maxStars);
     const dp = this._domePositions;
     const sp = this._spherePositions;
-    const stm = !!s.SpecifiedTrackerMode;
-    // Opt-in filtering: if the user has ticked ANY id from this
-    // category in TrackerTargets (or FollowTarget matches), the
-    // layer filters to membership. Empty selection → show all. STM
-    // and `requireMembership` still force membership even with no
-    // category targets picked.
+    // Tracker is the single source of truth: the Show checkbox gates
+    // the category on/off, and TrackerTargets membership decides
+    // which entries render inside it. No opt-in heuristic — empty
+    // selection with Show on = empty sky, Track-All seeds the full
+    // list back in.
     const targetArr = Array.isArray(s.TrackerTargets) ? s.TrackerTargets : [];
     const trackerSet = new Set(targetArr);
     if (s.FollowTarget) trackerSet.add(s.FollowTarget);
-    const hasCatTarget = entries.some(
-      (e) => trackerSet.has(`${this.idPrefix}:${e.id}`),
-    );
-    const membership = stm || this._requireMembership || hasCatTarget;
 
     for (let i = 0; i < n; i++) {
       const star = entries[i];
-      const isTracked = !membership || trackerSet.has(`${this.idPrefix}:${star.id}`);
+      const isTracked = trackerSet.has(`${this.idPrefix}:${star.id}`);
       if (!isTracked) {
         dp[i * 3    ] = 0;
         dp[i * 3 + 1] = 0;

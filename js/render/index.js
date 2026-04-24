@@ -417,14 +417,10 @@ export class Renderer {
     const trackerSet = new Set(Array.isArray(s.TrackerTargets) ? s.TrackerTargets : []);
     if (s.FollowTarget) trackerSet.add(s.FollowTarget);
     const bodyCategoryOn = s.ShowCelestialBodies !== false;
-    // Opt-in filter: if any luminary/planet is in TrackerTargets,
-    // only those render; empty selection shows all in the category.
-    const PLANET_IDS = ['sun', 'moon', 'mercury', 'venus', 'mars',
-                        'jupiter', 'saturn', 'uranus', 'neptune'];
-    const hasBodyTarget = PLANET_IDS.some((id) => trackerSet.has(id));
-    const bodyMembership = stm || hasBodyTarget;
-    const showSun   = bodyCategoryOn && (!bodyMembership || trackerSet.has('sun'));
-    const showMoon  = bodyCategoryOn && (!bodyMembership || trackerSet.has('moon'));
+    // Tracker-as-source-of-truth: Show gates the category, membership
+    // always decides which bodies render inside it.
+    const showSun   = bodyCategoryOn && trackerSet.has('sun');
+    const showMoon  = bodyCategoryOn && trackerSet.has('moon');
     this.sunMarker.group.visible  = showSun;
     this.moonMarker.group.visible = showMoon;
     if (showSun) {
@@ -450,7 +446,7 @@ export class Renderer {
         mk.group.visible = false;
         continue;
       }
-      if (bodyMembership && !trackerSet.has(name)) {
+      if (!trackerSet.has(name)) {
         mk.group.visible = false;
         continue;
       }

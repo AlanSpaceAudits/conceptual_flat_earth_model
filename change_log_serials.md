@@ -532,6 +532,32 @@ Format:
   js/render/index.js js/ui/controlPanel.js js/ui/urlState.js`;
   delete `js/core/satellites.js`.
 
+## S330 — Tracker is sole source of visibility; default TrackerTargets pre-seeded full
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/core/app.js`,
+  `js/render/index.js`, `js/render/worldObjects.js`,
+  `js/ui/urlState.js`.
+- **Change:**
+  - `CatalogPointStars`, `CelNavStars`, and the sun / moon /
+    planet marker block in `render/index.js` drop the opt-in
+    `hasCatTarget` / `stm || hasBodyTarget` heuristics.
+    Membership is now always required inside an active
+    category: Show checkbox gates the category on/off,
+    TrackerTargets decides which ids render inside it.
+  - Default `TrackerTargets` pre-seeded with every id across
+    sun / moon / 7 planets / cel nav / catalogued /
+    black holes / quasars / galaxies / satellites, so a fresh
+    load shows everything — but the defaults flow through the
+    same Tracker state the user interacts with. Track All and
+    Clear All toggle the whole set.
+  - `URL_SCHEMA_VERSION` bumped `309` → `330` so any stored
+    empty `TrackerTargets` from the previous default gets
+    replaced with the new full list.
+- **Revert:** `git checkout v-s000329 -- js/core/app.js
+  js/render/index.js js/render/worldObjects.js
+  js/ui/urlState.js`.
+
 ## S329 — Antarctic 24h-sun demo year bumped back to 2024
 
 - **Date:** 2026-04-24

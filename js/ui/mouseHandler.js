@@ -172,6 +172,13 @@ function ensureHoverTooltip() {
     'text-shadow: 0 0 2px rgba(0, 0, 0, 0.9)',
     'display: none',
   ].join(';');
+  // Name line sits in accent orange; az/alt lines stack below.
+  const styleTag = document.createElement('style');
+  styleTag.textContent = `
+    #celestial-hover .celestial-hover-name { color: #f4a640; font-weight: 600; margin-bottom: 2px; }
+    #celestial-hover div { line-height: 1.3; }
+  `;
+  document.head.appendChild(styleTag);
   const view = document.getElementById('view') || document.body;
   view.appendChild(el);
   return el;
@@ -264,8 +271,10 @@ export function attachMouseHandler(canvas, model) {
           const name = displayNameFor(hit.id, model.computed);
           const az = ((hit.angles.azimuth % 360) + 360) % 360;
           const el = hit.angles.elevation;
-          hoverTip.textContent =
-            `${name}  ·  az ${az.toFixed(2)}°  el ${(el >= 0 ? '+' : '') + el.toFixed(2)}°`;
+          hoverTip.innerHTML =
+            `<div class="celestial-hover-name">${name}</div>`
+            + `<div>Azi: ${az.toFixed(2)}°</div>`
+            + `<div>Alt: ${(el >= 0 ? '+' : '') + el.toFixed(2)}°</div>`;
           hoverTip.style.left = `${e.offsetX + 14}px`;
           hoverTip.style.top  = `${e.offsetY + 14}px`;
           hoverTip.style.display = '';

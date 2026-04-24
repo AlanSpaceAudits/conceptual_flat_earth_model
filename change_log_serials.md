@@ -500,6 +500,16 @@ Format:
 - **Revert:** `git checkout v-s000256 -- js/render/worldObjects.js
   js/render/constellations.js`.
 
+## S300 — Hover tooltip stacks Name / Azi / Alt on three lines
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/ui/mouseHandler.js`.
+- **Change:** `#celestial-hover` body is now three stacked `<div>`
+  rows: the name (accent orange, bold) on top, `Azi: X.XX°` and
+  `Alt: ±Y.YY°` below. Injected a small style block so the name
+  line carries the accent colour.
+- **Revert:** `git checkout v-s000299 -- js/ui/mouseHandler.js`.
+
 ## S299 — FollowTarget survives STM; drag clears STM; Optical re-entry keeps target centred
 
 - **Date:** 2026-04-24

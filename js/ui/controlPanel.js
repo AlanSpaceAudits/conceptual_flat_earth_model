@@ -1384,8 +1384,6 @@ export function buildControlPanel(host, model, demos) {
   btnMap.type = 'button';
   btnMap.textContent = '🗺';
   btnMap.title = 'Choose map projection';
-  // Attach a floating picker popup — one click lists every
-  // registered projection, click-selects the one you want.
   const mapPicker = document.createElement('div');
   mapPicker.className = 'map-picker-popup';
   mapPicker.hidden = true;
@@ -1829,13 +1827,17 @@ export function buildControlPanel(host, model, demos) {
   model.addEventListener('update', refreshTimeControls);
   refreshTimeControls();
 
-  // The popup stays open while the user interacts with the canvas
-  // (drag to move camera, wheel to zoom, etc.). Close paths:
-  //   - re-click the tab button (toggle off)
-  //   - click a different tab (switches)
-  //   - press Escape while any popup is open.
+  // Escape priority (master-stop):
+  //   1. close the map-picker popup if open
+  //   2. close any tab popup if open
+  //   3. pause a running demo animator
+  //   4. clear tracking / free-cam
   window.addEventListener('keydown', (e) => {
     if (e.key !== 'Escape') return;
+    if (!mapPicker.hidden) {
+      mapPicker.hidden = true;
+      return;
+    }
     if (activeIdx >= 0) {
       const entry = tabEntries[activeIdx];
       entry.popup.hidden = true;
@@ -1843,7 +1845,12 @@ export function buildControlPanel(host, model, demos) {
       activeIdx = -1;
       return;
     }
-    // No popup open: second Escape purpose is to end tracking.
+    const a = demos && demos.animator;
+    if (a && a.isPlaying && a.isPlaying() && !a.isPaused()) {
+      a.pause();
+      refreshTimeControls();
+      return;
+    }
     if (model.state.FollowTarget || model.state.FreeCamActive) {
       model.setState({
         FollowTarget: null,

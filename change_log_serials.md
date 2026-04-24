@@ -532,24 +532,44 @@ Format:
   js/render/index.js js/ui/controlPanel.js js/ui/urlState.js`;
   delete `js/core/satellites.js`.
 
+## S364 — DiscGrid + LatitudeLines reproject on MapProjection change; Escape master-stop
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/render/worldObjects.js`,
+  `js/ui/controlPanel.js`, `js/core/canonical.js`,
+  `js/core/projections.js`, `change_log_serials.md`.
+- **Change:**
+  - `DiscGrid` and `LatitudeLines` in `js/render/worldObjects.js`
+    rewritten to track `_lastProj` and rebuild their geometry
+    via `canonicalLatLongToDisc` when `state.MapProjection`
+    changes. Lat circles (15° steps), lon rays (15° steps), and
+    the tropic / polar / equator rings re-warp under each
+    projection.
+  - Escape handler in `buildControlPanel` extended. Priority
+    order: close map-picker popup → close active tab popup →
+    pause running demo animator → clear FollowTarget /
+    FreeCamActive.
+  - Header comment in `js/core/canonical.js` reduced to one
+    factual line.
+  - Header comment in `js/core/projections.js` and the
+    `ae_dual` notes string trimmed.
+- **Revert:** `git checkout v-s000363 --
+  js/render/worldObjects.js js/ui/controlPanel.js
+  js/core/canonical.js js/core/projections.js`.
+
 ## S363 — 🗺 opens a projection picker popup; equirectangular source copied to assets
 
 - **Date:** 2026-04-24
 - **Files changed:** `css/styles.css`, `js/ui/controlPanel.js`,
   `assets/map_equirectangular_earth.jpg` (new).
 - **Change:**
-  - `🗺` bar button no longer cycles; one click opens a
-    `.map-picker-popup` floating above the button listing every
-    registered projection by display name. Click a row →
-    `setState({ MapProjection: id })`, popup closes. Current
-    selection carries an accent-highlighted `.active` class.
-    Outside-click and second 🗺-click both dismiss.
-  - The equirectangular Blue-Marble daymap (2048 × 1024 JPG)
-    was copied from `~/Pictures/maps/2k_earth_daymap.jpg` to
-    `assets/map_equirectangular_earth.jpg`. Reserved for the
-    upcoming runtime-Canvas photo-reprojection step (S362
-    shipped projection math only — disc overlays rewarp via
-    GeoJSON vectors; the photo-texture path is still to wire).
+  - `🗺` bar button replaced with a `.map-picker-popup` floating
+    menu. Click opens it; second click, outside-click, or row
+    click closes it. Row click sets
+    `MapProjection: id`. Current selection gets an
+    accent-highlighted `.active` class.
+  - `assets/map_equirectangular_earth.jpg` (2048 × 1024) added,
+    copied from `~/Pictures/maps/2k_earth_daymap.jpg`.
 - **Revert:** `git checkout v-s000362 -- css/styles.css
   js/ui/controlPanel.js`; `rm
   assets/map_equirectangular_earth.jpg`.
@@ -561,30 +581,21 @@ Format:
   `js/core/projections.js`, `js/main.js`,
   `js/ui/controlPanel.js`, `js/ui/urlState.js`.
 - **Change:**
-  - `canonicalLatLongToDisc` (in `canonical.js`) no longer
-    hardcodes the AE formula. It now delegates to whichever
-    projection `state.MapProjection` selects, via a new
-    `setActiveProjection(id)` setter. `main.js` wires a state
-    listener so swapping the projection rewires every disc
-    overlay that flows through the canonical helper — land
-    contours, ground points, lat circles, observer placement,
-    free-cam GP anchor, GP Path polylines — they all reproject
-    together.
-  - `projections.js` gains 11 new entries joining the 4 existing
-    ones, for 15 total:
-    `ae`, `ae_dual` (equatorial AE, dual-pole / "heart" disc),
-    `hellerick`, `proportional`, `blank`,
+  - `canonicalLatLongToDisc` in `canonical.js` rewritten to
+    delegate to `getProjection(activeId).project(...)`.
+    `setActiveProjection(id)` setter added. `main.js` adds a
+    model `update` listener that calls
+    `setActiveProjection(state.MapProjection)`.
+  - `projections.js` registry now has 15 entries:
+    `ae`, `ae_dual`, `hellerick`, `proportional`, `blank`,
     `equirect`, `mercator`, `mollweide`, `robinson`,
     `winkel_tripel`, `hammer`, `aitoff`, `sinusoidal`,
-    `equal_earth`, `eckert4`.
-    Each carries a forward `project(lat, lon, r)` normalised so
-    the widest axis lands at `r`. Non-azimuthal projections
-    include inline Newton iteration / lookup tables as needed.
-  - 🗺 compass-bar cycle button walks the full 15-projection
-    list.
-  - `URL_SCHEMA_VERSION` bumped `335 → 362` so any saved
-    `MapProjection` with a value outside the old four-entry
-    set gets cleanly re-validated on load.
+    `equal_earth`, `eckert4`. Each has
+    `project(lat, lon, r)` normalised so the widest axis lands at
+    `r`. Non-azimuthal entries use inline Newton iteration or
+    lookup tables.
+  - 🗺 compass-bar cycle button walks all 15 ids.
+  - `URL_SCHEMA_VERSION` bumped `335 → 362`.
 - **Revert:** `git checkout v-s000361 -- js/core/canonical.js
   js/core/projections.js js/main.js js/ui/controlPanel.js
   js/ui/urlState.js`.

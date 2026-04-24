@@ -410,25 +410,17 @@ export class LatitudeLines {
   constructor(feRadius = FE_RADIUS) {
     this.group = new THREE.Group();
     this.group.name = 'latitude-lines';
-    const circles = [
+    this._feRadius = feRadius;
+    this._circles = [
       { lat:  66.5636, color: 0x66ccff, label: 'Arctic Circle' },
       { lat:  23.4392, color: 0xffc844, label: 'Tropic of Cancer' },
       { lat:   0.0,    color: 0xff4040, label: 'Equator' },
       { lat: -23.4392, color: 0xffc844, label: 'Tropic of Capricorn' },
       { lat: -66.5636, color: 0x66ccff, label: 'Antarctic Circle' },
     ];
-    // Built once from the canonical coordinate shell. The tropic /
-    // polar / equator rings do not move when the map projection
-    // underneath changes. See js/core/canonical.js.
-    for (const c of circles) {
-      const pts = [];
-      for (let k = 0; k <= 256; k++) {
-        const lon = -180 + k * (360 / 256);
-        const p = canonicalLatLongToDisc(c.lat, lon, feRadius);
-        pts.push(p[0], p[1], 8e-4);
-      }
+    this._lines = [];
+    for (const c of this._circles) {
       const geo = new THREE.BufferGeometry();
-      geo.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
       const mat = new THREE.LineBasicMaterial({
         color: c.color,
         transparent: true, opacity: 1.0,
@@ -438,10 +430,34 @@ export class LatitudeLines {
       line.renderOrder = 30;
       line.name = c.label;
       this.group.add(line);
+      this._lines.push(line);
+    }
+    this._lastProj = null;
+    this._rebuild();
+  }
+  _rebuild() {
+    const feRadius = this._feRadius;
+    for (let i = 0; i < this._circles.length; i++) {
+      const c = this._circles[i];
+      const pts = [];
+      for (let k = 0; k <= 256; k++) {
+        const lon = -180 + k * (360 / 256);
+        const p = canonicalLatLongToDisc(c.lat, lon, feRadius);
+        pts.push(p[0], p[1], 8e-4);
+      }
+      const line = this._lines[i];
+      line.geometry.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
+      line.geometry.attributes.position.needsUpdate = true;
+      line.geometry.computeBoundingSphere();
     }
   }
   update(model) {
     this.group.visible = !!model.state.ShowLatitudeLines;
+    const proj = model.state.MapProjection || 'ae';
+    if (proj !== this._lastProj) {
+      this._rebuild();
+      this._lastProj = proj;
+    }
   }
 }
 
@@ -886,10 +902,15 @@ export class DiscGrid {
   constructor(feRadius = FE_RADIUS) {
     this.group = new THREE.Group();
     this.group.name = 'disc-grid';
+    this._feRadius = feRadius;
+    this.lines = makeLineSegments([], 0x556677, { opacity: 0.4 });
+    this.group.add(this.lines);
+    this._lastProj = null;
+    this._rebuild();
+  }
+  _rebuild() {
+    const feRadius = this._feRadius;
     const segs = [];
-    // Lat / long graticule built once on the canonical coordinate
-    // shell. The grid is a property of the coordinate system, not the
-    // projection art — see js/core/canonical.js.
     for (let lat = -90 + 15; lat <= 75; lat += 15) {
       const ringPts = [];
       for (let k = 0; k <= 120; k++) {
@@ -907,11 +928,18 @@ export class DiscGrid {
       const b = canonicalLatLongToDisc(-90, lon, feRadius);
       segs.push(a[0], a[1], 2e-4, b[0], b[1], 2e-4);
     }
-    this.lines = makeLineSegments(segs, 0x556677, { opacity: 0.4 });
-    this.group.add(this.lines);
+    const attr = new THREE.Float32BufferAttribute(segs, 3);
+    this.lines.geometry.setAttribute('position', attr);
+    this.lines.geometry.attributes.position.needsUpdate = true;
+    this.lines.geometry.computeBoundingSphere();
   }
   update(model) {
     this.group.visible = model.state.ShowFeGrid;
+    const proj = model.state.MapProjection || 'ae';
+    if (proj !== this._lastProj) {
+      this._rebuild();
+      this._lastProj = proj;
+    }
   }
 }
 

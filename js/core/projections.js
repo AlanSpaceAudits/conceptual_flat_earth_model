@@ -1,15 +1,6 @@
-// Projection registry.
-//
-// Every entry defines:
-//   project(lat, lon, feRadius) → [x, y, 0] on the disc
-//
-// Disc output is normalised so the projection's widest axis hits
-// feRadius; celestial overlays (land contours, ground points,
-// observer, rays) all flow through the same `project()` via
-// `canonicalLatLongToDisc`, so swapping the active projection
-// re-warps both the map art AND every celestial placement together.
-//
-// Add new projections by dropping another entry into `PROJECTIONS`.
+// Projection registry. Each entry defines
+// project(lat, lon, feRadius) → [x, y, 0] on the disc, normalised so
+// the widest axis hits feRadius.
 
 const DEG = Math.PI / 180;
 
@@ -29,9 +20,7 @@ const RADIAL_PROPORTIONAL = (lat) => Math.pow((90 - lat) / 180, 0.75);
 
 // --- Forward functions for world-map projections --------------------
 
-// Azimuthal Equidistant centred at (0, 0) with edge angle = π.
-// Shows the whole sphere on one disc — both poles land on the vertical
-// centreline as distinct points (the "dual-pole / butt-shape" disc).
+// Azimuthal Equidistant centred at (0°, 0°), edge angle = π.
 function projectAEDual(lat, lon, r = 1) {
   const phi = lat * DEG;
   const lam = lon * DEG;
@@ -219,7 +208,7 @@ export const PROJECTIONS = {
   ae_dual: {
     id: 'ae_dual', name: 'AE Equatorial (dual-pole)',
     imageAsset: null, imageInscribedRadius: 0.5,
-    notes: 'Azimuthal-equidistant centred at (0°, 0°), edge angle 180°. Both geographic poles fall on the vertical centre-line as two distinct points — the "dual-pole / heart" disc.',
+    notes: 'Azimuthal-equidistant centred at (0°, 0°), edge angle 180°. Both geographic poles fall on the vertical centre-line as distinct points.',
     project: projectAEDual,
   },
 

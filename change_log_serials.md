@@ -500,6 +500,20 @@ Format:
 - **Revert:** `git checkout v-s000256 -- js/render/worldObjects.js
   js/render/constellations.js`.
 
+## S271 — Move Live Ephemeris tab to left, horizontal, under moon-phase HUD
+
+- **Date:** 2026-04-24
+- **Files changed:** `css/styles.css`, `js/ui/controlPanel.js`.
+- **Change:**
+  - `#live-ephem-tab` switched from fixed right-edge vertical bar
+    to absolute top-left horizontal button. New position
+    `top: 212px; left: 8px`, no `writing-mode`. Appended to
+    `#view` so it's positioned inside the canvas area.
+  - `#tracker-hud` `top` bumped 240px → 248px to make room for
+    the tab and keep spacing consistent when the HUD opens.
+- **Revert:** `git checkout v-s000270 -- css/styles.css
+  js/ui/controlPanel.js`.
+
 ## S270 — Drop redundant sub-menu labels inside Tracker star grids
 
 - **Date:** 2026-04-24

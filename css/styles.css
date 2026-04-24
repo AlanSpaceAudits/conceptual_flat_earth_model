@@ -74,7 +74,7 @@ header .info-popup p:last-child { margin-bottom: 0; }
    BodySource takes .active (orange border); the other is .inactive
    (grey). max-height + overflow-y lets long tracked sets scroll. */
 #tracker-hud {
-  position: absolute; top: 240px; left: 8px;
+  position: absolute; top: 248px; left: 8px;
   pointer-events: none;
   font: 12px/1.4 ui-monospace, Menlo, monospace;
   color: #f4f6fa;
@@ -101,21 +101,17 @@ header .info-popup p:last-child { margin-bottom: 0; }
 #tracker-hud.expanded .tracker-block { width: 460px; }
 
 #live-ephem-tab {
-  position: fixed;
-  top: 50%;
-  right: 0;
-  transform: translateY(-50%);
+  position: absolute;
+  top: 212px;
+  left: 8px;
   z-index: 30;
-  padding: 14px 6px;
+  padding: 4px 10px;
   font: 12px/1 ui-monospace, Menlo, monospace;
   color: #f4a640;
   background: rgba(10, 14, 22, 0.82);
   border: 1px solid rgba(244, 166, 64, 0.45);
-  border-right: 0;
-  border-radius: 6px 0 0 6px;
+  border-radius: 6px;
   cursor: pointer;
-  writing-mode: vertical-rl;
-  text-orientation: mixed;
   letter-spacing: 1px;
   user-select: none;
 }

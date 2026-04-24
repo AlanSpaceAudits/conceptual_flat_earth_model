@@ -1193,7 +1193,8 @@ export function buildTrackerHud(trackerEl, model) {
     tabBtn.id = 'live-ephem-tab';
     tabBtn.type = 'button';
     tabBtn.textContent = 'Live Ephemeris Data';
-    document.body.appendChild(tabBtn);
+    const viewEl = document.getElementById('view') || document.body;
+    viewEl.appendChild(tabBtn);
   }
   tabBtn.addEventListener('click', () => {
     model.setState({ ShowLiveEphemeris: !model.state.ShowLiveEphemeris });

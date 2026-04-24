@@ -532,6 +532,19 @@ Format:
   js/render/index.js js/ui/controlPanel.js js/ui/urlState.js`;
   delete `js/core/satellites.js`.
 
+## S323 — Feature-search swaps the active popup to the target tab
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/ui/controlPanel.js`.
+- **Change:** `featureOpen.fn()` no longer defers to `openTab()`'s
+  toggle logic — it explicitly closes any currently open popup
+  that isn't the target tab, then unconditionally positions,
+  un-hides, and marks the target tab active. Group expansion
+  + scroll-into-view still runs afterwards. With a tab popup
+  open, picking a search result always switches the window to
+  the tab the result lives in instead of silently no-opping.
+- **Revert:** `git checkout v-s000322 -- js/ui/controlPanel.js`.
+
 ## S322 — "End Demo" button stacked above the speed readout
 
 - **Date:** 2026-04-24

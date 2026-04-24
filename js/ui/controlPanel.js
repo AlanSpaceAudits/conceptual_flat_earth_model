@@ -1335,17 +1335,26 @@ export function buildControlPanel(host, model, demos) {
   };
 
   // Wire the feature-search's "open this tab + expand this group"
-  // callback now that tabEntries / openTab exist. Falls back to a
-  // no-op if either the tab name or the group title can't be
-  // resolved in the DOM.
+  // callback now that tabEntries / openTab exist. Always forces the
+  // requested tab active — if another popup was already open it gets
+  // closed so the user's current window switches to whatever the
+  // search result lives in. No-op when the tab name or group can't
+  // be resolved.
   featureOpen.fn = (tabName, groupTitle) => {
     const idx = tabEntries.findIndex(
       (t) => t.btn.textContent.trim() === tabName,
     );
     if (idx < 0) return;
-    if (activeIdx !== idx) openTab(idx);
-    const popup = tabEntries[idx].popup;
+    if (activeIdx >= 0 && activeIdx !== idx) {
+      tabEntries[activeIdx].popup.hidden = true;
+      tabEntries[activeIdx].btn.setAttribute('aria-selected', 'false');
+    }
+    positionPopup(idx);
+    tabEntries[idx].popup.hidden = false;
+    tabEntries[idx].btn.setAttribute('aria-selected', 'true');
+    activeIdx = idx;
     if (!groupTitle) return;
+    const popup = tabEntries[idx].popup;
     const groupEl = popup.querySelector(
       `.group[data-group-title="${CSS.escape(groupTitle)}"]`,
     );

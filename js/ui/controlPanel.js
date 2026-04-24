@@ -536,6 +536,7 @@ const FIELD_GROUPS = [
         { key: 'TrackerGPOverride',   label: 'GP Override',          bool: true },
       ]},
       { title: 'Celestial Bodies', rows: [
+        { key: 'ShowCelestialBodies', label: 'Show', bool: true },
         { key: 'GPOverridePlanets', label: 'GP Override', bool: true },
         { key: 'TrackerTargets', label: '', buttonGrid: [
           { value: 'sun',     label: 'Sun',     color: '#ffc844' },
@@ -550,6 +551,7 @@ const FIELD_GROUPS = [
         ]},
       ]},
       { title: 'Cel Nav', rows: [
+        { key: 'ShowCelNav', label: 'Show', bool: true },
         { key: 'GPOverrideCelNav', label: 'GP Override', bool: true },
         { key: 'TrackerTargets', label: '', buttonGrid:
           [...CEL_NAV_STARS]
@@ -558,6 +560,7 @@ const FIELD_GROUPS = [
         },
       ]},
       { title: 'Constellations', rows: [
+        { key: 'ShowConstellations', label: 'Show', bool: true },
         { key: 'GPOverrideConstellations', label: 'GP Override', bool: true },
         { key: 'TrackerTargets', label: '', buttonGrid:
           (() => {
@@ -574,6 +577,7 @@ const FIELD_GROUPS = [
         },
       ]},
       { title: 'Black Holes', rows: [
+        { key: 'ShowBlackHoles', label: 'Show', bool: true },
         { key: 'GPOverrideBlackHoles', label: 'GP Override', bool: true },
         { key: 'TrackerTargets', label: '', buttonGrid:
           [...BLACK_HOLES]
@@ -582,6 +586,7 @@ const FIELD_GROUPS = [
         },
       ]},
       { title: 'Quasars', rows: [
+        { key: 'ShowQuasars', label: 'Show', bool: true },
         { key: 'GPOverrideQuasars', label: 'GP Override', bool: true },
         { key: 'TrackerTargets', label: '', buttonGrid:
           [...QUASARS]
@@ -590,6 +595,7 @@ const FIELD_GROUPS = [
         },
       ]},
       { title: 'Galaxies', rows: [
+        { key: 'ShowGalaxies', label: 'Show', bool: true },
         { key: 'GPOverrideGalaxies', label: 'GP Override', bool: true },
         { key: 'TrackerTargets', label: '', buttonGrid:
           [...GALAXIES]

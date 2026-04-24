@@ -91,6 +91,7 @@ export class Renderer {
       domeSize: 4,
       sphereSize: 3.5,
       clippingPlanes: clipPlanes,
+      showKey: 'ShowBlackHoles',
     });
     this.sm.world.add(this.blackHoleStars.group);
 
@@ -100,6 +101,7 @@ export class Renderer {
       domeSize: 4,
       sphereSize: 3.5,
       clippingPlanes: clipPlanes,
+      showKey: 'ShowQuasars',
     });
     this.sm.world.add(this.quasarStars.group);
 
@@ -109,6 +111,7 @@ export class Renderer {
       domeSize: 4,
       sphereSize: 3.5,
       clippingPlanes: clipPlanes,
+      showKey: 'ShowGalaxies',
     });
     this.sm.world.add(this.galaxyStars.group);
 
@@ -122,6 +125,7 @@ export class Renderer {
       sphereSize: 3.5,
       clippingPlanes: clipPlanes,
       requireMembership: true,
+      showKey: 'ShowSatellites',
     });
     this.sm.world.add(this.satelliteStars.group);
 
@@ -407,8 +411,9 @@ export class Renderer {
     const stm = !!s.SpecifiedTrackerMode;
     const trackerSet = new Set(Array.isArray(s.TrackerTargets) ? s.TrackerTargets : []);
     if (s.FollowTarget) trackerSet.add(s.FollowTarget);
-    const showSun   = !stm || trackerSet.has('sun');
-    const showMoon  = !stm || trackerSet.has('moon');
+    const bodyCategoryOn = s.ShowCelestialBodies !== false;
+    const showSun   = bodyCategoryOn && (!stm || trackerSet.has('sun'));
+    const showMoon  = bodyCategoryOn && (!stm || trackerSet.has('moon'));
     this.sunMarker.group.visible  = showSun;
     this.moonMarker.group.visible = showMoon;
     if (showSun) {
@@ -430,7 +435,7 @@ export class Renderer {
     // sky once the sun has dropped far enough for them to be visible.
     for (const [name, mk] of Object.entries(this.planetMarkers)) {
       const p = c.Planets[name];
-      if (!p || !s.ShowPlanets) {
+      if (!p || !s.ShowPlanets || !bodyCategoryOn) {
         mk.group.visible = false;
         continue;
       }

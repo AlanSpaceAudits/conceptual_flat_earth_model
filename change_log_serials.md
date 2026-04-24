@@ -532,6 +532,32 @@ Format:
   js/render/index.js js/ui/controlPanel.js js/ui/urlState.js`;
   delete `js/core/satellites.js`.
 
+## S317 — Per-category Show toggles for every tracker sub-menu
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/core/app.js`,
+  `js/render/index.js`, `js/render/worldObjects.js`,
+  `js/ui/controlPanel.js`, `js/ui/urlState.js`.
+- **Change:**
+  - Five new session-persisted state keys, default `true`:
+    `ShowCelestialBodies`, `ShowCelNav`, `ShowBlackHoles`,
+    `ShowQuasars`, `ShowGalaxies`. (`ShowConstellations` and
+    `ShowSatellites` already existed.)
+  - Each Tracker sub-menu now leads with a `Show` checkbox
+    bound to the matching key. When unticked the whole category
+    is hidden in the scene.
+  - `CatalogPointStars` accepts a new `showKey` option. Its
+    visibility gate `AND`s the state boolean, so `ShowBlackHoles
+    / ShowQuasars / ShowGalaxies / ShowSatellites` each
+    master-gate their layer.
+  - `CelNavStars` update gates on `s.ShowCelNav`.
+  - Sun / moon / planet markers gate on `s.ShowCelestialBodies`
+    in `render/index.js`; when off the whole category hides
+    independent of `ShowPlanets`.
+- **Revert:** `git checkout v-s000316 -- js/core/app.js
+  js/render/index.js js/render/worldObjects.js
+  js/ui/controlPanel.js js/ui/urlState.js`.
+
 ## S316 — Free-cam tracks satellites (ISS, Starlink, JWST)
 
 - **Date:** 2026-04-24

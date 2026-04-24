@@ -3927,7 +3927,9 @@ export class CelNavStars {
     const s = model.state;
     const c = model.computed;
 
-    const active = (s.StarfieldType === 'celnav') && (c.CelNavStars != null);
+    const active = (s.StarfieldType === 'celnav')
+                && (c.CelNavStars != null)
+                && (s.ShowCelNav !== false);
     // Same fade rules as Stars: dynamic fade by NightFactor unless the
     // disables `DynamicStars`, hard-gated on `ShowStars`.
     const nightAlpha = s.DynamicStars ? (c.NightFactor || 0) : 1.0;
@@ -4021,11 +4023,17 @@ export class CatalogPointStars {
     // single "Show Satellites" master toggle doesn't dump all 12
     // birds into the sky at once.
     requireMembership = false,
+    // Optional state key that gates the whole layer on/off. When the
+    // matching boolean in `model.state` is false the layer renders
+    // nothing regardless of other toggles — this is the Tracker
+    // sub-menu's "Show <category>" checkbox.
+    showKey = null,
   } = {}) {
     this.sourceKey  = sourceKey;
     this.idPrefix   = idPrefix;
     this._maxStars  = maxCount;
     this._requireMembership = requireMembership;
+    this._showKey   = showKey;
 
     this.group = new THREE.Group();
     this.group.name = `catalog-${sourceKey.toLowerCase()}`;
@@ -4073,7 +4081,8 @@ export class CatalogPointStars {
 
     const nightAlpha = s.DynamicStars ? (c.NightFactor || 0) : 1.0;
     const visibilityGate = s.DynamicStars ? nightAlpha > 0.01 : true;
-    const showStars = !!entries && s.ShowStars && visibilityGate;
+    const categoryShown = !this._showKey || !!s[this._showKey];
+    const showStars = !!entries && s.ShowStars && visibilityGate && categoryShown;
 
     this.domePoints.visible   = showStars && (s.ShowTruePositions !== false) && !s.InsideVault;
     this.domePoints.material.opacity   = nightAlpha;

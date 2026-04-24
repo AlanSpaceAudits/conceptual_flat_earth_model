@@ -500,6 +500,18 @@ Format:
 - **Revert:** `git checkout v-s000256 -- js/render/worldObjects.js
   js/render/constellations.js`.
 
+## S302 — Always show the followed body's GP in Heavenly mode
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/render/worldObjects.js`.
+- **Change:** `TrackedGroundPoints.update()` now treats any info
+  whose `target` equals `state.FollowTarget` as always-visible
+  in Heavenly mode, alongside the `_followOnly` case. Fixes the
+  bug where tracking a body already in `TrackerTargets` (e.g.
+  Jupiter) would still hide its GP when `ShowGroundPoints` /
+  `TrackerGPOverride` were off.
+- **Revert:** `git checkout v-s000301 -- js/render/worldObjects.js`.
+
 ## S301 — Reset to DE405 default time + source when demos end
 
 - **Date:** 2026-04-24

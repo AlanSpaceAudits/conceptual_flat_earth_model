@@ -3783,13 +3783,17 @@ export class TrackedGroundPoints {
     // user can see where the tracked body sits on the ground.
     const baseShow = !s.InsideVault && (!!s.ShowGroundPoints || !!s.TrackerGPOverride);
     const heavenly = !s.InsideVault;
+    const followId = s.FollowTarget;
 
     for (let i = 0; i < this._pool.length; i++) {
       const slot = this._pool[i];
       const line = this._lines[i];
       const info = infos[i];
+      const isFollow = info && followId && info.target === followId;
       const showThis = info
-        && (baseShow || (heavenly && info._followOnly));
+        && (baseShow
+            || (heavenly && info._followOnly)
+            || (heavenly && isFollow));
       if (!showThis) {
         slot.group.visible = false;
         line.visible = false;

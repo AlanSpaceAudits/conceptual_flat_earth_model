@@ -46,20 +46,8 @@ const PLANET_GP_COLORS = {
 };
 const TRACKED_GP_COLORS_PLANET_DEFAULT = 0xff8c66;
 
-// localGlobe convention: [zenith, east, north]. Maps the celestial
-// direction onto a 3D dome whose horizontal layout follows the active
-// MapProjection: elevation -> latitude (zenith = pole), azimuth ->
-// longitude. AE polar reproduces the original concentric-ring dome
-// (horizon at radius R, zenith at centre) thanks to the *2 scale.
-// Other projections warp the dome accordingly.
 function opticalVaultProject(localGlobe, R, H) {
-  const up = Math.max(-1, Math.min(1, localGlobe[0]));
-  const elev = Math.asin(up);
-  const az = Math.atan2(localGlobe[1], localGlobe[2]);
-  const elevDeg = elev * 180 / Math.PI;
-  const azDeg = az * 180 / Math.PI;
-  const xy = canonicalLatLongToDisc(elevDeg, azDeg, R * 2);
-  return [up * H, xy[1], xy[0]];
+  return [localGlobe[0] * H, localGlobe[1] * R, localGlobe[2] * R];
 }
 
 // z ≤ domeH · √(1 − (r/domeR)²) — ellipsoidal ceiling at a body's AE radius.

@@ -209,41 +209,6 @@ function buildLatLongHemisphereGeom(radius = 1, latRings = 6, lonRays = 24, ring
   return geom;
 }
 
-// Same alt/az grid but each (elevation, azimuth) routed through the
-// active map projection so the dome's gridlines mirror the disc's.
-// Local frame convention: x = zenith (vertical), y = east, z = north.
-function buildProjectedHemisphereGeom(radius = 1, latRings = 6, lonRays = 24, ringRes = 64) {
-  const positions = [];
-  const place = (elevDeg, azDeg) => {
-    const xy = canonicalLatLongToDisc(elevDeg, azDeg, radius * 2);
-    const up = Math.sin(elevDeg * Math.PI / 180);
-    return [up * radius, xy[1], xy[0]];
-  };
-  for (let i = 1; i < latRings; i++) {
-    const elev = 90 - (i / latRings) * 90;
-    for (let k = 0; k < ringRes; k++) {
-      const a1 = (k / ringRes) * 360;
-      const a2 = ((k + 1) / ringRes) * 360;
-      const p1 = place(elev, a1);
-      const p2 = place(elev, a2);
-      positions.push(p1[0], p1[1], p1[2], p2[0], p2[1], p2[2]);
-    }
-  }
-  const arcRes = Math.max(8, Math.floor(ringRes / 2));
-  for (let j = 0; j < lonRays; j++) {
-    const az = (j / lonRays) * 360;
-    for (let k = 0; k < arcRes; k++) {
-      const e1 = (k / arcRes) * 90;
-      const e2 = ((k + 1) / arcRes) * 90;
-      const p1 = place(e1, az);
-      const p2 = place(e2, az);
-      positions.push(p1[0], p1[1], p1[2], p2[0], p2[1], p2[2]);
-    }
-  }
-  const geom = new THREE.BufferGeometry();
-  geom.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-  return geom;
-}
 
 // --- helpers ---------------------------------------------------------------
 
@@ -1067,20 +1032,18 @@ export class ObserversOpticalVault {
     );
     this.group.add(this.mesh);
 
-    // alt/az grid on the optical vault: altitude rings every 15°
-    // (at 15°/30°/45°/60°/75°) and azimuth meridians every 15° (24 of
-    // them). Routed through `canonicalLatLongToDisc` so the dome's
-    // graticule warps with the active map projection.
+    // Stellarium-style alt/az grid on the optical vault: altitude
+    // rings every 15° (at 15°/30°/45°/60°/75°) and azimuth meridians
+    // every 15° (24 of them). Same geometry viewed from inside
+    // (first-person) or outside (orbit) — azimuth and altitude cells
+    // therefore read identically in both modes.
     this.wire = new THREE.LineSegments(
-      buildProjectedHemisphereGeom(1, 6, 24),
+      buildLatLongHemisphereGeom(1, 6, 24),
       new THREE.LineBasicMaterial({
         color: 0x7a8499, transparent: true, opacity: 0.55,
         clippingPlanes,
       }),
     );
-    this._wireLatRings = 6;
-    this._wireLonRays  = 24;
-    this._lastProj = null;
     this.group.add(this.wire);
 
     // Axes to indicate local north/east/up.
@@ -1437,14 +1400,6 @@ export class ObserversOpticalVault {
     // slider is honoured only when viewing from Heavenly.
     const h = c.OpticalVaultHeightEffective;
     const obs = c.ObserverFeCoord;
-
-    const proj = s.MapProjection || 'ae';
-    if (proj !== this._lastProj) {
-      const newGeom = buildProjectedHemisphereGeom(1, this._wireLatRings, this._wireLonRays);
-      this.wire.geometry.dispose();
-      this.wire.geometry = newGeom;
-      this._lastProj = proj;
-    }
 
     this.group.position.set(obs[0], obs[1], obs[2]);
     // Optical vault: x/y by R, z by effective H. Hemisphere (H=R) in

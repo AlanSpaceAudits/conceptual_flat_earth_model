@@ -532,6 +532,20 @@ Format:
   js/render/index.js js/ui/controlPanel.js js/ui/urlState.js`;
   delete `js/core/satellites.js`.
 
+## S371 — Revert S370 optical-vault projection-coupling
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/core/app.js`, `js/render/worldObjects.js`,
+  `change_log_serials.md`.
+- **Change:**
+  - `opticalVaultProject` reverted to the pre-S370 form
+    (`[localGlobe[0]*H, localGlobe[1]*R, localGlobe[2]*R]`).
+  - `ObserversOpticalVault` rebuilds removed; wire grid uses
+    `buildLatLongHemisphereGeom` again. `_lastProj` cache removed.
+  - `buildProjectedHemisphereGeom` deleted.
+- **Revert:** `git checkout v-s000370 -- js/core/app.js
+  js/render/worldObjects.js`.
+
 ## S370 — Optical vault follows the active MapProjection
 
 - **Date:** 2026-04-24

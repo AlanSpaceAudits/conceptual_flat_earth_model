@@ -500,6 +500,14 @@ Format:
 - **Revert:** `git checkout v-s000256 -- js/render/worldObjects.js
   js/render/constellations.js`.
 
+## S307 — Trim Walter Bislin credit to "visualization inspiration"
+
+- **Date:** 2026-04-24
+- **Files changed:** `about.md`.
+- **Change:** Credits entry for Walter Bislin reduced to
+  "visualization inspiration" per user direction.
+- **Revert:** `git checkout v-s000306 -- about.md`.
+
 ## S306 — Move body-search box next to the View tab
 
 - **Date:** 2026-04-24

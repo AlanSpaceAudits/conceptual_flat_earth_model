@@ -220,4 +220,4 @@ Without the theory, data, and public catalogues from the following sources, this
 - **Sonia Keys** / **commenthol** — MIT-licensed JS coefficient port of VSOP87.
 - **Jean Meeus** — *Astronomical Algorithms* (2nd ed., 1998), the backbone for the Sun, Moon, GMST, precession, nutation, and aberration routines.
 - **Shane St. Pierre** — the conceptual framing and the push to actually build a working, interactive demonstration of the model.
-- **Walter Bislin** — the original numerical constants, projection choices, and the visual conventions this port preserves.
+- **Walter Bislin** — visualization inspiration.

@@ -532,6 +532,28 @@ Format:
   js/render/index.js js/ui/controlPanel.js js/ui/urlState.js`;
   delete `js/core/satellites.js`.
 
+## S363 — 🗺 opens a projection picker popup; equirectangular source copied to assets
+
+- **Date:** 2026-04-24
+- **Files changed:** `css/styles.css`, `js/ui/controlPanel.js`,
+  `assets/map_equirectangular_earth.jpg` (new).
+- **Change:**
+  - `🗺` bar button no longer cycles; one click opens a
+    `.map-picker-popup` floating above the button listing every
+    registered projection by display name. Click a row →
+    `setState({ MapProjection: id })`, popup closes. Current
+    selection carries an accent-highlighted `.active` class.
+    Outside-click and second 🗺-click both dismiss.
+  - The equirectangular Blue-Marble daymap (2048 × 1024 JPG)
+    was copied from `~/Pictures/maps/2k_earth_daymap.jpg` to
+    `assets/map_equirectangular_earth.jpg`. Reserved for the
+    upcoming runtime-Canvas photo-reprojection step (S362
+    shipped projection math only — disc overlays rewarp via
+    GeoJSON vectors; the photo-texture path is still to wire).
+- **Revert:** `git checkout v-s000362 -- css/styles.css
+  js/ui/controlPanel.js`; `rm
+  assets/map_equirectangular_earth.jpg`.
+
 ## S362 — Projection registry expansion: 15 entries, delegated canonical math
 
 - **Date:** 2026-04-24

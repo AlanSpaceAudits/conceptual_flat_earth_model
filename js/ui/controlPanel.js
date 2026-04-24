@@ -10,7 +10,7 @@ import { BLACK_HOLES } from '../core/blackHoles.js';
 import { QUASARS }     from '../core/quasars.js';
 import { GALAXIES }    from '../core/galaxies.js';
 import { SATELLITES }  from '../core/satellites.js';
-import { listProjections } from '../core/projections.js';
+import { listProjections, PROJECTIONS } from '../core/projections.js';
 import { Autoplay } from './autoplay.js';
 
 const PLANET_NAMES = {
@@ -1383,12 +1383,53 @@ export function buildControlPanel(host, model, demos) {
   btnMap.className = 'time-btn map-btn';
   btnMap.type = 'button';
   btnMap.textContent = '🗺';
-  btnMap.title = 'Cycle map projection';
-  btnMap.addEventListener('click', () => {
+  btnMap.title = 'Choose map projection';
+  // Attach a floating picker popup — one click lists every
+  // registered projection, click-selects the one you want.
+  const mapPicker = document.createElement('div');
+  mapPicker.className = 'map-picker-popup';
+  mapPicker.hidden = true;
+  const mapPickerRows = [];
+  for (const id of MAP_CYCLE) {
+    const proj = PROJECTIONS[id];
+    if (!proj) continue;
+    const row = document.createElement('button');
+    row.type = 'button';
+    row.className = 'map-picker-row';
+    row.dataset.projId = id;
+    row.textContent = proj.name;
+    row.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+      model.setState({ MapProjection: id });
+      mapPicker.hidden = true;
+    });
+    mapPicker.appendChild(row);
+    mapPickerRows.push(row);
+  }
+  document.body.appendChild(mapPicker);
+  const refreshMapPickerHighlight = () => {
     const cur = model.state.MapProjection || 'ae';
-    const idx = MAP_CYCLE.indexOf(cur);
-    const next = MAP_CYCLE[(idx + 1) % MAP_CYCLE.length];
-    model.setState({ MapProjection: next });
+    for (const row of mapPickerRows) {
+      row.classList.toggle('active', row.dataset.projId === cur);
+    }
+  };
+  model.addEventListener('update', refreshMapPickerHighlight);
+  refreshMapPickerHighlight();
+  btnMap.addEventListener('click', () => {
+    if (!mapPicker.hidden) { mapPicker.hidden = true; return; }
+    const rect = btnMap.getBoundingClientRect();
+    mapPicker.style.left = `${Math.max(8, rect.left)}px`;
+    mapPicker.style.top  = `${Math.max(8, rect.top - mapPicker.offsetHeight - 8)}px`;
+    mapPicker.hidden = false;
+    // Reposition now that it has layout height
+    requestAnimationFrame(() => {
+      mapPicker.style.top = `${Math.max(8, rect.top - mapPicker.offsetHeight - 8)}px`;
+    });
+  });
+  document.addEventListener('mousedown', (e) => {
+    if (mapPicker.hidden) return;
+    if (mapPicker.contains(e.target) || btnMap.contains(e.target)) return;
+    mapPicker.hidden = true;
   });
 
   const STARFIELD_CYCLE = ['random', 'chart-dark', 'chart-light', 'celnav'];

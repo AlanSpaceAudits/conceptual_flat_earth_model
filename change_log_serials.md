@@ -532,6 +532,20 @@ Format:
   js/render/index.js js/ui/controlPanel.js js/ui/urlState.js`;
   delete `js/core/satellites.js`.
 
+## S344 — Rays respect the Tracker-membership rule
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/render/index.js`.
+- **Change:** `_updateRays()` used the old STM-only filter
+  (`!stm || trackerSet.has(id)`), which meant vault / optical /
+  projection rays painted for every body whenever STM was off —
+  even bodies the renderers had hidden via empty tracker
+  selection. Filter updated to match the post-S330 rule:
+  membership always required, STM narrows to `[FollowTarget]`,
+  and `ShowCelestialBodies` also gates the whole ray set so a
+  hidden category never leaks rays.
+- **Revert:** `git checkout v-s000343 -- js/render/index.js`.
+
 ## S343 — End Tracking button + Esc-ends-tracking; Free-camera mode toggle
 
 - **Date:** 2026-04-24

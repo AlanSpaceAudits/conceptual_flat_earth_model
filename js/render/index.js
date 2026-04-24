@@ -558,14 +558,18 @@ export class Renderer {
     const sunFade  = fade(c.SunAnglesGlobe.elevation);
     const moonFade = fade(c.MoonAnglesGlobe.elevation);
 
-    // Specified Tracker Mode filter for all ray classes. When
-    // on, only tracked bodies emit rays. Matches the STM filter on
-    // sun/moon/planet markers in `_updateRays`' caller and the
-    // per-star filter in the star renderers.
+    // Ray filter matches the renderer rule: membership always
+    // required, STM narrows to just FollowTarget. Also require the
+    // Celestial Bodies category to be on so a hidden category never
+    // emits rays for any of its bodies.
     const stm = !!s.SpecifiedTrackerMode;
-    const trackerSet = new Set(Array.isArray(s.TrackerTargets) ? s.TrackerTargets : []);
-    const sunOn  = !stm || trackerSet.has('sun');
-    const moonOn = !stm || trackerSet.has('moon');
+    const trackerSet = stm
+      ? new Set(s.FollowTarget ? [s.FollowTarget] : [])
+      : new Set(Array.isArray(s.TrackerTargets) ? s.TrackerTargets : []);
+    if (!stm && s.FollowTarget) trackerSet.add(s.FollowTarget);
+    const bodyCatOn = s.ShowCelestialBodies !== false;
+    const sunOn   = bodyCatOn && trackerSet.has('sun');
+    const moonOn  = bodyCatOn && trackerSet.has('moon');
 
     // Vault rays to the true sun/moon position on the vault of the heavens
     // stay drawn regardless of horizon: the physical source is still there.
@@ -623,7 +627,7 @@ export class Renderer {
                          c.MoonAnglesGlobe.elevation, 0xf4f4f4);
       }
       for (const [name, p] of Object.entries(c.Planets || {})) {
-        if (stm && !trackerSet.has(name)) continue;
+        if (!bodyCatOn || !trackerSet.has(name)) continue;
         addProjectionRay(p.vaultCoord, p.opticalVaultCoord,
                          p.anglesGlobe.elevation,
                          PLANET_RAY_COLORS[name] || 0xff8c66);

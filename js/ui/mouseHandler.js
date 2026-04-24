@@ -68,13 +68,69 @@ export function attachMouseHandler(canvas, model) {
     try { canvas.releasePointerCapture(e.pointerId); } catch {}
   });
 
+  // S211/S212 — reset the cursor-elevation + azimuth readouts when
+  // the pointer leaves the canvas so the Observer rows don't freeze
+  // on stale values.
+  canvas.addEventListener('pointerleave', () => {
+    if (model.state.MouseElevation !== null
+        || model.state.MouseAzimuth !== null) {
+      model.setState({ MouseElevation: null, MouseAzimuth: null });
+    }
+  });
+
   canvas.addEventListener('pointermove', (e) => {
+    const w = canvas.clientWidth || 1;
+    const h = canvas.clientHeight || 1;
+
+    // S211/S212 — live cursor elevation + azimuth readouts. Fires on
+    // every pointermove (drag or not) so the Observer "Mouse El" and
+    // "Mouse Az" rows track the cursor continuously. Optical mode
+    // only; Heavenly has no single-observer elevation/azimuth frame
+    // so we publish nulls there.
+    //
+    // Pinhole-camera math: the camera sits at the observer looking
+    // along compass heading H with pitch P. For NDC (x_ndc, y_ndc),
+    // let kx = x_ndc·tan(hFov/2), ky = y_ndc·tan(vFov/2). The ray's
+    // horizontal factor is c = cos P − ky·sin P. Then:
+    //   azimuth   = H + atan2(kx, c)
+    //   elevation = atan2(sin P + ky·cos P, √(c² + kx²))
+    // The azimuth form drops out of the rotation identity
+    //   (nd, ed) = Rot_H(c, kx), so atan2(ed, nd) = H + atan2(kx, c).
+    // This holds exactly for zero-roll cameras, which Optical mode is.
+    if (model.state.InsideVault) {
+      const xNdc = (e.offsetX / w) * 2 - 1;
+      const yNdc = 1 - (e.offsetY / h) * 2;
+      const zoom = Math.max(0.2, model.state.OpticalZoom || 1);
+      const fovV = Math.max(0.005, Math.min(75, 75 / zoom));
+      const aspect = w / h;
+      const fovVRad = fovV * Math.PI / 180;
+      const fovHRad = 2 * Math.atan(Math.tan(fovVRad / 2) * aspect);
+      const kx = xNdc * Math.tan(fovHRad / 2);
+      const ky = yNdc * Math.tan(fovVRad / 2);
+      const pitchRad = (model.state.CameraHeight || 0) * Math.PI / 180;
+      const headingDeg = model.state.ObserverHeading || 0;
+      const cosP = Math.cos(pitchRad);
+      const sinP = Math.sin(pitchRad);
+      const c = cosP - ky * sinP;
+      const vert = sinP + ky * cosP;
+      const horizLen = Math.sqrt(c * c + kx * kx);
+      const elDeg = Math.atan2(vert, horizLen) * 180 / Math.PI;
+      let azDeg = headingDeg + Math.atan2(kx, c) * 180 / Math.PI;
+      azDeg = ((azDeg % 360) + 360) % 360;
+      const mouseEl = Math.max(-90, Math.min(90, elDeg));
+      if (model.state.MouseElevation !== mouseEl
+          || model.state.MouseAzimuth !== azDeg) {
+        model.setState({ MouseElevation: mouseEl, MouseAzimuth: azDeg });
+      }
+    } else if (model.state.MouseElevation !== null
+               || model.state.MouseAzimuth !== null) {
+      model.setState({ MouseElevation: null, MouseAzimuth: null });
+    }
+
     if (!dragging) return;
     const dx = e.offsetX - lastX;
     const dy = e.offsetY - lastY;
     lastX = e.offsetX; lastY = e.offsetY;
-    const w = canvas.clientWidth || 1;
-    const h = canvas.clientHeight || 1;
 
     if (e.ctrlKey || e.metaKey) {
       model.setState({

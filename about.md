@@ -6,7 +6,7 @@ Live at <https://alanspaceaudits.github.io/conceptual_flat_earth_model/>.
 
 ## Two layers, one observer
 
-- **Optical vault** — the flattened cap overhead onto which the sun, moon, planets, and starfield project. This is the sky as it is actually perceived.
+- **Optical vault** — the cap overhead onto which the sun, moon, planets, and starfield project. In first-person (Optical) view the cap is a strict hemisphere so rendered elevation matches reported elevation 1:1: an object reported at e° above the horizon sits at e° on the elevation scale, and you have to look at that exact degree to see it. In external (Heavenly) view the cap can be flattened via the `Height` slider to show the conceptual FE depiction from outside; that stylization does not leak back into the Optical projection.
 - **True positions** — the heavenly-vault reading that places each body at its geographic ground point, defined in time through its geocentric angle. Toggle it on to see the bookkeeping, off to see only what reaches the observer's eye.
 
 ## The point
@@ -45,7 +45,7 @@ The control panel has five tabs along the top: **View**, **Time**, **Show**, **T
 
 ### Optical Vault (first-person cap above observer)
 - **Size** — horizontal radius of the perceived cap.
-- **Height** — vertical extent of the cap.
+- **Height** — vertical extent of the cap *as seen from Heavenly view*. Starts at `Size` (hemisphere) by default; dragging it below makes the cap read as a flattened FE dome from outside. First-person Optical view is invariant to this slider — the cap is always a hemisphere there so elevation readings stay 1:1 with reported angles.
 
 ### Body Vaults
 Per-body vault heights for where each body's projected dot sits. Adjusting these changes how the body rides across the cap in first-person view.

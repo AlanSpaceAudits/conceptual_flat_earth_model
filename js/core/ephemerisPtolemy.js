@@ -413,7 +413,12 @@ export function planetEquatorial(name, date) {
   });
   if (name === 'venus')   return venusPosition(ddays);
   if (name === 'mercury') return mercuryPosition(ddays);
-  return { ra: 0, dec: 0 };
+  // S221 — Ptolemy's Almagest predates the discovery of Uranus
+  // (1781), Neptune (1846), and Pluto (1930). There are no deferent
+  // / epicycle parameters for any of them in his model, so the
+  // pipeline has nothing to say — return NaN to signal "no data"
+  // rather than a spurious zero reading.
+  return { ra: NaN, dec: NaN };
 }
 
 export function bodyGeocentric(name, date) {

@@ -2514,3 +2514,946 @@ S010–S017 work. Tracked for a later serial.
   demos.play(parseInt(demoIdx, 10));` in `urlState.attachUrlState`;
   drop the schema bump and the new entries in
   `VERSION_GATED_KEYS`.
+
+## S208 — Observer.Elevation now reads gaze pitch (°), not physical height
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/ui/controlPanel.js` (one row).
+- **Purpose:** The "Elevation" slider in the Observer section of
+  the View tab previously bound to `ObserverElevation`, i.e. the
+  observer's physical height above the disc (S007, 0–0.5 world
+  units). Alan's expectation is that "Elevation" should refer to
+  the gaze elevation angle from the horizon — 0° when looking at
+  the horizon, 90° when looking straight up, requiring a
+  turnaround before the observer can look "below" horizon.
+- **Fix:** rebind the row to `CameraHeight` with `unit: '°'`,
+  `min: 0`, `max: 90`, `step: 0.1`. `CameraHeight` is already the
+  canonical pitch key — mouse drag writes it, the renderer reads
+  it — so the slider now stays in live sync with the first-person
+  look-up/down angle. In Heavenly mode the same key represents
+  the orbit camera's elevation above the disc plane, which reads
+  the same way in the 0–90 range.
+- **What did NOT change:** the `ObserverElevation` state field
+  (S007) still exists, is still URL-persisted (`PERSISTED_KEYS`
+  unchanged), and is still clamped in `app.update()`. It just
+  isn't bound to any row in the control panel anymore. Can be
+  re-exposed with a different label if/when the physical lift
+  becomes a distinct user feature again.
+- **Revert path:** restore the row to
+  `{ key: 'ObserverElevation', label: 'Elevation', unit: '',
+    min: 0, max: 0.5, step: 0.001 }` and remove this entry.
+
+## S209 — Mode-dependent Optical Vault: strict hemisphere in Optical, flat-cap in Heavenly
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/core/app.js` (new `OpticalVaultHeightEffective`
+  + 4 `opticalVaultProject` call sites + default `OpticalVaultHeight =
+  0.5`); `js/render/worldObjects.js` (cap mesh scale, elevation-label
+  ePrime drop, stars + dec-circles + pole-marker projections);
+  `js/ui/urlState.js` (schema bump 207a → 209); `about.md`
+  (Optical vault paragraph + Height slider description);
+  `change_log_serials.md` (this entry).
+- **Purpose:** Alan's angular-measurement rule: "if a body is
+  reported at elevation e°, I should have to look at e° on the
+  Optical Vault elevation scale to see it." Previously the cap
+  was an oblate flattened dome — with defaults `H = 0.14`,
+  `R = 0.5` (aspect 0.28) the projection applied
+  `E_apparent = atan((H/R)·tan E)`, so an object at reported 30°
+  showed at 9.2°, at 45° showed at 15.6°, etc. Zenith and horizon
+  were preserved, everything in between was compressed downward,
+  and the elevation labels matched the squashed angles to stay
+  internally self-consistent. Alan wants reported = rendered in
+  Optical, but still wants to be able to show the flat-cap
+  conceptual FE shape from outside (Heavenly view).
+- **Design:** mode-dependent effective height in the computed
+  state. Set once in `app.update()` right after the horizontal
+  radius + user-height clamp:
+        c.OpticalVaultHeightEffective = s.InsideVault
+          ? c.OpticalVaultRadius
+          : c.OpticalVaultHeight;
+  All projection consumers (sun, moon, planets, stars, declination
+  circles, celestial-pole markers, cap mesh scale) read that
+  field rather than the raw `OpticalVaultHeight`.
+  - **In Optical:** `H = R`, vault is a strict hemisphere. Object
+    placement formula degenerates to `[zenith·R, east·R, north·R]`
+    → apparent = reported for every elevation. The `ePrime`
+    flattening transform on elevation labels collapses to
+    identity (labels at `r·cos E`, `r·sin E` directly) — the
+    `_updateElevScale` routine only paints in Optical, so this
+    is unconditional.
+  - **In Heavenly:** `H = user slider`, vault reads as the
+    conceptual flattened FE cap. Objects land on that flattened
+    surface from the outside observer's viewpoint.
+  - Transition Optical ↔ Heavenly snaps the cap shape and all
+    objects to the appropriate projection in a single frame.
+    No tween; the user asked for consistent angles more than
+    smooth shape interpolation.
+- **Default change:** `OpticalVaultHeight: 0.14 → 0.5` so the
+  out-of-the-box Heavenly view also starts hemispheric — the
+  user sees a "proportional" reference vault first, then can
+  dial in flattening to taste without breaking Optical. URL
+  schema bumped 207a → 209 (default change in a gated key).
+- **Latitude story (no code needed):** the celestial → local-
+  horizon transform (`compTransMatCelestToGlobe`) already
+  produces a true spherical-astronomy altitude from
+  `(obsLat, obsLong, skyRotAngle)`. The S209 fix removes the
+  flattening that sat between that correct angular value and
+  the rendered cap — lat-driven shifts now read straight
+  across the elevation scale. Sun transit altitude at lat L,
+  declination d reads `90° − |L − d|` on the scale; star
+  culmination heights land on their true angles; a circumpolar
+  star's lower culmination lands at `|L| − (90° − d)` — all
+  without any additional latitude logic.
+- **What did NOT change:** ephemeris pipelines, reported
+  elevation in the tracker HUD, star-correction toggles, the
+  azimuth + FE grid, eclipse geometry, demo definitions, ground
+  graticule math. Pure projection change.
+- **Revert path:** restore `OpticalVaultHeight: 0.5 → 0.14` and
+  swap all `c.OpticalVaultHeightEffective` back to
+  `c.OpticalVaultHeight`; remove the `OpticalVaultHeightEffective`
+  assignment in `update()`; restore the `ePrime` block in
+  `_updateElevScale` (and its `h` constant); drop the schema
+  bump; restore the two about.md paragraphs; remove this entry.
+
+## S210 — Constellation star positions refreshed to J2000; renderer uses S209 effective height
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/core/constellations.js` (full position
+  refresh, comments flag cel-nav mirrors, one index retargeted);
+  `js/render/constellations.js` (swap `OpticalVaultHeight` →
+  `OpticalVaultHeightEffective`).
+- **Purpose:** Alan asked for accurate ephemeris-grade star positions
+  for the constellation catalogue, leaving the cel-nav stars (which
+  are already precise in `celnavStars.js`) untouched. Two
+  constellation stars had real positional errors, one was a near-
+  duplicate of its neighbour, and many were only carried to 2-
+  decimal RA / Dec precision while the cel-nav catalogue is at 4.
+- **Star-position updates:**
+  - **Ursa Minor ε UMi** (index 2): RA `244.35 → 251.4926` (was
+    ~7° wrong — the dipper's handle bent the wrong way).
+  - **Ursa Minor η UMi** (index 4): RA `239.84 → 244.3753` (was
+    ~4.5° wrong).
+  - **Gemini index 6** (was a placeholder labelled "Mu" sitting at
+    `95.94, 22.51`, essentially duplicating index 5 Tejat at
+    `95.74, 22.51` and making the `[5,6]` line segment a
+    zero-length stub): retargeted to **Propus (η Gem)** at
+    `93.7194, 22.5064`, which is the star the stick-figure foot
+    actually reaches to.
+  - Every other non-cel-nav star tightened to 4-decimal J2000
+    values from Hipparcos / SIMBAD. Cel-nav crossovers
+    (Betelgeuse, Bellatrix, Alnilam, Rigel, Dubhe, Alioth,
+    Alkaid, Polaris, Kochab, Schedar, Deneb, Regulus, Denebola,
+    Antares, Shaula, Acrux, Gacrux, Aldebaran, Elnath, Pollux)
+    now match the cel-nav catalogue bit-for-bit (to the 4
+    decimals both lists carry), so the two renderers project
+    the same star to the same pixel.
+  - Comments on each constellation identify which indices are
+    cel-nav mirrors ("(cel nav)") vs catalogued only here.
+- **Stick-figure lines:** unchanged. The `lines` arrays reference
+  the same indices; only the coordinates moved. The Gemini
+  `[5,6]` segment (Tejat → Propus) now draws a real line instead
+  of vanishing into a single point.
+- **Renderer `OpticalVaultHeightEffective` swap:**
+  `render/constellations.js` still read `c.OpticalVaultHeight`
+  directly, which was a leftover from the pre-S209 projection.
+  In Optical mode that silently painted constellations onto the
+  old flat cap even though every other celestial overlay had
+  switched to the hemisphere. The swap brings constellations in
+  line with sun / moon / planets / individual stars / dec circles
+  / celestial-pole markers — all now use the mode-dependent
+  effective height.
+- **What did NOT change:** constellation list, indices, line
+  topology, rendering materials, the cel-nav star catalogue.
+  Pure data-accuracy + one-line renderer fix.
+- **Revert path:** restore the previous `js/core/constellations.js`
+  from the pre-S210 commit; revert the `opticalH` line in
+  `js/render/constellations.js` to `c.OpticalVaultHeight`; remove
+  this entry.
+
+## S211 — Mouse-elevation readout + max-zoom-out load-in
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/core/app.js` (MouseElevation state +
+  OpticalZoom default); `js/ui/mouseHandler.js` (cursor-elevation
+  on every pointermove + pointerleave reset); `js/ui/controlPanel.js`
+  (new `readoutRow` + "Mouse El" row in Observer); `js/main.js`
+  (OPTICAL_ENTRY_ZOOM / OPTICAL_ENTRY_PITCH); `js/ui/urlState.js`
+  (schema bump 209 → 211 + `OpticalZoom` gated).
+- **Mouse elevation readout.** Observer group grows one row,
+  "Mouse El", showing the elevation angle of the ray from the
+  observer through the cursor, live, in Optical mode. Standard
+  pinhole-camera math — no roll in this view, so
+        elOff = atan(y_ndc · tan(vFov/2))
+        mouseEl = pitch + elOff
+  with `y_ndc ∈ [-1, +1]` (top to bottom) and the result clamped
+  to ±90°. Fires on every pointermove (drag or not), resets to
+  `null` on pointerleave and while in Heavenly — no single-
+  observer elevation frame there. Display shows "—" when null.
+- **Max zoom-out load-in.** Defaults + Optical-entry snap now
+  land on FOV 75° (OpticalZoom = 1.0) with pitch 7.5° so the top
+  of the viewport sits at elevation 45°, bottom at −30°, with
+  15°-cadence labels at 0°/15°/30°/45° all visible on the
+  elevation scale. Applies both to `defaultState()` and to
+  `main.js` `OPTICAL_ENTRY_ZOOM / PITCH` (so entering Optical
+  from Heavenly also snaps to this reference).
+  Paired with the elevation-ring cadence (15° for FOV ≥ 30°) so
+  the labels that appear are `0° / 15° / 30° / 45°` — the 45°
+  row sits right at the top edge, which is the reading Alan
+  asked for.
+- **New `readoutRow` row type** in controlPanel.js: label +
+  read-only text input + unit. Takes `{ key, label, unit, digits,
+  placeholder }`. Formats the state value at `digits` decimals;
+  shows the placeholder (default "—") when the value is `null`
+  or not a finite number.
+- **URL schema bumped 209 → 211** with `OpticalZoom` added to
+  `VERSION_GATED_KEYS` so existing URL hashes carrying the
+  S207-era `OpticalZoom = 5.09` don't override the new default.
+- **What did NOT change:** FOV clamp (still 1° to 75°), Optical
+  wheel cadence ladder, zoom formula `fov = 75 / OpticalZoom`,
+  ray math, projection, any physics.
+- **Revert path:** restore `OpticalZoom: 1.0 → 5.09` default;
+  restore `OPTICAL_ENTRY_ZOOM = 2.0 / OPTICAL_ENTRY_PITCH = 10`;
+  remove `MouseElevation` state field; drop the cursor-elevation
+  block and `pointerleave` listener from `mouseHandler`; remove
+  the `readoutRow` helper, the dispatcher branch, and the Mouse El
+  row; drop `OpticalZoom` from `VERSION_GATED_KEYS`; revert the
+  schema bump; remove this entry.
+
+## S212 — Cursor azimuth readout + upgraded cursor-elevation math
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/core/app.js` (add `MouseAzimuth` state);
+  `js/ui/mouseHandler.js` (both-angles pinhole formula +
+  pointerleave covers both); `js/ui/controlPanel.js` ("Mouse Az"
+  row under "Mouse El").
+- **What landed:** a compass-azimuth cursor readout next to the
+  existing elevation one. For NDC (x_ndc, y_ndc), with
+  `kx = x_ndc·tan(hFov/2)`, `ky = y_ndc·tan(vFov/2)`, camera
+  heading H, pitch P:
+        c         = cos P − ky·sin P
+        elevation = atan2(sin P + ky·cos P, √(c² + kx²))
+        azimuth   = H + atan2(kx, c)     (wrapped [0, 360))
+  Elevation is now the exact form; S211 was the small-angle
+  simplification `P + atan(ky)` which was only accurate at
+  kx = 0 and drifted at the edges of the viewport at low FOV.
+  The azimuth form drops out of the rotation identity
+  `(nd, ed) = Rot_H(c, kx)` so `atan2(ed, nd) = H + atan2(kx, c)`.
+  Exact for zero-roll cameras, which Optical mode is.
+- **Wiring:** `MouseAzimuth` state + row in Observer. `null` in
+  Heavenly or when the pointer leaves the canvas (same trigger as
+  `MouseElevation`). Both values get published in one `setState`
+  per move so the two rows stay atomic.
+- **What did NOT change:** URL persistence (neither cursor
+  readout is in `PERSISTED_KEYS` — they're ephemeral), schema
+  version (no default changed), camera setup, rendering.
+- **Revert path:** restore `elOff = atan(yNdc · tan(fovHalfRad))`
+  and `mouseEl = pitch + elOff` in the pointermove block; drop
+  `MouseAzimuth` from state defaults, the mouse handler, and the
+  pointerleave reset; drop the "Mouse Az" row; remove this entry.
+
+## S213 — Optical Vault grid toggle (forces az/elev labels off too)
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/core/app.js` (new `ShowOpticalVaultGrid`
+  default); `js/render/worldObjects.js` (gate `wire` / `axes` /
+  `refinedMeridiansGroup` + AND into `ShowAzimuthRing` + AND into
+  elev-scale and refined-az-scale `active` checks);
+  `js/ui/controlPanel.js` (new Show-tab row);
+  `js/ui/urlState.js` (persist the new key).
+- **Purpose:** Alan wants to keep the Optical Vault cap visible
+  while turning the alt/az grid (and therefore the numeric
+  degree clutter) off — a clean first-person sky view.
+- **Behaviour:**
+  - **`ShowOpticalVaultGrid = true`** (default): unchanged from
+    before — wire grid + axes + refined meridian arcs visible;
+    cardinals / azimuth ring / elevation scale follow
+    `ShowAzimuthRing`.
+  - **`ShowOpticalVaultGrid = false`**: `wire.visible`,
+    `axes.visible`, and `refinedMeridiansGroup.visible` are all
+    `false`. The cap surface mesh and the heading arrow stay
+    visible. The azimuth and elevation label layers also go
+    dark — the internal `azOn` flag now reads
+    `gridOn && (ShowAzimuthRing !== false)`, and the elev-scale
+    and refined-az-scale `active` checks AND in `gridOn` too.
+    So the user gets a clean cap with no numbers and no wire.
+- **`ShowAzimuthRing` still works** as before when the grid is
+  on: the user can still turn off labels while keeping the grid.
+  The new toggle just adds a second, stronger gate.
+- **URL state:** `ShowOpticalVaultGrid` added to
+  `PERSISTED_KEYS` so the toggle round-trips through the URL
+  hash like every other visibility boolean.
+- **What did NOT change:** the cap mesh itself, the heading
+  arrow, any projection math, `ShowOpticalVault` (which still
+  hides the whole group when off).
+- **Revert path:** restore the two `this.cardinalsGroup.visible
+  = azOn` / `this.azimuthGroup.visible = azOn && !coarseHidden`
+  expressions to use the raw `s.ShowAzimuthRing !== false`
+  value without the `gridOn` AND; drop the three
+  `.visible = gridOn` assignments and the `gridOn` const; drop
+  the `&& (s.ShowOpticalVaultGrid !== false)` trailing clause
+  on both `active` lines in the scale updaters; remove
+  `ShowOpticalVaultGrid` from state defaults and
+  `PERSISTED_KEYS`; drop the Show-tab row and this entry.
+
+## S214 — Constellation / cel-nav duplicate star suppression
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/core/constellations.js` (add `celnav`
+  field to each crossover star); `js/render/constellations.js`
+  (track `_celnavDup[i]` at construction; skip the point-buffer
+  write for duplicates while leaving line endpoints intact).
+- **Bug:** the constellation renderer paints a star point at the
+  catalogued J2000 position for every star in `CONSTELLATIONS`.
+  The cel-nav renderer separately paints a star sprite at the
+  apparent-of-date position (precession + nutation + aberration
+  via the Trepidation toggle). For stars in both catalogues —
+  Betelgeuse, Rigel, Aldebaran, Deneb, Antares, and ~15 others —
+  the two sprites landed ~arcminute apart and read visually as
+  a faint doubled star. Alan noticed the doubles were "slightly
+  off" and asked for the cel-nav copy to be the sole sprite.
+- **Fix:** mark each constellation star that has a cel-nav twin
+  with a new `celnav: '<id>'` field (the matching
+  `CEL_NAV_STARS.id`). In the renderer, build a parallel
+  `_celnavDup[i]` boolean at construction. Inside `update()` the
+  point-buffer writes (both dome and sphere star positions) park
+  duplicates at `(0, 0, -1000)` so the clip plane hides them;
+  the line-builder reads its endpoints from the independently-
+  maintained `domePos[i]` / `sphPos[i]` arrays, which still
+  carry the true positions. Sub-arcminute offset between the
+  constellation's J2000 endpoint and the cel-nav star's
+  apparent position is invisible on the cap, so the stick-figure
+  topology stays intact.
+- **Stars marked as cel-nav duplicates (20 total):** Betelgeuse,
+  Bellatrix, Alnilam, Rigel (Orion); Dubhe, Alioth, Alkaid
+  (Ursa Major); Polaris, Kochab (Ursa Minor); Schedar
+  (Cassiopeia); Deneb (Cygnus); Regulus, Denebola (Leo);
+  Antares, Shaula (Scorpius); Acrux, Gacrux (Crux); Aldebaran,
+  Elnath (Taurus); Pollux (Gemini). The cel-nav "Gienah" is
+  γ Crv, not the ε Cyg listed as `Gienah` in Cygnus — so the
+  latter keeps its point.
+- **What did NOT change:** star positions (S210 values held),
+  line topology, rendering materials, cel-nav catalogue.
+- **Revert path:** drop the `celnav` field from every entry in
+  `CONSTELLATIONS`; remove `_celnavDup` tracking and the
+  `skipPoint` branches from `render/constellations.js`; remove
+  this entry.
+
+## S215 — σ Octantis entry + NCP/SCP dot toggle
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/core/constellations.js` (new `Octans`
+  entry with one star); `js/core/app.js` (`ShowCelestialPoles`
+  default); `js/render/worldObjects.js` (gate `CelestialPoles.group`
+  visibility on the toggle); `js/ui/controlPanel.js` (new Show-tab
+  row); `js/ui/urlState.js` (persist the new key).
+- **σ Octantis.** Southern pole star. J2000 RA 317.1929° /
+  Dec −88.9566°, magnitude ~5.47 — dim enough that it never
+  made it onto the 58-star Nautical Almanac list, so it's NOT
+  a cel-nav crossover and no `celnav` id is attached. Drawn as
+  a standalone "Octans" constellation with one star and no
+  stick-figure lines — the constellation renderer handles it.
+- **NCP / SCP dot toggle.** The red (NCP) and blue (SCP) spheres
+  on the observer's optical vault are owned by `CelestialPoles`.
+  New boolean `ShowCelestialPoles` (default true) gates the
+  parent group's visibility in `update()` and short-circuits the
+  per-dot placement logic when off. `Show` tab row sits right
+  below "Declination Circles" since the two overlays pair up
+  visually (the dec circles fan out around those dots).
+- **What did NOT change:** pole placement math, declination-
+  circle rendering, any cel-nav / constellation topology beyond
+  the one-star Octans addition.
+- **Revert path:** drop the `Octans` entry from
+  `CONSTELLATIONS`; remove `ShowCelestialPoles` from state
+  defaults, `PERSISTED_KEYS`, and the Show-tab row; drop the
+  `polesOn` gate from `CelestialPoles.update()`; remove this
+  entry.
+
+## S216 — Tracker HUD: hide ephemeris rows for stars, optional for others
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/core/app.js` (`ShowEphemerisReadings`
+  state); `js/ui/controlPanel.js` (new Tracker/Ephemeris row +
+  HUD hide-logic); `js/ui/urlState.js` (persist the new key).
+- **Before:** every tracked target — sun, moon, planets, and
+  stars alike — emitted a 5-row ephemeris-comparison block in
+  the Tracker HUD (Helio / GeoC / Ptol / DE405 / VSOP87). For
+  stars that's noise: each pipeline just echoes the J2000
+  catalogue position with the same apparent-of-date corrections
+  applied, so all five rows read identically. For several
+  tracked stars the HUD grew tall enough to spill off-screen.
+- **After:**
+  - **Stars always compact** — ephemeris rows hidden unconditionally.
+    Only the title, az/el, and mag/date foot remain.
+  - **Sun / moon / planets** get the ephemeris block only when
+    the new `ShowEphemerisReadings` toggle is on. Default off,
+    so the HUD lands compact on page load.
+  - The toggle lives in **Tracker tab → Ephemeris group** as
+    "Ephemeris comparison", right below the pipeline selector.
+- **Implementation detail:** the 5 pipeline rows keep their
+  slots in the block cache — `hidden` is toggled on the DOM
+  element rather than rebuilt — so turning the option on/off
+  doesn't re-create the block or perturb the block ordering.
+  `textContent` is only written when `showReadings` is true to
+  skip the string formatting on the compact path.
+- **What did NOT change:** ephemeris pipelines, what the
+  tracker computes, tracker GP rendering on the disc, tracker
+  target selection, any of the cel-nav star toggles.
+- **Revert path:** drop `ShowEphemerisReadings` from state
+  defaults, `PERSISTED_KEYS`, and the Tracker/Ephemeris row;
+  remove the `showReadings`/`hidden` logic and restore the
+  unconditional `textContent` writes for all 5 rows; remove
+  this entry.
+
+## S217 — Trackable catalogued stars (non-cel-nav) + shared projection helper
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/core/constellations.js` (add
+  `id / name / mag` to every non-cel-nav star; export
+  `CATALOGUED_STARS` flat list + `cataloguedStarById`);
+  `js/core/app.js` (import the new list; refactor star
+  projection into a shared `projectStar` helper; produce
+  `c.CelNavStars` and new `c.CataloguedStars`; extend tracker
+  `star:<id>` branch to search both catalogues);
+  `js/ui/controlPanel.js` (merge both lists into the Tracker
+  button grid).
+- **Why:** Alan noticed the Tracker panel only listed the 58
+  cel-nav almanac stars, so constellation-only stars like
+  Mintaka, Castor, Propus, Pherkad, σ Oct, etc. couldn't be
+  tracked. Everything that appears in the constellation layer
+  should be trackable.
+- **Star id convention.** Lowercase ASCII, short. Conflicts
+  with cel-nav names get a disambiguating suffix:
+  `gienahcyg` = ε Cyg (the cel-nav `gienah` is γ Crv);
+  `epsilonumi / etaumi / zetaumi / gammacas / deltacyg / ...`
+  etc. The σ Oct entry added in S215 picks up `sigmaoct`.
+- **Shared `projectStar` helper.** The apparent-of-date
+  correction pipeline (`apparentStarPosition` under the
+  Trepidation master + 3 individual toggles) and the
+  celest → local-globe + vault projection are now a single
+  inline function that both catalogues map over. `CelNavStars`
+  and `CataloguedStars` are built in one pass each via
+  `.map(projectStar)`. No behavioural change for cel-nav
+  readings; the refactor is a deduplication.
+- **Tracker lookup.** `star:<id>` first searches
+  `c.CelNavStars` + `celNavStarById`, falls back to
+  `c.CataloguedStars` + `cataloguedStarById`. Both arrays
+  carry the same entry shape, so downstream HUD + GP code
+  doesn't care which catalogue the hit came from.
+- **Button grid.** Cel-nav + catalogued lists are merged and
+  sorted alphabetically, so the user sees ~104 star buttons
+  total (58 cel-nav + 46 catalogued) interleaved by name.
+- **What did NOT change:** constellation star positions
+  (S210), cel-nav positions (celnavStars.js), renderers for
+  either layer (other than their shared reliance on
+  `c.CelNavStars` + `c.CataloguedStars`), panel layout.
+- **Revert path:** drop `id / name / mag` fields (and
+  `CATALOGUED_STARS` / `cataloguedStarById` exports) from
+  `constellations.js`; restore the inline loop over
+  `CEL_NAV_STARS` in `app.update()` and revert the
+  `star:<id>` branch to the cel-nav-only lookup; remove the
+  catalogue merge in the Tracker button grid; remove this
+  entry.
+
+## S218 — Specified Tracker Mode + white star GPs
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/core/app.js` (state default);
+  `js/render/index.js` (sun/moon/planet marker gates +
+  random-starfield kill + default sun/moon GP hide);
+  `js/render/worldObjects.js` (per-star filter in
+  `CelNavStars.update`; `TRACKED_GP_COLORS.star` blue → white);
+  `js/render/constellations.js` (per-star filter using
+  `_starId`; line kill); `js/ui/controlPanel.js` (Tracker row);
+  `js/ui/urlState.js` (persist).
+- **Behaviour when `SpecifiedTrackerMode` is on:**
+  - **Sun / moon / planet markers** hidden unless the matching
+    id (`'sun'` / `'moon'` / planet name) is in
+    `TrackerTargets`. Both the heavenly-vault dot and the
+    optical-vault projection disappear together.
+  - **Cel-nav stars** hidden unless `star:<id>` is in
+    `TrackerTargets`. Per-star park to (0, 0, −1000) so the
+    disc clip plane culls the point.
+  - **Constellation stars** (catalogued, non-cel-nav) filtered
+    the same way, using the per-star `_starId` array added in
+    the renderer.
+  - **Random starfield** killed entirely (both `domePoints`
+    and `spherePoints` groups set invisible).
+  - **Constellation stick-figure lines** killed entirely —
+    drawing them would connect tracked stars through hidden
+    endpoints and read as stray line stubs.
+  - **Default sun / moon GPs** hide via a dummy `updateAt(0, 0,
+    FE_RADIUS, false)` call so they don't persist from frame
+    to frame; the `TrackedGroundPoints` layer paints every
+    tracked GP independently.
+- **Star GP colour.** Previously every tracked star's ground
+  point rendered in `0x8ed4ff` (pale blue), which read as a
+  uniform "tracker" colour rather than a star colour. Changed
+  to `0xffffff` (white) in `TRACKED_GP_COLORS.star` so the GPs
+  match the cel-nav starfield's white pigment.
+- **What did NOT change:** Tracker HUD readouts, tracker GP
+  geometry, any physics, cel-nav / constellation / random-
+  starfield rendering when the mode is off.
+- **Revert path:** drop `SpecifiedTrackerMode` from state
+  defaults, `PERSISTED_KEYS`, and the Tracker row; remove the
+  `stm` gates from `render/index.js`, `CelNavStars.update`,
+  and `Constellations.update`; restore
+  `TRACKED_GP_COLORS.star = 0x8ed4ff`; drop the `_starId`
+  array from the constellation constructor; remove this
+  entry.
+
+## S219 — Body-coloured Tracker button labels
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/ui/controlPanel.js` (per-option `color`
+  in the Tracker button grid + inline style on each button).
+- **Rule:** each button's text colour matches the pigment the
+  object renders with in-scene:
+        sun      #ffc844
+        moon     #f4f4f4
+        mercury  #d0b090
+        venus    #fff0c8
+        mars     #d05040
+        jupiter  #e8d09a
+        saturn   #e4c888
+        cel-nav star     #ffffff
+        catalogued star  #ffe8a0
+  Cel-nav wins when a star appears in both catalogues — the
+  grid's star block precomputes a `celnavIds` set from
+  `CEL_NAV_STARS` and resolves each label against it before
+  falling through to the constellation-yellow default.
+- **Active-state compatibility.** Inline `style.color` beats
+  the `.tracker-btn.on` class rule's `color: #f4a640` (no
+  `!important`, so inline wins). So a selected Sun button
+  reads yellow on the orange-tinted background, a selected
+  cel-nav star reads white, etc. The pill-fill orange
+  background still signals selection.
+- **What did NOT change:** button-grid layout, selection
+  logic, any other row type, any rendering.
+- **Revert path:** drop the `color` field from each tracker
+  option and the `if (color) btn.style.color = color;` line
+  in `buttonGridRow`; remove the IIFE wrapper around the star
+  merge; remove this entry.
+
+## S220 — Swap cel-nav ↔ constellation star pigment
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/render/worldObjects.js` (cel-nav
+  starfield material + `gpColor` override in
+  `TrackedGroundPoints`); `js/render/constellations.js`
+  (constellation starfield material); `js/core/app.js`
+  (per-star `gpColor` on tracker info);
+  `js/ui/controlPanel.js` (tracker button colour swap).
+- **Before:** cel-nav stars painted white `0xffffff`,
+  constellation-only stars painted warm-yellow `0xffe8a0`.
+  Tracker buttons and star ground points mirrored the same
+  convention.
+- **After:** every instance swapped. Cel-nav now paints the
+  warm-yellow; constellations paint white. The tracker
+  button grid and the GP layer follow suit.
+- **GP per-star colour.** `TrackedGroundPoints` used to
+  compute its colour from a single `TRACKED_GP_COLORS` map
+  keyed on category. For stars that collapsed both catalogues
+  into one value. The tracker star-branch now stamps
+  `info.gpColor` on the info payload — `0xffe8a0` for a cel-
+  nav hit, `0xffffff` for a catalogued hit. The GP renderer
+  prefers `info.gpColor` when present, falls back to the
+  category map otherwise. Sun / moon / planet GPs keep using
+  the map (their colours didn't change).
+- **What did NOT change:** positions of either catalogue,
+  tracker topology, rendering of any non-star body, any
+  toggle's behaviour. Pure colour-swap.
+- **Revert path:** restore cel-nav material to `0xffffff`,
+  constellation material to `0xffe8a0`; swap the tracker-
+  button colour expression back (`celnavIds.has ?
+  '#ffffff' : '#ffe8a0'`); drop the `gpColor`/`isCelnav`
+  branching in the tracker star lookup and the
+  `info.gpColor` preference in `TrackedGroundPoints`; remove
+  this entry.
+
+## S221 — Uranus + Neptune via AstroPixels / DE405
+
+- **Date:** 2026-04-24
+- **Files changed:** `scripts/scrape_astropixels.mjs`
+  (extended `BODY_PATHS`); `js/data/astropixels.js`
+  (regenerated with uranus + neptune daily rows 2019–2030);
+  `js/core/ephemeris.js` (`PLANET_NAMES` / `BODY_NAMES`
+  extended); `js/core/ephemerisHelio.js`,
+  `ephemerisGeo.js`, `ephemerisPtolemy.js`,
+  `ephemerisVsop87.js` (NaN guards for unsupported outer
+  planets); `js/core/app.js` (`PLANET_BASELINE` /
+  `PLANET_RANGE_KEY` extended; NaN skip in planet loop;
+  `UranusVaultHeight` / `NeptuneVaultHeight` defaults);
+  `js/render/index.js` (`PLANET_STYLE` entries);
+  `js/ui/controlPanel.js` (Tracker button grid + Body Vaults
+  sliders + NaN-safe `fmtHours` / `fmtDms`);
+  `js/ui/urlState.js` (persist the new vault-height keys +
+  gate them).
+- **Data.** The AstroPixels scraper's `BODY_PATHS` map now
+  includes `uranus` and `neptune` under the same
+  `/ephemeris/planets/<body><year>.html` pattern used for
+  the inner planets (verified 2026-04-24). Running the
+  script fetched 12 years × 2 bodies = 24 fresh daily-row
+  tables and rewrote `js/data/astropixels.js` (now ~649 kB).
+  Each body has the same `{year: [raSec, decArcsec, ...]}`
+  layout as the other planets, so `ephemerisAstropixels.js`
+  picks them up with no runtime change.
+- **Pluto.** Searched the AstroPixels ephemeris index —
+  **no Pluto tables are published**. The scraper comment
+  documents this so future editors don't try to scrape it
+  from the same URL pattern. Adding Pluto will need a
+  separate source (Schlyter's Kepler elements are the
+  obvious candidate for the HelioC / GeoC pipelines; VSOP87
+  is out of scope).
+- **Other-pipeline fallbacks.** HelioC / GeoC / VSOP87 /
+  Ptolemy don't have outer-planet data yet, so each
+  `planetEquatorial` returns `{ ra: NaN, dec: NaN }` when
+  the body isn't in its element / coefficient table. The
+  tracker's planet loop skips `{ ra: NaN }` readings so
+  vault geometry never sees NaN coordinates, and the HUD's
+  `fmtHours` / `fmtDms` render "—" for any non-finite
+  input. Users who switch the primary `BodySource` to one
+  of those pipelines while tracking Uranus / Neptune see a
+  compact block (az / el from the currently-active pipeline
+  is still computed via AstroPixels as the default — see
+  the `BodySource` branching in `c.Planets`), and the
+  optional ephemeris-comparison block (S216) shows the
+  four "—" rows alongside the DE405 values so it's obvious
+  which pipelines have data.
+  - Note: `c.Planets[name]` uses the **active**
+    `BodySource`. If the user picks e.g. HelioC as their
+    primary source, Uranus / Neptune become unavailable
+    until they switch back to AstroPixels (the active
+    source's `bodyRADec` returns NaN, the loop skips the
+    planet, markers and tracker info disappear). This is
+    the honest behaviour — the user asked for AstroPixels
+    coverage first; the other pipelines will light up as
+    later serials.
+- **Markers.** Uranus gets pale blue-green `0xa8d8e0`,
+  Neptune a deeper blue `0x7fa6e8`, both marginally
+  smaller than Saturn reflecting their fainter magnitudes
+  (5.7 and 7.8). Vault-baseline offsets 0.18 / 0.21 stack
+  them above Saturn in the same 0.03 spacing the inner
+  planets use.
+- **Tracker buttons + HUD.** New Uranus / Neptune buttons
+  appear in the Tracker grid with their marker colours as
+  the label font. Compact HUD (az / el only) works the same
+  way sun / moon do; turning on the ephemeris-comparison
+  shows DE405 with real data and the other four rows as
+  "—".
+- **What did NOT change:** tracker logic, UI layout,
+  rendering pipeline, any physics. Strictly a new-body
+  plumb-through.
+- **Revert path:** revert `scripts/scrape_astropixels.mjs`
+  to drop the `uranus` + `neptune` entries; regenerate
+  `js/data/astropixels.js`; restore `PLANET_NAMES` /
+  `BODY_NAMES` to the 5-planet version; drop the
+  `if (!PLANET_EL[name])` / `!ORBIT_EL[name]` /
+  `!VSOP[body]` guards in the four pipelines; drop the
+  `if (!Number.isFinite(eq.ra))` skip in the planet loop;
+  drop the Uranus / Neptune rows from `PLANET_BASELINE`,
+  `PLANET_RANGE_KEY`, `PLANET_STYLE`, defaults, Body Vaults
+  sliders, Tracker button grid, and `PERSISTED_KEYS`;
+  drop the `!Number.isFinite` guards in `fmtHours` /
+  `fmtDms`; remove this entry.
+
+## S222 — Jupiter light-orange + per-planet GP pigments
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/render/index.js` (Jupiter marker);
+  `js/ui/controlPanel.js` (Jupiter button); `js/core/app.js`
+  (new `PLANET_GP_COLORS` + per-planet `info.gpColor` in the
+  planet tracker branch).
+- **Jupiter.** Marker colour `0xe8d09a` (beige) → `0xffa060`
+  (light orange). Same swap for the Tracker-tab button font.
+  Alan noticed Jupiter blended into Saturn's beige; light
+  orange reads distinct.
+- **Per-planet GP pigments.** `TrackedGroundPoints` used a
+  single `planet` key in `TRACKED_GP_COLORS` (coral) for
+  every planet's ground point, so Uranus / Neptune / Jupiter
+  GPs all wore the same colour regardless of the sky
+  marker. S220 introduced a per-star `info.gpColor` for the
+  same reason (cel-nav yellow vs catalogued white); S222
+  extends the pattern to planets. The tracker's planet
+  branch now stamps `info.gpColor` from a `PLANET_GP_COLORS`
+  table that mirrors the renderer's `PLANET_STYLE` colours.
+  The GP renderer already prefers `info.gpColor` when
+  present (S220 change), so no renderer code moves.
+- **Colour table (kept in sync with `PLANET_STYLE` in
+  `render/index.js` and the Tracker button grid):**
+        mercury  #d0b090
+        venus    #fff0c8
+        mars     #d05040
+        jupiter  #ffa060   ← S222
+        saturn   #e4c888
+        uranus   #a8d8e0
+        neptune  #7fa6e8
+- **What did NOT change:** sun / moon / star GP pigments
+  (they already had their own routes); any tracker logic,
+  projection, or rendering beyond the single colour lookup.
+- **Revert path:** restore Jupiter to `0xe8d09a` / `#e8d09a`
+  in the three sites; remove `PLANET_GP_COLORS` +
+  `TRACKED_GP_COLORS_PLANET_DEFAULT` constants and the
+  `info.gpColor = …` line in the planet tracker branch;
+  remove this entry.
+
+## S223 — Projection rays (true pos → optical-vault projection)
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/core/app.js` (`ShowProjectionRays`
+  default); `js/render/index.js` (new block in `_updateRays`);
+  `js/ui/controlPanel.js` (Show-tab row); `js/ui/urlState.js`
+  (persist).
+- **What it draws:** per body (sun, moon, planets) a straight
+  line from its heavenly-vault coord (`<body>VaultCoord` /
+  `p.vaultCoord`) to its optical-vault projection
+  (`<body>OpticalVaultCoord` / `p.opticalVaultCoord`). Colour
+  matches the body's marker pigment so the ray reads as "this
+  body's projection". Hidden entirely when the body's
+  `anglesGlobe.elevation` is `≤ 0°` (below observer horizon —
+  ray terminates the moment the body drops out of the
+  optical vault).
+- **Exclusions:** stars are not drawn. 58 cel-nav + 46
+  catalogued + random starfield would turn the vault into
+  ray spaghetti; the projection geometry reads just fine on
+  sun / moon / planets.
+- **Interaction with first-person (Optical) mode.** The whole
+  `rayGroup` hides when `InsideVault` is true (as before
+  for the existing vault and optical-vault rays) — you can
+  only see the projection ray from Heavenly mode anyway,
+  since it connects two points that are geometrically
+  separate only when you're outside the observer.
+- **Colour map (inline in the renderer):**
+        sun      #ffc844
+        moon     #f4f4f4
+        mercury  #d0b090
+        venus    #fff0c8
+        mars     #d05040
+        jupiter  #ffa060
+        saturn   #e4c888
+        uranus   #a8d8e0
+        neptune  #7fa6e8
+  Kept parallel with `render/index.js` `PLANET_STYLE`,
+  `app.js` `PLANET_GP_COLORS`, and the Tracker button grid.
+- **What did NOT change:** existing ray classes (`Vault Rays`
+  and `Optical Vault Rays` stay exactly as they were), ray
+  clearing / geometry-disposal pattern, any physics.
+- **Revert path:** drop `ShowProjectionRays` from state
+  defaults + `PERSISTED_KEYS`; remove the new `if
+  (s.ShowProjectionRays)` block from `_updateRays`; drop the
+  Show-tab row; remove this entry.
+
+## S224 — Sun as master elevation, planet/moon proportional tracking; Facing → Azi
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/core/app.js` (moon + planet formulas);
+  `js/ui/controlPanel.js` (Facing row relabel + reorder).
+- **Body-altitude rebase.** Sun is the master reference for every
+  other body's z on the heavenly vault.
+  - **Sun** — unchanged. `sunZ = Starfield + HEADROOM +
+    sunDecNorm · SUN_RANGE` with `sunDecNorm` normalised by
+    the 23.44° obliquity. `SUN_RANGE = 0.20`.
+  - **Moon** — range now `SUN_RANGE · (28.50 / 23.44) ≈ 0.243`,
+    computed from a single `SUN_DEC_DEG / MOON_DEC_DEG` pair
+    at the top of the section. Preserves real-sky
+    proportionality: the moon's declination range is wider
+    than the sun's, so its z swing is wider by the same
+    factor.
+  - **Planets** — `PLANET_BASELINE` entries zeroed out (was
+    `{ mercury: 0.04, venus: 0.06, … saturn: 0.15, uranus:
+    0.18, neptune: 0.21 }`). All planets now start at the
+    sun's z for a body at the sun's declination; their real
+    declination shifts z up or down on the same `SUN_RANGE`
+    the sun uses. Planet dec-norm also re-based on 23.44°
+    (was 30°) so the formula sits on the exact same basis as
+    the sun.
+    Formula now:
+        planetZ = Starfield + HEADROOM + planetDecNorm · SUN_RANGE
+    Previously:
+        planetZ = max(sunZ, moonZ)
+                + PLANET_BASELINE[name]
+                + decNorm(/30°) · 0.08
+- **Consequence.** As the sun travels through the seasons
+  (or as the user advances `DateTime` manually), every
+  planet and the moon scale their altitude with the sun
+  proportionally. Equinox: sun at `Starfield + 0.16`, moon
+  near the same height, planets near the same height. North
+  solstice: sun at `Starfield + 0.26`, moon higher
+  (proportional), planets at their dec-driven z. The
+  "tracking" the user asked for falls out of shared
+  formulas.
+- **Slider writeback unchanged.** `s.SunVaultHeight`,
+  `s.MoonVaultHeight`, `s.<Planet>VaultHeight` are still
+  written back each frame to the computed z, so the sliders
+  read as live readouts. Per Alan's ask: "individual options
+  can still be adjusted" — the slider handles are still
+  bindable; they just snap back to the computed value next
+  frame. A later serial can add a proper manual-override
+  flag if needed.
+- **UI — Facing → Azi.** The Observer group's `ObserverHeading`
+  row was labelled `Facing`. Renamed to `Azi` and moved
+  directly under the `Elevation` row so the observer's own
+  (Elevation, Azi) pair reads together, with the (Mouse El,
+  Mouse Az) cursor pair below. The nudge row + cardinal
+  N / E / S / W buttons still hang off the same
+  `ObserverHeading` key in their original positions.
+- **What did NOT change:** sun-dec band, vault-ceiling caps,
+  random starfield height, Optical/Heavenly mode behaviour,
+  any rendering.
+- **Revert path:** restore `MOON_RANGE = 0.18`;
+  `PLANET_BASELINE = { mercury: 0.04, …, neptune: 0.21 }`;
+  `PLANET_DEC_RANGE = 0.08`; planet dec-norm divisor back to
+  30; `planetFloor = max(sunZ, moonZ)` reintroduced in the
+  `desired` expression; restore `ObserverHeading` row label
+  to `'Facing'` and move it back below the Mouse Az row;
+  remove this entry.
+
+## S225 — Specified Tracker Mode filter extends to rays + sun/moon GP lines
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/render/index.js` (STM gates in
+  `_updateRays` + sun/moon GP-line block).
+- **Bug.** S218 wired `SpecifiedTrackerMode` into the sun /
+  moon / planet markers, per-star catalogues, random
+  starfield, constellation lines, and the default sun/moon
+  GP *dots*. It did NOT touch:
+  - `ShowVaultRays` / `ShowOpticalVaultRays` (the two existing
+    observer→body ray classes) — so sun + moon rays still
+    painted even when tracking Mars alone.
+  - `ShowProjectionRays` (S223, true→projected) — same issue,
+    plus every planet drew a projection ray regardless of
+    tracker membership.
+  - The sun/moon GP-*lines* (the dashed verticals from the
+    vault coord down to the disc) — only the dot was
+    suppressed in S218; the line kept dangling.
+- **Fix.** In `_updateRays`, read `SpecifiedTrackerMode` +
+  `TrackerTargets` once at the top of the function and gate
+  each ray-emit call:
+  - `ShowVaultRays`: sun / moon gated individually.
+  - `ShowOpticalVaultRays`: sun / moon gated individually.
+  - `ShowProjectionRays`: sun / moon gated individually, the
+    planet loop skips any planet not in `TrackerTargets`.
+  In the sun/moon GP-line block (in `frame()` proper, not
+  `_updateRays`) a parallel `sunGPShow` / `moonGPShow` gate
+  hides both `.visible` and the `_updateDashedLine` write
+  when STM is on without the target.
+- **Consequence.** Enabling STM with only Mars tracked now
+  collapses the sky + disc to: Mars marker, Mars GP dot,
+  Mars GP line (if toggle on), Mars projection ray (if
+  toggle on) — plus scaffolding (cap, grid, observer). Sun
+  / moon / every other planet vanishes from all ray +
+  GP-line layers too.
+- **What did NOT change:** non-STM behaviour of any ray
+  class, tracker HUD, star rendering, any physics.
+- **Revert path:** drop the `stm` / `sunOn` / `moonOn`
+  precomputation in `_updateRays`; remove the `if (sunOn)` /
+  `if (moonOn)` guards on each `addRay` call + the
+  `if (stm && !trackerSet.has(name)) continue` in the
+  projection-ray planet loop; remove the `sunGPShow` /
+  `moonGPShow` gate in the sun/moon GP-line block and
+  restore the original `this.sunGPLine.visible = showGPLine`
+  pair; remove this entry.
+
+## S226 — Dark background toggle + adaptive LongitudeRing palette
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/core/app.js` (`DarkBackground` default);
+  `js/render/scene.js` (forced `nightColor` when on);
+  `js/render/worldObjects.js` (`buildDegreeLabels` stamps
+  text + colour on userData; `LongitudeRing` gets
+  `_palettes` + `_applyPalette`); `js/ui/controlPanel.js`
+  (Show-tab row); `js/ui/urlState.js` (persist).
+- **What the toggle does.** When on, the scene background
+  sits at the same near-black `0x040810` the Optical vault
+  fades to at full night, regardless of view mode or the
+  day/night NightFactor. The `LongitudeRing`'s disc-rim
+  azimuth numerals and tick segments recolour to white /
+  pale grey so they stay legible against the dark. When the
+  toggle flips off, both flip back to their hand-tuned
+  grays that sit nicely on the pale-blue day background.
+- **Palette swap is lazy.** `LongitudeRing._applyPalette(which)`
+  short-circuits if the current palette already matches, so
+  the per-frame `update()` call costs ~nothing when the
+  toggle isn't flipping. Sprite text canvases are re-painted
+  via `repaintTextSprite` (already used by the refined-az
+  labels in Optical), which reuses the existing canvas and
+  texture slot and just swaps the `fillStyle`.
+- **What did NOT change:** Optical-vault background fade,
+  eclipse-darken behaviour (the forced dark sits on top of
+  both, since lerping back to day while the eclipse is
+  visible would look wrong), any other sprite / label
+  colour. The disc-rim minor-tick + major-tick LineSegments
+  share the palette swap alongside the numeric labels.
+- **Revert path:** drop `DarkBackground` from state defaults
+  + `PERSISTED_KEYS`; remove the `forceDark` branch at the
+  top of `scene.render()`; revert `LongitudeRing` to its
+  hardcoded `#334455` / `0x334455` / `0x556677` palette and
+  drop the `_palettes` / `_applyPalette` / `_currentPalette`
+  members + the `update()` call site; drop the
+  `buildDegreeLabels` userData-text stamp; remove the
+  Show-tab row; remove this entry.
+
+## S227 — Hide heavenly-vault stars in Optical (stop double-rendering)
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/render/worldObjects.js` (CelNavStars +
+  random Stars `domePoints` visibility gate);
+  `js/render/constellations.js` (`showTrueVault` gate).
+- **Bug.** Alan reported Atria (and presumably every other cel-nav
+  star he's tracking) rendering *twice* in the Optical Vault view.
+  Root cause: the Optical Vault mesh has `opacity 0.1` so it's
+  nearly transparent — the observer looks through it and sees
+  the heavenly-vault disc at a distance. With `ShowTruePositions`
+  on, the three star classes (`CelNavStars`, random `Stars`,
+  `Constellations`) still paint their `domePoints` on the dome
+  AND their `spherePoints` on the cap, so every star shows up
+  twice at once: once at its true AE-projected dome position,
+  once at its optical-vault projection. `CelestialMarker`
+  (sun / moon / planets) already had the right gate — it
+  hides its true-source dot when `InsideVault` regardless of
+  `ShowTruePositions` (comment at render/index.js ~321
+  spells out the "first-person purity" reason). Star classes
+  were missing that.
+- **Fix.** All three star-class `domePoints.visible` (and
+  equivalent `showTrueVault` flag in `Constellations`) now
+  AND in `!InsideVault`. When the user enters Optical they
+  see only the cap-surface projections; when they return to
+  Heavenly the dome layer reappears.
+- **What did NOT change:** `ShowTruePositions` still works in
+  Heavenly view, spherePoints (optical projection) unchanged
+  in both modes, star positions / colours / filters
+  (S214 / S220 / S218) unchanged.
+- **Revert path:** strip `&& !s.InsideVault` from the three
+  visibility gates (`CelNavStars.domePoints`,
+  `Stars.domePoints`, `Constellations.showTrueVault`);
+  remove this entry.
+
+## S228 — "Clear All Tracked" one-shot button
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/ui/controlPanel.js` (new `clickRow`
+  row type + Tracker/Object row).
+- **Why.** With ~105 tracker buttons in the grid, un-selecting
+  a handful by clicking each active pill is tedious. A single
+  clear button resets the whole list in one click.
+- **New row type `clickRow`.** One-shot action, not bound to a
+  state key. Row schema: `{ label, buttonLabel, onClick(model) }`.
+  Renders a button whose text is `buttonLabel`; each click
+  calls `onClick(model)`. Distinct from `actionRow` (which
+  toggles a boolean state field). Dispatcher branch sits
+  above `row.action` so `{ onClick }` wins over anything else.
+- **The button.** Sits at the top of the Tracker / Object
+  group, above the `Track` button grid. Click clears
+  `TrackerTargets` to `[]` via
+  `m.setState({ TrackerTargets: [] })`. The grid's own
+  refresh handler picks up the change and de-highlights
+  every pill.
+- **What did NOT change:** the grid's individual toggle
+  behaviour (click an inactive pill to add, click an active
+  pill to remove), any other row type, any persistence
+  (TrackerTargets still URL-round-trips, empty array
+  serialises to no `TrackerTargets=` param, matching the
+  existing `if (!v.length)` guard in `stateToParams`).
+- **Revert path:** drop the `{ label:'', buttonLabel:'Clear
+  All Tracked', onClick:… }` row from the Tracker schema;
+  remove the `clickRow` function and its dispatcher branch;
+  remove this entry.

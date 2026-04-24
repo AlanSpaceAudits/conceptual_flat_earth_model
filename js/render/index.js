@@ -133,8 +133,15 @@ export class Renderer {
       mercury: { color: 0xd0b090, vaultSize: 0.0045, opticalSize: 0.0022 },
       venus:   { color: 0xfff0c8, vaultSize: 0.0070, opticalSize: 0.0030 },
       mars:    { color: 0xd05040, vaultSize: 0.0055, opticalSize: 0.0026 },
-      jupiter: { color: 0xe8d09a, vaultSize: 0.0075, opticalSize: 0.0032 },
+      jupiter: { color: 0xffa060, vaultSize: 0.0075, opticalSize: 0.0032 },
       saturn:  { color: 0xe4c888, vaultSize: 0.0060, opticalSize: 0.0028 },
+      // S221 — Uranus / Neptune markers. Smaller than Saturn because
+      // they're fainter to the naked eye (Uranus mag ~5.7, Neptune
+      // mag ~7.8, both at the limit of unaided visibility under dark
+      // skies). Pale blue-green pigments reference their known
+      // telescopic colours.
+      uranus:  { color: 0xa8d8e0, vaultSize: 0.0040, opticalSize: 0.0020 },
+      neptune: { color: 0x7fa6e8, vaultSize: 0.0038, opticalSize: 0.0018 },
     };
     this.planetMarkers = {};
     for (const [name, style] of Object.entries(PLANET_STYLE)) {
@@ -273,6 +280,14 @@ export class Renderer {
     const moonLon = wrapLon(c.MoonRA * 180 / Math.PI - c.SkyRotAngle);
     this.sunGP.updateAt(sunLat,  sunLon,  FE_RADIUS, s.ShowGroundPoints);
     this.moonGP.updateAt(moonLat, moonLon, FE_RADIUS, s.ShowGroundPoints);
+    // S218 — in Specified Tracker Mode the built-in sun/moon GPs
+    // defer to the TrackedGroundPoints layer: those only paint the
+    // tracked-body GPs, which is exactly the user's request. Hide
+    // the default-on sun/moon GPs whenever the mode is active.
+    if (s.SpecifiedTrackerMode) {
+      this.sunGP.updateAt(0, 0, FE_RADIUS, false);
+      this.moonGP.updateAt(0, 0, FE_RADIUS, false);
+    }
     this.trackedGPs.update(m);
 
     // Vault markers use the canonical vault coords app.js already
@@ -284,15 +299,24 @@ export class Renderer {
     // to its ground point on the disc. Hidden when the true-source end is
     // hidden (InsideVault mode or ShowTruePositions off) since the line
     // would dangle with nothing at its top.
+    // S225 — hide the sun/moon dashed GP lines in Specified Tracker
+    // Mode when their target isn't in `TrackerTargets`. Matches the
+    // sun/moon GP-dot gate added in S218 so the default-on
+    // sun/moon dashed verticals don't persist while only e.g. Mars
+    // is tracked.
+    const stmGP = !!s.SpecifiedTrackerMode;
+    const trackerSetGP = new Set(
+      Array.isArray(s.TrackerTargets) ? s.TrackerTargets : [],
+    );
+    const sunGPShow  = !stmGP || trackerSetGP.has('sun');
+    const moonGPShow = !stmGP || trackerSetGP.has('moon');
     const showGPLine = s.ShowGroundPoints
                      && !s.InsideVault
                      && (s.ShowTruePositions !== false);
-    this.sunGPLine.visible  = showGPLine;
-    this.moonGPLine.visible = showGPLine;
-    if (s.ShowGroundPoints) {
-      this._updateDashedLine(this.sunGPLine,  sunVaultVis);
-      this._updateDashedLine(this.moonGPLine, moonVaultVis);
-    }
+    this.sunGPLine.visible  = showGPLine && sunGPShow;
+    this.moonGPLine.visible = showGPLine && moonGPShow;
+    if (s.ShowGroundPoints && sunGPShow)  this._updateDashedLine(this.sunGPLine,  sunVaultVis);
+    if (s.ShowGroundPoints && moonGPShow) this._updateDashedLine(this.moonGPLine, moonVaultVis);
 
     this.vaultOfHeavens.update(m);
     this.observersOpticalVault.update(m);
@@ -305,6 +329,14 @@ export class Renderer {
     // Constellations are auto-unchecked by the chart-transition handler in
     // main.js, so no extra suppression needed here.
     if ((m.state.StarfieldType || 'random') !== 'random') {
+      this.stars.domePoints.visible   = false;
+      this.stars.spherePoints.visible = false;
+    }
+    // S218 — Specified Tracker Mode: hide the random starfield
+    // entirely. Per-star filtering for cel-nav and catalogued stars
+    // happens inside their respective renderers (they already read
+    // the state flag there).
+    if (s.SpecifiedTrackerMode) {
       this.stars.domePoints.visible   = false;
       this.stars.spherePoints.visible = false;
     }
@@ -323,14 +355,28 @@ export class Renderer {
     // `ShowTruePositions` is the explicit user toggle for the same effect
     // without entering first-person mode.
     const showTrueVault = !s.InsideVault && (s.ShowTruePositions !== false);
-    this.sunMarker.update(
-      sunVaultVis, c.SunOpticalVaultCoord, showTrueVault, s.ShowOpticalVault,
-      c.SunAnglesGlobe.elevation,
-    );
-    this.moonMarker.update(
-      moonVaultVis, c.MoonOpticalVaultCoord, showTrueVault, s.ShowOpticalVault,
-      c.MoonAnglesGlobe.elevation,
-    );
+    // S218 — Specified Tracker Mode filter. When on, a sun / moon /
+    // planet marker is only rendered if the user has explicitly added
+    // its id to `TrackerTargets`. The target id is the same id the
+    // panel button grid emits ('sun', 'moon', planet name).
+    const stm = !!s.SpecifiedTrackerMode;
+    const trackerSet = new Set(Array.isArray(s.TrackerTargets) ? s.TrackerTargets : []);
+    const showSun   = !stm || trackerSet.has('sun');
+    const showMoon  = !stm || trackerSet.has('moon');
+    this.sunMarker.group.visible  = showSun;
+    this.moonMarker.group.visible = showMoon;
+    if (showSun) {
+      this.sunMarker.update(
+        sunVaultVis, c.SunOpticalVaultCoord, showTrueVault, s.ShowOpticalVault,
+        c.SunAnglesGlobe.elevation,
+      );
+    }
+    if (showMoon) {
+      this.moonMarker.update(
+        moonVaultVis, c.MoonOpticalVaultCoord, showTrueVault, s.ShowOpticalVault,
+        c.MoonAnglesGlobe.elevation,
+      );
+    }
 
     // Planet markers: same pipeline as sun/moon but each has its own vault
     // height so they're layered above the starfield. Optical-vault dots
@@ -339,6 +385,10 @@ export class Renderer {
     for (const [name, mk] of Object.entries(this.planetMarkers)) {
       const p = c.Planets[name];
       if (!p || !s.ShowPlanets) {
+        mk.group.visible = false;
+        continue;
+      }
+      if (stm && !trackerSet.has(name)) {
         mk.group.visible = false;
         continue;
       }
@@ -447,17 +497,76 @@ export class Renderer {
     const sunFade  = fade(c.SunAnglesGlobe.elevation);
     const moonFade = fade(c.MoonAnglesGlobe.elevation);
 
+    // S225 — Specified Tracker Mode filter for all ray classes. When
+    // on, only tracked bodies emit rays. Matches the STM filter on
+    // sun/moon/planet markers in `_updateRays`' caller and the
+    // per-star filter in the star renderers.
+    const stm = !!s.SpecifiedTrackerMode;
+    const trackerSet = new Set(Array.isArray(s.TrackerTargets) ? s.TrackerTargets : []);
+    const sunOn  = !stm || trackerSet.has('sun');
+    const moonOn = !stm || trackerSet.has('moon');
+
     // Vault rays to the true sun/moon position on the vault of the heavens
     // stay drawn regardless of horizon: the physical source is still there.
     if (s.ShowVaultRays) {
-      addRay(c.SunVaultCoord,  0xff8800);
-      addRay(c.MoonVaultCoord, 0x88aacc);
+      if (sunOn)  addRay(c.SunVaultCoord,  0xff8800);
+      if (moonOn) addRay(c.MoonVaultCoord, 0x88aacc);
     }
     // Optical-vault rays represent what the observer sees, so they fade
     // smoothly with the body's elevation.
     if (s.ShowOpticalVaultRays) {
-      if (sunFade  > 0) addRay(c.SunOpticalVaultCoord,  0xcc6600, 0.7 * sunFade);
-      if (moonFade > 0) addRay(c.MoonOpticalVaultCoord, 0x6688aa, 0.7 * moonFade);
+      if (sunOn  && sunFade  > 0) addRay(c.SunOpticalVaultCoord,  0xcc6600, 0.7 * sunFade);
+      if (moonOn && moonFade > 0) addRay(c.MoonOpticalVaultCoord, 0x6688aa, 0.7 * moonFade);
+    }
+
+    // S223 — projection rays: straight segments from a body's true
+    // position on the heavenly vault to its projected position on
+    // the observer's optical vault. Hidden entirely when the body's
+    // elevation is ≤ 0° (below the observer's horizon). Colours
+    // match each body's in-scene marker so the rays read as
+    // "this body's projection" at a glance. Stars are intentionally
+    // excluded — 100+ rays would turn the vault into noise.
+    if (s.ShowProjectionRays) {
+      const PLANET_RAY_COLORS = {
+        mercury: 0xd0b090, venus: 0xfff0c8, mars: 0xd05040,
+        jupiter: 0xffa060, saturn: 0xe4c888,
+        uranus: 0xa8d8e0,  neptune: 0x7fa6e8,
+      };
+      const addProjectionRay = (vaultCoord, opticalCoord, elev, color) => {
+        if (elev <= 0) return;
+        if (!vaultCoord || !opticalCoord) return;
+        const pts = [
+          vaultCoord[0], vaultCoord[1], vaultCoord[2],
+          opticalCoord[0], opticalCoord[1], opticalCoord[2],
+        ];
+        const geo = new THREE.BufferGeometry();
+        geo.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
+        this.rayGroup.add(new THREE.Line(
+          geo,
+          new THREE.LineBasicMaterial({
+            color, transparent: true, opacity: 0.7,
+            clippingPlanes: this._clipPlanes,
+          }),
+        ));
+      };
+      // S225 — STM filter. Sun / moon / per-planet rays only
+      // render when their id is in `TrackerTargets` (or when the
+      // mode is off — `sunOn` / `moonOn` / `trackerSet` use the
+      // same logic the two ray classes above use).
+      if (sunOn) {
+        addProjectionRay(c.SunVaultCoord,  c.SunOpticalVaultCoord,
+                         c.SunAnglesGlobe.elevation,  0xffc844);
+      }
+      if (moonOn) {
+        addProjectionRay(c.MoonVaultCoord, c.MoonOpticalVaultCoord,
+                         c.MoonAnglesGlobe.elevation, 0xf4f4f4);
+      }
+      for (const [name, p] of Object.entries(c.Planets || {})) {
+        if (stm && !trackerSet.has(name)) continue;
+        addProjectionRay(p.vaultCoord, p.opticalVaultCoord,
+                         p.anglesGlobe.elevation,
+                         PLANET_RAY_COLORS[name] || 0xff8c66);
+      }
     }
   }
 

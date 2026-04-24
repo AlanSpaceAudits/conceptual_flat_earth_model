@@ -10,21 +10,24 @@ const PERSISTED_KEYS = [
   'RayParameter',
   'ShowFeGrid', 'ShowShadow', 'ShowVault', 'ShowVaultGrid', 'ShowSunTrack',
   'ShowMoonTrack', 'ShowOpticalVault', 'ShowStars', 'ShowVaultRays',
-  'ShowOpticalVaultRays', 'ShowManyRays', 'ShowTruePositions',
+  'ShowOpticalVaultRays', 'ShowManyRays', 'ShowProjectionRays', 'ShowTruePositions',
   'ShowLatitudeLines', 'ShowGroundPoints', 'ShowPlanets', 'ShowLogo',
   'ShowConstellations', 'ShowConstellationLines',
-  'ShowLongitudeRing', 'ShowAzimuthRing',
+  'ShowLongitudeRing', 'ShowAzimuthRing', 'ShowOpticalVaultGrid',
+  'ShowCelestialPoles', 'DarkBackground',
   'DynamicStars',
   'TimezoneOffsetMinutes',
   'StarfieldVaultHeight', 'MoonVaultHeight', 'SunVaultHeight',
   'MercuryVaultHeight', 'VenusVaultHeight', 'MarsVaultHeight',
   'JupiterVaultHeight', 'SaturnVaultHeight',
+  'UranusVaultHeight', 'NeptuneVaultHeight',
   'ObserverFigure',
   'Cosmology',
   'MapProjection',
   'StarfieldType',
   // S009 / S009a
   'BodySource', 'PermanentNight', 'TrackerTargets',
+  'ShowEphemerisReadings', 'SpecifiedTrackerMode',
   // S014 / S017 / S017b — star-correction toggles (independent bools)
   'StarApplyPrecession', 'StarApplyNutation', 'StarApplyAberration',
   'StarTrepidation',
@@ -82,7 +85,13 @@ function paramsToPatch(params) {
 // URLs written during the earlier S207 iteration (DateTime = 82.88,
 // 2017) stamped with `v=207` were causing reloads to land back in
 // 2017 instead of 2019, because the gate no longer fired.
-const URL_SCHEMA_VERSION = '207a';
+// S209 — bumped to '209' so the new `OpticalVaultHeight = 0.5`
+// default (H = R, hemispheric) takes effect for existing users
+// whose URL hash still carries the S207-era `OpticalVaultHeight =
+// 0.14`.
+// S211 — bumped to '211' so the new `OpticalZoom = 1.0` default
+// (max zoom-out, FOV 75°) takes effect over existing URL hashes.
+const URL_SCHEMA_VERSION = '211';
 const VERSION_GATED_KEYS = new Set([
   'BodySource',
   // S207 sweep
@@ -94,7 +103,10 @@ const VERSION_GATED_KEYS = new Set([
   'MapProjection', 'StarfieldType', 'PermanentNight', 'TrackerTargets',
   'MercuryVaultHeight', 'VenusVaultHeight', 'MarsVaultHeight',
   'JupiterVaultHeight', 'SaturnVaultHeight',
+  'UranusVaultHeight', 'NeptuneVaultHeight',
   'MoonVaultHeight', 'SunVaultHeight',
+  // S211 — max zoom-out default
+  'OpticalZoom',
 ]);
 
 export function attachUrlState(model, demos) {

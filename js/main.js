@@ -101,8 +101,15 @@ if (logoEl) {
 // wheel in to 5° (FOV < 30°), wheel further to 1° (FOV < 8°). The
 // previous entry zoom of 5.09 landed directly in the 5° regime, which
 // skipped the 15° inspection layer.
-const OPTICAL_ENTRY_ZOOM  = 2.0;
-const OPTICAL_ENTRY_PITCH = 10;
+//
+// S211 — entry now lands at FOV 75° (OpticalZoom = 1, max zoom out)
+// with pitch 7.5° so the top of the viewport sits at elevation 45°.
+// That gives a full horizon-to-45° reading band as the user's
+// requested baseline — paired with the elevation-scale cadence
+// (15° at FOV ≥ 30°) so labels 0°/15°/30°/45° all land on screen
+// on entry.
+const OPTICAL_ENTRY_ZOOM  = 1.0;
+const OPTICAL_ENTRY_PITCH = 7.5;
 let _prevInsideVault = !!model.state.InsideVault;
 model.addEventListener('update', () => {
   const now = !!model.state.InsideVault;

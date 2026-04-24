@@ -57,8 +57,16 @@ export {
 export { helio, geo, ptol, apix, vsop };
 
 export const EPHEMERIS_SOURCES = ['geocentric', 'heliocentric', 'ptolemy', 'astropixels', 'vsop87'];
-export const PLANET_NAMES = ['mercury', 'venus', 'mars', 'jupiter', 'saturn'];
-export const BODY_NAMES   = ['sun', 'moon', 'mercury', 'venus', 'mars', 'jupiter', 'saturn'];
+// S221 — Uranus + Neptune added. DE405 / AstroPixels carries
+// coverage 2019–2030; the other four pipelines (HelioC / GeoC /
+// Ptolemy / VSOP87) don't have the outer-planet elements or
+// coefficients yet, so their `bodyGeocentric` falls back to
+// `{ ra: NaN, dec: NaN }` for those two names. Consumers that
+// render comparison rows should treat NaN as "no data".
+// Pluto is absent — Espenak doesn't publish Pluto ephemerides
+// on AstroPixels, so there's no DE405 source to bundle here.
+export const PLANET_NAMES = ['mercury', 'venus', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune'];
+export const BODY_NAMES   = ['sun', 'moon', 'mercury', 'venus', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune'];
 
 // Primary router. Returns `{ ra, dec }` in radians, geocentric-apparent.
 export function bodyRADec(name, date, source = 'geocentric') {

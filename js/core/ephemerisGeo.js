@@ -94,6 +94,9 @@ function keplerEarthFocus(name, d) {
 // Single Earth-focus Kepler evaluation + ecliptic→equatorial rotation.
 // No Sun-around-Earth stage, no planet-around-Sun stage.
 export function planetEquatorial(name, date) {
+  // S221 — uranus, neptune, pluto aren't in this Earth-focus element
+  // table; signal "no data" with NaN so the tracker HUD renders "—".
+  if (!ORBIT_EL[name]) return { ra: NaN, dec: NaN };
   const d = schlyterDay(date);
   const p = keplerEarthFocus(name, d);
   const eclip = (23.4393 - 3.563e-7 * d) * DEG;

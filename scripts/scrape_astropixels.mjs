@@ -15,7 +15,10 @@
 // Scope:
 //   Years 2019–2030 (the full range Espenak currently publishes on
 //   astropixels.com at scrape time, 2026-04-23). Bodies: sun, moon,
-//   mercury, venus, mars, jupiter, saturn. Daily at 00:00 UTC.
+//   mercury, venus, mars, jupiter, saturn, uranus, neptune. Daily at
+//   00:00 UTC. (S221 extension: Uranus + Neptune added. Pluto is not
+//   published on AstroPixels — index search returned zero matches —
+//   so it isn't in this bundle.)
 //
 // Extraction:
 //   Each table row is fixed-width text inside a <pre>…</pre> block.
@@ -47,6 +50,11 @@ const BODY_PATHS = {
   mars:    (y) => `https://www.astropixels.com/ephemeris/planets/mars${y}.html`,
   jupiter: (y) => `https://www.astropixels.com/ephemeris/planets/jupiter${y}.html`,
   saturn:  (y) => `https://www.astropixels.com/ephemeris/planets/saturn${y}.html`,
+  // S221 — Uranus + Neptune follow the same path pattern as the
+  // inner planets; verified 2026-04-24. Pluto is not published on
+  // AstroPixels at all, so it's absent from this bundle.
+  uranus:  (y) => `https://www.astropixels.com/ephemeris/planets/uranus${y}.html`,
+  neptune: (y) => `https://www.astropixels.com/ephemeris/planets/neptune${y}.html`,
 };
 
 const YEARS = [2019, 2020, 2021, 2022, 2023, 2024, 2025, 2026, 2027, 2028, 2029, 2030];

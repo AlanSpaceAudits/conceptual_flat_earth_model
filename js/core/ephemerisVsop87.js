@@ -116,6 +116,12 @@ function eclipToEq(L, B, T_cent) {
 
 // Geocentric apparent equatorial (RA, Dec) for a planet.
 export function planetEquatorial(body, date) {
+  // S221 — the bundled VSOP87 tables in `js/data/vsop87/` cover
+  // mercury, venus, earth, mars, jupiter, saturn. Uranus / Neptune
+  // coefficients exist upstream but aren't imported here yet; Pluto
+  // is outside VSOP87 entirely. Return NaN so the tracker HUD shows
+  // "—" instead of crashing inside `evalSeries(undefined)`.
+  if (!VSOP[body]) return { ra: NaN, dec: NaN };
   const jd = julianDay(date);
   const T_mil  = (jd - 2451545.0) / 365250;
   const T_cent = (jd - 2451545.0) / 36525;

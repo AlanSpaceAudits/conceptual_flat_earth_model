@@ -175,7 +175,16 @@ export class SceneManager {
     // Inside-vault background fades to night based on NightFactor so the
     // projected starfield has dark sky behind it. S201 — eclipse darken
     // pushes toward night colour regardless of NightFactor.
-    if (this.model.state.InsideVault) {
+    // S226 — when `DarkBackground` is on the scene sits at the same
+    // near-black `nightColor` the Optical vault uses at night,
+    // regardless of view mode or NightFactor. Eclipse darken still
+    // applies on top (lerping back toward day when the eclipse
+    // fades out would look weird anyway, since the scene is already
+    // dark).
+    const forceDark = !!this.model.state.DarkBackground;
+    if (forceDark) {
+      this.scene.background.copy(this.nightColor);
+    } else if (this.model.state.InsideVault) {
       const nf = Math.max(this.model.computed.NightFactor || 0, darken);
       this.scene.background.copy(this.dayColor).lerp(this.nightColor, nf);
     } else {

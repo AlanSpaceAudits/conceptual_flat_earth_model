@@ -93,6 +93,10 @@ function heliocentric(name, d) {
 // then rotate ecliptic→equatorial at the Schlyter obliquity
 // ε = 23.4393° − 3.563e-7·d.
 export function planetEquatorial(name, date) {
+  // S221 — outer planets (uranus, neptune) and Pluto aren't in
+  // Schlyter's element table here, so return a NaN sentinel the
+  // tracker can render as "—" instead of a spurious zero reading.
+  if (!PLANET_EL[name]) return { ra: NaN, dec: NaN };
   const d = schlyterDay(date);
   const sg = heliocentric('earth', d);   // Sun's geocentric position
   const p  = heliocentric(name, d);      // planet's heliocentric position

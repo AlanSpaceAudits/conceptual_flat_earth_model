@@ -5,6 +5,7 @@ import { dateTimeToString, dateTimeToDate } from '../core/time.js';
 import { TIME_ORIGIN } from '../core/constants.js';
 import { findNextEclipses } from '../core/ephemeris.js';
 import { CEL_NAV_SELECT_OPTIONS, CEL_NAV_STARS } from '../core/celnavStars.js';
+import { CATALOGUED_STARS } from '../core/constellations.js';
 import { listProjections } from '../core/projections.js';
 import { Autoplay } from './autoplay.js';
 
@@ -184,11 +185,33 @@ const FIELD_GROUPS = [
         // tests at a specific observatory / nav-fix coordinate).
         { key: 'ObserverLat',  label: 'ObserverLat',  unit: '°', min: -90,  max:  90,  step: 0.0001 },
         { key: 'ObserverLong', label: 'ObserverLong', unit: '°', min: -180, max: 180,  step: 0.0001 },
-        // S007 — observer elevation above the disc. Drives the camera
-        // z-offset in Optical mode; geometry (cardinals, meridian arc,
-        // heading line) stays ground-anchored.
-        { key: 'ObserverElevation', label: 'Elevation', unit: '', min: 0, max: 0.5, step: 0.001 },
-        { key: 'ObserverHeading', label: 'Facing',    unit: '°', min: 0,    max: 360,  step: 0.0001, cardinal: true },
+        // S208 — Observer.Elevation now represents the observer's
+        // gaze pitch (elevation angle above the horizon), 0°–90°.
+        // Bound to `CameraHeight`, which drives the first-person
+        // look-up/down in Optical mode (it's also the orbit-elevation
+        // key in Heavenly, but the 0–90 range reads the same way
+        // there — angle above the disc plane). 0° = looking at the
+        // horizon; 90° = looking straight up. The mouse-drag pitch
+        // updates this slider in real time and vice versa.
+        //
+        // The physical `ObserverElevation` state field (S007, observer
+        // height above the disc) still exists and is still URL-
+        // persisted and clamped in `app.update()`; it just isn't
+        // bound to this row anymore.
+        { key: 'CameraHeight', label: 'Elevation', unit: '°', min: 0, max: 90, step: 0.1 },
+        // S224 — "Facing" row renamed to "Azi" and moved up directly
+        // under Elevation so the observer's own angular pair reads
+        // together (Elevation + Azi) before the cursor-tracking pair
+        // (Mouse El + Mouse Az) below it.
+        { key: 'ObserverHeading', label: 'Azi',       unit: '°', min: 0,    max: 360,  step: 0.0001, cardinal: true },
+        // S211 — live cursor elevation readout. Tracks the elevation
+        // of the ray from the observer through the mouse pointer
+        // while the pointer is over the canvas in Optical mode. Shows
+        // "—" in Heavenly or when the pointer is off-canvas.
+        { key: 'MouseElevation', label: 'Mouse El', unit: '°', readout: true, digits: 1 },
+        // S212 — companion cursor azimuth readout (compass degrees CW
+        // from north, wrapped to [0, 360)).
+        { key: 'MouseAzimuth',   label: 'Mouse Az', unit: '°', readout: true, digits: 1 },
         { key: 'ObserverHeading', label: 'Nudge', nudge: [
           { delta:  1,        label: '+1°' },
           { delta: -1,        label: '−1°' },
@@ -224,6 +247,9 @@ const FIELD_GROUPS = [
         { key: 'MarsVaultHeight',      label: 'Mars',      unit: '', min: 0.05, max: 1.0, step: 0.001 },
         { key: 'JupiterVaultHeight',   label: 'Jupiter',   unit: '', min: 0.05, max: 1.0, step: 0.001 },
         { key: 'SaturnVaultHeight',    label: 'Saturn',    unit: '', min: 0.05, max: 1.0, step: 0.001 },
+        // S221
+        { key: 'UranusVaultHeight',    label: 'Uranus',    unit: '', min: 0.05, max: 1.0, step: 0.001 },
+        { key: 'NeptuneVaultHeight',   label: 'Neptune',   unit: '', min: 0.05, max: 1.0, step: 0.001 },
       ]},
       { title: 'Rays', rows: [
         { key: 'RayParameter', label: 'RayParam', unit: '', min: 0.5, max: 2.0, step: 0.01 },
@@ -251,9 +277,16 @@ const FIELD_GROUPS = [
         { key: 'ShowSunTrack',        label: 'Sun Track',          bool: true },
         { key: 'ShowMoonTrack',       label: 'Moon Track',         bool: true },
         { key: 'ShowOpticalVault',    label: 'Optical Vault',      bool: true },
+        // S213 — grid-only toggle for the Optical Vault. When off the
+        // cap surface stays but the grid + azi/elev labels are hidden
+        // (the label hides are forced, overriding ShowAzimuthRing).
+        { key: 'ShowOpticalVaultGrid', label: 'Optical Vault Grid', bool: true },
         { key: 'ShowTruePositions',   label: 'True Positions',     bool: true },
         { key: 'ShowFacingVector',    label: 'Facing Vector / N-S-E-W', bool: true },
         { key: 'ShowDecCircles',      label: 'Declination Circles',     bool: true },
+        // S215 — red dot at NCP, blue dot at SCP, projected onto the
+        // observer's optical vault.
+        { key: 'ShowCelestialPoles',  label: 'Celestial Poles',    bool: true },
         { key: 'ShowStars',           label: 'Stars',              bool: true },
         { key: 'ShowConstellations',      label: 'Constellations',        bool: true },
         { key: 'ShowConstellationLines',  label: 'Constellation outlines', bool: true },
@@ -264,8 +297,15 @@ const FIELD_GROUPS = [
         { key: 'ShowVaultRays',       label: 'Vault Rays',         bool: true },
         { key: 'ShowOpticalVaultRays', label: 'Optical Vault Rays', bool: true },
         { key: 'ShowManyRays',        label: 'Many Rays',          bool: true },
+        // S223 — true→projected ray per body (sun, moon, planets).
+        // Hidden when the body is below horizon.
+        { key: 'ShowProjectionRays',  label: 'Projection Rays',    bool: true },
         { key: 'ShowPlanets',         label: 'Planets',            bool: true },
         { key: 'ShowLogo',            label: 'Logo',               bool: true },
+        // S226 — swaps the scene background to the same night-sky
+        // colour the Optical vault fades to at night; LongitudeRing
+        // azi numerals + ticks auto-switch to white / pale grey.
+        { key: 'DarkBackground',      label: 'Dark Background',    bool: true },
       ]},
       { title: 'Cosmology', rows: [
         { key: 'Cosmology', label: 'Axis Mundi',
@@ -299,17 +339,45 @@ const FIELD_GROUPS = [
   {
     tab: 'Tracker', groups: [
       { title: 'Object', rows: [
+        // S228 — one-shot clear button so the user doesn't have to
+        // click every active pill to turn it off.
+        { label: '', buttonLabel: 'Clear All Tracked',
+          onClick: (m) => m.setState({ TrackerTargets: [] }) },
         { key: 'TrackerTargets', label: 'Track', buttonGrid: [
-          { value: 'sun',     label: 'Sun' },
-          { value: 'moon',    label: 'Moon' },
-          { value: 'mercury', label: 'Mercury' },
-          { value: 'venus',   label: 'Venus' },
-          { value: 'mars',    label: 'Mars' },
-          { value: 'jupiter', label: 'Jupiter' },
-          { value: 'saturn',  label: 'Saturn' },
-          ...[...CEL_NAV_STARS]
+          // S219 — per-button text colour. Sun / moon / planet
+          // colours match the in-scene marker pigments defined in
+          // `render/index.js`. Cel-nav stars render white, non-cel-
+          // nav (catalogued) stars render warm-yellow, matching the
+          // two starfield layers. Cel-nav wins when a star appears
+          // in both lists — `CELNAV_IDS` below is the master set.
+          { value: 'sun',     label: 'Sun',     color: '#ffc844' },
+          { value: 'moon',    label: 'Moon',    color: '#f4f4f4' },
+          { value: 'mercury', label: 'Mercury', color: '#d0b090' },
+          { value: 'venus',   label: 'Venus',   color: '#fff0c8' },
+          { value: 'mars',    label: 'Mars',    color: '#d05040' },
+          { value: 'jupiter', label: 'Jupiter', color: '#ffa060' },
+          { value: 'saturn',  label: 'Saturn',  color: '#e4c888' },
+          // S221
+          { value: 'uranus',  label: 'Uranus',  color: '#a8d8e0' },
+          { value: 'neptune', label: 'Neptune', color: '#7fa6e8' },
+          // S217 — merge cel-nav almanac stars with the non-cel-nav
+          // catalogued stars (Orion belt, dipper arm, σ Oct, etc.)
+          // and sort alphabetically so everything is trackable.
+          ...(() => {
+            const celnavIds = new Set(CEL_NAV_STARS.map((s) => s.id));
+            return [...CEL_NAV_STARS, ...CATALOGUED_STARS]
               .sort((a, b) => a.name.localeCompare(b.name))
-              .map((s) => ({ value: `star:${s.id}`, label: s.name })),
+              .map((s) => ({
+                value: `star:${s.id}`,
+                label: s.name,
+                // S220 — colour swap: cel-nav stars now read in the
+                // warm-yellow pigment the constellation layer used to
+                // own; catalogued stars take the white. Mirrors the
+                // in-field swap (cel-nav starfield 0xffe8a0,
+                // constellation starfield 0xffffff).
+                color: celnavIds.has(s.id) ? '#ffe8a0' : '#ffffff',
+              }));
+          })(),
         ]},
       ]},
       { title: 'Ephemeris', rows: [
@@ -320,6 +388,16 @@ const FIELD_GROUPS = [
           { value: 'astropixels',  label: 'DE405    (Espenak AstroPixels)' },
           { value: 'vsop87',       label: 'VSOP87   (Bretagnon & Francou)' },
         ]},
+        // S216 — when on, the Tracker HUD shows the full RA/Dec
+        // comparison block from all 5 pipelines for sun/moon/planets.
+        // Stars are always compact (az + el only) since their RA/Dec
+        // is pipeline-independent.
+        { key: 'ShowEphemerisReadings', label: 'Ephemeris comparison', bool: true },
+        // S218 — "Specified Tracker Mode": sky collapses to just the
+        // tracked objects + their GPs. Everything else (non-tracked
+        // sun/moon/planets, non-tracked stars, random starfield,
+        // constellation lines) hides.
+        { key: 'SpecifiedTrackerMode', label: 'Specified Tracker Mode', bool: true },
         // S014 / S017 — star correction toggles. Four independent
         // checkboxes; the first three apply precession / nutation /
         // aberration individually. "Trepidation" is the combined-
@@ -374,6 +452,30 @@ function numericRow(model, row) {
     if (e.key === 'Enter') { numEl.blur(); }
     if (e.key === 'Escape') { editing = false; refresh(); numEl.blur(); }
   });
+  model.addEventListener('update', refresh);
+  refresh();
+  return el;
+}
+
+// S211 — read-only display row. Mirrors one state field, formats its
+// numeric value at `row.digits` decimals, shows a placeholder when the
+// value is `null` / undefined. No slider, no editable input — just
+// labelled text for live readouts.
+function readoutRow(model, row) {
+  const el = document.createElement('div');
+  el.className = 'row';
+  el.innerHTML = `<label>${row.label}</label>
+    <input type="text" class="num" readonly>
+    <span class="unit">${row.unit || ''}</span>`;
+  const numEl = el.querySelector('input.num');
+  const digits = row.digits != null ? row.digits : 2;
+  const placeholder = row.placeholder != null ? row.placeholder : '—';
+  function refresh() {
+    const v = model.state[row.key];
+    numEl.value = (v == null || !Number.isFinite(v))
+      ? placeholder
+      : (+v).toFixed(digits);
+  }
   model.addEventListener('update', refresh);
   refresh();
   return el;
@@ -476,6 +578,21 @@ function nudgeRow(model, row) {
 // Single toggle button whose label flips based on a boolean state field.
 // row.action is `{ enterLabel, exitLabel }` — shown when the field is
 // false / true respectively.
+// S228 — one-shot click row. `row.onClick(model)` fires on each
+// click; `row.buttonLabel` is the static button text. Not bound to
+// any state key — use it for clear-all / reset-style actions where a
+// toggle would be the wrong affordance.
+function clickRow(model, row) {
+  const el = document.createElement('div');
+  el.className = 'row bool action-row';
+  el.innerHTML = `<label>${row.label ?? ''}</label>
+    <button class="action-btn"></button>`;
+  const btn = el.querySelector('button');
+  btn.textContent = row.buttonLabel ?? 'Action';
+  btn.addEventListener('click', () => row.onClick(model));
+  return el;
+}
+
 function actionRow(model, row) {
   const el = document.createElement('div');
   el.className = 'row bool action-row';
@@ -532,10 +649,15 @@ function buttonGridRow(model, row) {
   const btns = row.buttonGrid.map((opt) => {
     const value = typeof opt === 'string' ? opt : opt.value;
     const text  = typeof opt === 'string' ? opt : (opt.label ?? opt.value);
+    // S219 — optional per-button text colour. Inline `style.color`
+    // beats the `.tracker-btn.on` class rule's colour, so the
+    // body-specific pigment survives the selected state too.
+    const color = typeof opt === 'object' ? opt.color : null;
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className = 'tracker-btn';
     btn.textContent = text;
+    if (color) btn.style.color = color;
     btn.addEventListener('click', () => {
       const current = Array.isArray(model.state[row.key]) ? model.state[row.key] : [];
       const next = current.includes(value)
@@ -600,8 +722,10 @@ export function buildControlPanel(panelEl, model, demos) {
         else if (row.select) rowEl = selectRow(model, row);
         else if (row.buttonGrid) rowEl = buttonGridRow(model, row);
         else if (row.cardinal) rowEl = cardinalRow(model, row);
+        else if (row.onClick) rowEl = clickRow(model, row);
         else if (row.action) rowEl = actionRow(model, row);
         else if (row.nudge) rowEl = nudgeRow(model, row);
+        else if (row.readout) rowEl = readoutRow(model, row);
         else rowEl = numericRow(model, row);
         panel.appendChild(rowEl);
       });
@@ -803,6 +927,10 @@ export function buildTrackerHud(trackerEl, model) {
 
   const fmtDeg = (v, p = 1) => (v >= 0 ? '+' : '') + v.toFixed(p);
   const fmtHours = (raRad) => {
+    // S221 — pipelines that don't carry this body return NaN so the
+    // HUD can render "no data" explicitly instead of a spurious
+    // 00h00m00.0s row.
+    if (!Number.isFinite(raRad)) return '—';
     const h = ((raRad % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI) * 12 / Math.PI;
     const hh = Math.floor(h);
     const mm = Math.floor((h - hh) * 60);
@@ -810,6 +938,7 @@ export function buildTrackerHud(trackerEl, model) {
     return `${String(hh).padStart(2, '0')}ʰ${String(mm).padStart(2, '0')}ᵐ${ss.toFixed(1).padStart(4, '0')}ˢ`;
   };
   const fmtDms = (decRad) => {
+    if (!Number.isFinite(decRad)) return '—';
     const d = decRad * 180 / Math.PI;
     const sign = d < 0 ? '−' : '+';
     const abs = Math.abs(d);
@@ -913,16 +1042,29 @@ export function buildTrackerHud(trackerEl, model) {
                 : 'luminary';
       rec.title.textContent = `${info.name} (${cat})`;
       rec.azel.textContent  = `az ${fmtDmsDegAz(info.azimuth)}   el ${fmtDmsDegEl(info.elevation)}`;
-      rec.helio.textContent =
-        `Helio : RA ${fmtHours(info.helioReading.ra)}   Dec ${fmtDms(info.helioReading.dec)}`;
-      rec.geo.textContent =
-        `GeoC  : RA ${fmtHours(info.geoReading.ra)}   Dec ${fmtDms(info.geoReading.dec)}`;
-      rec.ptolemy.textContent =
-        `Ptol  : RA ${fmtHours(info.ptolemyReading.ra)}   Dec ${fmtDms(info.ptolemyReading.dec)}`;
-      rec.astropixels.textContent =
-        `DE405 : RA ${fmtHours(info.astropixelsReading.ra)}   Dec ${fmtDms(info.astropixelsReading.dec)}`;
-      rec.vsop87.textContent =
-        `VSOP87: RA ${fmtHours(info.vsop87Reading.ra)}   Dec ${fmtDms(info.vsop87Reading.dec)}`;
+      // S216 — ephemeris-comparison block hides entirely for stars
+      // (their RA/Dec doesn't depend on pipeline) and for sun/moon/
+      // planets when `ShowEphemerisReadings` is off. Keeps the
+      // tracker HUD compact by default.
+      const showReadings = info.category !== 'star'
+        && model.state.ShowEphemerisReadings === true;
+      rec.helio.hidden = !showReadings;
+      rec.geo.hidden = !showReadings;
+      rec.ptolemy.hidden = !showReadings;
+      rec.astropixels.hidden = !showReadings;
+      rec.vsop87.hidden = !showReadings;
+      if (showReadings) {
+        rec.helio.textContent =
+          `Helio : RA ${fmtHours(info.helioReading.ra)}   Dec ${fmtDms(info.helioReading.dec)}`;
+        rec.geo.textContent =
+          `GeoC  : RA ${fmtHours(info.geoReading.ra)}   Dec ${fmtDms(info.geoReading.dec)}`;
+        rec.ptolemy.textContent =
+          `Ptol  : RA ${fmtHours(info.ptolemyReading.ra)}   Dec ${fmtDms(info.ptolemyReading.dec)}`;
+        rec.astropixels.textContent =
+          `DE405 : RA ${fmtHours(info.astropixelsReading.ra)}   Dec ${fmtDms(info.astropixelsReading.dec)}`;
+        rec.vsop87.textContent =
+          `VSOP87: RA ${fmtHours(info.vsop87Reading.ra)}   Dec ${fmtDms(info.vsop87Reading.dec)}`;
+      }
       const magTag = (info.mag != null) ? `   mag ${info.mag.toFixed(2)}` : '';
       rec.foot.textContent = `${stamp}${magTag}`;
     }

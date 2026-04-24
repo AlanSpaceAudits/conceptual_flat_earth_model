@@ -294,6 +294,10 @@ function buildDegreeLabels(labelRadius, stepDeg, color, z, scale) {
     const sp = makeTextSprite(String(d) + '°', color);
     sp.position.set(labelRadius * Math.cos(r), labelRadius * Math.sin(r), z);
     setSpriteScale(sp, scale);
+    // S226 — stamp label value + current colour so the dark-bg
+    // toggle can repaint without rebuilding geometry.
+    sp.userData.text      = String(d) + '°';
+    sp.userData.textColor = color;
     group.add(sp);
   }
   return group;
@@ -317,12 +321,40 @@ export class LongitudeRing {
     this.group.add(this.minorTicks);
     this.group.add(this.majorTicks);
     this.group.add(this.labels);
+    // S226 — current palette. Light palette = hand-tuned grays that
+    // read on the pale-blue Heavenly background. Dark palette =
+    // white / pale grey that reads on the near-black DarkBackground.
+    // `_currentPalette` tracks which is active so `update()` can skip
+    // repainting when nothing changed.
+    this._palettes = {
+      light: { minor: 0x556677, major: 0x334455, label: '#334455' },
+      dark:  { minor: 0xb8c4d4, major: 0xe0e8f0, label: '#ffffff' },
+    };
+    this._currentPalette = null;
+    this._applyPalette('light');
   }
+
+  _applyPalette(which) {
+    if (this._currentPalette === which) return;
+    const p = this._palettes[which];
+    this.minorTicks.material.color.setHex(p.minor);
+    this.majorTicks.material.color.setHex(p.major);
+    for (const sp of this.labels.children) {
+      repaintTextSprite(sp, sp.userData.text, p.label);
+      sp.userData.textColor = p.label;
+    }
+    this._currentPalette = which;
+  }
+
   update(model) {
     // Hidden in Optical-vault mode so it doesn't compete with the
     // compass-azimuth ring on the observer's cap.
     const inVault = !!model.state.InsideVault;
     this.group.visible = !inVault && (model.state.ShowLongitudeRing !== false);
+
+    // S226 — flip palette when DarkBackground toggles. No-op if the
+    // palette already matches (guarded inside `_applyPalette`).
+    this._applyPalette(model.state.DarkBackground ? 'dark' : 'light');
 
     // S206c (follow-up 3) — rotate the ring so the "0°" marker
     // lands at the observer's compass-north direction. The disc-rim
@@ -1333,11 +1365,16 @@ export class ObserversOpticalVault {
     const s = model.state;
     const c = model.computed;
     const r = c.OpticalVaultRadius;
-    const h = c.OpticalVaultHeight;
+    // S209 — use the mode-dependent effective height (hemisphere in
+    // Optical, flat cap in Heavenly) so the cap mesh and its graticule
+    // match the object-projection math. The user's `OpticalVaultHeight`
+    // slider is honoured only when viewing from Heavenly.
+    const h = c.OpticalVaultHeightEffective;
     const obs = c.ObserverFeCoord;
 
     this.group.position.set(obs[0], obs[1], obs[2]);
-    // Optical vault is a flattened cap: x/y by R, z by H (H < R).
+    // Optical vault: x/y by R, z by effective H. Hemisphere (H=R) in
+    // Optical mode; user-configurable flattened cap in Heavenly.
     this.mesh.scale.set(r, r, h);
     this.wire.scale.set(r, r, h);
     this.axes.scale.set(r, r, h);
@@ -1356,10 +1393,20 @@ export class ObserversOpticalVault {
     // which is a NEGATIVE rotation about +z, so rotate by -heading.
     this.headingGroup.rotation.set(0, 0, -ToRad(s.ObserverHeading || 0));
     this.headingGroup.visible = s.ShowFacingVector !== false;
+    // S213 — optical vault grid toggle. When off, the cap surface
+    // stays visible but the wire / axes / refined meridian arcs
+    // are hidden, and the cardinal + azimuth + elevation labels are
+    // forced off even if `ShowAzimuthRing` is still on, so the
+    // clutter-free cap reads clean.
+    const gridOn = s.ShowOpticalVaultGrid !== false;
+    this.wire.visible = gridOn;
+    this.axes.visible = gridOn;
+    this.refinedMeridiansGroup.visible = gridOn;
     // Cardinals and the azimuth ring share the ShowAzimuthRing
     // toggle — they're the canonical heading scale, visible in BOTH
     // Optical and Heavenly so the reading persists across views.
-    const azOn = s.ShowAzimuthRing !== false;
+    // S213 — also gated on `gridOn`: grid off = no labels either.
+    const azOn = gridOn && (s.ShowAzimuthRing !== false);
     this.cardinalsGroup.visible = azOn;
     // S001: refined DMS scale only appears in Optical mode when the
     // user has zoomed past the coarse-ring threshold; below that FOV
@@ -1657,7 +1704,7 @@ export class ObserversOpticalVault {
   // of window shape.
   _updateElevScale(s, c) {
     const labels = this._elevLabels;
-    const active = !!s.InsideVault && (s.ShowAzimuthRing !== false);
+    const active = !!s.InsideVault && (s.ShowAzimuthRing !== false) && (s.ShowOpticalVaultGrid !== false);
     if (!active) {
       for (const sp of labels) sp.visible = false;
       return;
@@ -1702,7 +1749,13 @@ export class ObserversOpticalVault {
     const cadDeg = elevCadenceForFov(fov);
     const cap = 75;   // fixed elevation ceiling across cadences
     const r = (c && c.OpticalVaultRadius != null) ? c.OpticalVaultRadius : 0.5;
-    const h = (c && c.OpticalVaultHeight != null) ? c.OpticalVaultHeight : 0.35;
+    // S209 — this routine only paints labels inside Optical mode
+    // (guarded above by `s.InsideVault`); in that mode the vault is a
+    // strict hemisphere (H = R), so the flattened `ePrime` transform
+    // collapses to the identity (e' = e). Drop it — labels sit on the
+    // hemisphere at `(r·cos e, r·sin e)` directly. The inverse-
+    // projection solve for the right-edge azimuth also uses `tan e`
+    // instead of `tan e'` now.
     const HARD_MIN = 1e-6;
 
     for (const sp of labels) {
@@ -1715,13 +1768,11 @@ export class ObserversOpticalVault {
       const cosE = Math.cos(eRad);
       const sinE = Math.sin(eRad);
 
-      // Flattened-vault direction elevation e' = atan((h/r)·tan E).
-      const ePrime = Math.atan((h / Math.max(1e-9, r)) * Math.tan(eRad));
-      const tanEp  = Math.tan(ePrime);
+      const tanE = Math.tan(eRad);
       // Clamp sinArg to [-1, 1]: labels whose rings can't reach the
       // target screen-X at the current pitch land at the closest
       // achievable azimuth rather than vanishing.
-      const sinArgRaw = T * tanEp * sinP / R;
+      const sinArgRaw = T * tanE * sinP / R;
       const sinArg = Math.max(-1, Math.min(1, sinArgRaw));
       const A_rel = Math.asin(sinArg) + delta;
       const labelAz = heading * Math.PI / 180 + A_rel;
@@ -1729,7 +1780,7 @@ export class ObserversOpticalVault {
       const cosPhi = Math.cos(phi);
       const sinPhi = Math.sin(phi);
       const labelXY = r * cosE;
-      const labelZ  = h * sinE;
+      const labelZ  = r * sinE;
       sp.position.set(
         labelXY * cosPhi,
         labelXY * sinPhi,
@@ -1772,7 +1823,7 @@ export class ObserversOpticalVault {
   }
 
   _updateRefinedScale(s, c) {
-    const active = !!s.InsideVault && (s.ShowAzimuthRing !== false);
+    const active = !!s.InsideVault && (s.ShowAzimuthRing !== false) && (s.ShowOpticalVaultGrid !== false);
     if (!active) {
       this.refinedAzGroup.visible = false;
       this.refinedMeridiansGroup.visible = false;
@@ -3009,7 +3060,10 @@ export class Stars {
     const showStars = s.ShowStars && visibilityGate;
     // Dome starfield is a true-source mimic — gate it on ShowTruePositions
     // so toggling "True Positions" off also hides the heavenly starfield.
-    this.domePoints.visible   = showStars && (s.ShowTruePositions !== false);
+    // S227 — also gate on `!InsideVault` so the random cloud doesn't
+    // render twice in Optical (dome + cap both painted through the
+    // transparent cap).
+    this.domePoints.visible   = showStars && (s.ShowTruePositions !== false) && !s.InsideVault;
     this.domePoints.material.opacity   = nightAlpha;
     // Optical-vault star projection: each above-horizon star is placed on
     // the observer's optical hemisphere (radius OpticalVaultRadius), the
@@ -3023,7 +3077,7 @@ export class Stars {
     const domePos = this._domePositions;
     const sphPos = this._spherePositions;
     const opticalR = c.OpticalVaultRadius;
-    const opticalH = c.OpticalVaultHeight;
+    const opticalH = c.OpticalVaultHeightEffective;
 
     for (let i = 0; i < this._celest.length; i++) {
       const [lat, lon] = this._celest[i];
@@ -3149,7 +3203,7 @@ export class DeclinationCircles {
     const s = model.state;
     const c = model.computed;
     const opticalR = c.OpticalVaultRadius;
-    const opticalH = c.OpticalVaultHeight;
+    const opticalH = c.OpticalVaultHeightEffective;
 
     this.group.visible = !!s.ShowDecCircles && !!s.ShowOpticalVault;
     if (!this.group.visible) return;
@@ -3231,7 +3285,14 @@ export class CelestialPoles {
     const c = model.computed;
     const obs = c.ObserverFeCoord;
     const opticalR = c.OpticalVaultRadius;
-    const opticalH = c.OpticalVaultHeight;
+    const opticalH = c.OpticalVaultHeightEffective;
+
+    // S215 — master visibility for the two pole dots. When the user
+    // switches them off, the parent group hides and the per-sphere
+    // visibility logic below short-circuits harmlessly.
+    const polesOn = s.ShowCelestialPoles !== false;
+    this.group.visible = polesOn;
+    if (!polesOn) return;
 
     const place = (groupObj, celestV) => {
       // Optical-vault position from observer's local frame.
@@ -3675,9 +3736,13 @@ export class ToroidalVortex {
 // TrackerTargets — independent of ShowGroundPoints (which only gates
 // sun/moon GPs). Hidden in first-person (Optical) mode so they don't
 // clutter the observer's view of the ground they're standing on.
+// S218 — star GP colour bumped from 0x8ed4ff (pale blue) to 0xffffff
+// (white) so tracked-star ground points read as the same pigment the
+// cel-nav starfield paints overhead, not a distinct "tracker-blue"
+// category.
 const TRACKED_GP_COLORS = {
   sun: 0xffc844, moon: 0xf4f4f4,
-  planet: 0xff8c66, star: 0x8ed4ff,
+  planet: 0xff8c66, star: 0xffffff,
 };
 
 export class TrackedGroundPoints {
@@ -3726,7 +3791,13 @@ export class TrackedGroundPoints {
       const key = info.target === 'sun'  ? 'sun'
                :  info.target === 'moon' ? 'moon'
                :  info.category;
-      const color = TRACKED_GP_COLORS[key] || 0xffffff;
+      // S220 — `info.gpColor` (if present, set by the tracker
+      // star-branch in `app.update()`) overrides the category
+      // default so cel-nav and catalogued stars can use distinct
+      // pigments matching their respective starfield layers.
+      const color = (info.gpColor != null)
+        ? info.gpColor
+        : (TRACKED_GP_COLORS[key] || 0xffffff);
       slot.dot.material.color.setHex(color);
       slot.updateAt(info.gpLat, info.gpLon, FE_RADIUS, true);
 
@@ -3791,7 +3862,10 @@ export class CelNavStars {
     this.domePoints = new THREE.Points(
       domeGeom,
       new THREE.PointsMaterial({
-        color: 0xffffff,
+        // S220 — cel-nav starfield pigment swapped with the
+        // constellation layer: cel-nav is now the warm-yellow
+        // `0xffe8a0` Alan wanted, constellations get the white.
+        color: 0xffe8a0,
         size: 3, sizeAttenuation: false,
         transparent: true, opacity: 1,
         clippingPlanes,
@@ -3806,7 +3880,7 @@ export class CelNavStars {
     this.spherePoints = new THREE.Points(
       sphGeom,
       new THREE.PointsMaterial({
-        color: 0xffffff,
+        color: 0xffe8a0,
         size: 2.5, sizeAttenuation: false,
         transparent: true, opacity: 1,
         depthTest: false, depthWrite: false,
@@ -3828,7 +3902,13 @@ export class CelNavStars {
     const visibilityGate = s.DynamicStars ? nightAlpha > 0.01 : true;
     const showStars = active && s.ShowStars && visibilityGate;
 
-    this.domePoints.visible   = showStars && (s.ShowTruePositions !== false);
+    // S227 — hide the heavenly-vault star dots in Optical mode so
+    // cel-nav stars don't render twice (once on the dome through
+    // the transparent cap, once on the cap surface projection). The
+    // `CelestialMarker` class already gates its true-source dots on
+    // `!InsideVault` for the same reason (see render/index.js ~321);
+    // star classes were missing that gate.
+    this.domePoints.visible   = showStars && (s.ShowTruePositions !== false) && !s.InsideVault;
     this.domePoints.material.opacity   = nightAlpha;
     this.spherePoints.visible = showStars && s.ShowOpticalVault;
     this.spherePoints.material.opacity = nightAlpha;
@@ -3843,9 +3923,26 @@ export class CelNavStars {
     const n = Math.min(stars.length, this._maxStars);
     const dp = this._domePositions;
     const sp = this._spherePositions;
+    // S218 — Specified Tracker Mode: hide any cel-nav star that
+    // isn't in `TrackerTargets`. Off-screen park (0, 0, -1000) on
+    // both buffers so the disc clip plane hides the point.
+    const stm = !!s.SpecifiedTrackerMode;
+    const trackerSet = stm
+      ? new Set(Array.isArray(s.TrackerTargets) ? s.TrackerTargets : [])
+      : null;
 
     for (let i = 0; i < n; i++) {
       const star = stars[i];
+      const isTracked = !stm || trackerSet.has(`star:${star.id}`);
+      if (!isTracked) {
+        dp[i * 3    ] = 0;
+        dp[i * 3 + 1] = 0;
+        dp[i * 3 + 2] = -1000;
+        sp[i * 3    ] = 0;
+        sp[i * 3 + 1] = 0;
+        sp[i * 3 + 2] = -1000;
+        continue;
+      }
       // Heavenly vault position (precomputed by app.js).
       dp[i * 3    ] = star.vaultCoord[0];
       dp[i * 3 + 1] = star.vaultCoord[1];

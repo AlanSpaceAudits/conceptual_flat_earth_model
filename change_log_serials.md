@@ -532,6 +532,17 @@ Format:
   js/render/index.js js/ui/controlPanel.js js/ui/urlState.js`;
   delete `js/core/satellites.js`.
 
+## S333 — Constellations renderer respects tracker filtering + STM focus
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/render/constellations.js`.
+- **Change:** Constellation-star point filter no longer gates on
+  `stm` being true; membership is always required. When STM is on
+  the effective set narrows to `[FollowTarget]` (same rule as
+  every other renderer since S330 / S332). Fixes the bug where
+  the 🎯 focus mode left constellation points visible.
+- **Revert:** `git checkout v-s000332 -- js/render/constellations.js`.
+
 ## S332 — STM now focuses on FollowTarget; demo end clears tracks / GP paths
 
 - **Date:** 2026-04-24

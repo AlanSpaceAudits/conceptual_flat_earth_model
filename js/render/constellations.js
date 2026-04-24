@@ -172,15 +172,15 @@ export class Constellations {
     const sphPos  = new Array(this._nStars);
     const aboveHorizon = new Array(this._nStars);
 
-    // Specified Tracker Mode filter: hide any constellation
-    // star whose id isn't in `TrackerTargets`. Cel-nav duplicates
-    // are already hidden regardless; this rule additionally
-    // kills non-cel-nav stars that aren't explicitly tracked.
-    let trackerSet = null;
-    if (stm) {
-      trackerSet = new Set(Array.isArray(s.TrackerTargets) ? s.TrackerTargets : []);
-      if (s.FollowTarget) trackerSet.add(s.FollowTarget);
-    }
+    // Tracker-as-source-of-truth: constellation stars always filter
+    // by TrackerTargets membership. When STM is on the effective set
+    // is narrowed to just FollowTarget (focus mode) — same rule the
+    // other renderers apply.
+    const targetArr = Array.isArray(s.TrackerTargets) ? s.TrackerTargets : [];
+    const trackerSet = stm
+      ? new Set(s.FollowTarget ? [s.FollowTarget] : [])
+      : new Set(targetArr);
+    if (!stm && s.FollowTarget) trackerSet.add(s.FollowTarget);
 
     for (let i = 0; i < this._nStars; i++) {
       const [lat, lon] = this._stars[i];
@@ -191,8 +191,8 @@ export class Constellations {
       // are written into `domePos` / `sphPos` below regardless, and
       // the line-builder reads those, not the point buffer.
       const starId = this._starId[i];
-      const untrackedInStm = stm && (!starId || !trackerSet.has(`star:${starId}`));
-      const skipPoint = this._celnavDup[i] || untrackedInStm;
+      const untracked = !starId || !trackerSet.has(`star:${starId}`);
+      const skipPoint = this._celnavDup[i] || untracked;
 
       // Heavenly-vault (AE disk).
       const discR = FE_RADIUS * (90 - lat) / 180;

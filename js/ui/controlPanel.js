@@ -1274,6 +1274,16 @@ export function buildControlPanel(host, model, demos) {
   });
   compassControls.appendChild(btnObserver);
 
+  const btnTrackerOpts = document.createElement('button');
+  btnTrackerOpts.className = 'time-btn tracker-opts-btn';
+  btnTrackerOpts.type = 'button';
+  btnTrackerOpts.textContent = '🎛';
+  btnTrackerOpts.title = 'Jump to Tracker Options (Clear / Track All / STM / GP Override / True Positions / GP Path)';
+  btnTrackerOpts.addEventListener('click', () => {
+    featureOpen.fn('Tracker', 'Tracker Options');
+  });
+  compassControls.appendChild(btnTrackerOpts);
+
   const MAP_CYCLE = ['ae', 'hellerick', 'proportional', 'blank'];
   const btnMap = document.createElement('button');
   btnMap.className = 'time-btn map-btn';

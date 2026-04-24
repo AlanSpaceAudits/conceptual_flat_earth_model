@@ -532,6 +532,19 @@ Format:
   js/render/index.js js/ui/controlPanel.js js/ui/urlState.js`;
   delete `js/core/satellites.js`.
 
+## S345 — 🎛 quick-button jumps straight to Tracker Options
+
+- **Date:** 2026-04-24
+- **Files changed:** `css/styles.css`, `js/ui/controlPanel.js`.
+- **Change:** New `.tracker-opts-btn` (🎛) appended to
+  `.compass-controls` after the 📍 Observer button. Click calls
+  `featureOpen.fn('Tracker', 'Tracker Options')`: opens the
+  Tracker tab popup and expands the Tracker Options group so
+  Clear All / Track All / STM / GP Override / True Positions /
+  GP Path are immediately visible.
+- **Revert:** `git checkout v-s000344 -- css/styles.css
+  js/ui/controlPanel.js`.
+
 ## S344 — Rays respect the Tracker-membership rule
 
 - **Date:** 2026-04-24

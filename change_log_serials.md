@@ -532,6 +532,15 @@ Format:
   js/render/index.js js/ui/controlPanel.js js/ui/urlState.js`;
   delete `js/core/satellites.js`.
 
+## S329 — Antarctic 24h-sun demo year bumped back to 2024
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/demos/definitions.js`.
+- **Change:** `24h sun at 79°46'S 83°15'W` intro DateTime
+  `3269` → `2904` (2024-12-14), tween end `3270` → `2905`.
+  Narration updated.
+- **Revert:** `git checkout v-s000328 -- js/demos/definitions.js`.
+
 ## S328 — Opt-in tracker filtering per category; Antarctic demo starts 2025-12-14
 
 - **Date:** 2026-04-24

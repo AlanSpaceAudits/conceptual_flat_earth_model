@@ -280,6 +280,26 @@ header .info-popup p:last-child { margin-bottom: 0; }
   max-width: 720px;
 }
 
+/* External-link list inside the Info tab. */
+.info-links { display: flex; flex-direction: column; gap: 6px; }
+.info-link {
+  display: block;
+  padding: 8px 12px;
+  background: var(--row);
+  color: var(--fg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  text-decoration: none;
+  font: inherit;
+  font-size: 13px;
+  transition: border-color 0.1s, color 0.1s, background 0.1s;
+}
+.info-link:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(255, 154, 60, 0.08);
+}
+
 /* Override the old full-panel `.group-title` style — it's gone now. */
 .group-title { display: none; }
 

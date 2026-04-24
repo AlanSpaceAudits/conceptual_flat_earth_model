@@ -936,6 +936,28 @@ export function buildControlPanel(host, model, demos) {
     });
   }
 
+  // External-link tab. Swap the `href` values below for the real
+  // targets; `#` entries fall through to the current page.
+  registerTab('Info', (popup) => {
+    const links = [
+      { label: 'Space Audits',     href: 'https://www.youtube.com/@AlanSpaceAudits' },
+      { label: 'Shane St. Pierre', href: '#' },
+      { label: 'Discord',          href: '#' },
+    ];
+    const list = document.createElement('div');
+    list.className = 'info-links';
+    for (const l of links) {
+      const a = document.createElement('a');
+      a.className = 'info-link';
+      a.href = l.href;
+      a.target = '_blank';
+      a.rel = 'noopener noreferrer';
+      a.textContent = l.label;
+      list.appendChild(a);
+    }
+    popup.appendChild(list);
+  });
+
   // Wire the bar's time controls into Autoplay.
   const refreshTimeControls = () => {
     btnPlay.textContent = autoplay.playing ? '⏸' : '▶';

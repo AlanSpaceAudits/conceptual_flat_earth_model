@@ -483,6 +483,19 @@ Format:
   is active.
 - **Revert:** `git checkout v-s000243 -- js/ui/controlPanel.js`.
 
+## S247 — Info tab with external links
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/ui/controlPanel.js`, `css/styles.css`.
+- **Change:** new "Info" tab on the bottom bar, registered after
+  Demos. Popup lists three link buttons: Space Audits, Shane St.
+  Pierre, Discord. Links use `target="_blank" rel="noopener
+  noreferrer"`. Space Audits defaults to
+  `https://www.youtube.com/@AlanSpaceAudits`; the other two href
+  entries are `#` placeholders pending real URLs.
+- **Revert:** `git checkout v-s000246 -- js/ui/controlPanel.js
+  css/styles.css`.
+
 ## S246 — Info bar shows active ephemeris
 
 - **Date:** 2026-04-24

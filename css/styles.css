@@ -205,7 +205,7 @@ header .info-popup p:last-child { margin-bottom: 0; }
   color: #d6deed;
   background: transparent;
   pointer-events: none;
-  z-index: 28;
+  z-index: 31;
   text-shadow: 0 0 2px rgba(0, 0, 0, 0.9);
 }
 #info-bar .info-slot { white-space: nowrap; }

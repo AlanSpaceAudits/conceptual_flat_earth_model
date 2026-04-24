@@ -500,6 +500,17 @@ Format:
 - **Revert:** `git checkout v-s000256 -- js/render/worldObjects.js
   js/render/constellations.js`.
 
+## S283 — Lift #info-bar above #bottom-bar in z-stack
+
+- **Date:** 2026-04-24
+- **Files changed:** `css/styles.css`.
+- **Change:** `#info-bar` `z-index: 28` → `31`. After S281 the
+  bar moved inside the dark bottom-bar area, but the bar's
+  `z-index: 30` was painting over the text. Lifted the info
+  strip one layer above so the lat/lon/az/ephem/time slots are
+  visible again.
+- **Revert:** `git checkout v-s000282 -- css/styles.css`.
+
 ## S282 — AC logo shrinks further on phone-sized viewports
 
 - **Date:** 2026-04-24

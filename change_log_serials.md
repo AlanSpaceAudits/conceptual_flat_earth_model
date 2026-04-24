@@ -532,6 +532,35 @@ Format:
   js/render/index.js js/ui/controlPanel.js js/ui/urlState.js`;
   delete `js/core/satellites.js`.
 
+## S315 — Per-category GP Override; Satellites require explicit selection
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/core/app.js`,
+  `js/render/worldObjects.js`, `js/render/index.js`,
+  `js/ui/controlPanel.js`, `js/ui/urlState.js`.
+- **Change:**
+  - Seven new session-persisted state keys:
+    `GPOverridePlanets / CelNav / Constellations / BlackHoles /
+    Quasars / Galaxies / Satellites` (all default `false`).
+  - Each Tracker sub-menu ("Celestial Bodies", Cel Nav,
+    Constellations, Black Holes, Quasars, Galaxies, Satellites)
+    gets a `GP Override` checkbox; selecting it forces GPs for
+    any tracked body in that category to paint on the disc in
+    Heavenly mode, regardless of the master
+    `ShowGroundPoints` toggle.
+  - `TrackedGroundPoints.update()` consults a category-id map
+    (`luminary` / `planet` → Planets key, `star` subCategory →
+    matching catalogue key) to decide whether to force-show.
+  - `CatalogPointStars` constructor gains a
+    `requireMembership: true` option. The Satellites layer
+    uses it so that even without STM, satellites only paint
+    when their id is in `TrackerTargets` (or equal to
+    `FollowTarget`). "Show Satellites" now acts as a true
+    master gate plus per-entry selection.
+- **Revert:** `git checkout v-s000314 -- js/core/app.js
+  js/render/worldObjects.js js/render/index.js
+  js/ui/controlPanel.js js/ui/urlState.js`.
+
 ## S314 — Transport controls add ½× / 2× buttons
 
 - **Date:** 2026-04-24

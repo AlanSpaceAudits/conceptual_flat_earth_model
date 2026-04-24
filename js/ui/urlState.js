@@ -29,6 +29,9 @@ const PERSISTED_KEYS = [
   'StarfieldType',
   'BodySource', 'PermanentNight', 'TrackerTargets',
   'ShowEphemerisReadings', 'SpecifiedTrackerMode', 'TrackerGPOverride',
+  'GPOverridePlanets', 'GPOverrideCelNav', 'GPOverrideConstellations',
+  'GPOverrideBlackHoles', 'GPOverrideQuasars', 'GPOverrideGalaxies',
+  'GPOverrideSatellites',
   'StarApplyPrecession', 'StarApplyNutation', 'StarApplyAberration',
   'StarTrepidation',
 ];

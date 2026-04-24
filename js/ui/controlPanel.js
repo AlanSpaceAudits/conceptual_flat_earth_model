@@ -536,6 +536,7 @@ const FIELD_GROUPS = [
         { key: 'TrackerGPOverride',   label: 'GP Override',          bool: true },
       ]},
       { title: 'Celestial Bodies', rows: [
+        { key: 'GPOverridePlanets', label: 'GP Override', bool: true },
         { key: 'TrackerTargets', label: '', buttonGrid: [
           { value: 'sun',     label: 'Sun',     color: '#ffc844' },
           { value: 'moon',    label: 'Moon',    color: '#f4f4f4' },
@@ -549,6 +550,7 @@ const FIELD_GROUPS = [
         ]},
       ]},
       { title: 'Cel Nav', rows: [
+        { key: 'GPOverrideCelNav', label: 'GP Override', bool: true },
         { key: 'TrackerTargets', label: '', buttonGrid:
           [...CEL_NAV_STARS]
             .sort((a, b) => a.name.localeCompare(b.name))
@@ -556,6 +558,7 @@ const FIELD_GROUPS = [
         },
       ]},
       { title: 'Constellations', rows: [
+        { key: 'GPOverrideConstellations', label: 'GP Override', bool: true },
         { key: 'TrackerTargets', label: '', buttonGrid:
           (() => {
             const celnavIds = new Set(CEL_NAV_STARS.map((s) => s.id));
@@ -571,6 +574,7 @@ const FIELD_GROUPS = [
         },
       ]},
       { title: 'Black Holes', rows: [
+        { key: 'GPOverrideBlackHoles', label: 'GP Override', bool: true },
         { key: 'TrackerTargets', label: '', buttonGrid:
           [...BLACK_HOLES]
             .sort((a, b) => a.name.localeCompare(b.name))
@@ -578,6 +582,7 @@ const FIELD_GROUPS = [
         },
       ]},
       { title: 'Quasars', rows: [
+        { key: 'GPOverrideQuasars', label: 'GP Override', bool: true },
         { key: 'TrackerTargets', label: '', buttonGrid:
           [...QUASARS]
             .sort((a, b) => a.name.localeCompare(b.name))
@@ -585,6 +590,7 @@ const FIELD_GROUPS = [
         },
       ]},
       { title: 'Galaxies', rows: [
+        { key: 'GPOverrideGalaxies', label: 'GP Override', bool: true },
         { key: 'TrackerTargets', label: '', buttonGrid:
           [...GALAXIES]
             .sort((a, b) => a.name.localeCompare(b.name))
@@ -593,6 +599,7 @@ const FIELD_GROUPS = [
       ]},
       { title: 'Satellites', rows: [
         { key: 'ShowSatellites', label: 'Show Satellites', bool: true },
+        { key: 'GPOverrideSatellites', label: 'GP Override', bool: true },
         { key: 'TrackerTargets', label: '', buttonGrid:
           [...SATELLITES]
             .sort((a, b) => a.name.localeCompare(b.name))

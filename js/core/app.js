@@ -117,6 +117,13 @@ function defaultState() {
     ShowLiveEphemeris:       false,
     MoonPhaseExpanded:       false,
     ShowSatellites:          false,
+    GPOverridePlanets:         false,
+    GPOverrideCelNav:          false,
+    GPOverrideConstellations:  false,
+    GPOverrideBlackHoles:      false,
+    GPOverrideQuasars:         false,
+    GPOverrideGalaxies:        false,
+    GPOverrideSatellites:      false,
 
     InsideVault: false,
 

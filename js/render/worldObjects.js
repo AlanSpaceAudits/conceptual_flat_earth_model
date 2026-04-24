@@ -3785,15 +3785,37 @@ export class TrackedGroundPoints {
     const heavenly = !s.InsideVault;
     const followId = s.FollowTarget;
 
+    const OVERRIDE_BY_SUBCAT = {
+      celnav:     'GPOverrideCelNav',
+      catalogued: 'GPOverrideConstellations',
+      blackhole:  'GPOverrideBlackHoles',
+      quasar:     'GPOverrideQuasars',
+      galaxy:     'GPOverrideGalaxies',
+      satellite:  'GPOverrideSatellites',
+    };
+    const categoryOverride = (info) => {
+      if (!info) return false;
+      if (info.category === 'luminary' || info.category === 'planet') {
+        return !!s.GPOverridePlanets;
+      }
+      if (info.category === 'star' && info.subCategory) {
+        const k = OVERRIDE_BY_SUBCAT[info.subCategory];
+        return !!(k && s[k]);
+      }
+      return false;
+    };
+
     for (let i = 0; i < this._pool.length; i++) {
       const slot = this._pool[i];
       const line = this._lines[i];
       const info = infos[i];
       const isFollow = info && followId && info.target === followId;
+      const catOv = categoryOverride(info);
       const showThis = info
         && (baseShow
             || (heavenly && info._followOnly)
-            || (heavenly && isFollow));
+            || (heavenly && isFollow)
+            || (heavenly && catOv));
       if (!showThis) {
         slot.group.visible = false;
         line.visible = false;
@@ -3994,10 +4016,16 @@ export class CatalogPointStars {
     sphereSize = 3.5,
     maxCount = 64,
     clippingPlanes = [],
+    // When true the layer paints only entries whose id is in
+    // TrackerTargets (plus FollowTarget). Used by satellites so a
+    // single "Show Satellites" master toggle doesn't dump all 12
+    // birds into the sky at once.
+    requireMembership = false,
   } = {}) {
     this.sourceKey  = sourceKey;
     this.idPrefix   = idPrefix;
     this._maxStars  = maxCount;
+    this._requireMembership = requireMembership;
 
     this.group = new THREE.Group();
     this.group.name = `catalog-${sourceKey.toLowerCase()}`;
@@ -4062,15 +4090,16 @@ export class CatalogPointStars {
     const dp = this._domePositions;
     const sp = this._spherePositions;
     const stm = !!s.SpecifiedTrackerMode;
+    const membership = stm || this._requireMembership;
     let trackerSet = null;
-    if (stm) {
+    if (membership) {
       trackerSet = new Set(Array.isArray(s.TrackerTargets) ? s.TrackerTargets : []);
       if (s.FollowTarget) trackerSet.add(s.FollowTarget);
     }
 
     for (let i = 0; i < n; i++) {
       const star = entries[i];
-      const isTracked = !stm || trackerSet.has(`${this.idPrefix}:${star.id}`);
+      const isTracked = !membership || trackerSet.has(`${this.idPrefix}:${star.id}`);
       if (!isTracked) {
         dp[i * 3    ] = 0;
         dp[i * 3 + 1] = 0;

@@ -121,6 +121,7 @@ export class Renderer {
       domeSize: 4,
       sphereSize: 3.5,
       clippingPlanes: clipPlanes,
+      requireMembership: true,
     });
     this.sm.world.add(this.satelliteStars.group);
 

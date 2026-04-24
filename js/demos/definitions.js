@@ -23,6 +23,30 @@ const T1 = 1000, T3 = 3000, T5 = 5000, T8 = 8000;
 // behaviour is preserved in the registry's 2024-04-08 demo entry.
 const GENERAL_DEMOS = [
   {
+    name: 'North-pole GP trace (tracked bodies)',
+    group: 'general',
+    intro: {
+      InsideVault: false,
+      BodySource: 'astropixels',
+      CameraDirection: 0,
+      CameraHeight: 89.9,              // straight-down on the disc
+      CameraDistance: 20,
+      Zoom: 1.5,
+      VaultSize: 1, VaultHeight: 0.45,
+      ShowGPPath: true,
+      ShowTruePositions: true,
+      ShowSunTrack: false, ShowMoonTrack: false,
+      ShowFeGrid: true,
+    },
+    tasks: (m) => {
+      const start = m.state.DateTime;
+      return [
+        Ttxt('Heavenly vault, camera looking straight down at the north pole (disc centre). 24-hour GP traces follow every body you have selected in Tracker — watch them sweep in real time.'),
+        Tval('DateTime', start + 7, 8 * T5, T1, 'linear'),
+      ];
+    },
+  },
+  {
     name: 'Equinox at the equator',
     group: 'general',
     intro: {

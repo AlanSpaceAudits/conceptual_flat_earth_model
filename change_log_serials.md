@@ -532,6 +532,24 @@ Format:
   js/render/index.js js/ui/controlPanel.js js/ui/urlState.js`;
   delete `js/core/satellites.js`.
 
+## S339 — New demo: North-pole GP trace of tracked bodies
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/demos/definitions.js`.
+- **Change:** New General-section demo
+  `North-pole GP trace (tracked bodies)`. Intro forces Heavenly
+  view + `CameraHeight: 89.9` (straight-down on the disc) +
+  `Zoom: 1.5` / `CameraDistance: 20` so the whole FE disc is
+  framed with the north pole (disc centre) at the viewport
+  centre. `ShowGPPath` + `ShowTruePositions` + `ShowFeGrid` on;
+  `BodySource` forced to `astropixels`. `TrackerTargets`
+  deliberately left untouched so the demo traces whatever the
+  user has selected. Tasks callback reads
+  `m.state.DateTime` at play time and advances by 7 days over
+  40 s (linear), so every tracked body's rolling 24 h GP
+  polyline sweeps in real time as the demo runs.
+- **Revert:** `git checkout v-s000338 -- js/demos/definitions.js`.
+
 ## S338 — about.md refresh: every bar icon + new Tracker layout
 
 - **Date:** 2026-04-24

@@ -532,6 +532,20 @@ Format:
   js/render/index.js js/ui/controlPanel.js js/ui/urlState.js`;
   delete `js/core/satellites.js`.
 
+## S350 — Compact compass-cluster buttons so both rows center on the time-controls line
+
+- **Date:** 2026-04-24
+- **Files changed:** `css/styles.css`.
+- **Change:** All compass / cycle / cardinal grid buttons share a
+  tighter style (`padding: 0 6px`, `font-size: 12px`,
+  `line-height: 18px`, `min-width: 32px`). Each button is now
+  ~20 px tall, so a 2-row grid totals ~42 px including the gap
+  — short enough to sit inside the same 44 px band
+  `.time-controls` uses, letting `align-items: center` land
+  both clusters on the same vertical line. The `cardinal-grid`
+  keeps `font-weight: 600` for the N / S / E / W glyphs.
+- **Revert:** `git checkout v-s000349 -- css/styles.css`.
+
 ## S349 — Align compass sub-grids to same vertical span
 
 - **Date:** 2026-04-24

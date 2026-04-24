@@ -370,14 +370,14 @@ const FIELD_GROUPS = [
         ]},
       ]},
       { title: 'Cel Nav', rows: [
-        { key: 'TrackerTargets', label: 'Cel Nav', buttonGrid:
+        { key: 'TrackerTargets', label: '', buttonGrid:
           [...CEL_NAV_STARS]
             .sort((a, b) => a.name.localeCompare(b.name))
             .map((s) => ({ value: `star:${s.id}`, label: s.name, color: '#ffe8a0' })),
         },
       ]},
       { title: 'Constellations', rows: [
-        { key: 'TrackerTargets', label: 'Constellations', buttonGrid:
+        { key: 'TrackerTargets', label: '', buttonGrid:
           (() => {
             const celnavIds = new Set(CEL_NAV_STARS.map((s) => s.id));
             return [...CATALOGUED_STARS]
@@ -392,14 +392,14 @@ const FIELD_GROUPS = [
         },
       ]},
       { title: 'Black Holes', rows: [
-        { key: 'TrackerTargets', label: 'Black Holes', buttonGrid:
+        { key: 'TrackerTargets', label: '', buttonGrid:
           [...BLACK_HOLES]
             .sort((a, b) => a.name.localeCompare(b.name))
             .map((b) => ({ value: `star:${b.id}`, label: b.name, color: '#9966ff' })),
         },
       ]},
       { title: 'Quasars', rows: [
-        { key: 'TrackerTargets', label: 'Quasars', buttonGrid:
+        { key: 'TrackerTargets', label: '', buttonGrid:
           [...QUASARS]
             .sort((a, b) => a.name.localeCompare(b.name))
             .map((q) => ({ value: `star:${q.id}`, label: q.name, color: '#40e0d0' })),
@@ -631,9 +631,13 @@ function boolSelectRow(model, row) {
 function buttonGridRow(model, row) {
   const el = document.createElement('div');
   el.className = 'row button-grid-row';
-  const label = document.createElement('label');
-  label.textContent = row.label;
-  el.appendChild(label);
+  if (row.label) {
+    const label = document.createElement('label');
+    label.textContent = row.label;
+    el.appendChild(label);
+  } else {
+    el.classList.add('no-label');
+  }
   const grid = document.createElement('div');
   grid.className = 'button-grid';
   el.appendChild(grid);

@@ -145,6 +145,7 @@ header .info-popup p:last-child { margin-bottom: 0; }
   padding: 4px 0;
 }
 .row.button-grid-row > label { padding-top: 4px; color: var(--muted); }
+.row.button-grid-row.no-label { grid-template-columns: 1fr; }
 .button-grid { display: flex; flex-wrap: wrap; gap: 3px; }
 .tracker-btn {
   font: 11px/1.2 ui-monospace, Menlo, monospace;

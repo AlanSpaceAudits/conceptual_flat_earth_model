@@ -500,6 +500,22 @@ Format:
 - **Revert:** `git checkout v-s000256 -- js/render/worldObjects.js
   js/render/constellations.js`.
 
+## S270 — Drop redundant sub-menu labels inside Tracker star grids
+
+- **Date:** 2026-04-24
+- **Files changed:** `css/styles.css`, `js/ui/controlPanel.js`.
+- **Change:**
+  - Cel Nav / Constellations / Black Holes / Quasars buttonGrid
+    rows now pass `label: ''` — each grid already sits inside a
+    collapsible whose title names the category, the second label
+    was noise.
+  - `buttonGridRow()` renders the 96px label column only when
+    `row.label` is non-empty; otherwise it adds a `.no-label`
+    modifier and CSS switches `grid-template-columns` to `1fr`
+    so the grid consumes the row's full width.
+- **Revert:** `git checkout v-s000269 -- css/styles.css
+  js/ui/controlPanel.js`.
+
 ## S269 — Tracker HUD titles: distinguish black holes and quasars from stars
 
 - **Date:** 2026-04-24

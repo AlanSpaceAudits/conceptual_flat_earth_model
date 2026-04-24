@@ -154,7 +154,7 @@ function defaultState() {
     // When true, starfield fades with sun elevation.
     DynamicStars: true,
 
-    // 'none' | 'yggdrasil' | 'meru'
+    // 'none' | 'yggdrasil' | 'meru' | 'vortex' | 'vortex2' | 'discworld'
     Cosmology: 'none',
 
     // 'ae' | 'hellerick' | 'blank'. Affects only the map art; physics

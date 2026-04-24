@@ -615,7 +615,7 @@ const FIELD_GROUPS = [
       ]},
       { title: 'Cosmology', rows: [
         { key: 'Cosmology', label: 'Axis Mundi',
-          select: ['none', 'yggdrasil', 'meru', 'vortex', 'vortex2'] },
+          select: ['none', 'yggdrasil', 'meru', 'vortex', 'vortex2', 'discworld'] },
       ]},
       { title: 'Map Projection', rows: [
         { key: 'MapProjection', label: 'Projection', select: listProjections() },

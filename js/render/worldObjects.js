@@ -3565,6 +3565,150 @@ export class MtMeru {
   }
 }
 
+// Discworld cosmology: Great A'Tuin the star turtle swimming through
+// space, with four elephants (Berilia, Tubul, Great T'Phon, Jerakeen)
+// arranged in a cross on its back holding the FE disc aloft. Nod to
+// Terry Pratchett's *The Colour of Magic*. Materials are left without
+// clipping planes so the whole assembly renders below z = 0 (under
+// the disc) where the user can orbit around to see it.
+export class Discworld {
+  constructor() {
+    this.group = new THREE.Group();
+    this.group.name = 'discworld';
+
+    const shellColor  = 0x3a6a3a;   // turtle shell — mottled green
+    const skinColor   = 0x5a8a55;   // softer body green
+    const elephantCol = 0x8c8c94;   // slate-grey elephants
+    const ivoryCol    = 0xeeeadf;   // tusks
+
+    // --- A'Tuin the turtle ------------------------------------------
+    // Shell: squashed hemisphere sitting just under the disc.
+    const shellGeo = new THREE.SphereGeometry(0.7, 28, 14, 0, Math.PI * 2, 0, Math.PI / 2);
+    shellGeo.scale(1, 1, 0.45);
+    shellGeo.translate(0, 0, -0.55);
+    const shellMat = new THREE.MeshBasicMaterial({ color: shellColor });
+    this.group.add(new THREE.Mesh(shellGeo, shellMat));
+
+    // Belly: matching hemisphere flipped over, slightly smaller.
+    const bellyGeo = new THREE.SphereGeometry(0.65, 24, 12, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2);
+    bellyGeo.scale(1, 1, 0.35);
+    bellyGeo.translate(0, 0, -0.55);
+    this.group.add(new THREE.Mesh(bellyGeo, new THREE.MeshBasicMaterial({ color: skinColor })));
+
+    // Four legs at the corners of the shell, splayed outward.
+    for (let i = 0; i < 4; i++) {
+      const a = (i / 4) * Math.PI * 2 + Math.PI / 4;
+      const legGeo = new THREE.CylinderGeometry(0.08, 0.1, 0.45, 10);
+      legGeo.translate(0, -0.22, 0);
+      legGeo.rotateX(Math.PI / 2);
+      const leg = new THREE.Mesh(legGeo, new THREE.MeshBasicMaterial({ color: skinColor }));
+      leg.position.set(Math.cos(a) * 0.6, Math.sin(a) * 0.6, -0.55);
+      leg.rotation.z = a;
+      this.group.add(leg);
+    }
+
+    // Turtle head + neck poking out the front.
+    const neckGeo = new THREE.CylinderGeometry(0.09, 0.12, 0.35, 12);
+    neckGeo.rotateX(Math.PI / 2);
+    const neck = new THREE.Mesh(neckGeo, new THREE.MeshBasicMaterial({ color: skinColor }));
+    neck.position.set(0.85, 0, -0.55);
+    neck.rotation.z = Math.PI / 2;
+    this.group.add(neck);
+    const headGeo = new THREE.SphereGeometry(0.13, 16, 12);
+    const head = new THREE.Mesh(headGeo, new THREE.MeshBasicMaterial({ color: skinColor }));
+    head.position.set(1.05, 0, -0.52);
+    this.group.add(head);
+
+    // Stubby tail.
+    const tailGeo = new THREE.ConeGeometry(0.06, 0.2, 8);
+    tailGeo.rotateZ(Math.PI / 2);
+    const tail = new THREE.Mesh(tailGeo, new THREE.MeshBasicMaterial({ color: skinColor }));
+    tail.position.set(-0.85, 0, -0.57);
+    tail.rotation.z = Math.PI;
+    this.group.add(tail);
+
+    // --- Four elephants in a cross on the turtle's back -------------
+    // Each elephant's head points outward (radial), so their butts
+    // meet at the disc centre — matches Pratchett's cross arrangement.
+    const buildElephant = () => {
+      const g = new THREE.Group();
+      const mat = new THREE.MeshBasicMaterial({ color: elephantCol });
+      // Body
+      const bodyGeo = new THREE.SphereGeometry(0.16, 14, 10);
+      bodyGeo.scale(1.3, 0.9, 0.9);
+      const body = new THREE.Mesh(bodyGeo, mat);
+      body.position.z = 0.13;
+      g.add(body);
+      // Head
+      const hGeo = new THREE.SphereGeometry(0.11, 14, 10);
+      const h = new THREE.Mesh(hGeo, mat);
+      h.position.set(0.18, 0, 0.17);
+      g.add(h);
+      // Trunk
+      const trunkGeo = new THREE.CylinderGeometry(0.03, 0.05, 0.22, 10);
+      trunkGeo.rotateX(Math.PI / 2);
+      trunkGeo.rotateY(-Math.PI / 2);
+      const trunk = new THREE.Mesh(trunkGeo, mat);
+      trunk.position.set(0.28, 0, 0.11);
+      g.add(trunk);
+      // Two tusks
+      for (const dy of [0.045, -0.045]) {
+        const tuskGeo = new THREE.ConeGeometry(0.018, 0.12, 8);
+        tuskGeo.rotateZ(-Math.PI / 2);
+        const tusk = new THREE.Mesh(tuskGeo, new THREE.MeshBasicMaterial({ color: ivoryCol }));
+        tusk.position.set(0.26, dy, 0.14);
+        g.add(tusk);
+      }
+      // Ears
+      for (const dy of [0.12, -0.12]) {
+        const earGeo = new THREE.SphereGeometry(0.07, 10, 8);
+        earGeo.scale(0.3, 1, 1);
+        const ear = new THREE.Mesh(earGeo, mat);
+        ear.position.set(0.13, dy, 0.19);
+        g.add(ear);
+      }
+      // Four legs
+      for (const [dx, dy] of [[0.1, 0.08], [0.1, -0.08], [-0.1, 0.08], [-0.1, -0.08]]) {
+        const legG = new THREE.CylinderGeometry(0.03, 0.03, 0.14, 8);
+        legG.translate(0, -0.07, 0);
+        legG.rotateX(Math.PI / 2);
+        const leg = new THREE.Mesh(legG, mat);
+        leg.position.set(dx, dy, 0.05);
+        g.add(leg);
+      }
+      // Tail
+      const tGeo = new THREE.CylinderGeometry(0.01, 0.02, 0.11, 6);
+      tGeo.rotateX(Math.PI / 2);
+      tGeo.rotateY(Math.PI / 2);
+      const t = new THREE.Mesh(tGeo, mat);
+      t.position.set(-0.22, 0, 0.12);
+      g.add(t);
+      return g;
+    };
+
+    const elephants = [];
+    for (let i = 0; i < 4; i++) {
+      const e = buildElephant();
+      const theta = (i / 4) * Math.PI * 2;
+      const rad = 0.22;
+      e.position.set(Math.cos(theta) * rad, Math.sin(theta) * rad, -0.22);
+      e.rotation.z = theta;
+      this.group.add(e);
+      elephants.push(e);
+    }
+
+    // All meshes render before the disc so occlusion reads correctly
+    // when the orbit camera drops below the horizon line.
+    this.group.traverse((o) => { if (o.isMesh) o.renderOrder = 85; });
+
+    this.group.visible = false;
+  }
+
+  update(model) {
+    this.group.visible = model.state.Cosmology === 'discworld';
+  }
+}
+
 // Toroidal vortex — a proper donut-shaped wireframe of a toroidal field,
 // centered on the disc axis. Built as a spindle torus (tube radius r >
 // axial distance R) so the inner hole pinches down to two points on the

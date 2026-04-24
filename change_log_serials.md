@@ -532,6 +532,34 @@ Format:
   js/render/index.js js/ui/controlPanel.js js/ui/urlState.js`;
   delete `js/core/satellites.js`.
 
+## S357 — Discworld cosmology (A'Tuin + 4 elephants); Antarctic demo moves to solstice
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/core/app.js`, `js/demos/definitions.js`,
+  `js/render/index.js`, `js/render/worldObjects.js`,
+  `js/ui/controlPanel.js`.
+- **Change:**
+  - New `Discworld` class in `worldObjects.js`: a flattened
+    green turtle (Great A'Tuin) with shell, belly, four splayed
+    legs, a neck-and-head out the front, and a stub tail — sits
+    below the disc. Four slate-grey elephants (body / head /
+    trunk / tusks / ears / four legs / tail) stand on its back
+    in a cross, each rotated to face outward (radial) so their
+    heads point N / E / S / W. Materials render without clip
+    planes so the whole stack is visible when the orbit camera
+    drops below the disc horizon.
+  - Wired into `render/index.js` (instantiate, add to scene,
+    call update each frame) and the Cosmology dropdown in the
+    Show tab (`discworld` added as a sixth option).
+  - `24h sun at 79°46'S 83°15'W` demo intro DateTime bumped
+    `2904 → 2911` (2024-12-21 solstice). Sun declination at
+    solstice gives the peak elevation range for that latitude
+    (≈ 13° min, 34° max) — it still dips to 13° at the
+    "midnight" pass but never sets. Narration updated.
+- **Revert:** `git checkout v-s000356 -- js/core/app.js
+  js/demos/definitions.js js/render/index.js
+  js/render/worldObjects.js js/ui/controlPanel.js`.
+
 ## S356 — GP-trace demo: observer parked at polar summer so sun stays above horizon
 
 - **Date:** 2026-04-24

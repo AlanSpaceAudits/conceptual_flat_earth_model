@@ -170,7 +170,7 @@ const SUN_24H_DEMOS = [
     intro: {
       ObserverLat: -79.76806, ObserverLong: -83.26167,
       BodySource: 'astropixels',
-      DateTime: 2904,                        // 2024-12-14 00:00 UTC
+      DateTime: 2911,                        // 2024-12-21 solstice — peak sun elevation
       InsideVault: false,
       CameraDirection: -83.262, CameraHeight: 70, CameraDistance: 10, Zoom: 1.4,
       VaultSize: 1, VaultHeight: 0.45,
@@ -179,8 +179,8 @@ const SUN_24H_DEMOS = [
       ShowShadow: true, ShowTruePositions: true,
     },
     tasks: () => [
-      Ttxt('79°46′S 83°15′W · West Antarctica · starting 2024-12-14 — sun circles overhead for the whole 24 h without setting.'),
-      Tval('DateTime', 2905, 4 * T5, T1, 'linear'),
+      Ttxt('79°46′S 83°15′W · West Antarctica · 2024-12-21 solstice — sun circles overhead for the whole 24 h without setting. Min elevation ≈ 13°, max ≈ 34°.'),
+      Tval('DateTime', 2912, 4 * T5, T1, 'linear'),
     ],
   },
   {

@@ -8,7 +8,7 @@ import {
   CelestialMarker, Observer, Stars, LatitudeLines, GroundPoint,
   CelestialPoles, DeclinationCircles, Yggdrasil, MtMeru, ToroidalVortex,
   LongitudeRing, CelNavStars, TrackedGroundPoints, CatalogPointStars,
-  GPPathOverlay,
+  GPPathOverlay, Discworld,
 } from './worldObjects.js';
 import { loadLandGeo, buildGeoJsonLand, buildImageMap, buildBlankMap } from './earthMap.js';
 import { Constellations } from './constellations.js';
@@ -149,10 +149,12 @@ export class Renderer {
     // shown at a time, driven by state.Cosmology.
     this.yggdrasil = new Yggdrasil();
     this.mtMeru    = new MtMeru();
+    this.discworld = new Discworld();
     this.toroidalVortex     = new ToroidalVortex('single', clipPlanes);
     this.toroidalVortexDual = new ToroidalVortex('dual',   clipPlanes);
     this.sm.world.add(this.yggdrasil.group);
     this.sm.world.add(this.mtMeru.group);
+    this.sm.world.add(this.discworld.group);
     this.sm.world.add(this.toroidalVortex.group);
     this.sm.world.add(this.toroidalVortexDual.group);
 
@@ -398,6 +400,7 @@ export class Renderer {
     this.decCircles.update(m);
     this.yggdrasil.update(m);
     this.mtMeru.update(m);
+    this.discworld.update(m);
     this.toroidalVortex.update(m);
     this.toroidalVortexDual.update(m);
     this.observer.update(m);

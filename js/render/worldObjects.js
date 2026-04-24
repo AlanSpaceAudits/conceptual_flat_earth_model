@@ -4238,26 +4238,39 @@ export class CatalogPointStars {
     // nothing regardless of other toggles — this is the Tracker
     // sub-menu's "Show <category>" checkbox.
     showKey = null,
+    // When true, each entry's `.color` field drives a per-vertex
+    // color attribute. Used by the union catalog so a quasar entry
+    // paints cyan, a galaxy pink, etc., in the same layer.
+    perVertexColors = false,
   } = {}) {
     this.sourceKey  = sourceKey;
     this.idPrefix   = idPrefix;
     this._maxStars  = maxCount;
     this._requireMembership = requireMembership;
     this._showKey   = showKey;
+    this._perVertexColors = perVertexColors;
 
     this.group = new THREE.Group();
     this.group.name = `catalog-${sourceKey.toLowerCase()}`;
 
     this._domePositions   = new Float32Array(maxCount * 3);
     this._spherePositions = new Float32Array(maxCount * 3);
+    if (perVertexColors) {
+      this._domeColors   = new Float32Array(maxCount * 3);
+      this._sphereColors = new Float32Array(maxCount * 3);
+    }
 
     const domeGeom = new THREE.BufferGeometry();
     domeGeom.setAttribute('position', new THREE.BufferAttribute(this._domePositions, 3));
+    if (perVertexColors) {
+      domeGeom.setAttribute('color', new THREE.BufferAttribute(this._domeColors, 3));
+    }
     domeGeom.setDrawRange(0, 0);
     this.domePoints = new THREE.Points(
       domeGeom,
       new THREE.PointsMaterial({
-        color,
+        color: perVertexColors ? 0xffffff : color,
+        vertexColors: !!perVertexColors,
         size: domeSize, sizeAttenuation: false,
         transparent: true, opacity: 1,
         clippingPlanes,
@@ -4268,11 +4281,15 @@ export class CatalogPointStars {
 
     const sphGeom = new THREE.BufferGeometry();
     sphGeom.setAttribute('position', new THREE.BufferAttribute(this._spherePositions, 3));
+    if (perVertexColors) {
+      sphGeom.setAttribute('color', new THREE.BufferAttribute(this._sphereColors, 3));
+    }
     sphGeom.setDrawRange(0, 0);
     this.spherePoints = new THREE.Points(
       sphGeom,
       new THREE.PointsMaterial({
-        color,
+        color: perVertexColors ? 0xffffff : color,
+        vertexColors: !!perVertexColors,
         size: sphereSize, sizeAttenuation: false,
         transparent: true, opacity: 1,
         depthTest: false, depthWrite: false,
@@ -4318,6 +4335,8 @@ export class CatalogPointStars {
       : new Set(targetArr);
     if (!stm && s.FollowTarget) trackerSet.add(s.FollowTarget);
 
+    const dc = this._domeColors;
+    const sc = this._sphereColors;
     for (let i = 0; i < n; i++) {
       const star = entries[i];
       const isTracked = trackerSet.has(`${this.idPrefix}:${star.id}`);
@@ -4343,12 +4362,23 @@ export class CatalogPointStars {
         sp[i * 3 + 1] = star.opticalVaultCoord[1];
         sp[i * 3 + 2] = star.opticalVaultCoord[2];
       }
+      if (this._perVertexColors && star.color != null) {
+        const r = ((star.color >> 16) & 0xff) / 255;
+        const g = ((star.color >>  8) & 0xff) / 255;
+        const b = ( star.color        & 0xff) / 255;
+        dc[i * 3] = r; dc[i * 3 + 1] = g; dc[i * 3 + 2] = b;
+        sc[i * 3] = r; sc[i * 3 + 1] = g; sc[i * 3 + 2] = b;
+      }
     }
 
     this.domePoints.geometry.setDrawRange(0, n);
     this.domePoints.geometry.attributes.position.needsUpdate = true;
     this.spherePoints.geometry.setDrawRange(0, n);
     this.spherePoints.geometry.attributes.position.needsUpdate = true;
+    if (this._perVertexColors) {
+      this.domePoints.geometry.attributes.color.needsUpdate = true;
+      this.spherePoints.geometry.attributes.color.needsUpdate = true;
+    }
   }
 }
 

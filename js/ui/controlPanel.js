@@ -11,6 +11,9 @@ import { QUASARS }     from '../core/quasars.js';
 import { GALAXIES }    from '../core/galaxies.js';
 import { SATELLITES }  from '../core/satellites.js';
 import { BRIGHT_STAR_CATALOG } from '../core/brightStarCatalog.js';
+import { NAMED_STARS_HYG }    from '../core/_namedStarsHyg.js';
+import { GALAXIES_EXTRA }     from '../core/galaxiesExtra.js';
+import { QUASARS_EXTRA }      from '../core/quasarsExtra.js';
 import { listProjections, PROJECTIONS } from '../core/projections.js';
 import { Autoplay } from './autoplay.js';
 
@@ -39,7 +42,9 @@ const BODY_SEARCH_INDEX = (() => {
   for (const q of QUASARS)           out.push({ id: `star:${q.id}`, name: q.name, color: '#40e0d0' });
   for (const g of GALAXIES)          out.push({ id: `star:${g.id}`, name: g.name, color: '#ff80c0' });
   for (const s of SATELLITES)        out.push({ id: `star:${s.id}`, name: s.name, color: '#66ff88' });
-  for (const s of BRIGHT_STAR_CATALOG) out.push({ id: `star:${s.id}`, name: s.name, color: '#fff5d8' });
+  for (const s of NAMED_STARS_HYG)   out.push({ id: `star:${s.id}`, name: s.name, color: '#fff5d8' });
+  for (const g of GALAXIES_EXTRA)    out.push({ id: `star:${g.id}`, name: g.name, color: '#ff80c0' });
+  for (const q of QUASARS_EXTRA)     out.push({ id: `star:${q.id}`, name: q.name, color: '#40e0d0' });
   return out;
 })();
 
@@ -898,7 +903,11 @@ const FIELD_GROUPS = [
         { key: 'TrackerTargets', label: '', buttonGrid:
           [...BRIGHT_STAR_CATALOG]
             .sort((a, b) => a.name.localeCompare(b.name))
-            .map((x) => ({ value: `star:${x.id}`, label: x.name, color: '#fff5d8' })),
+            .map((x) => ({
+              value: `star:${x.id}`,
+              label: x.name,
+              color: '#' + (x.color != null ? x.color : 0xfff5d8).toString(16).padStart(6, '0'),
+            })),
         },
       ]},
     ],
@@ -1446,60 +1455,15 @@ export function buildControlPanel(host, model, demos) {
   const cycleRow = document.createElement('div');
   cycleRow.className = 'cycle-row';
 
-  const MAP_CYCLE = [
-    'ae', 'ae_dual', 'hellerick', 'proportional', 'blank',
-    'equirect', 'mercator', 'mollweide', 'robinson', 'winkel_tripel',
-    'hammer', 'aitoff', 'sinusoidal', 'equal_earth', 'eckert4',
-  ];
   const btnMap = document.createElement('button');
   btnMap.className = 'time-btn map-btn';
   btnMap.type = 'button';
   btnMap.textContent = '🗺';
-  btnMap.title = 'Choose map projection';
-  const mapPicker = document.createElement('div');
-  mapPicker.className = 'map-picker-popup';
-  mapPicker.hidden = true;
-  const mapPickerRows = [];
-  for (const id of MAP_CYCLE) {
-    const proj = PROJECTIONS[id];
-    if (!proj) continue;
-    const row = document.createElement('button');
-    row.type = 'button';
-    row.className = 'map-picker-row';
-    row.dataset.projId = id;
-    row.textContent = proj.name;
-    row.addEventListener('mousedown', (e) => {
-      e.preventDefault();
-      model.setState({ MapProjection: id });
-      mapPicker.hidden = true;
-    });
-    mapPicker.appendChild(row);
-    mapPickerRows.push(row);
-  }
-  document.body.appendChild(mapPicker);
-  const refreshMapPickerHighlight = () => {
-    const cur = model.state.MapProjection || 'ae';
-    for (const row of mapPickerRows) {
-      row.classList.toggle('active', row.dataset.projId === cur);
-    }
-  };
-  model.addEventListener('update', refreshMapPickerHighlight);
-  refreshMapPickerHighlight();
+  btnMap.title = 'Open Map Projection settings';
   btnMap.addEventListener('click', () => {
-    if (!mapPicker.hidden) { mapPicker.hidden = true; return; }
-    const rect = btnMap.getBoundingClientRect();
-    mapPicker.style.left = `${Math.max(8, rect.left)}px`;
-    mapPicker.style.top  = `${Math.max(8, rect.top - mapPicker.offsetHeight - 8)}px`;
-    mapPicker.hidden = false;
-    // Reposition now that it has layout height
-    requestAnimationFrame(() => {
-      mapPicker.style.top = `${Math.max(8, rect.top - mapPicker.offsetHeight - 8)}px`;
-    });
-  });
-  document.addEventListener('mousedown', (e) => {
-    if (mapPicker.hidden) return;
-    if (mapPicker.contains(e.target) || btnMap.contains(e.target)) return;
-    mapPicker.hidden = true;
+    if (typeof featureOpen.fn === 'function') {
+      featureOpen.fn('Show', 'Map Projection');
+    }
   });
 
   const STARFIELD_CYCLE = ['random', 'chart-dark', 'chart-light', 'celnav'];
@@ -1900,16 +1864,11 @@ export function buildControlPanel(host, model, demos) {
   refreshTimeControls();
 
   // Escape priority:
-  //   1. close the map-picker popup if open
-  //   2. close any tab popup if open
-  //   3. pause a running demo animator
-  //   4. clear tracking / free-cam
+  //   1. close any tab popup if open
+  //   2. pause a running demo animator
+  //   3. clear tracking / free-cam
   window.addEventListener('keydown', (e) => {
     if (e.key !== 'Escape') return;
-    if (!mapPicker.hidden) {
-      mapPicker.hidden = true;
-      return;
-    }
     if (activeIdx >= 0) {
       const entry = tabEntries[activeIdx];
       entry.popup.hidden = true;

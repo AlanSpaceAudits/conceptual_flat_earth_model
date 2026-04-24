@@ -532,6 +532,51 @@ Format:
   js/render/index.js js/ui/controlPanel.js js/ui/urlState.js`;
   delete `js/core/satellites.js`.
 
+## S369 — BSC becomes a union catalog; 🗺 button opens existing dropdown; FE grid order fix
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/core/galaxies.js`, `js/core/quasars.js`,
+  `js/core/_namedStarsHyg.js` (renamed from
+  `brightStarCatalog.js`), `js/core/brightStarCatalog.js`
+  (rewritten as union), `js/render/worldObjects.js`,
+  `js/render/index.js`, `js/ui/controlPanel.js`, `js/main.js`,
+  `change_log_serials.md`.
+- **Change:**
+  - `galaxies.js` and `quasars.js` reverted to pure-base lists;
+    `GALAXIES_EXTRA` / `QUASARS_EXTRA` no longer concatenated.
+  - HYG-named star list moved out of `brightStarCatalog.js` into
+    `_namedStarsHyg.js` and exported as `NAMED_STARS_HYG`.
+  - `brightStarCatalog.js` rewritten as a union: `CEL_NAV_STARS`
+    + `CATALOGUED_STARS` + `BLACK_HOLES` + `GALAXIES` + `QUASARS`
+    + `NAMED_STARS_HYG` + `GALAXIES_EXTRA` + `QUASARS_EXTRA`,
+    each entry tagged with its source `cat` and `color`. Dedup
+    by id.
+  - `CatalogPointStars` (`worldObjects.js`) gains a
+    `perVertexColors` constructor option. When true, allocates
+    Float32 color buffers, sets `vertexColors: true` on
+    materials, and writes each entry's `.color` as RGB.
+  - `render/index.js`: BSC layer instantiated with
+    `perVertexColors: true`, `maxCount: 1024`.
+  - `controlPanel.js`: BSC button-grid colours now come from
+    `entry.color` (per-entry hex) instead of a hard-coded
+    catalog colour. `BODY_SEARCH_INDEX` adds entries from
+    `NAMED_STARS_HYG`, `GALAXIES_EXTRA`, `QUASARS_EXTRA`
+    (the genuinely new sources, not duplicates).
+  - 🗺 button in the bottom bar now calls
+    `featureOpen.fn('Show', 'Map Projection')` to open the
+    existing Show-tab dropdown. The custom
+    `.map-picker-popup` and `MAP_CYCLE` array are removed.
+    Escape handler simplified accordingly.
+  - `main.js`: `refreshActiveProjection` listener moved before
+    `new Renderer(...)` so it fires first on each `update`,
+    keeping `setActiveProjection` ahead of the renderer's
+    `DiscGrid` / `LatitudeLines` rebuild check.
+- **Revert:** `git checkout v-s000368 -- js/core/galaxies.js
+  js/core/quasars.js js/core/brightStarCatalog.js
+  js/render/worldObjects.js js/render/index.js
+  js/ui/controlPanel.js js/main.js`; `rm
+  js/core/_namedStarsHyg.js`.
+
 ## S368 — Bright Star Catalog + 200 extra galaxies / quasars + Disable All
 
 - **Date:** 2026-04-24

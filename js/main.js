@@ -21,6 +21,15 @@ buildHud(hudEl, model);
 const trackerHudEl = document.getElementById('tracker-hud');
 if (trackerHudEl) buildTrackerHud(trackerHudEl, model);
 
+// Routes MapProjection → canonical.js' active-projection slot.
+// Registered before the Renderer so its 'update' listener runs first
+// and rebuilds DiscGrid / LatitudeLines using the new projection.
+const refreshActiveProjection = () => {
+  setActiveProjection(model.state.MapProjection || 'ae');
+};
+model.addEventListener('update', refreshActiveProjection);
+refreshActiveProjection();
+
 let renderer = null;
 try {
   renderer = new Renderer(canvas, model);
@@ -36,14 +45,6 @@ try {
   warn.textContent = 'WebGL could not be initialised. The controls still work; the 3D view is disabled.';
   canvas.parentElement.appendChild(warn);
 }
-
-// Route MapProjection → canonical.js' active-projection slot so every
-// overlay that calls canonicalLatLongToDisc re-projects together.
-const refreshActiveProjection = () => {
-  setActiveProjection(model.state.MapProjection || 'ae');
-};
-model.addEventListener('update', refreshActiveProjection);
-refreshActiveProjection();
 
 model.update();
 model.dispatchEvent(new CustomEvent('update'));

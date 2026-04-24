@@ -3,9 +3,7 @@
 // / QUASARS — flows through the shared projectStar() helper in
 // app.update().
 
-import { GALAXIES_EXTRA } from './galaxiesExtra.js';
-
-const GALAXIES_BASE = [
+export const GALAXIES = [
   { id: 'gal_m31',       name: 'M31 (Andromeda)',        raH:  0.71231, decD:  41.26917, mag: 3.44 },
   { id: 'gal_m32',       name: 'M32',                    raH:  0.71161, decD:  40.86528, mag: 8.08 },
   { id: 'gal_m33',       name: 'M33 (Triangulum)',       raH:  1.56414, decD:  30.66028, mag: 5.72 },
@@ -27,8 +25,6 @@ const GALAXIES_BASE = [
   { id: 'gal_smc',       name: 'Small Magellanic Cloud', raH:  0.87889, decD: -72.82861, mag: 2.7  },
   { id: 'gal_cartwheel', name: 'Cartwheel',              raH:  0.62806, decD: -33.71639, mag: 15.2 },
 ];
-
-export const GALAXIES = [...GALAXIES_BASE, ...GALAXIES_EXTRA];
 
 const _GAL_BY_ID = new Map(GALAXIES.map((g) => [g.id, g]));
 export function galaxyById(id) { return _GAL_BY_ID.get(id) || null; }

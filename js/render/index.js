@@ -112,9 +112,10 @@ export class Renderer {
       color: 0xfff5d8,
       domeSize: 3,
       sphereSize: 2.5,
-      maxCount: 512,
+      maxCount: 1024,
       clippingPlanes: clipPlanes,
       showKey: 'ShowBsc',
+      perVertexColors: true,
     });
     this.sm.world.add(this.bscStars.group);
 

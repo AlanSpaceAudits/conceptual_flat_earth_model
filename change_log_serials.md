@@ -532,6 +532,17 @@ Format:
   js/render/index.js js/ui/controlPanel.js js/ui/urlState.js`;
   delete `js/core/satellites.js`.
 
+## S351 — 🧭 button also toggles the Optical-vault grid
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/ui/controlPanel.js`.
+- **Change:** `.az-ring-btn` click now flips three keys in unison:
+  `ShowAzimuthRing`, `ShowLongitudeRing`, and
+  `ShowOpticalVaultGrid` (the first-person cap's grid lines —
+  not the Heavenly vault grid, which has its own show key).
+  Tooltip updated.
+- **Revert:** `git checkout v-s000350 -- js/ui/controlPanel.js`.
+
 ## S350 — Compact compass-cluster buttons so both rows center on the time-controls line
 
 - **Date:** 2026-04-24

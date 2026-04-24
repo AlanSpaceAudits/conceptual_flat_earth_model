@@ -1337,14 +1337,16 @@ export function buildControlPanel(host, model, demos) {
   btnAzRing.className = 'time-btn az-ring-btn';
   btnAzRing.type = 'button';
   btnAzRing.textContent = '🧭';
-  btnAzRing.title = 'Toggle azimuth ring (degree markings on Optical cap + ground longitude ring)';
+  btnAzRing.title = 'Toggle the full compass readout: azimuth ring, ground longitude ring, and Optical-vault grid lines';
   btnAzRing.addEventListener('click', () => {
     const on = !!model.state.ShowAzimuthRing;
-    // Flip both rings together — compass button controls the whole
-    // "azimuth degree readout" set.
+    // One-click compass set: the Optical-cap degree labels, the
+    // ground longitude ring, and the Optical-vault grid all turn
+    // on / off together.
     model.setState({
-      ShowAzimuthRing:   !on,
-      ShowLongitudeRing: !on,
+      ShowAzimuthRing:      !on,
+      ShowLongitudeRing:    !on,
+      ShowOpticalVaultGrid: !on,
     });
   });
 

@@ -70,6 +70,7 @@ export class Constellations {
       }),
     );
     this.domeStars.renderOrder = 56;
+    this.domeStars.frustumCulled = false;
     this.group.add(this.domeStars);
 
     // Optical-vault star points.
@@ -88,6 +89,7 @@ export class Constellations {
       }),
     );
     this.sphereStars.renderOrder = 57;
+    this.sphereStars.frustumCulled = false;
     this.group.add(this.sphereStars);
 
     // Dome outline LineSegments — 6 floats per segment.
@@ -102,6 +104,7 @@ export class Constellations {
       }),
     );
     this.domeLines.renderOrder = 55;
+    this.domeLines.frustumCulled = false;
     this.group.add(this.domeLines);
 
     // Optical-vault outline LineSegments.
@@ -116,6 +119,7 @@ export class Constellations {
       }),
     );
     this.sphereLines.renderOrder = 56;
+    this.sphereLines.frustumCulled = false;
     this.group.add(this.sphereLines);
   }
 

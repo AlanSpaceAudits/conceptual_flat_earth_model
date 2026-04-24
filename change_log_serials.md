@@ -419,3 +419,19 @@ Format:
   resets the speed to the Day preset regardless of prior rewind/FF
   state.
 - **Revert:** `git checkout v-s000238 -- js/ui/controlPanel.js`.
+
+## S240 — Disable frustum culling on dynamic star / constellation meshes
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/render/constellations.js`,
+  `js/render/worldObjects.js`.
+- **Change:** set `frustumCulled = false` on `Constellations.domeStars`,
+  `sphereStars`, `domeLines`, `sphereLines`, plus `Stars.domePoints` /
+  `spherePoints` and `CelNavStars.domePoints` / `spherePoints`. Their
+  `BufferGeometry.boundingSphere` is computed once from initial zero
+  positions; the per-frame buffer updates never refresh it, so the
+  culler was dropping whole meshes when the camera pitched away from
+  the stale origin — manifesting as constellation outlines breaking
+  and not returning when pitch changed.
+- **Revert:** `git checkout v-s000239 -- js/render/constellations.js
+  js/render/worldObjects.js`.

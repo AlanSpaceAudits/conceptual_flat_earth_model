@@ -3023,6 +3023,7 @@ export class Stars {
         clippingPlanes,
       }),
     );
+    this.domePoints.frustumCulled = false;
     this.group.add(this.domePoints);
 
     // Inner-sphere projected cloud (observer-local).
@@ -3036,15 +3037,12 @@ export class Stars {
         color: 0xffffff,
         size: 1.5, sizeAttenuation: false,
         transparent: true, opacity: 1,
-        // Stars on the far side of the optical vault hemisphere were being
-        // occluded by the wireframe lines (which write depth), so the cloud
-        // looked like it only covered the camera-facing front. Disable depth
-        // testing and render after the vault so points show on every side.
         depthTest: false, depthWrite: false,
         clippingPlanes,
       }),
     );
     this.spherePoints.renderOrder = 55;
+    this.spherePoints.frustumCulled = false;
     this.group.add(this.spherePoints);
   }
 
@@ -3862,15 +3860,13 @@ export class CelNavStars {
     this.domePoints = new THREE.Points(
       domeGeom,
       new THREE.PointsMaterial({
-        // cel-nav starfield pigment swapped with the
-        // constellation layer: cel-nav is now the warm-yellow
-        // `0xffe8a0` 
         color: 0xffe8a0,
         size: 3, sizeAttenuation: false,
         transparent: true, opacity: 1,
         clippingPlanes,
       }),
     );
+    this.domePoints.frustumCulled = false;
     this.group.add(this.domePoints);
 
     const sphGeom = new THREE.BufferGeometry();
@@ -3888,6 +3884,7 @@ export class CelNavStars {
       }),
     );
     this.spherePoints.renderOrder = 55;
+    this.spherePoints.frustumCulled = false;
     this.group.add(this.spherePoints);
   }
 

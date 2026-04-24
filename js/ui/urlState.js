@@ -68,14 +68,19 @@ function paramsToPatch(params) {
 }
 
 // Bump when a default changes and existing URL hashes should drop that key.
-const URL_SCHEMA_VERSION = '211';
+const URL_SCHEMA_VERSION = '230';
 const VERSION_GATED_KEYS = new Set([
   'BodySource',
-  'ObserverLat', 'CameraDirection', 'CameraHeight', 'Zoom',
+  'ObserverLat', 'ObserverLong', 'ObserverHeading',
+  'CameraDirection', 'CameraHeight', 'Zoom',
   'DateTime', 'VaultHeight', 'OpticalVaultHeight',
+  'RayParameter',
   'TimezoneOffsetMinutes', 'ObserverFigure',
-  'ShowVault', 'ShowTruePositions', 'ShowFacingVector',
+  'ShowFeGrid', 'ShowLatitudeLines', 'ShowGroundPoints',
+  'ShowVault', 'ShowVaultGrid', 'ShowTruePositions', 'ShowFacingVector',
   'ShowVaultRays', 'ShowOpticalVaultRays',
+  'ShowDecCircles', 'ShowLongitudeRing', 'ShowAzimuthRing',
+  'ShowOpticalVaultGrid', 'ShowCelestialPoles', 'DarkBackground',
   'MapProjection', 'StarfieldType', 'PermanentNight', 'TrackerTargets',
   'MercuryVaultHeight', 'VenusVaultHeight', 'MarsVaultHeight',
   'JupiterVaultHeight', 'SaturnVaultHeight',

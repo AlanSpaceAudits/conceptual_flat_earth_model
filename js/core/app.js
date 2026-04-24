@@ -56,19 +56,15 @@ function heavenlyVaultCeiling(latDeg, domeSize, domeHeight, feRadius) {
 // Default state. Distances in FE_RADIUS units.
 function defaultState() {
   return {
-    // observer / camera
-    ObserverLat:  45.0,
-    ObserverLong: 15.0,
-    // Compass heading of the observer's facing in their optical vault.
-    // 0 = North, 90 = East, 180 = South, 270 = West. Drives the cardinal
-    // arrow and the convergence/divergence read of the projected starfield.
-    ObserverHeading: 0,
-    // World-unit lift above disc; only affects camera, not ObserverFeCoord.
+    ObserverLat:  32.0,
+    ObserverLong: -100.8387,
+    // 0 = N, 90 = E, 180 = S, 270 = W.
+    ObserverHeading: 357.3098,
     ObserverElevation: 0,
-    CameraDirection: 14.0,
-    CameraHeight:    10.0,
+    CameraDirection: -95.4,
+    CameraHeight:    7.5,
     CameraDistance:  GEOMETRY.CameraDistanceDefault,
-    Zoom:             4.67,
+    Zoom:             3.19,
     // Optical-only. fov = 75° / OpticalZoom.
     OpticalZoom:      1.0,
 
@@ -85,13 +81,13 @@ function defaultState() {
     OpticalVaultSize:   GEOMETRY.OpticalVaultRadiusFar,
     OpticalVaultHeight: 0.5,
 
-    RayParameter: 1.0,
+    RayParameter: 2.0,
     RayTarget:    0,
     RaySource:    0,
 
-    ShowFeGrid:     true,
+    ShowFeGrid:     false,
     ShowShadow:     true,
-    ShowVault:      false,
+    ShowVault:      true,
     ShowVaultGrid:   false,
     ShowTruePositions: false,
     ShowSunTrack:   false,
@@ -102,22 +98,22 @@ function defaultState() {
     ShowOpticalVaultRays: false,
     ShowManyRays:   false,
     ShowProjectionRays: false,
-    ShowLatitudeLines: true,
-    ShowGroundPoints:  true,
-    ShowFacingVector:  true,
-    ShowDecCircles:    true,
+    ShowLatitudeLines: false,
+    ShowGroundPoints:  false,
+    ShowFacingVector:  false,
+    ShowDecCircles:    false,
     ShowLogo:          true,
     ShowConstellations:      true,
     ShowConstellationLines:  true,
-    ShowLongitudeRing:       true,
+    ShowLongitudeRing:       false,
     ShowAzimuthRing:         true,
-    ShowOpticalVaultGrid:    true,
-    ShowCelestialPoles:      true,
-    DarkBackground:          false,
+    ShowOpticalVaultGrid:    false,
+    ShowCelestialPoles:      false,
+    DarkBackground:          true,
 
     InsideVault: false,
 
-    ObserverFigure: 'llama',
+    ObserverFigure: 'bear',
 
     // Minutes east of UTC. -360 = CST.
     TimezoneOffsetMinutes: -360,
@@ -142,7 +138,7 @@ function defaultState() {
 
     // 'ae' | 'hellerick' | 'blank'. Affects only the map art; physics
     // always runs in the AE frame.
-    MapProjection: 'blank',
+    MapProjection: 'ae',
 
     // 'random' | 'chart-dark' | 'chart-light' | 'celnav'
     StarfieldType: 'celnav',
@@ -173,10 +169,10 @@ function defaultState() {
     EclipsePenumbraRadiusFE: null,
 
     // Pins NightFactor = 1.0.
-    PermanentNight: true,
+    PermanentNight: false,
 
     // Ids: 'sun' / 'moon' / planet name / 'star:<id>'. Empty = HUD collapsed.
-    TrackerTargets: ['sun', 'moon'],
+    TrackerTargets: ['sun','moon','mercury','venus','mars','jupiter','saturn','uranus','neptune'],
 
     ShowEphemerisReadings: false,
 

@@ -291,3 +291,22 @@ Format:
 - Files: every file in `js/` except backups + test data, plus
   `change_log_serials.md`.
 - Revert path: `git checkout v-s000228 -- .` restores the pre-sanitation state.
+
+## S230 — New default state
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/core/app.js`, `js/ui/urlState.js`.
+- **Change:**
+  - Figure: llama → bear.
+  - ObserverLat / ObserverLong: 45 / 15 → 32 / −100.8387.
+  - ObserverHeading: 0 → 357.3098.
+  - CameraDirection: 14 → −95.4. CameraHeight: 10 → 7.5.
+  - Zoom: 4.67 → 3.19. RayParameter: 1 → 2.
+  - Show toggles: FeGrid, LatitudeLines, GroundPoints, FacingVector,
+    DecCircles, LongitudeRing, OpticalVaultGrid, CelestialPoles → false.
+    Vault, DarkBackground → true.
+  - MapProjection: blank → ae. PermanentNight: true → false.
+  - TrackerTargets default = sun + moon + 7 planets.
+- URL schema bumped 211 → 230; gated keys expanded to cover every
+  changed default.
+- Revert: `git checkout v-s000229 -- js/core/app.js js/ui/urlState.js`.

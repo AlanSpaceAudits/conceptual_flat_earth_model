@@ -103,6 +103,15 @@ export class Renderer {
     });
     this.sm.world.add(this.quasarStars.group);
 
+    this.galaxyStars = new CatalogPointStars({
+      sourceKey: 'Galaxies',
+      color: 0xff80c0,
+      domeSize: 4,
+      sphereSize: 3.5,
+      clippingPlanes: clipPlanes,
+    });
+    this.sm.world.add(this.galaxyStars.group);
+
     this.constellations = new Constellations(clipPlanes);
     this.sm.world.add(this.constellations.group);
 
@@ -342,6 +351,7 @@ export class Renderer {
     this.celNavStars.update(m);
     this.blackHoleStars.update(m);
     this.quasarStars.update(m);
+    this.galaxyStars.update(m);
     this.starfieldChart.update(m);
     this.constellations.update(m);
     // When a chart starfield is active, hide both the heavenly-vault and

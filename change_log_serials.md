@@ -500,6 +500,29 @@ Format:
 - **Revert:** `git checkout v-s000256 -- js/render/worldObjects.js
   js/render/constellations.js`.
 
+## S272 — Galaxies catalogue, render layer, tracker integration
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/core/galaxies.js` (new), `js/core/app.js`,
+  `js/render/index.js`, `js/ui/controlPanel.js`.
+- **Change:**
+  - New catalogue `GALAXIES` (20 entries: M31, M32, M33, M51,
+    M63, M64, M77, M81, M82, M87, M101, M104, M110, NGC 253,
+    NGC 4565, NGC 4631, NGC 5128, LMC, SMC, Cartwheel). Same
+    shape as CEL_NAV_STARS so existing `projectStar()` works.
+  - `app.update()` builds `c.Galaxies` every frame; `star:<id>`
+    resolver extended with galaxies branch, new `galaxy`
+    GP colour `0xff80c0` (pink).
+  - `render/index.js` adds a third `CatalogPointStars` instance
+    `galaxyStars` (sourceKey `Galaxies`, pink), wired alongside
+    black-hole and quasar layers.
+  - Tracker tab gets a new "Galaxies" sub-menu after Quasars.
+  - Tracker HUD category label maps `subCategory === 'galaxy'`
+    → "galaxy".
+- **Revert:** `git checkout v-s000271 -- js/core/app.js
+  js/render/index.js js/ui/controlPanel.js`; delete
+  `js/core/galaxies.js`.
+
 ## S271 — Move Live Ephemeris tab to left, horizontal, under moon-phase HUD
 
 - **Date:** 2026-04-24

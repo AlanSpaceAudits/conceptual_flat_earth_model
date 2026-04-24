@@ -20,6 +20,7 @@ import { CEL_NAV_STARS, celNavStarById } from './celnavStars.js';
 import { CATALOGUED_STARS, cataloguedStarById } from './constellations.js';
 import { BLACK_HOLES, blackHoleById } from './blackHoles.js';
 import { QUASARS,      quasarById }    from './quasars.js';
+import { GALAXIES,     galaxyById }    from './galaxies.js';
 import {
   compTransMatCelestToGlobe, compTransMatLocalFeToGlobalFe, compTransMatVaultToFe,
   celestCoordToLocalGlobeCoord, coordToLatLong, localGlobeCoordToAngles,
@@ -509,6 +510,7 @@ export class FeModel extends EventTarget {
     c.CataloguedStars = CATALOGUED_STARS.map(projectStar);
     c.BlackHoles      = BLACK_HOLES.map(projectStar);
     c.Quasars         = QUASARS.map(projectStar);
+    c.Galaxies        = GALAXIES.map(projectStar);
 
     c.TrackerInfos = [];
     const targets = Array.isArray(s.TrackerTargets) ? s.TrackerTargets : [];
@@ -601,6 +603,11 @@ export class FeModel extends EventTarget {
           def   = quasarById(starId);
           if (entry) cat = 'quasar';
         }
+        if (!entry) {
+          entry = c.Galaxies.find((x) => x.id === starId);
+          def   = galaxyById(starId);
+          if (entry) cat = 'galaxy';
+        }
         if (entry && def) {
           // Star RA/Dec is pipeline-independent; all five readings share it.
           const gpColorByCat = {
@@ -608,6 +615,7 @@ export class FeModel extends EventTarget {
             catalogued: 0xffffff,  // white
             blackhole:  0x9966ff,  // purple
             quasar:     0x40e0d0,  // cyan
+            galaxy:     0xff80c0,  // pink
           };
           info = {
             target, name: def.name, category: 'star', subCategory: cat, mag: def.mag,

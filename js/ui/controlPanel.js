@@ -8,6 +8,7 @@ import { CEL_NAV_SELECT_OPTIONS, CEL_NAV_STARS } from '../core/celnavStars.js';
 import { CATALOGUED_STARS } from '../core/constellations.js';
 import { BLACK_HOLES } from '../core/blackHoles.js';
 import { QUASARS }     from '../core/quasars.js';
+import { GALAXIES }    from '../core/galaxies.js';
 import { listProjections } from '../core/projections.js';
 import { Autoplay } from './autoplay.js';
 
@@ -403,6 +404,13 @@ const FIELD_GROUPS = [
           [...QUASARS]
             .sort((a, b) => a.name.localeCompare(b.name))
             .map((q) => ({ value: `star:${q.id}`, label: q.name, color: '#40e0d0' })),
+        },
+      ]},
+      { title: 'Galaxies', rows: [
+        { key: 'TrackerTargets', label: '', buttonGrid:
+          [...GALAXIES]
+            .sort((a, b) => a.name.localeCompare(b.name))
+            .map((g) => ({ value: `star:${g.id}`, label: g.name, color: '#ff80c0' })),
         },
       ]},
     ],
@@ -1323,6 +1331,7 @@ export function buildTrackerHud(trackerEl, model) {
       const cat = info.category === 'star'
         ? (info.subCategory === 'blackhole' ? 'black hole'
           : info.subCategory === 'quasar'   ? 'quasar'
+          : info.subCategory === 'galaxy'   ? 'galaxy'
           : 'star')
         : info.category === 'planet' ? 'planet'
         : 'luminary';

@@ -12,6 +12,13 @@ const EASING = {
     const u = Math.min(1, Math.max(0, t));
     return u * u * u;
   },
+  // Stair-steps the tween value to 365 discrete steps so a one-year
+  // tween advances by exactly one day per step.
+  days365: (t) => {
+    const u = Math.min(1, Math.max(0, t));
+    if (u >= 1) return 1;
+    return Math.floor(u * 365) / 365;
+  },
 };
 
 export class Animator {
@@ -96,6 +103,9 @@ export class Animator {
       task.remaining = (task.remaining ?? task.duration) - dt;
       return task.remaining <= 0;
     }
+    if (task.kind === 'hold') {
+      return false;
+    }
     if (task.kind === 'text') {
       this.model.setState({ Description: task.text });
       return true;
@@ -118,6 +128,7 @@ export class Animator {
 
 // Helpers matching the original authoring style (Tpse/Ttxt/Tval).
 export const Tpse = (ms) => ({ kind: 'pause', duration: ms, delay: 0 });
+export const Thold = () => ({ kind: 'hold', delay: 0 });
 export const Ttxt = (txt, delay = 0) => ({ kind: 'text', text: txt, delay });
 export const Tval = (key, endValue, duration = 500, delay = 0, ease = 'cosine') =>
   ({ kind: 'val', key, endValue, duration, delay, ease });

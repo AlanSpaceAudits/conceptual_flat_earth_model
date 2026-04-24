@@ -119,6 +119,8 @@ function defaultState() {
     MoonPhaseExpanded:       false,
     ShowSatellites:          true,
     ShowGPPath:              false,
+    ShowSunAnalemma:         false,
+    ShowMoonAnalemma:        false,
     ShowCelestialBodies:     true,
     ShowCelNav:              true,
     ShowBlackHoles:          true,
@@ -413,6 +415,31 @@ export class FeModel extends EventTarget {
       opticalVaultProject(c.MoonLocalGlobeCoord, c.OpticalVaultRadius, c.OpticalVaultHeightEffective),
       c.TransMatLocalFeToGlobalFe,
     );
+
+    // --- analemma accumulators ---
+    // One vault-coord point per integer day-of-year while the
+    // corresponding flag is on. Cleared whenever the cache key
+    // (observer / time-of-day / year / bodySource) changes.
+    const analKey = `${s.ObserverLat}|${s.ObserverLong}|${s.ObserverHeading}|${Math.round(s.Time*1000)/1000}|${utcDate.getUTCFullYear()}|${bodySource}`;
+    this._sunAnalemma  = this._sunAnalemma  || { points: [], lastDay: -1, key: null };
+    this._moonAnalemma = this._moonAnalemma || { points: [], lastDay: -1, key: null };
+    const stepAnalemma = (slot, flag, srcCoord) => {
+      if (!flag) {
+        slot.points.length = 0; slot.lastDay = -1; slot.key = null;
+        return;
+      }
+      if (slot.key !== analKey) {
+        slot.points.length = 0; slot.lastDay = -1; slot.key = analKey;
+      }
+      if (s.DayOfYear !== slot.lastDay) {
+        slot.points.push(srcCoord[0], srcCoord[1], srcCoord[2]);
+        slot.lastDay = s.DayOfYear;
+      }
+    };
+    stepAnalemma(this._sunAnalemma,  s.ShowSunAnalemma,  c.SunOpticalVaultCoord);
+    stepAnalemma(this._moonAnalemma, s.ShowMoonAnalemma, c.MoonOpticalVaultCoord);
+    c.SunAnalemmaPoints  = this._sunAnalemma.points;
+    c.MoonAnalemmaPoints = this._moonAnalemma.points;
 
     // Moon phase (sun-at-infinity: moon→sun ≈ SunCelestCoord).
     const moonToGlobe = V.Norm(V.Scale(c.MoonCelestCoord, -1));

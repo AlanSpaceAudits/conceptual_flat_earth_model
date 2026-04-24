@@ -10,7 +10,7 @@
 //     general demos by the `group` field on each entry. The control
 //     panel can render them as grouped sections.
 
-import { Ttxt, Tval } from './animation.js';
+import { Ttxt, Tval, Thold } from './animation.js';
 import { SOLAR_ECLIPSE_DEMOS, LUNAR_ECLIPSE_DEMOS } from './eclipseRegistry.js';
 import { FE_ECLIPSE_PREDICTION_DEMOS } from './feEclipseTrack.js';
 
@@ -141,6 +141,65 @@ const GENERAL_DEMOS = [
   },
 ];
 
+// Analemma demos. Observer stationary, Time fixed at 12:00 UTC,
+// DateTime stair-steps through 365 days of 2025 with the days365
+// easing so each frame holds a single integer day-of-year. The sun
+// / moon optical-vault coord at each step is appended to the
+// Sun/MoonAnalemmaPoints accumulator (see app.js) and rendered as
+// a polyline. After the year completes, a Thold task keeps the
+// demo active so the user can study the curve.
+const ANALEMMA_START = 2922.5;   // 2025-01-01 12:00 UTC, days since 2017-01-01
+const ANALEMMA_DUR   = 30 * 1000;
+function makeAnalemma(label, lat, mode) {
+  const heading = lat >= 0 ? 180 : 0;
+  const camH = lat === 0 ? 75 : Math.abs(lat) === 90 ? 12 : 45;
+  const groupId = mode === 'sun'  ? 'sun-analemma'
+                : mode === 'moon' ? 'moon-analemma'
+                :                   'combo-analemma';
+  const targets = [];
+  if (mode === 'sun'  || mode === 'both') targets.push('sun');
+  if (mode === 'moon' || mode === 'both') targets.push('moon');
+  return {
+    name: label,
+    group: groupId,
+    intro: {
+      ObserverLat: lat, ObserverLong: 0, ObserverHeading: heading,
+      BodySource: 'astropixels',
+      DateTime: ANALEMMA_START,
+      InsideVault: true,
+      OpticalZoom: 1.0,
+      VaultSize: 1, VaultHeight: 0.45,
+      CameraHeight: camH, CameraDirection: 0,
+      TrackerTargets: targets,
+      ShowSunAnalemma:  mode === 'sun'  || mode === 'both',
+      ShowMoonAnalemma: mode === 'moon' || mode === 'both',
+      ShowSunTrack: false, ShowMoonTrack: false,
+      ShowShadow: false, ShowTruePositions: true,
+      ShowOpticalVault: true, ShowStars: true,
+      FollowTarget: null, FreeCamActive: false,
+      SpecifiedTrackerMode: false,
+    },
+    tasks: () => [
+      Ttxt(`${label} · Time fixed at 12:00 UTC · 365 daily steps over 30 s.`),
+      Tval('DateTime', ANALEMMA_START + 365, ANALEMMA_DUR, T1, 'days365'),
+      Ttxt('Year complete · click End Demo to exit, or pause/resume to study the curve.'),
+      Thold(),
+    ],
+  };
+}
+const ANALEMMA_LATS = [
+  [ 90, '90°N (north pole)'],
+  [ 45, '45°N'           ],
+  [  0, '0° (equator)'   ],
+  [-45, '45°S'           ],
+  [-90, '90°S (south pole)'],
+];
+const ANALEMMA_DEMOS = [
+  ...ANALEMMA_LATS.map(([lat, t]) => makeAnalemma(`Sun analemma · ${t}`,        lat, 'sun')),
+  ...ANALEMMA_LATS.map(([lat, t]) => makeAnalemma(`Moon analemma · ${t}`,       lat, 'moon')),
+  ...ANALEMMA_LATS.map(([lat, t]) => makeAnalemma(`Sun + Moon analemma · ${t}`, lat, 'both')),
+];
+
 // 24-hour sun demos grouped under their own sub-menu. Order matches
 // the UI section: two 24h overhead-sun demos first, then the two
 // season-spanning midnight-sun demos.
@@ -253,6 +312,7 @@ const SUN_24H_DEMOS = [
 export const DEMOS = [
   ...SUN_24H_DEMOS,
   ...GENERAL_DEMOS,
+  ...ANALEMMA_DEMOS,
   ...SOLAR_ECLIPSE_DEMOS,
   ...LUNAR_ECLIPSE_DEMOS,
   ...FE_ECLIPSE_PREDICTION_DEMOS,
@@ -262,6 +322,9 @@ export const DEMOS = [
 export const DEMO_GROUPS = [
   { id: '24h-sun',         label: '24 h Sun' },
   { id: 'general',         label: 'General' },
+  { id: 'sun-analemma',    label: 'Sun Analemma' },
+  { id: 'moon-analemma',   label: 'Moon Analemma' },
+  { id: 'combo-analemma',  label: 'Sun + Moon Analemma' },
   { id: 'solar-eclipses',  label: 'Solar Eclipses (AstroPixels / DE405, 2021-2040)' },
   { id: 'lunar-eclipses',  label: 'Lunar Eclipses (AstroPixels / DE405, 2021-2040)' },
   { id: 'fe-predictions',  label: 'FE Eclipse Predictions (placeholder)' },

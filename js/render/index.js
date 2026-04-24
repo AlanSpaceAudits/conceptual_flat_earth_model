@@ -8,7 +8,7 @@ import {
   CelestialMarker, Observer, Stars, LatitudeLines, GroundPoint,
   CelestialPoles, DeclinationCircles, Yggdrasil, MtMeru, ToroidalVortex,
   LongitudeRing, CelNavStars, TrackedGroundPoints, CatalogPointStars,
-  GPPathOverlay, Discworld,
+  GPPathOverlay, Discworld, AnalemmaLine,
 } from './worldObjects.js';
 import { loadLandGeo, buildGeoJsonLand, buildImageMap, buildBlankMap } from './earthMap.js';
 import { Constellations } from './constellations.js';
@@ -224,6 +224,11 @@ export class Renderer {
     this.moonTrack = this._blankLine(0xaaaaff, 0.7, clipPlanes);
     this.sm.world.add(this.sunTrack);
     this.sm.world.add(this.moonTrack);
+
+    this.sunAnalemma  = new AnalemmaLine(0xffd060, 0.95);
+    this.moonAnalemma = new AnalemmaLine(0xc0c0d8, 0.85);
+    this.sm.world.add(this.sunAnalemma.group);
+    this.sm.world.add(this.moonAnalemma.group);
 
     model.addEventListener('update', () => this.frame());
 
@@ -516,6 +521,9 @@ export class Renderer {
 
     this.moonTrack.visible = s.ShowMoonTrack;
     if (s.ShowMoonTrack) this._setLinePts(this.moonTrack, trackPts(c.MoonCelestLatLong.lat));
+
+    this.sunAnalemma.update(c.SunAnalemmaPoints, s.ShowSunAnalemma);
+    this.moonAnalemma.update(c.MoonAnalemmaPoints, s.ShowMoonAnalemma);
   }
 
   _updateRays() {

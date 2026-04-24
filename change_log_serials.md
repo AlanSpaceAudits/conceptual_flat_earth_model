@@ -532,6 +532,44 @@ Format:
   js/render/index.js js/ui/controlPanel.js js/ui/urlState.js`;
   delete `js/core/satellites.js`.
 
+## S367 — Sun / Moon analemma demos with stair-stepped DateTime
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/core/app.js`, `js/render/worldObjects.js`,
+  `js/render/index.js`, `js/ui/urlState.js`,
+  `js/demos/animation.js`, `js/demos/definitions.js`,
+  `change_log_serials.md`.
+- **Change:**
+  - State: `ShowSunAnalemma`, `ShowMoonAnalemma` booleans (default
+    false), persisted in URL hash.
+  - `app.update()`: per-frame accumulator that pushes
+    `c.SunOpticalVaultCoord` / `c.MoonOpticalVaultCoord` into a
+    private points array each time `s.DayOfYear` changes. Cache key
+    `(ObserverLat | ObserverLong | ObserverHeading | Time | year |
+    bodySource)` clears the array when any input shifts. Result
+    exposed as `c.SunAnalemmaPoints` / `c.MoonAnalemmaPoints`.
+  - `js/render/worldObjects.js`: new `AnalemmaLine` class — a
+    `THREE.Line` rebuilt from the accumulator each frame. Sun gold
+    `0xffd060`, moon silver `0xc0c0d8`. `renderOrder = 35`,
+    `depthTest = false`.
+  - `js/render/index.js` instantiates two `AnalemmaLine`s and
+    updates them in `_updateTracks()`.
+  - `js/demos/animation.js`: new `days365` easing (stair-step
+    `floor(u·365)/365`) and new `'hold'` task type plus `Thold()`
+    helper. The task returns `false` from `_stepTask`, keeping the
+    queue alive so `End Demo` stays available.
+  - `js/demos/definitions.js`: 15 new demos in three groups
+    (`sun-analemma`, `moon-analemma`, `combo-analemma`), one per
+    latitude in `[90, 45, 0, -45, -90]`. Intro fixes observer,
+    sets DateTime = 2922.5 (2025-01-01 12:00 UTC), enables the
+    relevant analemma flag(s), no FollowTarget. Tween advances
+    DateTime by +365 over 30 s with `days365` easing; final
+    `Thold()` keeps the demo active for inspection.
+  - `DEMO_GROUPS` gains the three group ids.
+- **Revert:** `git checkout v-s000366 -- js/core/app.js
+  js/render/worldObjects.js js/render/index.js js/ui/urlState.js
+  js/demos/animation.js js/demos/definitions.js`.
+
 ## S366 — Add "Not Nikki Minaj" ObserverFigure (sprite-based)
 
 - **Date:** 2026-04-24

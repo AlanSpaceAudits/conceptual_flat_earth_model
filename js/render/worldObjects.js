@@ -3022,6 +3022,32 @@ export class Track {
   }
 }
 
+// --- Analemma trace ------------------------------------------------------
+// Renders a polyline through accumulated optical-vault positions for sun
+// or moon. Points are appended in `app.update()` one per integer
+// day-of-year while the corresponding state flag is on.
+export class AnalemmaLine {
+  constructor(color, opacity = 0.85) {
+    this.group = new THREE.Group();
+    this.group.name = 'analemma';
+    this.mat = new THREE.LineBasicMaterial({
+      color, transparent: opacity < 1, opacity,
+      depthTest: false, depthWrite: false,
+    });
+    this.line = new THREE.Line(new THREE.BufferGeometry(), this.mat);
+    this.line.renderOrder = 35;
+    this.group.add(this.line);
+  }
+  update(pts, visible) {
+    this.group.visible = !!visible && pts && pts.length >= 6;
+    if (!this.group.visible) return;
+    const geom = new THREE.BufferGeometry();
+    geom.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
+    this.line.geometry.dispose();
+    this.line.geometry = geom;
+  }
+}
+
 // --- Stars --------------------------------------------------------------
 //
 // A single fixed set of celestial directions (lat/lon in the rotating sky

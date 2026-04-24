@@ -18,9 +18,7 @@ const PERSISTED_KEYS = [
   'ShowLiveEphemeris', 'MoonPhaseExpanded',
   'ShowSatellites', 'ShowCelestialBodies', 'ShowCelNav',
   'ShowBlackHoles', 'ShowQuasars', 'ShowGalaxies',
-  'GPPathPlanets', 'GPPathCelNav', 'GPPathConstellations',
-  'GPPathBlackHoles', 'GPPathQuasars', 'GPPathGalaxies',
-  'GPPathSatellites',
+  'ShowGPPath',
   'DynamicStars',
   'TimezoneOffsetMinutes',
   'StarfieldVaultHeight', 'MoonVaultHeight', 'SunVaultHeight',
@@ -77,7 +75,7 @@ function paramsToPatch(params) {
 }
 
 // Bump when a default changes and existing URL hashes should drop that key.
-const URL_SCHEMA_VERSION = '334';
+const URL_SCHEMA_VERSION = '335';
 const VERSION_GATED_KEYS = new Set([
   'ShowLiveEphemeris', 'MoonPhaseExpanded',
   'BodySource',

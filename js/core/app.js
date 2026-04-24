@@ -118,13 +118,7 @@ function defaultState() {
     ShowLiveEphemeris:       false,
     MoonPhaseExpanded:       false,
     ShowSatellites:          true,
-    GPPathPlanets:           false,
-    GPPathCelNav:            false,
-    GPPathConstellations:    false,
-    GPPathBlackHoles:        false,
-    GPPathQuasars:           false,
-    GPPathGalaxies:          false,
-    GPPathSatellites:        false,
+    ShowGPPath:              false,
     ShowCelestialBodies:     true,
     ShowCelNav:              true,
     ShowBlackHoles:          true,
@@ -623,53 +617,55 @@ export class FeModel extends EventTarget {
       return pts;
     };
 
-    // Celestial Bodies (sun / moon / 7 planets) uses the active
-    // ephemeris pipeline so the trace matches whichever pipeline
-    // drives the scene.
-    if (s.GPPathPlanets) {
+    // Single master toggle — `ShowGPPath` (lives in Tracker Options).
+    // Traces are drawn only for bodies currently in TrackerTargets
+    // (plus FollowTarget), so the disc doesn't fill with every star
+    // circle when the user just wants to see a handful of paths.
+    if (s.ShowGPPath) {
       const activeEph = bodySource === 'heliocentric' ? ephHelio
                       : bodySource === 'geocentric'   ? ephGeo
                       : bodySource === 'ptolemy'      ? ephPtol
                       : bodySource === 'vsop87'       ? ephVsop
                       :                                 ephApix;
+      const trackerTargetArr = Array.isArray(s.TrackerTargets) ? s.TrackerTargets : [];
+      const gpSet = new Set(trackerTargetArr);
+      if (s.FollowTarget) gpSet.add(s.FollowTarget);
+
       const PLANET_COLORS = {
         sun: 0xffc844, moon: 0xf4f4f4,
         mercury: 0xd0b090, venus: 0xfff0c8, mars: 0xd05040,
         jupiter: 0xffa060, saturn: 0xe4c888,
         uranus: 0xa8d8e0, neptune: 0x7fa6e8,
       };
-      for (const body of Object.keys(PLANET_COLORS)) {
+      for (const [body, color] of Object.entries(PLANET_COLORS)) {
+        if (!gpSet.has(body)) continue;
         const pts = sampleFrom((d) => {
           try { return activeEph.bodyGeocentric(body, d); } catch { return null; }
         });
-        if (pts) c.GPPaths[`p:${body}`] = { pts, color: PLANET_COLORS[body] };
+        if (pts) c.GPPaths[`p:${body}`] = { pts, color };
       }
-    }
 
-    // Star catalogues: RA/Dec fixed per entry, the sub-point circles
-    // once per sidereal day. Cheap — just GMST + trig.
-    const sampleFixedStar = (raRad, decRad) =>
-      sampleFrom(() => ({ ra: raRad, dec: decRad }));
-    const starCategories = [
-      ['GPPathCelNav',        CEL_NAV_STARS,    0xffe8a0, 'cn'],
-      ['GPPathConstellations', CATALOGUED_STARS, 0xffffff, 'cat'],
-      ['GPPathBlackHoles',     BLACK_HOLES,      0x9966ff, 'bh'],
-      ['GPPathQuasars',        QUASARS,          0x40e0d0, 'q'],
-      ['GPPathGalaxies',       GALAXIES,         0xff80c0, 'gal'],
-    ];
-    for (const [flag, list, color, prefix] of starCategories) {
-      if (!s[flag]) continue;
-      for (const star of list) {
-        const raRad  = (star.raH / 24) * 2 * Math.PI;
-        const decRad = star.decD * Math.PI / 180;
-        const pts = sampleFixedStar(raRad, decRad);
-        if (pts) c.GPPaths[`${prefix}:${star.id}`] = { pts, color };
+      const sampleFixedStar = (raRad, decRad) =>
+        sampleFrom(() => ({ ra: raRad, dec: decRad }));
+      const starCategories = [
+        [CEL_NAV_STARS,    0xffe8a0, 'cn'],
+        [CATALOGUED_STARS, 0xffffff, 'cat'],
+        [BLACK_HOLES,      0x9966ff, 'bh'],
+        [QUASARS,          0x40e0d0, 'q'],
+        [GALAXIES,         0xff80c0, 'gal'],
+      ];
+      for (const [list, color, prefix] of starCategories) {
+        for (const star of list) {
+          if (!gpSet.has(`star:${star.id}`)) continue;
+          const raRad  = (star.raH / 24) * 2 * Math.PI;
+          const decRad = star.decD * Math.PI / 180;
+          const pts = sampleFixedStar(raRad, decRad);
+          if (pts) c.GPPaths[`${prefix}:${star.id}`] = { pts, color };
+        }
       }
-    }
 
-    // Satellites use their own two-body sub-point function.
-    if (s.GPPathSatellites) {
       for (const sat of SATELLITES) {
+        if (!gpSet.has(`star:${sat.id}`)) continue;
         const pts = sampleFromSubPointFn((d) => satelliteSubPoint(sat, d));
         c.GPPaths[`sat:${sat.id}`] = { pts, color: 0x66ff88 };
       }

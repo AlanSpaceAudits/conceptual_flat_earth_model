@@ -532,6 +532,29 @@ Format:
   js/render/index.js js/ui/controlPanel.js js/ui/urlState.js`;
   delete `js/core/satellites.js`.
 
+## S335 — Move True Positions + GP Path to Tracker Options; single master toggle
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/core/app.js`, `js/demos/index.js`,
+  `js/ui/controlPanel.js`, `js/ui/urlState.js`.
+- **Change:**
+  - `ShowTruePositions` row removed from Show tab's Heavenly
+    Vault group; added to Tracker Options.
+  - Per-category `GPPath<Category>` keys (7) collapsed back
+    into a single `ShowGPPath` master toggle, placed in
+    Tracker Options next to True Positions. Per-sub-menu GP
+    Path rows removed.
+  - `app.update()` now draws GP traces for every body that's
+    in `TrackerTargets` (plus `FollowTarget`) when
+    `ShowGPPath` is on — Show-tab-like scoped behaviour
+    without per-category UI.
+  - `_snapToDefaultEphemeris` post-demo cleanup simplified to
+    clear the single flag.
+  - URL schema bumped `334` → `335` so the old per-category
+    keys get dropped.
+- **Revert:** `git checkout v-s000334 -- js/core/app.js
+  js/demos/index.js js/ui/controlPanel.js js/ui/urlState.js`.
+
 ## S334 — Default ShowSatellites true
 
 - **Date:** 2026-04-24

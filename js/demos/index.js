@@ -61,13 +61,7 @@ export class Demos {
       // inherit those visualisations.
       ShowSunTrack:  false,
       ShowMoonTrack: false,
-      GPPathPlanets:        false,
-      GPPathCelNav:         false,
-      GPPathConstellations: false,
-      GPPathBlackHoles:     false,
-      GPPathQuasars:        false,
-      GPPathGalaxies:       false,
-      GPPathSatellites:     false,
+      ShowGPPath:    false,
     });
   }
 

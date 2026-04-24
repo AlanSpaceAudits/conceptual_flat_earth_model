@@ -532,6 +532,27 @@ Format:
   js/render/index.js js/ui/controlPanel.js js/ui/urlState.js`;
   delete `js/core/satellites.js`.
 
+## S328 — Opt-in tracker filtering per category; Antarctic demo starts 2025-12-14
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/demos/definitions.js`,
+  `js/render/index.js`, `js/render/worldObjects.js`.
+- **Change:**
+  - `CatalogPointStars`, `CelNavStars`, and the sun/moon/planet
+    marker block in `render/index.js` now apply the same rule:
+    if ANY id from the category is present in `TrackerTargets`
+    (or matches `FollowTarget`), the layer filters to
+    membership — empty selection still shows all. STM and the
+    satellites' `requireMembership` continue to force
+    membership regardless. Selecting a single body in a
+    category cleanly hides the rest; clearing that category's
+    selections restores everything.
+  - `24h sun at 79°46'S 83°15'W` demo intro DateTime bumped
+    `3276` → `3269` so it starts 2025-12-14 instead of the
+    solstice; narration updated to match.
+- **Revert:** `git checkout v-s000327 -- js/demos/definitions.js
+  js/render/index.js js/render/worldObjects.js`.
+
 ## S327 — Move Stars/Constellations controls to Tracker; add Track-All button
 
 - **Date:** 2026-04-24

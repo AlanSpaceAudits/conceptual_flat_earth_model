@@ -532,6 +532,19 @@ Format:
   js/render/index.js js/ui/controlPanel.js js/ui/urlState.js`;
   delete `js/core/satellites.js`.
 
+## S341 — Bump TrackedGroundPoints pool 16 → 256
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/render/index.js`.
+- **Change:** `TrackedGroundPoints` was constructed with max = 16
+  back when `TrackerTargets` default was small. Since S330 the
+  default has ~170 ids, so `TrackerInfos` overran the pool and
+  every GP past slot 15 silently went unrendered — which is why
+  clicking GP Override (or the per-category overrides) didn't
+  visibly paint the full set. Pool bumped to 256 so every
+  tracker entry gets a slot with headroom.
+- **Revert:** `git checkout v-s000340 -- js/render/index.js`.
+
 ## S340 — Feature search also indexes the Tracker tab
 
 - **Date:** 2026-04-24

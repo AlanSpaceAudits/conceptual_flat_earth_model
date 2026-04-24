@@ -60,7 +60,7 @@ export class Renderer {
     this.sm.world.add(this.moonGP.group);
     // per-tracked-object GPs. Always visible while target is in
     // TrackerTargets, independent of ShowGroundPoints.
-    this.trackedGPs = new TrackedGroundPoints(16);
+    this.trackedGPs = new TrackedGroundPoints(256);
     this.sm.world.add(this.trackedGPs.group);
 
     // Dashed lines from the body's vault position straight down to its

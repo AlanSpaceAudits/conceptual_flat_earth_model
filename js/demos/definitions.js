@@ -101,6 +101,60 @@ const GENERAL_DEMOS = [
       Tval('Time', 24, 2 * T8, 0, 'linear'),
     ],
   },
+  {
+    name: 'Midnight sun at 75°N: start to end',
+    group: 'general',
+    intro: {
+      ObserverLat: 75, ObserverLong: 0,
+      BodySource: 'astropixels',
+      DateTime: 3021,                 // ~2025-04-10
+      ObserverHeading: 0,             // face geographic north
+      CameraDirection: 0, CameraHeight: 30, CameraDistance: 10, Zoom: 1.4,
+      VaultSize: 1, VaultHeight: 0.45,
+      InsideVault: false,
+      ShowSunTrack: true,
+      ShowShadow: true,
+      ShowTruePositions: true,
+    },
+    tasks: () => [
+      Ttxt('75°N, early April 2025 — sun still rises and sets daily.'),
+      Tval('DateTime', 3042, T5, T1, 'linear'),
+      Ttxt('May 1 — sun about to stop setting at midnight.'),
+      Tval('DateTime', 3093, T5, T1, 'linear'),
+      Ttxt('June 21 — solstice, sun at its highest arc of the year.'),
+      Tval('DateTime', 3140, T5, T1, 'linear'),
+      Ttxt('August 7 — midnight sun ends as declination drops back below 15°.'),
+      Tval('DateTime', 3179, T5, T1, 'linear'),
+      Ttxt('September 15 — normal day/night cycle back in full swing.'),
+    ],
+  },
+  {
+    name: 'Midnight sun at 75°S: start to end',
+    group: 'general',
+    intro: {
+      ObserverLat: -75, ObserverLong: 0,
+      BodySource: 'astropixels',
+      DateTime: 3195,                 // ~2025-10-01
+      ObserverHeading: 180,           // face geographic south
+      CameraDirection: 180, CameraHeight: 30, CameraDistance: 10, Zoom: 1.4,
+      VaultSize: 1, VaultHeight: 0.45,
+      InsideVault: false,
+      ShowSunTrack: true,
+      ShowShadow: true,
+      ShowTruePositions: true,
+    },
+    tasks: () => [
+      Ttxt('75°S, October 1 2025 — day/night cycle still present.'),
+      Tval('DateTime', 3226, T5, T1, 'linear'),
+      Ttxt('November 1 — sun about to stop setting at midnight.'),
+      Tval('DateTime', 3276, T5, T1, 'linear'),
+      Ttxt('December 21 — southern solstice, full 24-hour daylight.'),
+      Tval('DateTime', 3324, T5, T1, 'linear'),
+      Ttxt('February 7 2026 — midnight sun ends as dec moves north again.'),
+      Tval('DateTime', 3355, T5, T1, 'linear'),
+      Ttxt('March 10 — polar night incoming.'),
+    ],
+  },
 ];
 
 // The final exported list, in section order: general → solar eclipses

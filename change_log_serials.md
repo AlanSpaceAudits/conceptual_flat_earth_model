@@ -532,6 +532,25 @@ Format:
   js/render/index.js js/ui/controlPanel.js js/ui/urlState.js`;
   delete `js/core/satellites.js`.
 
+## S320 — Midnight-sun demos at 75°N and 75°S (DE405)
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/demos/definitions.js`.
+- **Change:** Two new General-section demos walk the midnight-sun
+  transition:
+  - `Midnight sun at 75°N: start to end` intros at 2025-04-10
+    (DateTime 3021), observer at 75°N facing north, `BodySource:
+    'astropixels'` (DE405). Tweens step through May 1 → solstice
+    → Aug 7 (end of 24h-sun) → mid-September with a narration
+    line between each.
+  - `Midnight sun at 75°S: start to end` mirrors the flow for
+    the southern hemisphere (observer at 75°S, DateTime
+    3195 → solstice 3276 → Feb 7 2026 → March 10).
+  Both set `ShowSunTrack`, `ShowShadow`, `ShowTruePositions`
+  and the Heavenly orbit view so the sun's arc is visible as
+  it grazes or clears the horizon.
+- **Revert:** `git checkout v-s000319 -- js/demos/definitions.js`.
+
 ## S319 — Scope feature-search to the Show tab
 
 - **Date:** 2026-04-24

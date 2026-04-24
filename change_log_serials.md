@@ -451,3 +451,15 @@ Format:
     a popup is open.
 - **Revert:** `git checkout v-s000240 -- js/ui/controlPanel.js
   css/styles.css`.
+
+## S242 — Mutually exclusive collapsible groups within a popup
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/ui/controlPanel.js`.
+- **Change:** `buildGroup` now accepts a shared `popupGroups` set.
+  Expanding a group closes every sibling still open, so only one
+  group (Observer / Camera / Vault of the Heavens / …) is open at
+  a time per popup. Clicking the currently-open group still
+  collapses it. Time tab's Calendar and Autoplay groups are
+  registered in the same set.
+- **Revert:** `git checkout v-s000241 -- js/ui/controlPanel.js`.

@@ -706,7 +706,10 @@ function buildRow(model, row) {
 }
 
 // Collapsible group inside a tab popup. Header click toggles body.
-function buildGroup(model, title, rows) {
+// `popupGroups` is a shared Set of all {header, body} pairs in the
+// same popup — expanding one collapses the others so only one group
+// is open at a time.
+function buildGroup(model, title, rows, popupGroups) {
   const el = document.createElement('div');
   el.className = 'group';
   const header = document.createElement('button');
@@ -716,9 +719,22 @@ function buildGroup(model, title, rows) {
   const body = document.createElement('div');
   body.className = 'group-body';
   body.hidden = true;
+  const pair = { header, body };
+  if (popupGroups) popupGroups.add(pair);
   header.addEventListener('click', () => {
-    const collapsed = header.classList.toggle('collapsed');
-    body.hidden = collapsed;
+    const willOpen = header.classList.contains('collapsed');
+    if (willOpen && popupGroups) {
+      // Close every sibling before opening this one.
+      for (const other of popupGroups) {
+        if (other === pair) continue;
+        if (!other.header.classList.contains('collapsed')) {
+          other.header.classList.add('collapsed');
+          other.body.hidden = true;
+        }
+      }
+    }
+    header.classList.toggle('collapsed');
+    body.hidden = !willOpen ? true : false;
   });
   for (const row of rows) body.appendChild(buildRow(model, row));
   el.append(header, body);
@@ -884,32 +900,20 @@ export function buildControlPanel(host, model, demos) {
 
   for (const tab of FIELD_GROUPS) {
     registerTab(tab.tab, (popup) => {
+      const popupGroups = new Set();
       for (const g of tab.groups) {
-        const { el } = buildGroup(model, g.title, g.rows);
+        const { el } = buildGroup(model, g.title, g.rows, popupGroups);
         popup.appendChild(el);
       }
       if (tab.tab === 'Time') {
-        const cal = buildGroup(model, 'Calendar', []);
+        const cal = buildGroup(model, 'Calendar', [], popupGroups);
         cal.body.appendChild(timezoneRow(model));
         cal.body.appendChild(dateTimeRow(model));
         popup.appendChild(cal.el);
 
-        const autoGroup = document.createElement('div');
-        autoGroup.className = 'group';
-        const autoHeader = document.createElement('button');
-        autoHeader.type = 'button';
-        autoHeader.className = 'group-header collapsed';
-        autoHeader.innerHTML = `<span class="group-arrow">▸</span><span>Autoplay</span>`;
-        const autoBody = document.createElement('div');
-        autoBody.className = 'group-body';
-        autoBody.hidden = true;
-        autoHeader.addEventListener('click', () => {
-          const collapsed = autoHeader.classList.toggle('collapsed');
-          autoBody.hidden = collapsed;
-        });
-        autoplay.renderInto(autoBody);
-        autoGroup.append(autoHeader, autoBody);
-        popup.appendChild(autoGroup);
+        const auto = buildGroup(model, 'Autoplay', [], popupGroups);
+        autoplay.renderInto(auto.body);
+        popup.appendChild(auto.el);
       }
     });
   }

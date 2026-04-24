@@ -500,6 +500,17 @@ Format:
 - **Revert:** `git checkout v-s000256 -- js/render/worldObjects.js
   js/render/constellations.js`.
 
+## S260 — TrackedGroundPoints follows ShowGroundPoints toggle
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/render/worldObjects.js`.
+- **Change:** `TrackedGroundPoints.update` gates the per-target GP
+  dots + vertical lines on `s.ShowGroundPoints` in addition to the
+  existing `!InsideVault`. With `ShowGroundPoints` off (S230
+  default) the planet / star / sun / moon tracker dots all hide,
+  matching the built-in sun/moon GP behaviour.
+- **Revert:** `git checkout v-s000259 -- js/render/worldObjects.js`.
+
 ## S259 — Rename Tracker "Object" → "Celestial Bodies"; move Specified Tracker Mode
 
 - **Date:** 2026-04-24

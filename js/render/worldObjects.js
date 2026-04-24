@@ -3775,7 +3775,10 @@ export class TrackedGroundPoints {
     const s = model.state;
     const c = model.computed;
     const infos = c.TrackerInfos || [];
-    const showAll = !s.InsideVault;
+    // Tracker GPs now follow the master `ShowGroundPoints` toggle so
+    // planet / star tracker dots hide when the user turns the toggle
+    // off, matching the built-in sun/moon GP behaviour.
+    const showAll = !s.InsideVault && !!s.ShowGroundPoints;
 
     for (let i = 0; i < this._pool.length; i++) {
       const slot = this._pool[i];

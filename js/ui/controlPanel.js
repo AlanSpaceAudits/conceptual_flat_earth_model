@@ -986,6 +986,7 @@ export function buildControlPanel(host, model, demos) {
     ]);
     makeSection('Discord', [
       { label: 'Aether Cosmology', href: 'https://discord.gg/aethercosmology' },
+      { label: 'Earth Awakenings', href: 'https://discord.gg/earthawakenings' },
     ]);
   });
 

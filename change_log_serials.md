@@ -483,6 +483,14 @@ Format:
   is active.
 - **Revert:** `git checkout v-s000243 -- js/ui/controlPanel.js`.
 
+## S253 — Info tab: second Discord link (Earth Awakenings)
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/ui/controlPanel.js`.
+- **Change:** added "Earth Awakenings → `https://discord.gg/earthawakenings`"
+  to the Discord section, below Aether Cosmology.
+- **Revert:** `git checkout v-s000252 -- js/ui/controlPanel.js`.
+
 ## S252 — Info tab: Aether Cosmology CZ-SK section
 
 - **Date:** 2026-04-24

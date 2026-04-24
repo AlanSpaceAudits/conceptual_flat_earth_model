@@ -532,6 +532,19 @@ Format:
   js/render/index.js js/ui/controlPanel.js js/ui/urlState.js`;
   delete `js/core/satellites.js`.
 
+## S322 — "End Demo" button stacked above the speed readout
+
+- **Date:** 2026-04-24
+- **Files changed:** `css/styles.css`, `js/ui/controlPanel.js`.
+- **Change:** Speed readout wrapped in a new `.speed-stack`
+  vertical flex group. A new `.end-demo-btn` sits on top of the
+  readout with accent styling; `hidden` attribute flips to
+  false only while `demos.animator.isPlaying() ||
+  .isPaused()`. Click calls `demos.stop()`, which already runs
+  the S301 DE405-reset flow.
+- **Revert:** `git checkout v-s000321 -- css/styles.css
+  js/ui/controlPanel.js`.
+
 ## S321 — GP-path overlay + demo speed routed through transport buttons
 
 - **Date:** 2026-04-24

@@ -306,6 +306,25 @@ header .info-popup p:last-child { margin-bottom: 0; }
   padding-left: 6px;
 }
 
+#bottom-bar .speed-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 2px;
+  flex: 0 0 auto;
+}
+#bottom-bar .end-demo-btn {
+  font: 11px/1.1 ui-monospace, Menlo, monospace;
+  padding: 2px 8px;
+  min-width: 78px;
+  color: var(--accent);
+  border-color: var(--accent);
+  background: rgba(255, 154, 60, 0.12);
+}
+#bottom-bar .end-demo-btn:hover {
+  background: rgba(255, 154, 60, 0.22);
+}
+
 #bottom-bar .compass-controls {
   display: flex;
   align-items: center;

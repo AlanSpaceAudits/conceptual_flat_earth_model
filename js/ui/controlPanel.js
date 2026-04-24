@@ -1175,9 +1175,21 @@ export function buildControlPanel(host, model, demos) {
   btnSpeed.className = 'time-btn';  btnSpeed.type = 'button';
   btnSpeed.textContent = '2×';
   btnSpeed.title = 'Speed up play (double). Resumes at this speed if paused.';
+  const speedStack = document.createElement('div');
+  speedStack.className = 'speed-stack';
+  const btnEndDemo = document.createElement('button');
+  btnEndDemo.className = 'time-btn end-demo-btn';
+  btnEndDemo.type = 'button';
+  btnEndDemo.textContent = 'End Demo';
+  btnEndDemo.title = 'Stop the currently playing demo';
+  btnEndDemo.hidden = true;
+  btnEndDemo.addEventListener('click', () => {
+    if (demos && typeof demos.stop === 'function') demos.stop();
+  });
   const speedReadout = document.createElement('span');
   speedReadout.className = 'time-speed';
-  timeControls.append(btnVault, btnRew, btnPlay, btnFf, btnSlow, btnSpeed, speedReadout);
+  speedStack.append(btnEndDemo, speedReadout);
+  timeControls.append(btnVault, btnRew, btnPlay, btnFf, btnSlow, btnSpeed, speedStack);
 
   const compassControls = document.createElement('div');
   compassControls.className = 'compass-controls';
@@ -1463,14 +1475,13 @@ export function buildControlPanel(host, model, demos) {
 
   // Wire the bar's time controls into Autoplay.
   const refreshTimeControls = () => {
-    if (demos && demos.animator) {
-      const a = demos.animator;
-      const demoPlaying = a.isPlaying() || a.isPaused();
-      if (demoPlaying) {
-        btnPlay.textContent = a.isPaused() ? '▶' : '⏸';
-        speedReadout.textContent = `demo ${a.speedScale.toFixed(2)}×`;
-        return;
-      }
+    const a = demos && demos.animator;
+    const demoPlaying = !!a && (a.isPlaying() || a.isPaused());
+    btnEndDemo.hidden = !demoPlaying;
+    if (demoPlaying) {
+      btnPlay.textContent = a.isPaused() ? '▶' : '⏸';
+      speedReadout.textContent = `demo ${a.speedScale.toFixed(2)}×`;
+      return;
     }
     btnPlay.textContent = autoplay.playing ? '⏸' : '▶';
     const s = autoplay.speed;

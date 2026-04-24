@@ -764,14 +764,17 @@ export function buildControlPanel(host, model, demos) {
     <span class="info-slot" data-k="maz">Mouse Az: —</span>
     <span class="info-sep">│</span>
     <span class="info-slot" data-k="eph">ephem: —</span>
+    <span class="info-sep">│</span>
+    <span class="info-slot" data-k="time">—</span>
   `;
-  const slotLat = infoBar.querySelector('[data-k="lat"]');
-  const slotLon = infoBar.querySelector('[data-k="lon"]');
-  const slotEl  = infoBar.querySelector('[data-k="el"]');
-  const slotAz  = infoBar.querySelector('[data-k="az"]');
-  const slotMel = infoBar.querySelector('[data-k="mel"]');
-  const slotMaz = infoBar.querySelector('[data-k="maz"]');
-  const slotEph = infoBar.querySelector('[data-k="eph"]');
+  const slotLat  = infoBar.querySelector('[data-k="lat"]');
+  const slotLon  = infoBar.querySelector('[data-k="lon"]');
+  const slotEl   = infoBar.querySelector('[data-k="el"]');
+  const slotAz   = infoBar.querySelector('[data-k="az"]');
+  const slotMel  = infoBar.querySelector('[data-k="mel"]');
+  const slotMaz  = infoBar.querySelector('[data-k="maz"]');
+  const slotEph  = infoBar.querySelector('[data-k="eph"]');
+  const slotTime = infoBar.querySelector('[data-k="time"]');
   const fmtLat = (v) => `Lat ${v >= 0 ? '+' : ''}${v.toFixed(4)}°`;
   const fmtLon = (v) => `Lon ${v >= 0 ? '+' : ''}${v.toFixed(4)}°`;
   const fmtSignedDeg = (v) => `${v >= 0 ? '+' : ''}${v.toFixed(2)}°`;
@@ -795,6 +798,7 @@ export function buildControlPanel(host, model, demos) {
       ? `Mouse Az: ${s.MouseAzimuth.toFixed(2)}°`
       : 'Mouse Az: —';
     slotEph.textContent = `ephem: ${EPHEM_NAMES[s.BodySource] || s.BodySource || '—'}`;
+    slotTime.textContent = dateTimeToString(s.DateTime);
   };
   model.addEventListener('update', refreshInfoBar);
   refreshInfoBar();

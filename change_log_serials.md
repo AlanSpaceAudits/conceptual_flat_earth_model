@@ -500,6 +500,16 @@ Format:
 - **Revert:** `git checkout v-s000256 -- js/render/worldObjects.js
   js/render/constellations.js`.
 
+## S279 — Show current date/time in the bottom info bar
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/ui/controlPanel.js`.
+- **Change:** `#info-bar` gets a new `[data-k="time"]` slot at
+  the end, after a separator. Content is
+  `dateTimeToString(state.DateTime)` refreshed on every model
+  update, same source the HUD's time line uses.
+- **Revert:** `git checkout v-s000278 -- js/ui/controlPanel.js`.
+
 ## S278 — Match Live Ephemeris button style to Live Moon Phases header
 
 - **Date:** 2026-04-24

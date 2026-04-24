@@ -12,7 +12,7 @@ export class Animator {
     this.model = model;
     this.queue = [];
     this.running = false;
-    this.paused  = false;   // S201 — pause/resume without clearing queue
+    this.paused  = false;   // pause/resume without clearing queue
     this._now = null;
     this._frame = this._frame.bind(this);
   }
@@ -27,7 +27,7 @@ export class Animator {
     }
   }
 
-  // S201 — freeze the tween queue in place. The rAF chain breaks but
+  // freeze the tween queue in place. The rAF chain breaks but
   // `this.queue` is preserved; observer/lat/long/view-mode changes
   // don't touch it. Resume by calling .resume() later.
   pause() {

@@ -1,6 +1,6 @@
 // Demo manager: play/stop/next/prev + UI list.
 //
-// S200 — added grouped rendering, autoplay queue (advance to the next
+// added grouped rendering, autoplay queue (advance to the next
 // demo in a list when the current one finishes), and Meeus-warning
 // integration via the `meeusActive` callback.
 
@@ -39,7 +39,7 @@ export class Demos {
     this.animator.stop();
     this.currentIndex = index;
     const d = this.list[index];
-    // S201 — reset eclipse state before each demo's intro so the
+    // reset eclipse state before each demo's intro so the
     // shadow doesn't linger when switching from an eclipse demo to
     // a general demo.
     this.model.setState({
@@ -105,7 +105,7 @@ export class Demos {
     const btnPrev = document.createElement('button');
     btnPrev.textContent = 'Prev';
     btnPrev.addEventListener('click', () => this.prev());
-    // S201 — pause/resume. Freezes the tween queue so the user can
+    // pause/resume. Freezes the tween queue so the can
     // move observer lat/long or switch Heavenly/Optical while the
     // eclipse geometry stays exactly where it was.
     const btnPauseResume = document.createElement('button');

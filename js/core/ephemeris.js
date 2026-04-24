@@ -1,11 +1,11 @@
 // Ephemeris dispatcher — routes body-position queries to one of three
-// structurally distinct pipelines (S011):
+// structurally distinct pipelines:
 //
 //   'heliocentric' → ephemerisHelio.js   — Schlyter heliocentric Kepler,
 //                                          composed with the Sun's
 //                                          geocentric orbit.
 //   'geocentric'   → ephemerisGeo.js     — single Earth-focus Kepler
-//                                          ellipse per planet (S010).
+//                                          ellipse per planet.
 //                                          No Sun stage anywhere.
 //   'ptolemy'      → ephemerisPtolemy.js — Ptolemy's deferent+epicycle
 //                                          model, ported from R.H. van
@@ -31,8 +31,8 @@
 // Legacy exports (`bodyGeocentric`, `bodyFromHeliocentric`, single-arg
 // `planetEquatorial`, etc.) are preserved so downstream code can keep
 // importing the names it already uses; they default to the `'geocentric'`
-// (Earth-focus Kepler) pipeline. The S009 `bodyFromHeliocentric` alias
-// collapsed to `bodyGeocentric` in S010 remains available.
+// (Earth-focus Kepler) pipeline. The `bodyFromHeliocentric` alias
+// collapsed to `bodyGeocentric` in remains available.
 
 import * as helio from './ephemerisHelio.js';
 import * as geo   from './ephemerisGeo.js';
@@ -57,7 +57,7 @@ export {
 export { helio, geo, ptol, apix, vsop };
 
 export const EPHEMERIS_SOURCES = ['geocentric', 'heliocentric', 'ptolemy', 'astropixels', 'vsop87'];
-// S221 — Uranus + Neptune added. DE405 / AstroPixels carries
+// Uranus + Neptune added. DE405 / AstroPixels carries
 // coverage 2019–2030; the other four pipelines (HelioC / GeoC /
 // Ptolemy / VSOP87) don't have the outer-planet elements or
 // coefficients yet, so their `bodyGeocentric` falls back to
@@ -105,8 +105,8 @@ export function moonEquatorial(date, source = 'geocentric') {
 
 // Legacy exports — downstream imports that pre-date the router.
 // `bodyGeocentric` defaults to the 'geocentric' pipeline (Earth-focus
-// Kepler, the S010 behaviour). `bodyFromHeliocentric` is retained as
-// an alias for S009 compatibility; use `bodyRADec(name, date,
+// Kepler, the behaviour). `bodyFromHeliocentric` is retained as
+// an alias for compatibility; use `bodyRADec(name, date,
 // 'heliocentric')` explicitly to route through the HelioC pipeline.
 export function bodyGeocentric(name, date) { return geo.bodyGeocentric(name, date); }
 export const bodyFromHeliocentric = bodyGeocentric;

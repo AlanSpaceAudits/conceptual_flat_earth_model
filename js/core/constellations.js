@@ -20,24 +20,24 @@
 //              below. `name` is the display label in the tracker HUD.
 //   mag      — apparent visual magnitude (used for tracker readout).
 //
-// S210 — full J2000.0 position refresh. Coordinates match Hipparcos /
+// full J2000.0 position refresh. Coordinates match Hipparcos /
 // SIMBAD to 4 decimals (~0.4″). Stars that are also in `celnavStars.js`
 // keep values identical to that file so the two renderers project the
 // same stars to the same pixel.
 //
-// S214 — every cel-nav crossover tags its `celnav` id so the
+// every cel-nav crossover tags its `celnav` id so the
 // constellation renderer no longer paints a duplicate sprite on top of
 // the cel-nav star.
 //
-// S215 — σ Octantis entry (single star, southern pole).
+// σ Octantis entry (single star, southern pole).
 //
-// S217 — every non-cel-nav star now carries `id` / `name` / `mag` so
+// every non-cel-nav star now carries `id` / `name` / `mag` so
 // it can be tracked through the standard `star:<id>` path. A flat
 // `CATALOGUED_STARS` export lets consumers (the tracker lookup, the
 // control-panel button grid, and `app.update()`) iterate over all
 // catalogued non-cel-nav stars without re-walking the constellation
 // tree. Positional errors in the earlier hand-curated set that were
-// already corrected in S210:
+// already corrected in :
 //   - Ursa Minor epsilon: RA 244.35 → 251.4926 (was ~7° wrong)
 //   - Ursa Minor eta:     RA 239.84 → 244.3753 (was ~4.5° wrong)
 //   - Gemini index 6 (was a duplicate of Tejat) → Propus η Gem.
@@ -195,7 +195,7 @@ export const CONSTELLATIONS = [
     lines: [[0,2],[2,4],[1,3],[3,5],[5,6]],
   },
   {
-    // S215 — σ Octantis, the southern celestial pole star. Magnitude
+    // σ Octantis, the southern celestial pole star. Magnitude
     // ~5.47, far below the cel-nav almanac cutoff, so it's not in
     // `celnavStars.js` and keeps its own point here. Single-star
     // entry, no stick-figure lines.

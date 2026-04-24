@@ -50,7 +50,7 @@ const BODY_PATHS = {
   mars:    (y) => `https://www.astropixels.com/ephemeris/planets/mars${y}.html`,
   jupiter: (y) => `https://www.astropixels.com/ephemeris/planets/jupiter${y}.html`,
   saturn:  (y) => `https://www.astropixels.com/ephemeris/planets/saturn${y}.html`,
-  // S221 — Uranus + Neptune follow the same path pattern as the
+  // Uranus + Neptune follow the same path pattern as the
   // inner planets; verified 2026-04-24. Pluto is not published on
   // AstroPixels at all, so it's absent from this bundle.
   uranus:  (y) => `https://www.astropixels.com/ephemeris/planets/uranus${y}.html`,

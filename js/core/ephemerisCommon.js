@@ -164,7 +164,7 @@ export function equatorialToCelestCoord({ ra, dec }) {
   return [cd * Math.cos(ra), cd * Math.sin(ra), Math.sin(dec)];
 }
 
-// --- Apparent star position (S012 + S013 + S014 + S017) -----------------
+// --- Apparent star position (+ + + ) -----------------
 //
 // Transforms mean J2000 equatorial coordinates into apparent-of-date
 // equatorial coordinates. Up to three small corrections can each be
@@ -179,7 +179,7 @@ export function equatorialToCelestCoord({ ra, dec }) {
 //   nutation:   two-term Meeus 22.A — the ±9" Ω-driven wobble
 //   aberration: Meeus 23.2 first-order — the ±20.5" annual ellipse
 //
-// S017 replaced the earlier `mode` string enum with an options object
+// replaced the earlier `mode` string enum with an options object
 // so the UI can expose independent checkboxes (one per correction
 // stage). The "Trepidation" UI toggle is implemented downstream as a
 // convenience that flips all three at once; this function itself
@@ -288,7 +288,7 @@ function sepAngle(a, b) {
   return Math.acos(Math.max(-1, Math.min(1, d)));
 }
 
-// S200 — findNextEclipses now accepts optional `sunFn` / `moonFn` so
+// findNextEclipses now accepts optional `sunFn` / `moonFn` so
 // each pipeline can scan for syzygies in its own frame. Default remains
 // Meeus for backward compat.
 export function findNextEclipses(startDate, windowDays = 400, sunFn = sunEquatorial, moonFn = moonEquatorial) {
@@ -328,11 +328,11 @@ export function findNextEclipses(startDate, windowDays = 400, sunFn = sunEquator
   return { nextSolar, nextLunar };
 }
 
-// S200 — refine a known approximate eclipse time by scanning ±2 h in
+// refine a known approximate eclipse time by scanning ±2 h in
 // 1-minute steps and picking the instant of minimum sun-moon (or
 // sun-antimoon) angular separation per the supplied `sunFn` / `moonFn`
 // pair. Each ephemeris pipeline will land on its *own* closest syzygy,
-// which is the whole point of S200's ephemeris-linked playback.
+// which is the whole point of 's ephemeris-linked playback.
 export function refineEclipseByMinSeparation(approxDate, sunFn, moonFn, { kind = 'solar', halfWindowMinutes = 120 } = {}) {
   const stepMs = 60 * 1000;
   let bestT = approxDate.getTime();

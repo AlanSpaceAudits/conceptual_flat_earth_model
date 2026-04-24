@@ -64,7 +64,7 @@ function setSpriteScale(sprite, height) {
 // text / colour. Preserves pool sprite slots without allocating new
 // Sprite / material instances.
 //
-// S006a — two fixes over the previous S003-era implementation:
+// two fixes over the previous -era implementation:
 //
 //  1. Skip work entirely when the text is unchanged. The pool is
 //     repainted on every cache miss, but heading often moves without
@@ -76,7 +76,7 @@ function setSpriteScale(sprite, height) {
 //     some browsers / driver paths skip the GPU re-upload when a
 //     CanvasTexture's backing canvas is resized (which happens every
 //     time the text's pixel width changes), producing the stale-
-//     glyph artefacts the user reported — duplicate "0°" slots and
+//     glyph artefacts a reported — duplicate "0°" slots and
 //     trailing "° °" ghosts around narrow labels. Rebuilding the
 //     texture forces three.js to treat it as new.
 function repaintTextSprite(sprite, text, color) {
@@ -115,15 +115,15 @@ function repaintTextSprite(sprite, text, color) {
 }
 
 // Pick tick / label cadence for the visible FOV. Returns:
-//   layer      — always 'degree' in the revised S006 scope
+//   layer      — always 'degree' in the revised scope
 //   majorArc   — meridian arc spacing in degrees (= major)
 //   minorArc   — set equal to majorArc so no minor arcs draw
 //   labelEvery — label stride in degrees
-//   fmt        — always 'deg' in the revised S006 scope
+//   fmt        — always 'deg' in the revised scope
 //
-// S006 (revised — S006b) — three-layer refined cadence with the
-// intermediate 5° band restored. S006a dropped the 5° band because of
-// texture-reupload artefacts; those were fixed in S006a's rewritten
+// three-layer refined cadence with the
+// intermediate 5° band restored. dropped the 5° band because of
+// texture-reupload artefacts; those were fixed in 's rewritten
 // `repaintTextSprite`, so the 5° layer is safe to bring back. The
 // ladder now reads:
 //   • FOV ≥ 30°         →  static 15° wire handles it (null)
@@ -149,7 +149,7 @@ function refinedAzCadenceForFov(fovDeg) {
   };
 }
 
-// S006 (revised) — always whole degrees. `% 360` on the rounded value
+// always whole degrees. `% 360` on the rounded value
 // prevents the `Math.round(359.7) = 360` → `"360°"` edge case where a
 // wrap-around label would collide with the `0°` label at the same
 // screen position. `fmt` is retained for call-site shape but ignored.
@@ -158,7 +158,7 @@ function formatAzimuthLabel(azDeg /* fmt */) {
   return (Math.round(a) % 360) + '°';
 }
 
-// S007 — elevation label cadence mirrors the azimuth ladder so the
+// elevation label cadence mirrors the azimuth ladder so the
 // right-side scale stays synchronised with the bottom band:
 //   FOV ≥ 30°        → 15° (coarse)
 //   8° ≤ FOV < 30°  →  5° (refined 5°)
@@ -294,7 +294,7 @@ function buildDegreeLabels(labelRadius, stepDeg, color, z, scale) {
     const sp = makeTextSprite(String(d) + '°', color);
     sp.position.set(labelRadius * Math.cos(r), labelRadius * Math.sin(r), z);
     setSpriteScale(sp, scale);
-    // S226 — stamp label value + current colour so the dark-bg
+    // stamp label value + current colour so the dark-bg
     // toggle can repaint without rebuilding geometry.
     sp.userData.text      = String(d) + '°';
     sp.userData.textColor = color;
@@ -321,7 +321,7 @@ export class LongitudeRing {
     this.group.add(this.minorTicks);
     this.group.add(this.majorTicks);
     this.group.add(this.labels);
-    // S226 — current palette. Light palette = hand-tuned grays that
+    // current palette. Light palette = hand-tuned grays that
     // read on the pale-blue Heavenly background. Dark palette =
     // white / pale grey that reads on the near-black DarkBackground.
     // `_currentPalette` tracks which is active so `update()` can skip
@@ -352,13 +352,13 @@ export class LongitudeRing {
     const inVault = !!model.state.InsideVault;
     this.group.visible = !inVault && (model.state.ShowLongitudeRing !== false);
 
-    // S226 — flip palette when DarkBackground toggles. No-op if the
+    // flip palette when DarkBackground toggles. No-op if the
     // palette already matches (guarded inside `_applyPalette`).
     this._applyPalette(model.state.DarkBackground ? 'dark' : 'light');
 
-    // S206c (follow-up 3) — rotate the ring so the "0°" marker
+    // rotate the ring so the "0°" marker
     // lands at the observer's compass-north direction. The disc-rim
-    // numerals are the projection-grid reference and the user wants
+    // numerals are the projection-grid reference and a wants
     // them to read in the same heading frame as the cap-attached
     // azimuth ring (which has 0° = compass-north of the observer).
     //
@@ -566,7 +566,7 @@ void main() {
 }
 `;
 
-// --- Solar-eclipse ground shadow (S202) ----------------------------------
+// --- Solar-eclipse ground shadow ----------------------------------
 //
 // Derives the umbra and penumbra footprint on the ground each frame
 // from the actual sun and moon 3D positions in the FE scene. No
@@ -590,7 +590,7 @@ void main() {
 // sun and moon aren't directly overhead. As the eclipse progresses
 // the sun + moon positions change and the ellipse stretches /
 // rotates / slides across the disc — which is the true eclipse path
-// behaviour that S201's circular decal could not produce.
+// behaviour that 's circular decal could not produce.
 //
 // Sun / moon physical radii default to FE-scale constants chosen so
 // the typical shadow is visible (umbra a few percent of the FE
@@ -649,7 +649,7 @@ export class EclipseShadow {
     // Default FE-scale body radii. Chosen so the umbra cone
     // actually reaches the disc at typical vault heights:
     // umbra reaches ground iff  Mz/Sz < r_m/r_s  (derivation in
-    // S202 changelog). With default SunVaultHeight = 0.5 and
+    // changelog). With default SunVaultHeight = 0.5 and
     // MoonVaultHeight = 0.4, Mz/Sz = 0.8 — so we pick r_m/r_s
     // slightly above that threshold.
     const r_s = s.EclipseSunRadiusFE  ?? 0.030;
@@ -1048,7 +1048,7 @@ export class ObserversOpticalVault {
     // against day/ocean backgrounds where blues used to disappear.
     this.cardinalsGroup = new THREE.Group();
     this.cardinalsGroup.name = 'cardinals';
-    // S006 (revised) — unit-direction recorded on each sprite so
+    // unit-direction recorded on each sprite so
     // update() can re-home the label between the coarse radius (1.14,
     // floating above the rim) and the refined radius (1.00, sitting
     // on its own meridian ray as a compact anchor).
@@ -1101,7 +1101,7 @@ export class ObserversOpticalVault {
       }),
     );
     this.azimuthGroup.add(this.azimuthTicks);
-    // S006d — collect the coarse 15° azimuth labels into a list so
+    // collect the coarse 15° azimuth labels into a list so
     // update() can re-home them onto the pitch-driven reading band
     // each frame. `basePhi` is stashed on each sprite so we don't
     // recompute atan2 every frame.
@@ -1120,7 +1120,7 @@ export class ObserversOpticalVault {
     }
     this.group.add(this.azimuthGroup);
 
-    // ----- S001: refined DMS azimuth scale ---------------------------
+    // ----- : refined DMS azimuth scale ---------------------------
     // When the Optical-vault mousewheel narrows the camera FOV, this
     // overlay rebuilds ticks / labels at a cadence appropriate to the
     // visible window. Tick positions come from the same canonical
@@ -1154,7 +1154,7 @@ export class ObserversOpticalVault {
     );
     this.refinedAzGroup.add(this.refinedTicks);
     // Label pool — sprites whose canvas texture we rewrite on demand.
-    // S006a — bumped 24 → 64. With labelEvery always = 1° in refined,
+    // bumped 24 → 64. With labelEvery always = 1° in refined,
     // the widest refined FOV (just under 30°) emits up to ~43 labels;
     // 64 gives headroom so we never hit the pool-length cap and lose
     // labels at the edges of the window.
@@ -1168,7 +1168,7 @@ export class ObserversOpticalVault {
       this._refinedLabelPool.push(sp);
     }
     this._refineKey = null;   // cache key: (fov, heading, mode) rounded
-    // S006a — initialise the refined-state flags so the first call to
+    // initialise the refined-state flags so the first call to
     // _updateRefinedScale always sees a clean transition edge. Without
     // this, _refinedActive is undefined on the first frame after
     // entering Optical, which defeats the transition-invalidation
@@ -1177,7 +1177,7 @@ export class ObserversOpticalVault {
     this._refinedActiveAz = null;
     this.group.add(this.refinedAzGroup);
 
-    // ----- S007: right-side elevation (latitude) scale -----------------
+    // ----- : right-side elevation (latitude) scale -----------------
     // The algebraic DUAL of the azimuth reading band. Where azimuth
     // labels sit at FIXED azimuths and VARIABLE elevation (pitch-
     // driven), elevation labels sit at VARIABLE azimuth (heading-
@@ -1188,12 +1188,12 @@ export class ObserversOpticalVault {
     // visually distinguishes the altitude axis from the orange-yellow
     // azimuth axis.
     //
-    // S007a — replaced the original 20-slot dynamic-repaint pool
+    // replaced the original 20-slot dynamic-repaint pool
     // with one pre-painted sprite per integer elevation 0°–85° (86
     // sprites). The earlier pool windowed emission to the visible
     // vertical band; at 1° cadence with vFov ≤ 8° that emitted at
     // most ~8 labels and the higher cadence multiples were never in
-    // the scene graph, so the user couldn't see the scale extend
+    // the scene graph, so a couldn't see the scale extend
     // toward zenith even when the lower portion was rendered. Now
     // every cadence-multiple is in the scene at all times; the
     // per-frame work is just a visibility toggle + position update,
@@ -1213,7 +1213,7 @@ export class ObserversOpticalVault {
     }
     this.group.add(this.elevLabelsGroup);
 
-    // ----- S004: refined meridian-arc grid -----------------------------
+    // ----- : refined meridian-arc grid -----------------------------
     // The "refined longitudinal grid" — full meridian arcs from horizon
     // to zenith emitted at the cadence's majorArc / minorArc strides,
     // windowed to the visible heading range. This subgroup is scaled
@@ -1231,7 +1231,7 @@ export class ObserversOpticalVault {
     const majGeom = new THREE.BufferGeometry();
     majGeom.setAttribute('position', new THREE.BufferAttribute(this._majorMeridianBuf, 3));
     majGeom.setDrawRange(0, 0);
-    // S006 — meridians rendered white so the active-meridian highlight
+    // meridians rendered white so the active-meridian highlight
     // (orange-yellow #ffd24a, same colour as the heading arrow) reads
     // cleanly against the grid instead of fighting the old steel-blue
     // palette. Majors are solid-ish (0.7); minors sit back at 0.3.
@@ -1252,9 +1252,9 @@ export class ObserversOpticalVault {
         depthTest: false, depthWrite: false, clippingPlanes,
       }),
     );
-    // S006 — active-meridian overlay. A single meridian arc drawn at
+    // active-meridian overlay. A single meridian arc drawn at
     // the nearest major-cadence azimuth to ObserverHeading, in the same
-    // yellow as the heading arrow / ray so the user can see which
+    // yellow as the heading arrow / ray so a can see which
     // longitude line they are inspecting. One arc × arcSegs line
     // segments × 2 endpoints × 3 coords = arcSegs·6 floats.
     this._activeMeridianBuf = new Float32Array(ARC_SEGS * 6);
@@ -1273,7 +1273,7 @@ export class ObserversOpticalVault {
     this.refinedMeridiansGroup.add(this.refinedMajorMeridians);
     this.refinedMeridiansGroup.add(this.refinedActiveMeridian);
 
-    // S008 (revised — S008b) — refined altitude rings, the horizontal
+    // refined altitude rings, the horizontal
     // counterpart to refinedMajorMeridians. Lives inside
     // refinedMeridiansGroup so it inherits the (r, r, h) flattened
     // vault scale and lands on the same surface the static wire's
@@ -1305,7 +1305,7 @@ export class ObserversOpticalVault {
     // -x in its local frame (toward N at heading 0). The headingGroup is
     // rotated about z by -heading so the arrow tracks ObserverHeading
     // clockwise (compass convention): 0 = N, 90 = E, 180 = S, 270 = W.
-    // S006 (revised) — shrunk ~3.5× (tip at -0.035 instead of -0.12).
+    // shrunk ~3.5× (tip at -0.035 instead of -0.12).
     // Arrow is now a compact origin cue; the heading ray takes over as
     // the dominant directional indicator.
     this.headingGroup = new THREE.Group();
@@ -1330,7 +1330,7 @@ export class ObserversOpticalVault {
       }),
     );
     this.headingArrow.renderOrder = 64;
-    // S006 (revised) — lay the arrow flat on the horizon plane (z = 0)
+    // lay the arrow flat on the horizon plane (z = 0)
     // so its tip is geometrically coincident with the start of the
     // ground-line segment and the active meridian arc's base, which
     // also live at z = 0. The material keeps depthTest off, so there's
@@ -1365,20 +1365,20 @@ export class ObserversOpticalVault {
     const s = model.state;
     const c = model.computed;
     const r = c.OpticalVaultRadius;
-    // S209 — use the mode-dependent effective height (hemisphere in
+    // use the mode-dependent effective height (hemisphere in
     // Optical, flat cap in Heavenly) so the cap mesh and its graticule
-    // match the object-projection math. The user's `OpticalVaultHeight`
+    // match the object-projection math. The `OpticalVaultHeight`
     // slider is honoured only when viewing from Heavenly.
     const h = c.OpticalVaultHeightEffective;
     const obs = c.ObserverFeCoord;
 
     this.group.position.set(obs[0], obs[1], obs[2]);
     // Optical vault: x/y by R, z by effective H. Hemisphere (H=R) in
-    // Optical mode; user-configurable flattened cap in Heavenly.
+    // Optical mode; configurable flattened cap in Heavenly.
     this.mesh.scale.set(r, r, h);
     this.wire.scale.set(r, r, h);
     this.axes.scale.set(r, r, h);
-    // S004: refined meridian arcs live on the same hemisphere as the
+    // refined meridian arcs live on the same hemisphere as the
     // static wire, so they share its (r, r, h) scale.
     this.refinedMeridiansGroup.scale.set(r, r, h);
     // Cardinal labels, heading arrow, and azimuth ring live near z=0
@@ -1393,7 +1393,7 @@ export class ObserversOpticalVault {
     // which is a NEGATIVE rotation about +z, so rotate by -heading.
     this.headingGroup.rotation.set(0, 0, -ToRad(s.ObserverHeading || 0));
     this.headingGroup.visible = s.ShowFacingVector !== false;
-    // S213 — optical vault grid toggle. When off, the cap surface
+    // optical vault grid toggle. When off, the cap surface
     // stays visible but the wire / axes / refined meridian arcs
     // are hidden, and the cardinal + azimuth + elevation labels are
     // forced off even if `ShowAzimuthRing` is still on, so the
@@ -1405,15 +1405,15 @@ export class ObserversOpticalVault {
     // Cardinals and the azimuth ring share the ShowAzimuthRing
     // toggle — they're the canonical heading scale, visible in BOTH
     // Optical and Heavenly so the reading persists across views.
-    // S213 — also gated on `gridOn`: grid off = no labels either.
+    // also gated on `gridOn`: grid off = no labels either.
     const azOn = gridOn && (s.ShowAzimuthRing !== false);
     this.cardinalsGroup.visible = azOn;
-    // S001: refined DMS scale only appears in Optical mode when the
-    // user has zoomed past the coarse-ring threshold; below that FOV
+    // refined DMS scale only appears in Optical mode when the
+    // has zoomed past the coarse-ring threshold; below that FOV
     // the coarse 15° ring is hidden so the refined cadence owns the
     // visual field.
     this._updateRefinedScale(s, c);
-    // S007 — emit the right-side 0°–90° elevation scale each frame.
+    // emit the right-side 0°–90° elevation scale each frame.
     // Companion to the bottom azimuth band; shares colour-distinct
     // palette, same ringR, same eyeH compensation, same cadence
     // ladder (15° / 5° / 1°).
@@ -1423,7 +1423,7 @@ export class ObserversOpticalVault {
     const coarseHidden = s.InsideVault && this._refinedActive;
     this.azimuthGroup.visible = azOn && !coarseHidden;
 
-    // S006 (revised) — ground-to-sky directional guide.
+    // ground-to-sky directional guide.
     //
     // The guide is a single connected geometric path:
     //   1. arrow tip on the horizon plane (z = 0, arrow lies flat)
@@ -1451,7 +1451,7 @@ export class ObserversOpticalVault {
     const hSin = Math.sin(hRad);
     let dirCos, dirSin, hLen, lineZ, tipOffset;
     if (s.InsideVault) {
-      // S006c — gate on `_refinedActiveAz != null` instead of
+      // gate on `_refinedActiveAz != null` instead of
       // `_refinedActive`, so the ground line snaps to the highlighted
       // meridian in BOTH the coarse (15°) and refined (5° / 1°)
       // regimes. `_refinedActiveAz` is set whenever the active-meridian
@@ -1486,7 +1486,7 @@ export class ObserversOpticalVault {
     this.headingLine.geometry.attributes.position.needsUpdate = true;
     this.headingLineGroup.visible = s.ShowFacingVector !== false;
 
-    // S006 (revised) — fade the arrow as FOV narrows into the refined
+    // fade the arrow as FOV narrows into the refined
     // 1° regime so the straight line becomes the primary directional
     // indicator. Full opacity at FOV ≥ 30° (coarse view), linear ramp
     // down to 0 at FOV ≤ 8° (inside the refined regime, where labels
@@ -1500,25 +1500,25 @@ export class ObserversOpticalVault {
       this.headingArrow.material.opacity = 0.85;
     }
 
-    // S006 (revised) — when refined is active the cardinals shrink and
+    // when refined is active the cardinals shrink and
     // sit right on their meridian rays (radius 1.00 vs coarse 1.14)
     // so they read as line-attached anchors, not floating headers.
     //
-    // S006a (further revision) — the refined cardinal height is now
+    // the refined cardinal height is now
     // FOV-scaled (screen-fraction target) instead of a fixed world
     // height, because a fixed world size that reads as a 15%-of-view
     // letter at FOV 14.7° reads as a 230%-of-view billboard at FOV 1°,
     // dominating the tight-zoom view.
     //
-    // S006b — halved across the board. Coarse cardH 0.10 → 0.05;
+    // halved across the board. Coarse cardH 0.10 → 0.05;
     // refined screen-fraction target 0.12 → 0.06 with upper clamp
     // 0.10 → 0.05. N / E / S / W now read as small anchors, not
     // dominant letters, at every Optical zoom level.
     //
-    // S006d — cardinals AND coarse azimuth labels now ride the pitch-
+    // cardinals AND coarse azimuth labels now ride the pitch-
     // driven reading band. Shared `labelElev` from `_labelBandElevRad`
     // puts them just above the horizon at low pitch and slides them
-    // up with the view as the user tilts. Because cardinalsGroup and
+    // up with the view as a tilts. Because cardinalsGroup and
     // azimuthGroup are both scaled by (r, r, r), the local positions
     // are divided by `r` so the resulting WORLD position matches the
     // refined labels' world position (both end up on the same ring
@@ -1532,7 +1532,7 @@ export class ObserversOpticalVault {
       cardR = 1.00;
       const cFov = Math.max(1, Math.min(75, 75 / Math.max(0.2, s.OpticalZoom || 5.09)));
       const cFovRad = cFov * Math.PI / 180;
-      // S006e — halved from S006b/S006d (was min(0.05, 0.06·cFovRad)).
+      // halved from /(was min(0.05, 0.06·cFovRad)).
       // N / E / S / W at 5° and 1° are now subtle anchors, not visual
       // competitors for the degree labels. Coarse (15°) cardinal size
       // stays at 0.05 so the jump from coarse to refined is an
@@ -1543,13 +1543,13 @@ export class ObserversOpticalVault {
       cardH = 0.05;
     }
     const bandFovDeg = Math.max(0.005, Math.min(75, 75 / Math.max(0.2, s.OpticalZoom || 5.09)));
-    // S206c — gate the Optical pitch-tracking / lowest-visible-ring
+    // gate the Optical pitch-tracking / lowest-visible-ring
     // rule on first-person mode. In Heavenly (orbit camera) mode
     // `state.CameraHeight` is the ORBIT elevation above the disc,
     // not a first-person pitch. Feeding it into `_labelBandElevRad`
     // as if it were pitch pushes the azimuth-degree ring far up the
     // cap (e.g. CameraHeight = 25° → bandElev snaps to 20°), which
-    // looks like labels "spreading out" when the user returns from
+    // looks like labels "spreading out" when a returns from
     // Optical to Heavenly. In Heavenly the correct behaviour is
     // horizon-hug: small fixed elevation offset so the degree ring
     // sits on the cap's rim as it does in Optical at pitch 0.
@@ -1560,7 +1560,7 @@ export class ObserversOpticalVault {
     const sinE = Math.sin(bandElev);
     const eyeH = 0.012;
     const rSafe = Math.max(1e-6, r);
-    // S206c (follow-up) — snap cardinals + coarse azimuth labels to
+    // snap cardinals + coarse azimuth labels to
     // the optical-vault cap surface in Heavenly. The Optical reading-
     // band sits at world radius 1.14 (inside the cap, floats around
     // the observer) which is correct first-person but produces a
@@ -1613,23 +1613,23 @@ export class ObserversOpticalVault {
     this.group.visible = s.ShowOpticalVault;
   }
 
-  // S001 — rebuild the refined azimuth tick / label layer. Reads the
+  // rebuild the refined azimuth tick / label layer. Reads the
   // current state.Zoom to recover FOV (fov = 75° / Zoom), picks a
   // cadence from refinedAzCadenceForFov, then emits ticks and labels
   // only inside a window around ObserverHeading so the line count
   // stays bounded even at arcsecond cadence. Cached by (mode, fov
   // cadence, heading bucket) so it only rebuilds when necessary.
-  // S006d/e — compute the elevation (radians) at which the degree
+  // /e — compute the elevation (radians) at which the degree
   // labels should sit this frame. Shared by coarse labels, refined
   // labels, and cardinals so the entire "reading band" stays
   // horizon-anchored at low pitch and follows the view up as the
-  // user tilts.
+  // tilts.
   //
-  // S006e reformulation: the previous additive formula
+  // reformulation: the previous additive formula
   //   labelElev = max(0, pitch − fov/2) + 0.05·fov
   // only started tracking once pitch crossed fov/2 and then sat at
   // 5 % of the FOV above the view's bottom edge. Both numbers were
-  // too weak — the band felt detached from the view as the user
+  // too weak — the band felt detached from the view as the view
   // tilted, and when it did track it hugged the bottom edge
   // uncomfortably. Replaced with a "floor or track, whichever is
   // higher" formula:
@@ -1652,7 +1652,7 @@ export class ObserversOpticalVault {
   // comfortable reading strip rather than an edge-hugging line.
   // 85° cap still prevents zenith pile-up.
   _labelBandElevRad(s, fovDeg) {
-    // S206 (v2) — anchor the horizontal band to the LOWEST VISIBLE
+    // anchor the horizontal band to the LOWEST VISIBLE
     // altitude ring on the current cadence grid, replacing the
     // continuous `max(floor, track)` formula. Rule:
     //   • bottomView = pitch − fov/2, clamped ≥ 0
@@ -1662,15 +1662,15 @@ export class ObserversOpticalVault {
     //   • labelElev   = lowestRingE + 0.5 % of FOV
     // When the horizon is in view (pitch < fov/2 → bottomView ≤ 0),
     // `lowestRingE` is 0 and labels sit just above the horizon, which
-    // is the existing behaviour. When the user tilts up past the
+    // is the existing behaviour. When a tilts up past the
     // horizon, labels snap to ride just above the next cadence-
     // multiple elevation ring instead of floating at a loose 5%-of-
     // FOV offset — a true "just above the lowest visible longitude
     // band" anchor. 85° cap still prevents zenith pile-up.
-    // S206a — drop the small 0.5%-of-FOV margin so the bottom label
+    // drop the small 0.5%-of-FOV margin so the bottom label
     // strip sits EXACTLY on the lowest visible elevation ring rather
     // than a hair above it. With the grid now extending to the
-    // horizontal screen edges (the other half of S206a), the strip
+    // horizontal screen edges (the other half of ), the strip
     // reads as a proper row along the ring rather than floating
     // above a truncated grid segment.
     const pitchDeg = Math.max(0, Math.min(90, s.CameraHeight || 0));
@@ -1681,7 +1681,7 @@ export class ObserversOpticalVault {
     return elevDeg * Math.PI / 180;
   }
 
-  // S007/a — emit the right-side 0°–85° elevation scale. Labels sit
+  // /a — emit the right-side 0°–85° elevation scale. Labels sit
   // at FIXED world elevations on the right-side meridian (azimuth =
   // heading + rightBandAz). Pre-painted sprites in `_elevLabels`,
   // one per integer elevation 0°–85°; per frame we toggle visibility
@@ -1693,7 +1693,7 @@ export class ObserversOpticalVault {
   //
   // Every cadence-multiple at or below the cap is in the scene graph
   // at all times — three.js frustum culling decides what actually
-  // renders. So as the user tilts up, the higher labels are already
+  // renders. So as a tilts up, the higher labels are already
   // there waiting; the scale isn't constrained to the narrow
   // `[pitch − vFov/2, pitch + vFov/2]` window the previous version
   // emitted into.
@@ -1717,7 +1717,7 @@ export class ObserversOpticalVault {
     const hFovRad = 2 * Math.atan(Math.tan(fovRad / 2) * aspect);
     const hFovHalfDeg = (hFovRad / 2) * 180 / Math.PI;
 
-    // S206a (follow-up 2) — approaching-meridian anchor + per-label
+    // approaching-meridian anchor + per-label
     // inverse-projection solve.
     //
     // Column snaps to the meridian CLOSEST to the right edge of the
@@ -1749,7 +1749,7 @@ export class ObserversOpticalVault {
     const cadDeg = elevCadenceForFov(fov);
     const cap = 75;   // fixed elevation ceiling across cadences
     const r = (c && c.OpticalVaultRadius != null) ? c.OpticalVaultRadius : 0.5;
-    // S209 — this routine only paints labels inside Optical mode
+    // this routine only paints labels inside Optical mode
     // (guarded above by `s.InsideVault`); in that mode the vault is a
     // strict hemisphere (H = R), so the flattened `ePrime` transform
     // collapses to the identity (e' = e). Drop it — labels sit on the
@@ -1793,10 +1793,10 @@ export class ObserversOpticalVault {
     }
   }
 
-  // S006c — emit the active-meridian arc as a single arcSegs-segment
+  // emit the active-meridian arc as a single arcSegs-segment
   // LineSegments at the snapped azimuth. Called from both coarse and
   // refined branches so the highlighted meridian is visible from the
-  // moment the user enters Optical, not only after zooming past
+  // moment a enters Optical, not only after zooming past
   // FOV 30°. Writes into `_activeMeridianBuf` (sized ARC_SEGS * 6),
   // sets the draw range, and records the snapped azimuth on
   // `_refinedActiveAz` so the heading-line direction logic can use it.
@@ -1827,23 +1827,23 @@ export class ObserversOpticalVault {
     if (!active) {
       this.refinedAzGroup.visible = false;
       this.refinedMeridiansGroup.visible = false;
-      // S006a — invalidate the cache on any transition out of the
+      // invalidate the cache on any transition out of the
       // refined regime so the next re-entry rebuilds ticks, meridian
       // arcs (including the active-highlight), and labels from scratch
       // rather than inheriting a stale key from a previous session.
       if (this._refinedActive) this._refineKey = null;
       this._refinedActive = false;
-      // S006c — clear the snapped-azimuth record so the heading-line
+      // clear the snapped-azimuth record so the heading-line
       // logic falls back to raw heading when we're not in Optical
       // (or ShowAzimuthRing is toggled off).
       this._refinedActiveAz = null;
-      // S008b — hide refined altitude rings when refined overlay is
+      // hide refined altitude rings when refined overlay is
       // off entirely. Cadence cache stays so re-entry doesn't re-emit
       // the same buffer.
       this.refinedAltRings.visible = false;
       return;
     }
-    // S002 — refined overlay reads the mode-local OpticalZoom, so
+    // refined overlay reads the mode-local OpticalZoom, so
     // Heavenly's orbit Zoom can't accidentally drive the refined
     // cadence (and vice versa). Default 5.09 on entry matches app.js.
     const zoom = Math.max(0.2, s.OpticalZoom || 5.09);
@@ -1851,7 +1851,7 @@ export class ObserversOpticalVault {
     const cad  = refinedAzCadenceForFov(fov);
     const headingNow = ((s.ObserverHeading || 0) % 360 + 360) % 360;
 
-    // S006c — active-meridian highlight is drawn in BOTH coarse and
+    // active-meridian highlight is drawn in BOTH coarse and
     // refined regimes. Snap cadence: 15° in coarse (matches the
     // static wire), cad.majorArc in refined (5° or 1°). Emitting
     // every frame is cheap (one 16-segment arc) and keeps the
@@ -1876,7 +1876,7 @@ export class ObserversOpticalVault {
       this._refinedActive = false;
       return;
     }
-    // S006a — same invalidation on the other edge: coarse → refined.
+    // same invalidation on the other edge: coarse → refined.
     // The first refined frame after entering the 5°/1° regimes always
     // misses the cache so ticks + grid + labels rebuild from scratch.
     if (!this._refinedActive) this._refineKey = null;
@@ -1885,7 +1885,7 @@ export class ObserversOpticalVault {
     this.refinedMajorMeridians.visible = true;
     this.refinedMinorMeridians.visible = true;
 
-    // S008b — emit refined horizontal altitude rings at the same
+    // emit refined horizontal altitude rings at the same
     // cadence as the meridians so the lat/long box grid is complete:
     //   5° regime  → 18 rings (0°, 5°, 10°, …, 85°)
     //   1° regime  → 86 rings (0°, 1°, 2°, …, 85°)
@@ -1922,7 +1922,7 @@ export class ObserversOpticalVault {
     }
     this.refinedAltRings.visible = true;
 
-    // S006d — lift refined label pool onto the pitch-driven reading
+    // lift refined label pool onto the pitch-driven reading
     // band every frame, even on cache hit. The cache gates the heavier
     // tick / grid / repaint work below, but the LABELS must follow
     // CameraHeight continuously (not just on heading or FOV changes),
@@ -1944,7 +1944,7 @@ export class ObserversOpticalVault {
       );
     }
 
-    // S006c — reuse `headingNow` computed above (the branch used to
+    // reuse `headingNow` computed above (the branch used to
     // have its own `const heading = ...`). Cache key at a resolution
     // finer than the current major cadence so a nudge within one
     // tick doesn't trigger a rebuild.
@@ -1954,7 +1954,7 @@ export class ObserversOpticalVault {
     if (key === this._refineKey) return;
     this._refineKey = key;
 
-    // S206a — windowing driven by HORIZONTAL FOV (viewport width),
+    // windowing driven by HORIZONTAL FOV (viewport width),
     // not vertical FOV. At 16:9 hFov ≈ 1.78·vFov; the old
     // `fov·0.7 + cad.major` formula fell short of the viewport's right
     // edge in the 5°–8° vertical-FOV band (cadence 1°) and at the top
@@ -2005,7 +2005,7 @@ export class ObserversOpticalVault {
     this.refinedTicks.geometry.setDrawRange(0, seg * 2);
     this.refinedTicks.geometry.attributes.position.needsUpdate = true;
 
-    // --- refined meridian grid (S004) -------------------------------
+    // --- refined meridian grid -------------------------------
     // A meridian at compass azimuth `az` is an arc from (sinφ·cos,
     // sinφ·sin, cosφ) for polar φ sweeping 0 (zenith) → π/2 (horizon).
     // `phi` here is the LOCAL-FE angle for a compass azimuth so the
@@ -2061,13 +2061,13 @@ export class ObserversOpticalVault {
     this.refinedMajorMeridians.geometry.setDrawRange(0, majSeg * 2);
     this.refinedMajorMeridians.geometry.attributes.position.needsUpdate = true;
 
-    // (S006c — active meridian arc was already emitted at the top of
+    // (— active meridian arc was already emitted at the top of
     // _updateRefinedScale, before the coarse/refined split, so it
     // shows in both regimes. Nothing to do here.)
 
     // --- labels -------------------------------------------------------
-    // S005 — fine-scale labels were still visually huge because the
-    // old S003 sizer used an absolute MIN_LABEL_HEIGHT floor of 0.028
+    // fine-scale labels were still visually huge because the
+    // old sizer used an absolute MIN_LABEL_HEIGHT floor of 0.028
     // world units. At arcsecond cadence the natural widthBudget-based
     // height is ~2e-5, so the floor was ~1400× too large and the
     // labels filled a third of the screen.
@@ -2086,7 +2086,7 @@ export class ObserversOpticalVault {
     //                 vault distance that subtends targetFrac of the
     //                 screen at the current camera FOV).
     //
-    //   h_arc       = widthBudget / aspect (arc-budget limit from S003,
+    //   h_arc       = widthBudget / aspect (arc-budget limit from ,
     //                 prevents overlap between adjacent labels).
     //
     //   h = min(h_screen, h_arc) — arc-budget still caps at coarse
@@ -2105,7 +2105,7 @@ export class ObserversOpticalVault {
     const hScreen = targetFrac * ringR * fovRad;
     const HARD_MIN = 1e-6;   // avoid genuinely zero-sized sprites
 
-    // S006d — refined labels share the pitch-driven reading band with
+    // refined labels share the pitch-driven reading band with
     // the coarse labels and cardinals. Reuse the lift constants
     // computed above the cache check (`rLabelRingR`, `rLabelCosE`,
     // `rLabelSinE`, `rLabelEyeH`). refinedAzGroup is unscaled so the
@@ -3060,7 +3060,7 @@ export class Stars {
     const showStars = s.ShowStars && visibilityGate;
     // Dome starfield is a true-source mimic — gate it on ShowTruePositions
     // so toggling "True Positions" off also hides the heavenly starfield.
-    // S227 — also gate on `!InsideVault` so the random cloud doesn't
+    // also gate on `!InsideVault` so the random cloud doesn't
     // render twice in Optical (dome + cap both painted through the
     // transparent cap).
     this.domePoints.visible   = showStars && (s.ShowTruePositions !== false) && !s.InsideVault;
@@ -3287,7 +3287,7 @@ export class CelestialPoles {
     const opticalR = c.OpticalVaultRadius;
     const opticalH = c.OpticalVaultHeightEffective;
 
-    // S215 — master visibility for the two pole dots. When the user
+    // master visibility for the two pole dots. When it
     // switches them off, the parent group hides and the per-sphere
     // visibility logic below short-circuits harmlessly.
     const polesOn = s.ShowCelestialPoles !== false;
@@ -3727,7 +3727,7 @@ export class ToroidalVortex {
   }
 }
 
-// --- Tracked-object ground points (S009a) --------------------------------
+// --- Tracked-object ground points --------------------------------
 //
 // One disc-surface dot per entry in `c.TrackerInfos`. Colour keyed by
 // category so sun-tracking reads yellow, moon white, planets warm, stars
@@ -3736,7 +3736,7 @@ export class ToroidalVortex {
 // TrackerTargets — independent of ShowGroundPoints (which only gates
 // sun/moon GPs). Hidden in first-person (Optical) mode so they don't
 // clutter the observer's view of the ground they're standing on.
-// S218 — star GP colour bumped from 0x8ed4ff (pale blue) to 0xffffff
+// star GP colour bumped from 0x8ed4ff (pale blue) to 0xffffff
 // (white) so tracked-star ground points read as the same pigment the
 // cel-nav starfield paints overhead, not a distinct "tracker-blue"
 // category.
@@ -3791,7 +3791,7 @@ export class TrackedGroundPoints {
       const key = info.target === 'sun'  ? 'sun'
                :  info.target === 'moon' ? 'moon'
                :  info.category;
-      // S220 — `info.gpColor` (if present, set by the tracker
+      // `info.gpColor` (if present, set by the tracker
       // star-branch in `app.update()`) overrides the category
       // default so cel-nav and catalogued stars can use distinct
       // pigments matching their respective starfield layers.
@@ -3819,7 +3819,7 @@ export class TrackedGroundPoints {
   }
 }
 
-// --- Cel Nav starfield (S009) --------------------------------------------
+// --- Cel Nav starfield --------------------------------------------
 //
 // Replacement for the procedural / chart star layers when
 // `StarfieldType === 'celnav'`. Unlike `Stars` (2000 random points), this
@@ -3862,9 +3862,9 @@ export class CelNavStars {
     this.domePoints = new THREE.Points(
       domeGeom,
       new THREE.PointsMaterial({
-        // S220 — cel-nav starfield pigment swapped with the
+        // cel-nav starfield pigment swapped with the
         // constellation layer: cel-nav is now the warm-yellow
-        // `0xffe8a0` Alan wanted, constellations get the white.
+        // `0xffe8a0` 
         color: 0xffe8a0,
         size: 3, sizeAttenuation: false,
         transparent: true, opacity: 1,
@@ -3897,12 +3897,12 @@ export class CelNavStars {
 
     const active = (s.StarfieldType === 'celnav') && (c.CelNavStars != null);
     // Same fade rules as Stars: dynamic fade by NightFactor unless the
-    // user disables `DynamicStars`, hard-gated on `ShowStars`.
+    // disables `DynamicStars`, hard-gated on `ShowStars`.
     const nightAlpha = s.DynamicStars ? (c.NightFactor || 0) : 1.0;
     const visibilityGate = s.DynamicStars ? nightAlpha > 0.01 : true;
     const showStars = active && s.ShowStars && visibilityGate;
 
-    // S227 — hide the heavenly-vault star dots in Optical mode so
+    // hide the heavenly-vault star dots in Optical mode so
     // cel-nav stars don't render twice (once on the dome through
     // the transparent cap, once on the cap surface projection). The
     // `CelestialMarker` class already gates its true-source dots on
@@ -3923,7 +3923,7 @@ export class CelNavStars {
     const n = Math.min(stars.length, this._maxStars);
     const dp = this._domePositions;
     const sp = this._spherePositions;
-    // S218 — Specified Tracker Mode: hide any cel-nav star that
+    // Specified Tracker Mode: hide any cel-nav star that
     // isn't in `TrackerTargets`. Off-screen park (0, 0, -1000) on
     // both buffers so the disc clip plane hides the point.
     const stm = !!s.SpecifiedTrackerMode;

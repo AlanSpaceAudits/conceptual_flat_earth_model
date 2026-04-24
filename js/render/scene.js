@@ -54,7 +54,7 @@ export class SceneManager {
   updateCamera() {
     const s = this.model.state;
     const obs = this.model.computed.ObserverFeCoord;
-    // S007 — expose the current camera aspect on model.computed so
+    // expose the current camera aspect on model.computed so
     // worldObjects code can compute horizontal FOV (for placing the
     // right-side elevation scale at the correct angular offset)
     // without importing the camera directly. Updated every frame so
@@ -63,9 +63,9 @@ export class SceneManager {
 
     // First-person mode: camera at observer's eye height, looking along the
     // ObserverHeading compass direction. CameraHeight is reused as look
-    // pitch in this mode so the user can tilt up toward the zenith.
+    // pitch in this mode so the can tilt up toward the zenith.
     if (s.InsideVault) {
-      // S002 — Optical FOV reads the mode-local `OpticalZoom` scalar,
+      // Optical FOV reads the mode-local `OpticalZoom` scalar,
       // NOT `Zoom`. Mode switches therefore don't leak: the Heavenly
       // orbit camera never sees OpticalZoom, and Optical never sees
       // the orbit Zoom. fov = 75° / OpticalZoom, clamped.
@@ -77,10 +77,10 @@ export class SceneManager {
         this.camera.fov = fov;
         this.camera.updateProjectionMatrix();
       }
-      // S007 — `ObserverElevation` lifts the camera (and only the
+      // `ObserverElevation` lifts the camera (and only the
       // camera) above the disc. `ObserverFeCoord` is still at z = 0
       // so all downstream geometry (arrow, line, cardinals, labels)
-      // keeps its ground-anchored math unchanged; the user just
+      // keeps its ground-anchored math unchanged; the just
       // looks down from a higher vantage.
       const eyeH = 0.012;
       const elev = Math.max(0, Math.min(0.5, s.ObserverElevation || 0));
@@ -147,7 +147,7 @@ export class SceneManager {
     this.sunLight.target.position.set(0, 0, 0);
   }
 
-  // S201 — eclipse-path observer darkening. Renderer pushes the
+  // eclipse-path observer darkening. Renderer pushes the
   // computed factor (0 = unaffected, 1 = fully inside umbra) every
   // frame; `render()` folds it into ambient, sunLight, and the
   // background colour so the observer "loses the sun" visually when
@@ -173,9 +173,9 @@ export class SceneManager {
       this.sunLight.intensity = dimSun;
     }
     // Inside-vault background fades to night based on NightFactor so the
-    // projected starfield has dark sky behind it. S201 — eclipse darken
+    // projected starfield has dark sky behind it.: eclipse darken
     // pushes toward night colour regardless of NightFactor.
-    // S226 — when `DarkBackground` is on the scene sits at the same
+    // when `DarkBackground` is on the scene sits at the same
     // near-black `nightColor` the Optical vault uses at night,
     // regardless of view mode or NightFactor. Eclipse darken still
     // applies on top (lerping back toward day when the eclipse

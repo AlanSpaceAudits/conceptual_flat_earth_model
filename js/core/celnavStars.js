@@ -1,4 +1,4 @@
-// Celestial-navigation star catalogue (S009).
+// Celestial-navigation star catalogue ().
 //
 // The 58 named navigational stars listed in the Nautical Almanac (57
 // almanac stars plus Polaris). Each entry carries:

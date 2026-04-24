@@ -27,41 +27,24 @@ import {
   feLatLongToGlobalFeCoord, celestLatLongToVaultCoord, vaultCoordAt,
 } from './feGeometry.js';
 
-// S222 — per-planet ground-point pigment so each planet's GP reads
-// in the same colour as its in-scene marker and its Tracker button.
-// Values deliberately mirror `render/index.js` `PLANET_STYLE[*].color`
-// and `ui/controlPanel.js` button colours — keep them in sync.
+// Mirrors PLANET_STYLE colours in render/index.js and the Tracker
+// button grid. Keep in sync.
 const PLANET_GP_COLORS = {
   mercury: 0xd0b090,
   venus:   0xfff0c8,
   mars:    0xd05040,
-  jupiter: 0xffa060,  // S222 — light orange
+  jupiter: 0xffa060,
   saturn:  0xe4c888,
   uranus:  0xa8d8e0,
   neptune: 0x7fa6e8,
 };
 const TRACKED_GP_COLORS_PLANET_DEFAULT = 0xff8c66;
 
-// Project a local-globe direction (x=zenith, y=east, z=north) onto the
-// observer's optical vault. Horizontal radius R; vertical scaling H is
-// mode-dependent (see `OpticalVaultHeightEffective` below): inside
-// Optical mode H := R so the cap is a true hemisphere and the rendered
-// elevation matches the reported elevation 1:1 (an object reported at
-// e° appears at e° above the horizon in the viewport). In Heavenly
-// mode H := user's `OpticalVaultHeight` slider so the cap reads as the
-// flattened conceptual FE dome when seen from outside.
 function opticalVaultProject(localGlobe, R, H) {
   return [localGlobe[0] * H, localGlobe[1] * R, localGlobe[2] * R];
 }
 
-// Maximum z under the heavenly vault shell at a body's AE projection.
-// The shell is a scaled hemisphere with horizontal radius (domeSize·feR)
-// and vertical VaultHeight, so:
-//   (x/domeR)² + (y/domeR)² + (z/domeH)² ≤ 1
-// Since AE radius for a body at declination dec is r = (90-dec)/180·feR,
-// this becomes z ≤ domeH · √(1 − (r/domeR)²). Used to prevent bodies from
-// piercing the dome *surface* (not just its apex) when the starfield gets
-// scaled up and their altitude rises with it.
+// z ≤ domeH · √(1 − (r/domeR)²) — ellipsoidal ceiling at a body's AE radius.
 function heavenlyVaultCeiling(latDeg, domeSize, domeHeight, feRadius) {
   const r = feRadius * (90 - latDeg) / 180;
   const domeR = domeSize * feRadius;
@@ -70,11 +53,7 @@ function heavenlyVaultCeiling(latDeg, domeSize, domeHeight, feRadius) {
   return domeHeight * Math.sqrt(1 - rhoSq);
 }
 
-// Default state. Distances all in FE_RADIUS units.
-//
-// S207 — testing-rebaseline defaults. The user wants a recognisable
-// out-of-the-box state on every page load so regressions are obvious
-// at a glance. See change_log_serials.md S207 for the full table.
+// Default state. Distances in FE_RADIUS units.
 function defaultState() {
   return {
     // observer / camera
@@ -84,63 +63,36 @@ function defaultState() {
     // 0 = North, 90 = East, 180 = South, 270 = West. Drives the cardinal
     // arrow and the convergence/divergence read of the projected starfield.
     ObserverHeading: 0,
-    // S007 — observer elevation above the disc (world units). 0 keeps
-    // the eye at the ground (current behaviour). Lifting the observer
-    // only moves the camera; ObserverFeCoord stays at z = 0 so all
-    // downstream geometry (meridian arc, heading ray, cardinals) keeps
-    // its ground-anchored math unchanged.
+    // World-unit lift above disc; only affects camera, not ObserverFeCoord.
     ObserverElevation: 0,
     CameraDirection: 14.0,
     CameraHeight:    10.0,
     CameraDistance:  GEOMETRY.CameraDistanceDefault,
-    Zoom:             4.67,   // Heavenly orbit zoom — unaffected by Optical wheel.
-    // S002 — Optical-only zoom scalar. Drives only the first-person
-    // FOV (`fov = 75° / OpticalZoom`).
-    // S211 — default bumped to 1.0 so load-in lands at max zoom-out
-    // (FOV = 75°). Paired with `CameraHeight = 7.5` (S211) → top of
-    // viewport sits at elevation 45° when the user enters Optical.
+    Zoom:             4.67,
+    // Optical-only. fov = 75° / OpticalZoom.
     OpticalZoom:      1.0,
 
-    // S207 — time defaults to 2019-03-24 21:04 UTC (15:04 CST). The
-    // user's canonical testing moment is 03-24 15:04 local; bumped
-    // to 2019 so the date sits inside Espenak's DE405 / AstroPixels
-    // table (years 2019–2030 in `js/data/astropixels.js`). The 2017
-    // baseline made the DE405 pipeline return zeros for sun/moon.
-    // 2019 is two whole non-leap years past 2017-01-01:
-    //   730 + 82.878 = 812.878 days.
-    DateTime:    812.88,   // days since 2017-01-01
-    DayOfYear:   812,      // = floor(DateTime); not calendar DOY
-    Time:        21.07,    // decimal hours
+    // Days since 2017-01-01.
+    DateTime:    812.88,
+    DayOfYear:   812,
+    Time:        21.07,
 
-    // geometry
     VaultSize:   GEOMETRY.VaultSizeDefault,
     VaultHeight: 0.4,
 
-    // Observer's optical vault — the cap onto which sun/moon/stars/
-    // planets project. S209 defaults both to 0.5 so `H = R` out of the
-    // box: the vault is a true hemisphere in Optical, objects appear at
-    // their reported elevation 1:1, and the Heavenly depiction starts
-    // spherical. The user can still drag `OpticalVaultHeight` below
-    // `OpticalVaultSize` to flatten the Heavenly cap — that slider now
-    // only affects the Heavenly visual; Optical stays hemispheric
-    // regardless (see `OpticalVaultHeightEffective` in `update()`).
+    // H = R → hemispheric Optical projection. Reducing H only affects
+    // the Heavenly cap depiction (see OpticalVaultHeightEffective).
     OpticalVaultSize:   GEOMETRY.OpticalVaultRadiusFar,
     OpticalVaultHeight: 0.5,
 
-    // ray curve shape
     RayParameter: 1.0,
-    RayTarget:    0,  // 0 observer, 1 flat earth
-    RaySource:    0,  // 0 sun, 1 moon, 2 star
+    RayTarget:    0,
+    RaySource:    0,
 
-    // visibility toggles (S207 testing-rebaseline)
     ShowFeGrid:     true,
     ShowShadow:     true,
     ShowVault:      false,
     ShowVaultGrid:   false,
-    // True-source positions on the heavenly vault (sun/moon/planet dots
-    // and halos). When off, only the projected optical-vault markers
-    // remain — the observer sees their hemisphere of vision without the
-    // underlying "real" sources above it.
     ShowTruePositions: false,
     ShowSunTrack:   false,
     ShowMoonTrack:  false,
@@ -149,11 +101,6 @@ function defaultState() {
     ShowVaultRays:        false,
     ShowOpticalVaultRays: false,
     ShowManyRays:   false,
-    // S223 — draw a straight segment from a body's true position on
-    // the heavenly vault down to its projected position on the
-    // observer's optical vault, hidden when the body's elevation is
-    // at or below 0° (below the observer's horizon). Visualises the
-    // true→projected geometry of the FE model.
     ShowProjectionRays: false,
     ShowLatitudeLines: true,
     ShowGroundPoints:  true,
@@ -164,56 +111,16 @@ function defaultState() {
     ShowConstellationLines:  true,
     ShowLongitudeRing:       true,
     ShowAzimuthRing:         true,
-
-    // S213 — optical vault grid toggle (wire mesh + axes + refined
-    // meridian arcs). Default on. When off, the cap surface remains
-    // visible but the grid is hidden AND the azimuth-ring labels +
-    // elevation scale are forced off for a clutter-free readout even
-    // if `ShowAzimuthRing` is on. Cardinals (N/E/S/W) track the grid
-    // too, since they're part of the same scaffolding.
     ShowOpticalVaultGrid:    true,
-
-    // S215 — toggle for the celestial-pole markers (red dot at NCP,
-    // blue dot at SCP) that ride the observer's optical vault. Default
-    // on. When off the `CelestialPoles` group hides entirely.
     ShowCelestialPoles:      true,
-
-    // S226 — dark-background toggle. Off (default) keeps the pale-
-    // blue Heavenly-mode background `0xdcecfb` in place. On swaps it
-    // for the same near-black `0x040810` the Optical vault fades to
-    // at night. The `LongitudeRing`'s disc-rim azimuth numerals +
-    // tick segments recolour white / light grey whenever this is on
-    // so they stay legible against the dark.
     DarkBackground:          false,
 
-    // First-person camera mode: place the camera at the observer's position
-    // looking along their heading, and hide everything a real observer in
-    // the FE model would *not* see — the true-source vault of heavens, the
-    // dome starfield, the domeDot on sun/moon/planets, ground points. Only
-    // what's projected onto the optical vault remains visible.
     InsideVault: false,
 
-    // observer figure: 'male' | 'female' | 'astronaut' | 'child' | 'llama' | 'none'
-    // S207 — testing-rebaseline default 'llama'.
     ObserverFigure: 'llama',
 
-    // Timezone offset applied to the calendar inputs, in minutes east of UTC
-    // (e.g. -300 = UTC-5 / EST). DateTime itself remains in UTC; this is
-    // purely a display / input affordance. S207 — default CST (UTC-6).
+    // Minutes east of UTC. -360 = CST.
     TimezoneOffsetMinutes: -360,
-
-    // Per-body vault heights (dimensionless, ratio of FE_RADIUS). Each
-    // celestial body's vault is a spherical cap whose BASE sits on the
-    // starfield floor and whose APEX is the value below. Heights spread
-    // out so the layers read clearly from below: moon lowest above the
-    // floor, sun next, then planets climbing into the upper dome.
-    // Starfield raised well above the observer's optical vault so it sits
-    // clearly overhead. Body apexes bumped to keep room above the floor
-    // for the seasonal elevation swing on the sun/moon vaults.
-    // S207 — planet vault heights flattened to a uniform 0.346 so the
-    // testing baseline reads the same for every planet. Sun/moon are
-    // recomputed from the active date in `update()` so their displayed
-    // values track the ephemeris regardless of these defaults.
     StarfieldVaultHeight: 0.28,
     MoonVaultHeight:      0.346,
     SunVaultHeight:       0.346,
@@ -222,97 +129,34 @@ function defaultState() {
     MarsVaultHeight:      0.346,
     JupiterVaultHeight:   0.346,
     SaturnVaultHeight:    0.346,
-    // S221 — Uranus / Neptune join the dynamic-altitude planet stack.
-    // Values are written back each frame by `update()` as the
-    // declination band slides, identical to the inner planets.
     UranusVaultHeight:    0.346,
     NeptuneVaultHeight:   0.346,
 
     ShowPlanets: true,
 
-    // If true, the starfield fades with the sun's elevation (day/night
-    // cycle). If false, stars are visible at full brightness all the time
-    // regardless of the sun — useful for inspecting the disk structure.
+    // When true, starfield fades with sun elevation.
     DynamicStars: true,
 
-    // Mythic axis-mundi feature at the disc centre (which is the geographic
-    // north pole in this model). 'none' | 'yggdrasil' | 'meru'.
+    // 'none' | 'yggdrasil' | 'meru'
     Cosmology: 'none',
 
-    // Visual map projection used for land + graticule + latitude circles
-    // only. 'ae' preserves the model's native azimuthal-equidistant layout;
-    // 'hellerick' swaps in a Lambert equal-area polar aspect for the
-    // Hellerick boreal look; 'blank' draws nothing. All physics / ray /
-    // vault math still runs in the AE frame. S207 default 'blank' so the
-    // disc starts feature-free for testing.
+    // 'ae' | 'hellerick' | 'blank'. Affects only the map art; physics
+    // always runs in the AE frame.
     MapProjection: 'blank',
 
-    // Starfield type for the heavenly-vault disc. 'random' uses the
-    // procedural point cloud; 'chart-dark' / 'chart-light' swap in a polar
-    // star-chart texture (dark- vs light-background variants).
-    // S009 — 'celnav' adds a real-named-star field built from the 58
-    // Nautical-Almanac navigational stars (see celnavStars.js). Each
-    // star is individually positioned from RA/Dec and projected into
-    // both Heavenly and Optical vaults, replacing the procedural /
-    // chart rendering when selected.
-    // S207 — testing default 'celnav' so named-star checks are
-    // available immediately on load.
+    // 'random' | 'chart-dark' | 'chart-light' | 'celnav'
     StarfieldType: 'celnav',
 
-    // S011 / S015 / S016 — five ephemeris pipelines. All computed every
-    // frame and displayed side-by-side in the Tracker HUD; BodySource
-    // decides which one drives the primary sky render.
-    //   'heliocentric' — Schlyter Kepler + Sun-around-Earth composition
-    //   'geocentric'   — Single Earth-focus Kepler ellipse per planet
-    //                    (S010; no Sun stage, accuracy trade accepted)
-    //   'ptolemy'      — Almagest deferent + epicycle (van Gent port)
-    //   'astropixels'  — DE405 tabulated data, credit Fred Espenak.
-    //                    Default source at startup: matches Stellarium
-    //                    to arcseconds across all bodies in-range.
-    //   'vsop87'       — Bretagnon & Francou 1988 analytical theory.
-    // S017b — default changed from 'geocentric' to 'astropixels' so
-    // first impression matches the sky.
+    // 'heliocentric' | 'geocentric' | 'ptolemy' | 'astropixels' | 'vsop87'
     BodySource: 'astropixels',
 
-    // S014 / S017 — independent toggles for each correction applied
-    // to the J2000 star catalogue before horizon-frame projection.
-    // The three individual corrections start OFF; "Trepidation" is
-    // ON by default and forces all three on — giving an out-of-the-
-    // box full apparent-of-date view. Unchecking Trepidation lands
-    // you on raw J2000 with a blank slate, ready to add one effect
-    // at a time.
-    //   StarApplyPrecession → Lieske 1977 / Meeus 21.4 (~20' over 26 y)
-    //   StarApplyNutation   → Meeus 22.A (±9")
-    //   StarApplyAberration → Meeus 23.2 (±20.5")
-    //   StarTrepidation     → master toggle for the combined correction.
-    //                         The name is a nod to medieval Arabic
-    //                         astronomy's hypothetical "trepidation of
-    //                         the equinoxes" — an extra oscillation
-    //                         bolted onto precession to match
-    //                         observation. Here the label carries the
-    //                         same framing: "the combined apparent
-    //                         wobble, as a single phenomenon."
+    // StarTrepidation master forces all three on when true.
     StarApplyPrecession: false,
     StarApplyNutation:   false,
     StarApplyAberration: false,
     StarTrepidation:     true,
 
-    // S200 — eclipse demo state hooks. The eclipse demo registry
-    // sets these via `intro()` so downstream renderers can react:
-    //   EclipseActive    — true while an eclipse demo is playing
-    //   EclipseKind      — 'solar' | 'lunar'
-    //   EclipseEventUTMS — UTC milliseconds of refined max eclipse
-    //                      (per the active ephemeris pipeline)
-    //   EclipsePipeline  — short label of the pipeline used (HelioC,
-    //                      DE405, etc.) for the descriptive readout
-    //   EclipseMinSepDeg — sun-moon (or sun-antimoon for lunar)
-    //                      separation in degrees at the refined moment
-    //
-    // S200 STUB — the umbra/penumbra ground projection and observer
-    // darkening live downstream in the renderer. This serial wires
-    // the state but defers the 3D projection to a sub-serial because
-    // it requires per-frame computation of the moon's shadow cone
-    // intersected with the FE disc geometry, which is non-trivial.
+    // Eclipse demo state hooks. Registry sets these via intro().
     EclipseActive:     false,
     EclipseKind:       null,
     EclipseEventUTMS:  null,
@@ -320,75 +164,33 @@ function defaultState() {
     EclipseMinSepDeg:  null,
     EclipseMagnitude:  null,
     EclipseEventType:  null,
-    // S202 — body radii in FE units. Drive the umbra/penumbra cone
-    // geometry. r_s > r_m is what makes the umbra cone converge
-    // behind the moon; both are in `FE_RADIUS` units. Defaults in
-    // the renderer are 0.030 (sun) / 0.020 (moon), chosen so the
-    // derived shadow is visible on a unit-radius disc. Demo intros
-    // may set these per-event if wanted.
     EclipseSunRadiusFE:      null,
     EclipseMoonRadiusFE:     null,
-    // S205 — eclipse ground-shadow feature temporarily disabled.
-    // S202's derived cone-plane shadow + observer darkening only run
-    // when this flag is true. Default `false` → feature is inert
-    // until we return to it. The eclipse demos themselves continue
-    // to run (date lists, ephemeris-linked playback, Meeus warning,
-    // autoplay queue) — just without the on-disc shadow render.
+    // Eclipse ground-shadow feature gate (disabled pending rework).
     ShowEclipseShadow:       false,
-    // S201 — deprecated ground-radius overrides from the circular
-    // decal. Kept for URL-state back-compat; the S202 renderer
-    // ignores them.
+    // Deprecated circular-decal overrides, kept for URL back-compat.
     EclipseUmbraRadiusFE:    null,
     EclipsePenumbraRadiusFE: null,
 
-    // S009 — force-full-night toggle so the user can test Cel Nav
-    // starfield / body placement without waiting for the actual day/
-    // night cycle. When true, NightFactor is pinned to 1.0 regardless
-    // of the sun's elevation. S207 — default true so the testing
-    // baseline shows the celnav starfield without waiting for night.
+    // Pins NightFactor = 1.0.
     PermanentNight: true,
 
-    // S009a — multi-tracker: array of ids the HUD / disc-GP renders for.
-    // Each id: 'sun' / 'moon' / planet name / 'star:<id>'. Empty array
-    // collapses the tracker HUD and hides all tracked-object GPs.
-    // S207 — default ['sun', 'moon'] so the tracker HUD is populated
-    // on load.
+    // Ids: 'sun' / 'moon' / planet name / 'star:<id>'. Empty = HUD collapsed.
     TrackerTargets: ['sun', 'moon'],
 
-    // S216 — show the full RA/Dec ephemeris-comparison block in the
-    // Tracker HUD (one row per pipeline: Helio / GeoC / Ptol / DE405
-    // / VSOP87) for sun / moon / planets. Default off so the HUD
-    // stays compact with just az + el. Stars never get the block
-    // regardless of this toggle — their RA/Dec is pipeline-
-    // independent (J2000 catalogue with optional apparent-of-date
-    // corrections), so the comparison adds nothing.
     ShowEphemerisReadings: false,
 
-    // S218 — Specified Tracker Mode. When on, the sky collapses to
-    // only what the user has explicitly added to `TrackerTargets`
-    // plus those targets' GPs: non-tracked sun / moon / planets /
-    // stars vanish, the random starfield vanishes, constellation
-    // stick-figure lines vanish, and only tracked-body markers +
-    // their ground points remain. Default off so the sim starts in
-    // its regular "full-sky" reading.
+    // When true, only tracked bodies + their GPs render.
     SpecifiedTrackerMode: false,
 
-    // description / pointer
     Description: '',
     PointerFrom: [0, 0],
     PointerTo:   [0, 0],
     PointerText: '',
 
-    // S211 — live cursor elevation readout. Set by the mouse handler
-    // whenever the pointer moves over the canvas in Optical mode
-    // (cursor ray elevation from the observer, degrees). `null` when
-    // the pointer isn't over the canvas or when the user is in
-    // Heavenly view (no single-observer elevation frame there).
+    // Degrees; set by mouseHandler, null in Heavenly / off-canvas.
     MouseElevation: null,
-    // S212 — companion cursor-azimuth readout. Compass azimuth of
-    // the ray from the observer through the pointer, degrees CW
-    // from north. `null` under the same conditions as MouseElevation.
-    MouseAzimuth: null,
+    MouseAzimuth:   null,
   };
 }
 
@@ -397,26 +199,21 @@ export class FeModel extends EventTarget {
     super();
     initTimeOrigin();
 
-    // Mutable primary state.
     this.state = defaultState();
 
-    // Computed state (written by update(), read by renderer).
+    // Written by update(), read by renderer.
     this.computed = {
-      // transforms
       TransMatSkyRot:            M.Unit(),
       TransMatCelestToGlobe:     M.Unit(),
       TransMatLocalFeToGlobalFe: M.Unit(),
       TransMatVaultToFe:         M.Unit(),
 
-      // angles
       SkyRotAngle:     0,
       SunCelestAngle:  0,
       MoonCelestAngle: 0,
-      // Real-sky equatorial coordinates (radians), straight from ephemeris.
       SunRA:  0, SunDec:  0,
       MoonRA: 0, MoonDec: 0,
 
-      // sun/moon
       SunCelestCoord:        [0, 0, 0],
       SunCelestLatLong:      { lat: 0, lng: 0 },
       SunAnglesGlobe:        { azimuth: 0, elevation: 0 },
@@ -432,37 +229,26 @@ export class FeModel extends EventTarget {
       MoonLocalGlobeCoord:   [0, 0, 0],
       MoonOpticalVaultCoord:     [0, 0, 0],
 
-      // moon phase shading
       MoonPhase:             0,   // 0=new, PI=full
-      MoonPhaseFraction:     0,   // 0..1, illuminated fraction
-      MoonRotation:          0,   // terminator orientation as seen from observer
+      MoonPhaseFraction:     0,   // 0..1 illuminated fraction
+      MoonRotation:          0,
 
-      // 0 = full day, 1 = full night (civil twilight). Used to fade stars
-      // and to smoothly attenuate the optical-vault orbs near the horizon.
+      // 0 = day, 1 = full night
       NightFactor: 0,
 
-      // observer disc coord
       ObserverFeCoord: [0, 0, 0],
 
-      // Horizontal radius and vertical height of the observer's optical
-      // vault. The vault is a flattened cap (oblate), so projections need
-      // separate horizontal/vertical scaling — see opticalVaultProject().
       OpticalVaultRadius: GEOMETRY.OpticalVaultRadiusFar,
       OpticalVaultHeight: GEOMETRY.OpticalVaultHeightFar,
 
-      // Per-planet computed data, keyed by planet name. Each value has the
-      // shape { ra, dec, celestCoord, vaultCoord, opticalVaultCoord,
-      // anglesGlobe: { azimuth, elevation } }. Populated each frame.
       Planets: {},
     };
 
-    // Track previous day/time so UI can edit them independently of DateTime.
     this._dayOfYearLast = this.state.DayOfYear;
     this._timeLast = this.state.Time;
     this._dateTimeLast = this.state.DateTime;
   }
 
-  // Shallow merge + clamp + recompute. `emit=false` lets a caller batch.
   setState(patch, emit = true) {
     Object.assign(this.state, patch);
     this.update();
@@ -476,29 +262,18 @@ export class FeModel extends EventTarget {
     this.state.PointerText = '';
   }
 
-  // Clamp inputs, then recompute every derived quantity.
   update() {
     const s = this.state;
     const c = this.computed;
 
-    // --- clamp --------------------------------------------------------
+    // clamp
     s.ObserverLat  = Clamp(s.ObserverLat, -90, 90);
-    // S007 — clamp observer elevation. Upper bound 0.5 ≈ the vault
-    // radius, so the camera can rise as high as the horizon ring
-    // without clipping through the vault shell.
     s.ObserverElevation = Clamp(s.ObserverElevation, 0, 0.5);
     s.ObserverLong = ((s.ObserverLong + 180) % 360 + 360) % 360 - 180;
     s.CameraHeight = Clamp(s.CameraHeight, -30, 89.9);
     s.CameraDirection = ((s.CameraDirection + 180) % 360 + 360) % 360 - 180;
     s.ObserverHeading = ((s.ObserverHeading % 360) + 360) % 360;
-    // S002 — restored Heavenly Zoom clamp to its original gentle
-    // range. The Optical FOV no longer reads `Zoom`; it reads the
-    // separate `OpticalZoom` field below, which carries its own clamp.
     s.Zoom         = Clamp(s.Zoom, 0.1, 10);
-    // S006 — hard lock at the individual-degree inspection layer.
-    // OpticalZoom_MAX = 75 → fov_min = 75°/75 = 1°. Once the refined
-    // grid is drawing one meridian per degree, further zoom would add
-    // nothing — no sub-degree cadence is defined in this scope.
     s.OpticalZoom  = Clamp(s.OpticalZoom, 0.2, 75);
     s.VaultSize     = Clamp(s.VaultSize, GEOMETRY.VaultSizeMin, GEOMETRY.VaultSizeMax);
     s.VaultHeight   = Clamp(s.VaultHeight, GEOMETRY.VaultHeightMin, GEOMETRY.VaultHeightMax);
@@ -511,7 +286,7 @@ export class FeModel extends EventTarget {
     const camDistMin = GEOMETRY.CameraDistanceMinRel * s.VaultSize * FE_RADIUS;
     if (s.CameraDistance < camDistMin) s.CameraDistance = camDistMin;
 
-    // --- date/time sync ----------------------------------------------
+    // date/time sync
     s.DayOfYear = Math.round(s.DayOfYear);
     if (s.DayOfYear !== this._dayOfYearLast || s.Time !== this._timeLast) {
       s.DateTime = s.DayOfYear + s.Time / 24;
@@ -523,19 +298,7 @@ export class FeModel extends EventTarget {
     this._dayOfYearLast = s.DayOfYear;
     this._timeLast = s.Time;
 
-    // --- transforms and celestial positions --------------------------
-    //
-    // Real-sky ephemeris: sun, moon and sidereal time are computed from the
-    // actual UTC date corresponding to `DateTime`. Sun is Meeus Ch. 25 low-
-    // precision (~0.01° / century), moon is simplified Meeus Ch. 47 (~0.5°
-    // longitude), GMST is the IAU 1982 formula. Their cycles are therefore
-    // driven by independent real periods (1 solar year, 1 sidereal month,
-    // 1 sidereal day, plus precession + lunar node regression baked in).
     const utcDate = dateTimeToDate(s.DateTime);
-    // S009 — ephemeris source is selectable. Both pipelines return
-    // geocentric equatorial (ra, dec); the heliocentric pipeline routes
-    // through helio-xyz + earth differencing before projection. At
-    // current precision they produce the same tracker readouts.
     const bodySource = s.BodySource || 'geocentric';
     const sunEq  = bodyRADec('sun',  utcDate, bodySource);
     const moonEq = bodyRADec('moon', utcDate, bodySource);
@@ -552,32 +315,19 @@ export class FeModel extends EventTarget {
       c.ObserverFeCoord, s.ObserverLong,
     );
 
-    // --- sun ---------------------------------------------------------
+    // --- sun ---
     c.SunRA = sunEq.ra; c.SunDec = sunEq.dec;
     c.SunCelestCoord   = equatorialToCelestCoord(sunEq);
     c.SunCelestLatLong = coordToLatLong(c.SunCelestCoord);
     c.SunCelestAngle   = c.SunCelestLatLong.lng;
-    // Sun vault altitude is dynamic and re-derived each frame from the
-    // current declination + the user-set starfield height. The sun never
-    // sits below the starfield (HEADROOM gap) and rises with declination
-    // toward Cancer (north solstice → max altitude). Writing back into
-    // `s.SunVaultHeight` makes the slider in the panel a live readout of
-    // the body's current height.
-    // S224 — sun is the master elevation reference for every other
-    // body. SUN_RANGE is the amount of z travel the sun's vault
-    // marker covers from southern to northern solstice. Moon swings
-    // proportionally wider because its declination range (28.50°)
-    // exceeds the sun's (23.44°); that ratio is applied directly.
-    // Planets share the sun's range since they're ecliptic-bound.
+    // Sun is master elevation reference. Moon scales by its dec-range
+    // ratio; planets share SUN_RANGE.
     const HEADROOM = 0.06;
     const SUN_RANGE    = 0.20;
     const SUN_DEC_DEG  = 23.44;
     const MOON_DEC_DEG = 28.50;
     const sunDecNorm = 0.5 + 0.5 * Math.max(-1, Math.min(1,
       c.SunCelestLatLong.lat / SUN_DEC_DEG));
-    // Cap at the dome's ellipsoidal surface at the sun's AE projection
-    // radius — not just the apex — so scaling the starfield up can't push
-    // the sun through the heavenly vault at any point on its circle.
     const sunCeil = heavenlyVaultCeiling(
       c.SunCelestLatLong.lat, s.VaultSize, s.VaultHeight, FE_RADIUS,
     );
@@ -585,11 +335,6 @@ export class FeModel extends EventTarget {
       sunCeil,
       s.StarfieldVaultHeight + HEADROOM + sunDecNorm * SUN_RANGE,
     );
-    // Dome coord rotated by -SkyRotAngle (TransMatVaultToFe) so the sun
-    // sweeps across the dome once per day rather than freezing at one
-    // celestial longitude. Position uses vaultCoordAt so altitude is the
-    // dynamic dec-driven value, independent of where the sun is on its
-    // daily circle.
     c.SunVaultCoord = vaultCoordToGlobalFeCoord(
       vaultCoordAt(c.SunCelestLatLong.lat, c.SunCelestLatLong.lng,
                    s.SunVaultHeight, FE_RADIUS),
@@ -604,22 +349,12 @@ export class FeModel extends EventTarget {
       c.TransMatLocalFeToGlobalFe,
     );
 
-    // --- moon --------------------------------------------------------
+    // --- moon ---
     c.MoonRA = moonEq.ra; c.MoonDec = moonEq.dec;
     c.MoonCelestCoord    = equatorialToCelestCoord(moonEq);
     c.MoonCelestLatLong  = coordToLatLong(c.MoonCelestCoord);
     c.MoonCelestAngle    = c.MoonCelestLatLong.lng;
-    // Moon's own north pole direction: approximate as celestial +z (lunar
-    // axis is tilted only 1.54° to the ecliptic pole). Good enough for the
-    // phase-terminator rotation visual.
     c.MoonNorthCelestCoord = [0, 0, 1];
-    // Moon vault altitude is dynamic too. Band is 28.50° to cover
-    // the moon's ±5° excursion outside the tropics on top of the
-    // 23.44° solar band.
-    // S224 — MOON_RANGE is now `SUN_RANGE · (28.50 / 23.44)` so the
-    // moon's z swing scales proportionally to its real declination
-    // range relative to the sun's. When the user (or time) moves
-    // the sun's altitude, the moon tracks the same proportionally.
     const MOON_RANGE = SUN_RANGE * (MOON_DEC_DEG / SUN_DEC_DEG);
     const moonDecNorm = 0.5 + 0.5 * Math.max(-1, Math.min(1,
       c.MoonCelestLatLong.lat / MOON_DEC_DEG));
@@ -644,11 +379,7 @@ export class FeModel extends EventTarget {
       c.TransMatLocalFeToGlobalFe,
     );
 
-    // --- moon phase (sun-at-infinity approximation) ------------------
-    // In the original, sun and moon positions were scaled by DistSun / DistMoon
-    // before subtraction. DistSun/DistMoon ~= 390, so the moon->sun vector is
-    // (SunCelestCoord - MoonCelestCoord*DistMoon/DistSun) ~= SunCelestCoord.
-    // We drop the distance scale entirely: moon->sun = SunCelestCoord.
+    // Moon phase (sun-at-infinity: moon→sun ≈ SunCelestCoord).
     const moonToGlobe = V.Norm(V.Scale(c.MoonCelestCoord, -1));
     const moonToSun   = V.Norm(V.Sub(c.SunCelestCoord, V.Scale(c.MoonCelestCoord, 0)));
     const shadowUp    = V.Norm(V.Mult(moonToSun, moonToGlobe));
@@ -670,36 +401,16 @@ export class FeModel extends EventTarget {
     if (V.ScalarProd(moonShadowUpLocal, camRight) > 0) rot = -rot;
     c.MoonRotation = rot;
 
-    // --- optical vault dimensions ------------------------------------
-    // Horizontal radius and vertical height come straight from state so
-    // the user can inflate or squash the cap. Height is clamped under the
-    // heavenly VaultHeight so the optical cap can't pierce the dome.
+    // Optical vault dimensions. Cap height clamped under VaultHeight.
+    // Inside Optical mode H := R (strict hemisphere, 1:1 elevation).
+    // In Heavenly H := OpticalVaultHeight (flattened cap depiction).
     c.OpticalVaultRadius = s.OpticalVaultSize;
     c.OpticalVaultHeight = Math.min(s.OpticalVaultHeight, s.VaultHeight);
-    // S209 — mode-dependent effective height for projection + cap mesh.
-    // Inside Optical (first-person) mode the vault is a strict
-    // hemisphere (H := R) so an object reported at elevation e°
-    // projects to the same e° on the rendered cap — no visual
-    // compression between the reported angle and the viewing angle.
-    // In Heavenly mode H := the user's `OpticalVaultHeight` so the cap
-    // reads as the conceptual flat FE dome from outside. The `Height`
-    // slider therefore controls ONLY the Heavenly depiction; Optical
-    // view is invariant to it. Consumers (object projection, cap
-    // mesh scale, star/decline-circle/pole markers) read this
-    // field rather than `OpticalVaultHeight` directly.
     c.OpticalVaultHeightEffective = s.InsideVault
       ? c.OpticalVaultRadius
       : c.OpticalVaultHeight;
 
-    // --- night factor ------------------------------------------------
-    // Linear ramp across the full civil twilight band:
-    //   sun elev ≥  0°  -> 0  (daylight, stars washed out)
-    //   sun elev = -6°  -> 0.5 (civil twilight, stars emerging)
-    //   sun elev ≤ -12° -> 1  (nautical twilight and beyond, full dark)
-    // Used by the star fade and by the optical-vault orb dimming.
-    // S009 — `PermanentNight` forces NightFactor = 1 so the user can
-    // test the Cel Nav starfield / body placement without waiting for
-    // dusk. Sun-angle-driven fade resumes as soon as the toggle is off.
+    // Linear fade across civil twilight: 0 at sun elev ≥ 0°, 1 at ≤ -12°.
     if (s.PermanentNight) {
       c.NightFactor = 1;
     } else {
@@ -707,19 +418,7 @@ export class FeModel extends EventTarget {
       c.NightFactor = Limit01((-sunElev) / 12.0);
     }
 
-    // --- planets -----------------------------------------------------
-    // Planet altitudes are dynamic each frame, mirroring how the sun and
-    // moon vault heights are derived. Each planet is stacked above the
-    // highest of the sun/moon by a per-body baseline offset (preserves
-    // the Mercury < Venus < Mars < Jupiter < Saturn order), then climbs a
-    // small range with its own declination, and finally caps at
-    // VaultHeight so it can never pierce the heavenly dome.
-    // S224 — planets no longer stack above sun/moon. All baselines
-    // zero so the default planet altitude is the sun's z for a body
-    // at the sun's declination; real planet dec then shifts z up or
-    // down proportionally on the same SUN_RANGE the sun uses. The
-    // PLANET_BASELINE table is kept (all zeros) so per-body tweaks
-    // stay easy to reintroduce if Alan wants a slight stacking later.
+    // Planets share sun's dec-range so they anchor at sun's z.
     const PLANET_BASELINE = {
       mercury: 0, venus: 0, mars: 0, jupiter: 0, saturn: 0,
       uranus:  0, neptune: 0,
@@ -730,32 +429,20 @@ export class FeModel extends EventTarget {
       saturn: 'SaturnVaultHeight',
       uranus: 'UranusVaultHeight', neptune: 'NeptuneVaultHeight',
     };
-    // S224 — planet declination normalised on the same 23.44° basis
-    // the sun uses (was 30°), with dec range = SUN_RANGE, so a
-    // planet sitting at the sun's dec lands at the sun's z.
     const PLANET_DEC_RANGE = SUN_RANGE;
 
     c.Planets = {};
     for (const name of PLANET_NAMES) {
       const eq = bodyRADec(name, utcDate, bodySource);
-      // S221 — if the active pipeline doesn't carry this body it
-      // returns `{ ra: NaN, dec: NaN }`. Skip the downstream geometry
-      // (which would propagate NaNs into vault coords and crash the
-      // renderer) and leave the slot out of `c.Planets`. The marker's
-      // `if (!p || ...)` guard in `render/index.js` hides it cleanly.
+      // NaN = pipeline lacks this body; skip geometry + marker.
       if (!Number.isFinite(eq.ra) || !Number.isFinite(eq.dec)) continue;
       const celestCoord = equatorialToCelestCoord(eq);
       const ll = coordToLatLong(celestCoord);
       const decNorm = 0.5 + 0.5 * Math.max(-1, Math.min(1,
         eq.dec / Math.PI * 180 / SUN_DEC_DEG));
-      // S224 — planet formula matches sun's, so planet z ≈ sun z
-      // for a planet at sun's declination. Real declination offsets
-      // above/below scale with SUN_RANGE.
       const desired = s.StarfieldVaultHeight + HEADROOM
                     + PLANET_BASELINE[name]
                     + decNorm * PLANET_DEC_RANGE;
-      // Cap at the dome's ellipsoidal ceiling at the planet's AE radius so
-      // it never pierces the heavenly vault surface either.
       const planetCeil = heavenlyVaultCeiling(ll.lat, s.VaultSize, s.VaultHeight, FE_RADIUS);
       const planetZ = Math.min(planetCeil, desired);
       s[PLANET_RANGE_KEY[name]] = planetZ;
@@ -777,17 +464,8 @@ export class FeModel extends EventTarget {
       };
     }
 
-    // --- Cel Nav stars (S009) --------------------------------------
-    // Project every star in the nav-almanac catalogue through the same
-    // celestial → local-globe → vault pipeline the sun/moon/planets
-    // use. Each star's starfield altitude is a fixed fraction of the
-    // user's StarfieldVaultHeight so the whole catalogue hangs just
-    // below the sphere of the starfield shell (same convention the
-    // existing random-star cloud follows).
-    // S012 / S013 / S014 / S017 — bring each J2000 catalogue entry
-    // up to apparent-of-date before the horizon-frame projection.
-    // Four independent user toggles; `StarTrepidation` is the
-    // combined-correction master that forces all three on.
+    // Star projection. Trepidation master forces all three apparent-of-
+    // date corrections; otherwise the three booleans apply independently.
     const starOpts = s.StarTrepidation
       ? { precession: true, nutation: true, aberration: true }
       : {
@@ -824,16 +502,9 @@ export class FeModel extends EventTarget {
         anglesGlobe,
       };
     };
-    c.CelNavStars = CEL_NAV_STARS.map(projectStar);
-    // S217 — parallel projection of every non-cel-nav catalogued
-    // star so they're trackable through the same `star:<id>` path.
+    c.CelNavStars     = CEL_NAV_STARS.map(projectStar);
     c.CataloguedStars = CATALOGUED_STARS.map(projectStar);
 
-    // --- Tracker readouts (S009 / S009a) ---------------------------
-    // Multi-target: one info payload per tracked id. Each payload
-    // carries both ephemerides (geo + helio) + ground-point lat/lon
-    // so the HUD can show both readings side by side and the disc
-    // GP renderer can drop a dot at the body's sub-point.
     c.TrackerInfos = [];
     const targets = Array.isArray(s.TrackerTargets) ? s.TrackerTargets : [];
     const wrapLon = (x) => ((x + 180) % 360 + 360) % 360 - 180;
@@ -887,9 +558,6 @@ export class FeModel extends EventTarget {
           const rPtol  = ephPtol.bodyGeocentric(target, utcDate);
           const rApix  = ephApix.bodyGeocentric(target, utcDate);
           const rVsop  = ephVsop.bodyGeocentric(target, utcDate);
-          // S222 — per-planet GP pigment matching the in-scene
-          // marker + Tracker button colour. Jupiter's marker was
-          // bumped to light-orange `0xffa060` in S222 too.
           const gpColor = PLANET_GP_COLORS[target] || TRACKED_GP_COLORS_PLANET_DEFAULT;
           info = {
             target,
@@ -910,12 +578,6 @@ export class FeModel extends EventTarget {
         }
       } else if (target.startsWith('star:')) {
         const starId = target.slice(5);
-        // S217 — search the cel-nav catalogue first, then fall back
-        // to the constellation-catalogue (CATALOGUED_STARS) for
-        // stars like Mintaka, Castor, Propus, σ Oct, etc. Both
-        // arrays share the same entry shape (produced by the
-        // shared `projectStar` helper above), so the readout
-        // construction is identical.
         let entry = c.CelNavStars.find((x) => x.id === starId);
         let def   = celNavStarById(starId);
         let isCelnav = true;
@@ -925,17 +587,9 @@ export class FeModel extends EventTarget {
           isCelnav = false;
         }
         if (entry && def) {
-          // Stars aren't in the ephemeris pipeline — all five "sources"
-          // come from the same J2000 catalogue entry. vaultCoord is
-          // the pre-projected heavenly-vault point the starfield
-          // layers draw, so the GP dashed line lands exactly where
-          // the star sits in the sky.
+          // Star RA/Dec is pipeline-independent; all five readings share it.
           info = {
             target, name: def.name, category: 'star', mag: def.mag,
-            // S220 — per-star GP pigment so the ground point reads
-            // in the same colour as the starfield sprite overhead:
-            // cel-nav `0xffe8a0` (warm yellow), catalogued `0xffffff`
-            // (white). Matches the S220 starfield colour swap.
             gpColor: isCelnav ? 0xffe8a0 : 0xffffff,
             azimuth: entry.anglesGlobe.azimuth,
             elevation: entry.anglesGlobe.elevation,

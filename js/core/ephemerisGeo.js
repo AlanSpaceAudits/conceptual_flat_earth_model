@@ -1,6 +1,6 @@
 // GeoC pipeline — Earth-focus Kepler ellipses per planet.
 //
-// S010 restructured the planetary chain in this simulator so that each
+// restructured the planetary chain in this simulator so that each
 // planet is modelled as a single Keplerian ellipse with the Earth at
 // the focus, evaluated once per planet and rotated ecliptic→equatorial.
 // The Schlyter element values (a, e, i, Ω, ω, M, n) are retained as
@@ -14,7 +14,7 @@
 // amounts. The trade is deliberate: this pipeline is *structurally*
 // geocentric at every stage.
 //
-// S011 split this code out of the former monolithic `ephemeris.js`
+// split this code out of the former monolithic `ephemeris.js`
 // into its own module so the router can pick it as the `'geocentric'`
 // pipeline alongside Helio and Ptolemy.
 
@@ -94,7 +94,7 @@ function keplerEarthFocus(name, d) {
 // Single Earth-focus Kepler evaluation + ecliptic→equatorial rotation.
 // No Sun-around-Earth stage, no planet-around-Sun stage.
 export function planetEquatorial(name, date) {
-  // S221 — uranus, neptune, pluto aren't in this Earth-focus element
+  // uranus, neptune, pluto aren't in this Earth-focus element
   // table; signal "no data" with NaN so the tracker HUD renders "—".
   if (!ORBIT_EL[name]) return { ra: NaN, dec: NaN };
   const d = schlyterDay(date);

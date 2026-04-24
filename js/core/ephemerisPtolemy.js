@@ -413,7 +413,7 @@ export function planetEquatorial(name, date) {
   });
   if (name === 'venus')   return venusPosition(ddays);
   if (name === 'mercury') return mercuryPosition(ddays);
-  // S221 — Ptolemy's Almagest predates the discovery of Uranus
+  // Ptolemy's Almagest predates the discovery of Uranus
   // (1781), Neptune (1846), and Pluto (1930). There are no deferent
   // / epicycle parameters for any of them in his model, so the
   // pipeline has nothing to say — return NaN to signal "no data"

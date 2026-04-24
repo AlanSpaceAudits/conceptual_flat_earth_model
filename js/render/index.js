@@ -44,7 +44,7 @@ export class Renderer {
     this.shadow = new Shadow(FE_RADIUS);
     this.sm.world.add(this.shadow.group);
 
-    // S201 — solar-eclipse ground shadow (umbra + penumbra) drawn
+    // solar-eclipse ground shadow (umbra + penumbra) drawn
     // on the disc during active eclipse demos. Visibility gates on
     // state.EclipseActive + state.EclipseKind === 'solar'.
     this.eclipseShadow = new EclipseShadow(FE_RADIUS);
@@ -57,7 +57,7 @@ export class Renderer {
     this.moonGP = new GroundPoint(0xf4f4f4);
     this.sm.world.add(this.sunGP.group);
     this.sm.world.add(this.moonGP.group);
-    // S009a — per-tracked-object GPs. Always visible while target is in
+    // per-tracked-object GPs. Always visible while target is in
     // TrackerTargets, independent of ShowGroundPoints.
     this.trackedGPs = new TrackedGroundPoints(16);
     this.sm.world.add(this.trackedGPs.group);
@@ -79,7 +79,7 @@ export class Renderer {
     this.stars = new Stars(2000, clipPlanes);
     this.sm.world.add(this.stars.group);
 
-    // S009 — Cel Nav starfield. Hidden unless StarfieldType === 'celnav';
+    // Cel Nav starfield. Hidden unless StarfieldType === 'celnav';
     // shares the ShowStars / DynamicStars / NightFactor gates with the
     // procedural `stars` cloud.
     this.celNavStars = new CelNavStars(clipPlanes);
@@ -135,7 +135,7 @@ export class Renderer {
       mars:    { color: 0xd05040, vaultSize: 0.0055, opticalSize: 0.0026 },
       jupiter: { color: 0xffa060, vaultSize: 0.0075, opticalSize: 0.0032 },
       saturn:  { color: 0xe4c888, vaultSize: 0.0060, opticalSize: 0.0028 },
-      // S221 — Uranus / Neptune markers. Smaller than Saturn because
+      // Uranus / Neptune markers. Smaller than Saturn because
       // they're fainter to the naked eye (Uranus mag ~5.7, Neptune
       // mag ~7.8, both at the limit of unaided visibility under dark
       // skies). Pale blue-green pigments reference their known
@@ -253,7 +253,7 @@ export class Renderer {
     }
     this.discGrid.update(m);
     this.shadow.update(m);
-    // S205 — eclipse shadow + observer darkening feature-flagged off
+    // eclipse shadow + observer darkening feature-flagged off
     // by default (`state.ShowEclipseShadow`). The mesh + darken
     // calculations are skipped entirely; the rest of the eclipse
     // demo system (date selection, ephemeris-linked playback,
@@ -280,9 +280,9 @@ export class Renderer {
     const moonLon = wrapLon(c.MoonRA * 180 / Math.PI - c.SkyRotAngle);
     this.sunGP.updateAt(sunLat,  sunLon,  FE_RADIUS, s.ShowGroundPoints);
     this.moonGP.updateAt(moonLat, moonLon, FE_RADIUS, s.ShowGroundPoints);
-    // S218 — in Specified Tracker Mode the built-in sun/moon GPs
+    // in Specified Tracker Mode the built-in sun/moon GPs
     // defer to the TrackedGroundPoints layer: those only paint the
-    // tracked-body GPs, which is exactly the user's request. Hide
+    // tracked-body GPs, which is exactly the the spec. Hide
     // the default-on sun/moon GPs whenever the mode is active.
     if (s.SpecifiedTrackerMode) {
       this.sunGP.updateAt(0, 0, FE_RADIUS, false);
@@ -299,9 +299,9 @@ export class Renderer {
     // to its ground point on the disc. Hidden when the true-source end is
     // hidden (InsideVault mode or ShowTruePositions off) since the line
     // would dangle with nothing at its top.
-    // S225 — hide the sun/moon dashed GP lines in Specified Tracker
+    // hide the sun/moon dashed GP lines in Specified Tracker
     // Mode when their target isn't in `TrackerTargets`. Matches the
-    // sun/moon GP-dot gate added in S218 so the default-on
+    // sun/moon GP-dot gate added in so the default-on
     // sun/moon dashed verticals don't persist while only e.g. Mars
     // is tracked.
     const stmGP = !!s.SpecifiedTrackerMode;
@@ -332,7 +332,7 @@ export class Renderer {
       this.stars.domePoints.visible   = false;
       this.stars.spherePoints.visible = false;
     }
-    // S218 — Specified Tracker Mode: hide the random starfield
+    // Specified Tracker Mode: hide the random starfield
     // entirely. Per-star filtering for cel-nav and catalogued stars
     // happens inside their respective renderers (they already read
     // the state flag there).
@@ -352,11 +352,11 @@ export class Renderer {
     // heavenly vault must not render — the observer is supposed to see only
     // what's projected into their optical vault. `showVault` on the
     // CelestialMarker controls just those true-source dots and halos.
-    // `ShowTruePositions` is the explicit user toggle for the same effect
+    // `ShowTruePositions` is the explicit toggle for the same effect
     // without entering first-person mode.
     const showTrueVault = !s.InsideVault && (s.ShowTruePositions !== false);
-    // S218 — Specified Tracker Mode filter. When on, a sun / moon /
-    // planet marker is only rendered if the user has explicitly added
+    // Specified Tracker Mode filter. When on, a sun / moon /
+    // planet marker is only rendered if added
     // its id to `TrackerTargets`. The target id is the same id the
     // panel button grid emits ('sun', 'moon', planet name).
     const stm = !!s.SpecifiedTrackerMode;
@@ -497,7 +497,7 @@ export class Renderer {
     const sunFade  = fade(c.SunAnglesGlobe.elevation);
     const moonFade = fade(c.MoonAnglesGlobe.elevation);
 
-    // S225 — Specified Tracker Mode filter for all ray classes. When
+    // Specified Tracker Mode filter for all ray classes. When
     // on, only tracked bodies emit rays. Matches the STM filter on
     // sun/moon/planet markers in `_updateRays`' caller and the
     // per-star filter in the star renderers.
@@ -519,7 +519,7 @@ export class Renderer {
       if (moonOn && moonFade > 0) addRay(c.MoonOpticalVaultCoord, 0x6688aa, 0.7 * moonFade);
     }
 
-    // S223 — projection rays: straight segments from a body's true
+    // projection rays: straight segments from a body's true
     // position on the heavenly vault to its projected position on
     // the observer's optical vault. Hidden entirely when the body's
     // elevation is ≤ 0° (below the observer's horizon). Colours
@@ -549,7 +549,7 @@ export class Renderer {
           }),
         ));
       };
-      // S225 — STM filter. Sun / moon / per-planet rays only
+      // STM filter. Sun / moon / per-planet rays only
       // render when their id is in `TrackerTargets` (or when the
       // mode is off — `sunOn` / `moonOn` / `trackerSet` use the
       // same logic the two ray classes above use).

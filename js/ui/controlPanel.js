@@ -80,7 +80,7 @@ const TIMEZONES = [
 // Date + time + timezone: inputs show local wall-clock in the selected zone;
 // DateTime in the model is always stored as UTC.
 //
-// S009b — changing the TZ dropdown now **shifts the UTC instant** so the
+// changing the TZ dropdown now **shifts the UTC instant** so the
 // displayed wall-clock stays put (Path B: hold-local-clock, move-UTC).
 // This matches the workflow users expect when cross-checking against
 // Stellarium: enter a local time for an observation site, flip TZs,
@@ -139,7 +139,7 @@ function timezoneRow(model) {
   const sel = el.querySelector('select');
   function refresh() { sel.value = String(model.state.TimezoneOffsetMinutes || 0); }
   sel.addEventListener('change', () => {
-    // S009b — Path B: flipping the timezone holds the DISPLAYED
+    // Path B: flipping the timezone holds the DISPLAYED
     // wall-clock constant and shifts the underlying UTC instant by
     // the delta. Derivation: local = UTC + offset. If local is to
     // stay the same across the change, UTC_new = UTC_old − (offset_new
@@ -180,12 +180,12 @@ const FIELD_GROUPS = [
           { value: 'kangaroo', label: 'Kangaroo' },
           { value: 'none',     label: 'None' },
         ]},
-        // S009b — step 0.0001° ≈ 0.36" so the number field gives
+        // step 0.0001° ≈ 0.36" so the number field gives
         // sub-arcsecond granularity (needed for Stellarium-parity
         // tests at a specific observatory / nav-fix coordinate).
         { key: 'ObserverLat',  label: 'ObserverLat',  unit: '°', min: -90,  max:  90,  step: 0.0001 },
         { key: 'ObserverLong', label: 'ObserverLong', unit: '°', min: -180, max: 180,  step: 0.0001 },
-        // S208 — Observer.Elevation now represents the observer's
+        // Observer.Elevation now represents the observer's
         // gaze pitch (elevation angle above the horizon), 0°–90°.
         // Bound to `CameraHeight`, which drives the first-person
         // look-up/down in Optical mode (it's also the orbit-elevation
@@ -194,22 +194,22 @@ const FIELD_GROUPS = [
         // horizon; 90° = looking straight up. The mouse-drag pitch
         // updates this slider in real time and vice versa.
         //
-        // The physical `ObserverElevation` state field (S007, observer
+        // The physical `ObserverElevation` state field (, observer
         // height above the disc) still exists and is still URL-
         // persisted and clamped in `app.update()`; it just isn't
         // bound to this row anymore.
         { key: 'CameraHeight', label: 'Elevation', unit: '°', min: 0, max: 90, step: 0.1 },
-        // S224 — "Facing" row renamed to "Azi" and moved up directly
+        // "Facing" row renamed to "Azi" and moved up directly
         // under Elevation so the observer's own angular pair reads
         // together (Elevation + Azi) before the cursor-tracking pair
         // (Mouse El + Mouse Az) below it.
         { key: 'ObserverHeading', label: 'Azi',       unit: '°', min: 0,    max: 360,  step: 0.0001, cardinal: true },
-        // S211 — live cursor elevation readout. Tracks the elevation
+        // live cursor elevation readout. Tracks the elevation
         // of the ray from the observer through the mouse pointer
         // while the pointer is over the canvas in Optical mode. Shows
         // "—" in Heavenly or when the pointer is off-canvas.
         { key: 'MouseElevation', label: 'Mouse El', unit: '°', readout: true, digits: 1 },
-        // S212 — companion cursor azimuth readout (compass degrees CW
+        // companion cursor azimuth readout (compass degrees CW
         // from north, wrapped to [0, 360)).
         { key: 'MouseAzimuth',   label: 'Mouse Az', unit: '°', readout: true, digits: 1 },
         { key: 'ObserverHeading', label: 'Nudge', nudge: [
@@ -247,7 +247,7 @@ const FIELD_GROUPS = [
         { key: 'MarsVaultHeight',      label: 'Mars',      unit: '', min: 0.05, max: 1.0, step: 0.001 },
         { key: 'JupiterVaultHeight',   label: 'Jupiter',   unit: '', min: 0.05, max: 1.0, step: 0.001 },
         { key: 'SaturnVaultHeight',    label: 'Saturn',    unit: '', min: 0.05, max: 1.0, step: 0.001 },
-        // S221
+        // 
         { key: 'UranusVaultHeight',    label: 'Uranus',    unit: '', min: 0.05, max: 1.0, step: 0.001 },
         { key: 'NeptuneVaultHeight',   label: 'Neptune',   unit: '', min: 0.05, max: 1.0, step: 0.001 },
       ]},
@@ -277,14 +277,14 @@ const FIELD_GROUPS = [
         { key: 'ShowSunTrack',        label: 'Sun Track',          bool: true },
         { key: 'ShowMoonTrack',       label: 'Moon Track',         bool: true },
         { key: 'ShowOpticalVault',    label: 'Optical Vault',      bool: true },
-        // S213 — grid-only toggle for the Optical Vault. When off the
+        // grid-only toggle for the Optical Vault. When off the
         // cap surface stays but the grid + azi/elev labels are hidden
         // (the label hides are forced, overriding ShowAzimuthRing).
         { key: 'ShowOpticalVaultGrid', label: 'Optical Vault Grid', bool: true },
         { key: 'ShowTruePositions',   label: 'True Positions',     bool: true },
         { key: 'ShowFacingVector',    label: 'Facing Vector / N-S-E-W', bool: true },
         { key: 'ShowDecCircles',      label: 'Declination Circles',     bool: true },
-        // S215 — red dot at NCP, blue dot at SCP, projected onto the
+        // red dot at NCP, blue dot at SCP, projected onto the
         // observer's optical vault.
         { key: 'ShowCelestialPoles',  label: 'Celestial Poles',    bool: true },
         { key: 'ShowStars',           label: 'Stars',              bool: true },
@@ -297,12 +297,12 @@ const FIELD_GROUPS = [
         { key: 'ShowVaultRays',       label: 'Vault Rays',         bool: true },
         { key: 'ShowOpticalVaultRays', label: 'Optical Vault Rays', bool: true },
         { key: 'ShowManyRays',        label: 'Many Rays',          bool: true },
-        // S223 — true→projected ray per body (sun, moon, planets).
+        // true→projected ray per body (sun, moon, planets).
         // Hidden when the body is below horizon.
         { key: 'ShowProjectionRays',  label: 'Projection Rays',    bool: true },
         { key: 'ShowPlanets',         label: 'Planets',            bool: true },
         { key: 'ShowLogo',            label: 'Logo',               bool: true },
-        // S226 — swaps the scene background to the same night-sky
+        // swaps the scene background to the same night-sky
         // colour the Optical vault fades to at night; LongitudeRing
         // azi numerals + ticks auto-switch to white / pale grey.
         { key: 'DarkBackground',      label: 'Dark Background',    bool: true },
@@ -321,30 +321,30 @@ const FIELD_GROUPS = [
           { value: 'chart-light', label: 'Chart (light)' },
           { value: 'celnav',      label: 'Cel Nav (named stars)' },
         ]},
-        // S009 — permanent night mode so starfield / body placement can
+        // permanent night mode so starfield / body placement can
         // be tested without waiting for the sun to set.
         { key: 'PermanentNight', label: 'Permanent night', bool: true },
       ]},
     ],
   },
-  // S009 — dedicated Tracker tab. Manual-select dropdown (sun, moon,
+  // dedicated Tracker tab. Manual-select dropdown (sun, moon,
   // five planets, 58 Cel Nav stars) feeds the second HUD panel's
   // azimuth/elevation/RA/Dec readout. Also exposes BodySource so the
-  // user can toggle the helioc vs geoc pipeline and see readouts are
+  // can toggle the helioc vs geoc pipeline and see readouts are
   // consistent.
-  // S009 / S009a — Tracker tab. Multi-select button grid; toggling
+  // Tracker tab. Multi-select button grid; toggling
   // each button adds/removes its id from `TrackerTargets`. Every
   // tracked object gets a block in the HUD with both ephemerides and
   // a coloured GP on the disc.
   {
     tab: 'Tracker', groups: [
       { title: 'Object', rows: [
-        // S228 — one-shot clear button so the user doesn't have to
+        // one-shot clear button so a doesn't have to
         // click every active pill to turn it off.
         { label: '', buttonLabel: 'Clear All Tracked',
           onClick: (m) => m.setState({ TrackerTargets: [] }) },
         { key: 'TrackerTargets', label: 'Track', buttonGrid: [
-          // S219 — per-button text colour. Sun / moon / planet
+          // per-button text colour. Sun / moon / planet
           // colours match the in-scene marker pigments defined in
           // `render/index.js`. Cel-nav stars render white, non-cel-
           // nav (catalogued) stars render warm-yellow, matching the
@@ -357,10 +357,10 @@ const FIELD_GROUPS = [
           { value: 'mars',    label: 'Mars',    color: '#d05040' },
           { value: 'jupiter', label: 'Jupiter', color: '#ffa060' },
           { value: 'saturn',  label: 'Saturn',  color: '#e4c888' },
-          // S221
+          // 
           { value: 'uranus',  label: 'Uranus',  color: '#a8d8e0' },
           { value: 'neptune', label: 'Neptune', color: '#7fa6e8' },
-          // S217 — merge cel-nav almanac stars with the non-cel-nav
+          // merge cel-nav almanac stars with the non-cel-nav
           // catalogued stars (Orion belt, dipper arm, σ Oct, etc.)
           // and sort alphabetically so everything is trackable.
           ...(() => {
@@ -370,7 +370,7 @@ const FIELD_GROUPS = [
               .map((s) => ({
                 value: `star:${s.id}`,
                 label: s.name,
-                // S220 — colour swap: cel-nav stars now read in the
+                // colour swap: cel-nav stars now read in the
                 // warm-yellow pigment the constellation layer used to
                 // own; catalogued stars take the white. Mirrors the
                 // in-field swap (cel-nav starfield 0xffe8a0,
@@ -388,17 +388,17 @@ const FIELD_GROUPS = [
           { value: 'astropixels',  label: 'DE405    (Espenak AstroPixels)' },
           { value: 'vsop87',       label: 'VSOP87   (Bretagnon & Francou)' },
         ]},
-        // S216 — when on, the Tracker HUD shows the full RA/Dec
+        // when on, the Tracker HUD shows the full RA/Dec
         // comparison block from all 5 pipelines for sun/moon/planets.
         // Stars are always compact (az + el only) since their RA/Dec
         // is pipeline-independent.
         { key: 'ShowEphemerisReadings', label: 'Ephemeris comparison', bool: true },
-        // S218 — "Specified Tracker Mode": sky collapses to just the
+        // "Specified Tracker Mode": sky collapses to just the
         // tracked objects + their GPs. Everything else (non-tracked
         // sun/moon/planets, non-tracked stars, random starfield,
         // constellation lines) hides.
         { key: 'SpecifiedTrackerMode', label: 'Specified Tracker Mode', bool: true },
-        // S014 / S017 — star correction toggles. Four independent
+        // star correction toggles. Four independent
         // checkboxes; the first three apply precession / nutation /
         // aberration individually. "Trepidation" is the combined-
         // correction label — when checked it forces all three
@@ -457,7 +457,7 @@ function numericRow(model, row) {
   return el;
 }
 
-// S211 — read-only display row. Mirrors one state field, formats its
+// read-only display row. Mirrors one state field, formats its
 // numeric value at `row.digits` decimals, shows a placeholder when the
 // value is `null` / undefined. No slider, no editable input — just
 // labelled text for live readouts.
@@ -505,7 +505,7 @@ function selectRow(model, row) {
 //                                turns orange (active);
 //   click the active cardinal  → ShowFacingVector off, button returns to
 //                                its normal colour.
-// The numeric slider still lets the user pick any intermediate heading; the
+// The numeric slider still lets a pick any intermediate heading; the
 // active cardinal then de-activates because the heading no longer matches.
 function cardinalRow(model, row) {
   const wrap = document.createElement('div');
@@ -551,7 +551,7 @@ function cardinalRow(model, row) {
 // Fine-increment nudge buttons for a numeric key. `row.nudge` is an
 // array of { delta, label } entries; each button adds its delta to the
 // stored value. If `row.wrap360` is true the result wraps into
-// [0, 360). Used for degree fields where the user wants sub-degree
+// [0, 360). Used for degree fields where a wants sub-degree
 // precision (arcminute = 1/60°, arcsecond = 1/3600°) without fighting
 // a super-sensitive slider.
 function nudgeRow(model, row) {
@@ -578,7 +578,7 @@ function nudgeRow(model, row) {
 // Single toggle button whose label flips based on a boolean state field.
 // row.action is `{ enterLabel, exitLabel }` — shown when the field is
 // false / true respectively.
-// S228 — one-shot click row. `row.onClick(model)` fires on each
+// one-shot click row. `row.onClick(model)` fires on each
 // click; `row.buttonLabel` is the static button text. Not bound to
 // any state key — use it for clear-all / reset-style actions where a
 // toggle would be the wrong affordance.
@@ -633,7 +633,7 @@ function boolSelectRow(model, row) {
   return el;
 }
 
-// S009a — multi-select button grid. Drives an array-valued state
+// multi-select button grid. Drives an array-valued state
 // field. Clicking a button toggles that id's membership in the array;
 // active buttons get the `.on` class.
 function buttonGridRow(model, row) {
@@ -649,7 +649,7 @@ function buttonGridRow(model, row) {
   const btns = row.buttonGrid.map((opt) => {
     const value = typeof opt === 'string' ? opt : opt.value;
     const text  = typeof opt === 'string' ? opt : (opt.label ?? opt.value);
-    // S219 — optional per-button text colour. Inline `style.color`
+    // optional per-button text colour. Inline `style.color`
     // beats the `.tracker-btn.on` class rule's colour, so the
     // body-specific pigment survives the selected state too.
     const color = typeof opt === 'object' ? opt.color : null;
@@ -911,7 +911,7 @@ export function buildHud(hudEl, model) {
   refresh();
 }
 
-// S009 / S009a / S009d — Tracker HUD panel. One `.tracker-block` per
+// / /: Tracker HUD panel. One `.tracker-block` per
 // tracked target. Both Geo and Helio rows use the same `.source-line`
 // style regardless of the `BodySource` selection — the audience sees
 // both readouts equally, which is the point of the dual-pipeline
@@ -927,7 +927,7 @@ export function buildTrackerHud(trackerEl, model) {
 
   const fmtDeg = (v, p = 1) => (v >= 0 ? '+' : '') + v.toFixed(p);
   const fmtHours = (raRad) => {
-    // S221 — pipelines that don't carry this body return NaN so the
+    // pipelines that don't carry this body return NaN so the
     // HUD can render "no data" explicitly instead of a spurious
     // 00h00m00.0s row.
     if (!Number.isFinite(raRad)) return '—';
@@ -948,7 +948,7 @@ export function buildTrackerHud(trackerEl, model) {
     const ss = (mRaw - mm) * 60;
     return `${sign}${String(dd).padStart(2, '0')}°${String(mm).padStart(2, '0')}′${ss.toFixed(1).padStart(4, '0')}″`;
   };
-  // S012 — az is already 0–360 degrees, el is already ±90 degrees;
+  // az is already 0–360 degrees, el is already ±90 degrees;
   // both as decimal numbers from the observer pipeline. Produce
   // Stellarium-style signed dms for both. Az uses 3-digit degrees
   // (0–360), el uses 2-digit signed degrees.
@@ -971,8 +971,8 @@ export function buildTrackerHud(trackerEl, model) {
   };
 
   // target id → { block, title, azel, helio, geo, ptolemy, astropixels,
-  // vsop87, foot } DOM nodes kept across refreshes. S011 added Ptolemy,
-  // S015 added AstroPixels/DE405, S016 added VSOP87.
+  // vsop87, foot } DOM nodes kept across refreshes. added Ptolemy,
+  // added AstroPixels/DE405, added VSOP87.
   const blockCache = new Map();
 
   function makeBlock() {
@@ -1042,7 +1042,7 @@ export function buildTrackerHud(trackerEl, model) {
                 : 'luminary';
       rec.title.textContent = `${info.name} (${cat})`;
       rec.azel.textContent  = `az ${fmtDmsDegAz(info.azimuth)}   el ${fmtDmsDegEl(info.elevation)}`;
-      // S216 — ephemeris-comparison block hides entirely for stars
+      // ephemeris-comparison block hides entirely for stars
       // (their RA/Dec doesn't depend on pipeline) and for sun/moon/
       // planets when `ShowEphemerisReadings` is off. Keeps the
       // tracker HUD compact by default.

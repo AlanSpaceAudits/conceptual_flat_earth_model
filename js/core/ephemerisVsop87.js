@@ -116,7 +116,7 @@ function eclipToEq(L, B, T_cent) {
 
 // Geocentric apparent equatorial (RA, Dec) for a planet.
 export function planetEquatorial(body, date) {
-  // S221 — the bundled VSOP87 tables in `js/data/vsop87/` cover
+  // the bundled VSOP87 tables in `js/data/vsop87/` cover
   // mercury, venus, earth, mars, jupiter, saturn. Uranus / Neptune
   // coefficients exist upstream but aren't imported here yet; Pluto
   // is outside VSOP87 entirely. Return NaN so the tracker HUD shows

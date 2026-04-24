@@ -1,6 +1,6 @@
 // Demo definitions. The sim's values are in the modular unit-FE frame.
 //
-// S200 — eclipse demo system overhauled:
+// eclipse demo system overhauled:
 //   • all 44 solar + 67 lunar astropixels-tabulated eclipses (2021-2040)
 //     are generated from a data-driven registry (eclipseRegistry.js).
 //     Each demo plays out in whichever ephemeris pipeline is active.
@@ -16,7 +16,7 @@ import { FE_ECLIPSE_PREDICTION_DEMOS } from './feEclipseTrack.js';
 
 const T1 = 1000, T3 = 3000, T5 = 5000, T8 = 8000;
 
-// S200 — general / non-eclipse demos. Retains the original 6 demos;
+// general / non-eclipse demos. Retains the original 6 demos;
 // eclipse entries are now driven by eclipseRegistry.js and appended
 // below. The old hand-coded Solar Eclipse (Partial) / Total 2024
 // entries are superseded by the full 111-event registry but their

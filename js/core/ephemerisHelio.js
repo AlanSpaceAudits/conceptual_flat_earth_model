@@ -13,7 +13,7 @@
 // Numerically equivalent, one fewer negation.
 //
 // This is the pipeline that was the sim's original planet model
-// (pre-S010). S011 restores it as a selectable source alongside the
+// (pre-). restores it as a selectable source alongside the
 // Earth-focus GeoC pipeline (`ephemerisGeo.js`) and the Ptolemaic one
 // (`ephemerisPtolemy.js`). Sun and Moon delegate to Meeus via
 // `ephemerisCommon.js` (same as the GeoC pipeline).
@@ -93,7 +93,7 @@ function heliocentric(name, d) {
 // then rotate ecliptic→equatorial at the Schlyter obliquity
 // ε = 23.4393° − 3.563e-7·d.
 export function planetEquatorial(name, date) {
-  // S221 — outer planets (uranus, neptune) and Pluto aren't in
+  // outer planets (uranus, neptune) and Pluto aren't in
   // Schlyter's element table here, so return a NaN sentinel the
   // tracker can render as "—" instead of a spurious zero reading.
   if (!PLANET_EL[name]) return { ra: NaN, dec: NaN };

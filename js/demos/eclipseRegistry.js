@@ -1,9 +1,9 @@
-// S200 — eclipse demo registry.
+// eclipse demo registry.
 //
 // Builds a demo definition for every real eclipse in
 // `js/data/astropixelsEclipses.js` (111 events 2021-2040, credit
 // Fred Espenak / AstroPixels / JPL DE405). Each demo refines its
-// landing time using whichever ephemeris pipeline the user has
+// landing time using whichever ephemeris pipeline the has
 // selected — so the same eclipse plays out differently under HelioC
 // vs DE405 vs Ptolemy vs VSOP87, which is the pedagogy.
 //
@@ -93,9 +93,9 @@ function buildEclipseDemo(event, kind) {
         ShowOpticalVault:  true,
         ShowTruePositions: false,
         ShowFacingVector:  false,
-        // S200 — latched by EclipseDirector so the shadow projection +
+        // latched by EclipseDirector so the shadow projection +
         // observer darkening can key off the currently-playing event.
-        // S201 — also carry the event's magnitude + type through to
+        // also carry the event's magnitude + type through to
         // the renderer so umbra visibility + sizing follows the real
         // Espenak parameters.
         EclipseActive:     true,

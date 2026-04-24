@@ -20,7 +20,7 @@ export class Constellations {
     // (constellation, local index) so the line list can resolve to global
     // star indices.
     //
-    // S214 — `_celnavDup[i]` is true when star i carries a `celnav` id,
+    // `_celnavDup[i]` is true when star i carries a `celnav` id,
     // meaning it's already plotted by the cel-nav starfield renderer
     // (which applies precession/nutation/aberration corrections). For
     // those stars we still store a position — lines use it as an
@@ -31,9 +31,9 @@ export class Constellations {
     this._starVect = [];    // unit celestial direction
     this._lines = [];       // [globalIdxA, globalIdxB]
     this._celnavDup = [];   // bool per star
-    // S218 — star-id per star for Specified Tracker Mode lookups.
+    // star-id per star for Specified Tracker Mode lookups.
     // Cel-nav duplicates use the `celnav` id so the tracker check
-    // still matches when the user tracks e.g. Betelgeuse; non-cel-nav
+    // still matches when the tracks e.g. Betelgeuse; non-cel-nav
     // stars carry their own `id` field. Nullable (no id → never
     // visible in specified mode; in practice every tracked-eligible
     // star carries either a `celnav` or an `id`).
@@ -61,7 +61,7 @@ export class Constellations {
     this.domeStars = new THREE.Points(
       domeStarGeom,
       new THREE.PointsMaterial({
-        // S220 — colour swap: constellations now render in the cel-
+        // colour swap: constellations now render in the cel-
         // nav white `0xffffff`; the cel-nav layer took the warm-yellow
         // `0xffe8a0` that used to live here.
         color: 0xffffff, size: 4, sizeAttenuation: false,
@@ -129,14 +129,14 @@ export class Constellations {
     // popping on.
     const nightAlpha = s.DynamicStars ? c.NightFactor : 1.0;
     const canShow = s.DynamicStars ? nightAlpha > 0.01 : true;
-    // S227 — heavenly-vault constellation dots hide in Optical so
+    // heavenly-vault constellation dots hide in Optical so
     // the same star isn't painted both on the dome (visible through
     // the transparent cap) and on the cap surface projection.
     const showTrueVault = showStars && canShow && (s.ShowTruePositions !== false)
                         && !s.InsideVault;
     const showOptical   = showStars && canShow && s.ShowOpticalVault;
 
-    // S218 — Specified Tracker Mode kills the constellation stick-
+    // Specified Tracker Mode kills the constellation stick-
     // figure lines entirely (keeping them would connect tracked
     // stars through invisible endpoints and read as stray segments).
     // Per-star points are filtered below in the buffer loop.
@@ -156,10 +156,10 @@ export class Constellations {
     if (!showStars || !canShow) return;
 
     const opticalR = c.OpticalVaultRadius;
-    // S210 — use the S209 mode-dependent effective height so
+    // use the mode-dependent effective height so
     // constellation stars and their stick-figure lines project onto
     // the strict hemisphere in Optical (reported elevation = rendered
-    // elevation) and onto the user's flattened cap in Heavenly.
+    // elevation) and onto the flattened cap in Heavenly.
     const opticalH = c.OpticalVaultHeightEffective;
 
     // Cache per-star projections for use by the line builder.
@@ -167,9 +167,9 @@ export class Constellations {
     const sphPos  = new Array(this._nStars);
     const aboveHorizon = new Array(this._nStars);
 
-    // S218 — Specified Tracker Mode filter: hide any constellation
+    // Specified Tracker Mode filter: hide any constellation
     // star whose id isn't in `TrackerTargets`. Cel-nav duplicates
-    // are already hidden regardless (S214); this rule additionally
+    // are already hidden regardless; this rule additionally
     // kills non-cel-nav stars that aren't explicitly tracked.
     const trackerSet = stm
       ? new Set(Array.isArray(s.TrackerTargets) ? s.TrackerTargets : [])
@@ -178,7 +178,7 @@ export class Constellations {
     for (let i = 0; i < this._nStars; i++) {
       const [lat, lon] = this._stars[i];
       const vect = this._starVect[i];
-      // S214 — cel-nav duplicates get their POINT sprite parked off
+      // cel-nav duplicates get their POINT sprite parked off
       // screen so the cel-nav renderer owns the visible star. Line
       // endpoints still use the computed positions below — the lines
       // are written into `domePos` / `sphPos` below regardless, and

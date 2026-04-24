@@ -532,6 +532,24 @@ Format:
   js/render/index.js js/ui/controlPanel.js js/ui/urlState.js`;
   delete `js/core/satellites.js`.
 
+## S325 — 24h-sun demos at Alert (82°30′N) and West Antarctica (79°46′S 83°15′W)
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/demos/definitions.js`.
+- **Change:** Two new General-section demos, both `BodySource:
+  'astropixels'`:
+  - `24h sun at 82°30'N (Alert, Nunavut)` — observer at
+    82.505°N / 62.335°W, DateTime 3093 (2025-06-21 solstice).
+    Observer faces south; orbit camera at pitch 70° looks down
+    on the polar region with `ShowSunTrack` + `ShowGPPath`
+    showing the sun's daily circle above the horizon. Advances
+    DateTime by 1 full day over 20 s.
+  - `24h sun at 79°46'S 83°15'W (West Antarctica)` — mirror at
+    the user-supplied Antarctic coordinate, DateTime 3276
+    (2025-12-21 solstice). Observer faces north. Same 24 h
+    animation.
+- **Revert:** `git checkout v-s000324 -- js/demos/definitions.js`.
+
 ## S324 — Pause during a demo no longer triggers the DE405-default reset
 
 - **Date:** 2026-04-24

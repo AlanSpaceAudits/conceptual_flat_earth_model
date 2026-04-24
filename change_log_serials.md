@@ -353,3 +353,12 @@ Format:
   - Meeus warning bottom offset bumped `0 → 44px` to clear the bar.
 - **Revert:** `git checkout v-s000232 -- index.html js/main.js
   js/ui/controlPanel.js css/styles.css`.
+
+## S234 — Clip body / #app / #view so sim fills 100vh exactly
+
+- **Date:** 2026-04-24
+- **Files changed:** `css/styles.css`.
+- **Change:** added `overflow: hidden` to `html`, `body`, `#app`,
+  `#view`, plus `min-height: 0` on `#app` and `#view`. Prevents the
+  canvas or popup from pushing content past the viewport.
+- **Revert:** `git checkout v-s000233 -- css/styles.css`.

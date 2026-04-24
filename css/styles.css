@@ -9,7 +9,13 @@
 }
 
 * { box-sizing: border-box; }
-html, body { margin: 0; padding: 0; background: var(--bg); color: var(--fg); font: 14px/1.4 system-ui, -apple-system, Segoe UI, sans-serif; height: 100%; }
+html, body {
+  margin: 0; padding: 0;
+  background: var(--bg); color: var(--fg);
+  font: 14px/1.4 system-ui, -apple-system, Segoe UI, sans-serif;
+  height: 100%;
+  overflow: hidden;
+}
 
 #app {
   display: grid;
@@ -17,6 +23,8 @@ html, body { margin: 0; padding: 0; background: var(--bg); color: var(--fg); fon
   grid-template-columns: 1fr;
   grid-template-rows: auto 1fr auto;
   height: 100vh;
+  min-height: 0;
+  overflow: hidden;
 }
 
 header { grid-area: header; padding: 8px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: baseline; gap: 16px; }
@@ -42,7 +50,7 @@ header .info-popup {
 header .info-popup p { margin: 0 0 8px; }
 header .info-popup p:last-child { margin-bottom: 0; }
 
-#view { grid-area: view; position: relative; background: #000; }
+#view { grid-area: view; position: relative; background: #000; min-height: 0; overflow: hidden; }
 #feCanvas { display: block; width: 100%; height: 100%; }
 #hud {
   position: absolute; top: 8px; left: 8px;

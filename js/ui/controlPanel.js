@@ -1153,7 +1153,20 @@ export function buildControlPanel(host, model, demos) {
       : 'Mouse Az: —';
     slotEph.textContent = `ephem: ${EPHEM_NAMES[s.BodySource] || s.BodySource || '—'}`;
     slotTime.textContent = dateTimeToString(s.DateTime);
-    slotTrack.textContent = `Tracking: ${resolveTrackName(s.FollowTarget) || '—'}`;
+    const trackName = resolveTrackName(s.FollowTarget);
+    if (trackName) {
+      const a = resolveTargetAngles(s.FollowTarget, model.computed);
+      if (a) {
+        const az = ((a.azimuth % 360) + 360) % 360;
+        const el = a.elevation;
+        slotTrack.textContent =
+          `Tracking: ${trackName}  ·  az ${az.toFixed(2)}°  el ${(el >= 0 ? '+' : '') + el.toFixed(2)}°`;
+      } else {
+        slotTrack.textContent = `Tracking: ${trackName}`;
+      }
+    } else {
+      slotTrack.textContent = 'Tracking: —';
+    }
   };
   model.addEventListener('update', refreshInfoBar);
   refreshInfoBar();

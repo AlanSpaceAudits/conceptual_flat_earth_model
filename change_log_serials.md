@@ -532,6 +532,18 @@ Format:
   js/render/index.js js/ui/controlPanel.js js/ui/urlState.js`;
   delete `js/core/satellites.js`.
 
+## S337 — Info-bar Tracking slot also shows the target's az / el
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/ui/controlPanel.js`.
+- **Change:** `refreshInfoBar()` now looks up the follow target's
+  current angles via the existing `resolveTargetAngles()` helper
+  and appends them to the Tracking slot as
+  `Tracking: Name  ·  az X.XX°  el ±Y.YY°`. Falls back to just
+  the name if angles aren't available, or `Tracking: —` when
+  nothing is followed.
+- **Revert:** `git checkout v-s000336 -- js/ui/controlPanel.js`.
+
 ## S336 — 📍 quick-button jumps straight to Observer in the View tab
 
 - **Date:** 2026-04-24

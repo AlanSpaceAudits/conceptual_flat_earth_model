@@ -483,6 +483,16 @@ Format:
   is active.
 - **Revert:** `git checkout v-s000243 -- js/ui/controlPanel.js`.
 
+## S254 — Info tab: Clubhouse section
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/ui/controlPanel.js`.
+- **Change:** new collapsible section "Clubhouse" at the end of the
+  Info tab with one link: `#FlatEarthGang →
+  https://www.clubhouse.com/club/flatearthgang`. Swap in the exact
+  URL if the club slug isn't the hashtag itself.
+- **Revert:** `git checkout v-s000253 -- js/ui/controlPanel.js`.
+
 ## S253 — Info tab: second Discord link (Earth Awakenings)
 
 - **Date:** 2026-04-24

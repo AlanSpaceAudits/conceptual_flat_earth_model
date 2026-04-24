@@ -1827,7 +1827,7 @@ export function buildControlPanel(host, model, demos) {
   model.addEventListener('update', refreshTimeControls);
   refreshTimeControls();
 
-  // Escape priority (master-stop):
+  // Escape priority:
   //   1. close the map-picker popup if open
   //   2. close any tab popup if open
   //   3. pause a running demo animator

@@ -532,7 +532,21 @@ Format:
   js/render/index.js js/ui/controlPanel.js js/ui/urlState.js`;
   delete `js/core/satellites.js`.
 
-## S364 — DiscGrid + LatitudeLines reproject on MapProjection change; Escape master-stop
+## S365 — Strip prompt-paraphrase + contradictory-framing language from S359 / S364
+
+- **Date:** 2026-04-24
+- **Files changed:** `change_log_serials.md`,
+  `js/ui/controlPanel.js`.
+- **Change:**
+  - S359 entry: dropped the "earlier confusion … going below
+    horizon" framing; replaced with a neutral description of
+    the prior 24 h tween being replaced.
+  - S364 title and Escape comment block in
+    `js/ui/controlPanel.js`: dropped "master-stop" phrasing.
+- **Revert:** `git checkout v-s000364 -- change_log_serials.md
+  js/ui/controlPanel.js`.
+
+## S364 — DiscGrid + LatitudeLines reproject on MapProjection change; Escape handler extended
 
 - **Date:** 2026-04-24
 - **Files changed:** `js/render/worldObjects.js`,
@@ -632,10 +646,9 @@ Format:
   continuous midnight sun instead of a single 24-hour sidereal
   day. Tween duration 40 s (~0.35 days/sec) so each sun loop
   takes ~3 s of real time — smooth enough to watch the sun
-  sweep around the sky multiple times. Fixes the earlier
-  confusion where the demo ended after 24 h and the snap back
-  to DE405 default made it look like the sun was "going below
-  horizon" inside the demo.
+  sweep around the sky multiple times. Replaces the prior
+  24 h tween, which ended with a snap back to the DE405
+  default position.
 - **Revert:** `git checkout v-s000358 -- js/demos/definitions.js`.
 
 ## S358 — 24h-sun demos start Optical tracking the sun; only sun visible

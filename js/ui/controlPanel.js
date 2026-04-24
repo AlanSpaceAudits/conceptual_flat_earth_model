@@ -1234,25 +1234,21 @@ export function buildControlPanel(host, model, demos) {
   const compassControls = document.createElement('div');
   compassControls.className = 'compass-controls';
 
+  // 2×3 grid for the main mode / jump buttons. Row 1 = visibility
+  // toggles (what renders), row 2 = direct-jump / camera-mode
+  // buttons. Cycle buttons (🗺 ✨) sit in a small row after the grid;
+  // N / S / E / W cardinals stay on the far right.
+  const modeGrid = document.createElement('div');
+  modeGrid.className = 'mode-grid';
+
   const btnNight = document.createElement('button');
   btnNight.className = 'time-btn night-btn';
   btnNight.type = 'button';
   btnNight.textContent = '🌙';
-  btnNight.title = 'Toggle permanent night';
+  btnNight.title = 'Toggle permanent night (dark sky with stars)';
   btnNight.addEventListener('click', () => {
     model.setState({ PermanentNight: !model.state.PermanentNight });
   });
-  compassControls.appendChild(btnNight);
-
-  const btnStm = document.createElement('button');
-  btnStm.className = 'time-btn stm-btn';
-  btnStm.type = 'button';
-  btnStm.textContent = '🎯';
-  btnStm.title = 'Specified Tracker Mode — show only tracked bodies';
-  btnStm.addEventListener('click', () => {
-    model.setState({ SpecifiedTrackerMode: !model.state.SpecifiedTrackerMode });
-  });
-  compassControls.appendChild(btnStm);
 
   const btnTrue = document.createElement('button');
   btnTrue.className = 'time-btn true-btn';
@@ -1262,17 +1258,15 @@ export function buildControlPanel(host, model, demos) {
   btnTrue.addEventListener('click', () => {
     model.setState({ ShowTruePositions: !model.state.ShowTruePositions });
   });
-  compassControls.appendChild(btnTrue);
 
-  const btnObserver = document.createElement('button');
-  btnObserver.className = 'time-btn observer-btn';
-  btnObserver.type = 'button';
-  btnObserver.textContent = '📍';
-  btnObserver.title = 'Jump to Observer (lat / long / elevation / heading)';
-  btnObserver.addEventListener('click', () => {
-    featureOpen.fn('View', 'Observer');
+  const btnStm = document.createElement('button');
+  btnStm.className = 'time-btn stm-btn';
+  btnStm.type = 'button';
+  btnStm.textContent = '🎯';
+  btnStm.title = 'Specified Tracker Mode — focus scene on FollowTarget only';
+  btnStm.addEventListener('click', () => {
+    model.setState({ SpecifiedTrackerMode: !model.state.SpecifiedTrackerMode });
   });
-  compassControls.appendChild(btnObserver);
 
   const btnTrackerOpts = document.createElement('button');
   btnTrackerOpts.className = 'time-btn tracker-opts-btn';
@@ -1282,7 +1276,36 @@ export function buildControlPanel(host, model, demos) {
   btnTrackerOpts.addEventListener('click', () => {
     featureOpen.fn('Tracker', 'Tracker Options');
   });
-  compassControls.appendChild(btnTrackerOpts);
+
+  const btnObserver = document.createElement('button');
+  btnObserver.className = 'time-btn observer-btn';
+  btnObserver.type = 'button';
+  btnObserver.textContent = '📍';
+  btnObserver.title = 'Jump to Observer (lat / long / elevation / heading)';
+  btnObserver.addEventListener('click', () => {
+    featureOpen.fn('View', 'Observer');
+  });
+
+  const btnFreeCamKb = document.createElement('button');
+  btnFreeCamKb.className = 'time-btn freecam-btn';
+  btnFreeCamKb.type = 'button';
+  btnFreeCamKb.textContent = '🎥';
+  btnFreeCamKb.title = 'Free-camera mode — arrow keys rotate / tilt the orbit camera instead of moving the observer.';
+  btnFreeCamKb.addEventListener('click', () => {
+    model.setState({ FreeCameraMode: !model.state.FreeCameraMode });
+  });
+
+  // Grid order (CSS grid-auto-flow row):
+  //   🌙  ◉  🎯     — visibility-state toggles
+  //   🎛  📍  🎥    — navigation / camera-mode jumps
+  modeGrid.append(btnNight, btnTrue, btnStm, btnTrackerOpts, btnObserver, btnFreeCamKb);
+  compassControls.appendChild(modeGrid);
+
+  // Cycle buttons sit next to the grid — they swap fundamental
+  // scene backdrop (map projection + starfield) rather than toggling
+  // visibility, so they're grouped apart.
+  const cycleRow = document.createElement('div');
+  cycleRow.className = 'cycle-row';
 
   const MAP_CYCLE = ['ae', 'hellerick', 'proportional', 'blank'];
   const btnMap = document.createElement('button');
@@ -1296,17 +1319,6 @@ export function buildControlPanel(host, model, demos) {
     const next = MAP_CYCLE[(idx + 1) % MAP_CYCLE.length];
     model.setState({ MapProjection: next });
   });
-  compassControls.appendChild(btnMap);
-
-  const btnFreeCamKb = document.createElement('button');
-  btnFreeCamKb.className = 'time-btn freecam-btn';
-  btnFreeCamKb.type = 'button';
-  btnFreeCamKb.textContent = '🎥';
-  btnFreeCamKb.title = 'Free-camera mode — arrow keys rotate / tilt the orbit camera instead of moving the observer. Mouse drag / wheel still work as normal.';
-  btnFreeCamKb.addEventListener('click', () => {
-    model.setState({ FreeCameraMode: !model.state.FreeCameraMode });
-  });
-  compassControls.appendChild(btnFreeCamKb);
 
   const STARFIELD_CYCLE = ['random', 'chart-dark', 'chart-light', 'celnav'];
   const btnStarfield = document.createElement('button');
@@ -1320,13 +1332,19 @@ export function buildControlPanel(host, model, demos) {
     const next = STARFIELD_CYCLE[(idx + 1) % STARFIELD_CYCLE.length];
     model.setState({ StarfieldType: next });
   });
-  compassControls.appendChild(btnStarfield);
 
+  cycleRow.append(btnMap, btnStarfield);
+  compassControls.appendChild(cycleRow);
+
+  // Cardinals live in their own 2×2 sub-grid so the N / S / E / W
+  // pairing reads like a real compass rose.
+  const cardinalGrid = document.createElement('div');
+  cardinalGrid.className = 'cardinal-grid';
   const compassBtns = [
     { label: 'N', heading: 0   },
-    { label: 'S', heading: 180 },
     { label: 'E', heading: 90  },
     { label: 'W', heading: 270 },
+    { label: 'S', heading: 180 },
   ].map(({ label, heading }) => {
     const b = document.createElement('button');
     b.className = 'time-btn compass-btn';
@@ -1337,9 +1355,10 @@ export function buildControlPanel(host, model, demos) {
     b.addEventListener('click', () => {
       model.setState({ ObserverHeading: heading, FollowTarget: null });
     });
-    compassControls.appendChild(b);
+    cardinalGrid.appendChild(b);
     return b;
   });
+  compassControls.appendChild(cardinalGrid);
 
 
   const searchHost = document.createElement('div');

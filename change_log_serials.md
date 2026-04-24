@@ -532,6 +532,27 @@ Format:
   js/render/index.js js/ui/controlPanel.js js/ui/urlState.js`;
   delete `js/core/satellites.js`.
 
+## S347 — 2×3 mode-button grid, cycle column, compass-rose cardinals
+
+- **Date:** 2026-04-24
+- **Files changed:** `css/styles.css`, `js/ui/controlPanel.js`.
+- **Change:** `.compass-controls` now holds three sub-layouts:
+  - **`.mode-grid`** — 2×3 CSS grid of the main mode / jump
+    buttons.
+    Row 1 (`🌙 ◉ 🎯`): visibility-state toggles (dark / true-
+    positions / STM focus).
+    Row 2 (`🎛 📍 🎥`): direct-jump + camera-mode buttons
+    (Tracker Options / Observer / Free-camera keys).
+  - **`.cycle-row`** — 1×2 column of scene-backdrop cyclers
+    (`🗺` map projection, `✨` starfield type). These swap
+    whole backdrops rather than toggling visibility, so they
+    get their own spot.
+  - **`.cardinal-grid`** — 2×2 compass rose for `N / E / W / S`
+    instead of the old inline row, so the button pairing reads
+    like a real compass.
+- **Revert:** `git checkout v-s000346 -- css/styles.css
+  js/ui/controlPanel.js`.
+
 ## S346 — Rays bend around the dome when the body is below the horizon
 
 - **Date:** 2026-04-24

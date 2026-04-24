@@ -483,6 +483,23 @@ Format:
   is active.
 - **Revert:** `git checkout v-s000243 -- js/ui/controlPanel.js`.
 
+## S257 — Heavenly-vault stars gated to the dark side
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/render/worldObjects.js` (Stars + CelNavStars),
+  `js/render/constellations.js`.
+- **Change:** in Heavenly-vault view, a star only paints on the dome
+  if the sun is below horizon at the star's ground point
+  (`sin(starLat)sin(sunLat) + cos(…)cos(…)cos(Δlon) < 0`, i.e. the
+  star sits more than 90° of great-circle distance from the sub-
+  solar point). Day-side stars are parked at z=-1000. Same gate
+  applied to all three layers: random starfield, cel-nav
+  starfield, constellation stars + outlines. Constellation lines
+  hide if either endpoint is on the day side. Optical-vault
+  rendering is unchanged.
+- **Revert:** `git checkout v-s000256 -- js/render/worldObjects.js
+  js/render/constellations.js`.
+
 ## S256 — Keyboard control: arrow-key observer move + space pause
 
 - **Date:** 2026-04-24

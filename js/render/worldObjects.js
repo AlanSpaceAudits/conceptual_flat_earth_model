@@ -3077,24 +3077,41 @@ export class Stars {
     const opticalR = c.OpticalVaultRadius;
     const opticalH = c.OpticalVaultHeightEffective;
 
+    // Heavenly-vault dark-side filter: a star only paints on the
+    // dome if the sun is below horizon at the star's ground point,
+    // i.e. cos(angular distance to sub-solar point) < 0.
+    const sunLatRad = (c.SunCelestLatLong.lat || 0) * Math.PI / 180;
+    const sunSkyLon = ((c.SunRA || 0) * 180 / Math.PI);
+    const sunGpLonDeg = ((sunSkyLon - (c.SkyRotAngle || 0) + 540) % 360) - 180;
+    const sinSun = Math.sin(sunLatRad);
+    const cosSun = Math.cos(sunLatRad);
+
     for (let i = 0; i < this._celest.length; i++) {
       const [lat, lon] = this._celest[i];
       const celestV = this._celestVect[i];
 
-      // --- Flat starfield disk ---------------------------------------
-      // Stars sit at a single constant altitude (StarfieldVaultHeight),
-      // projected across the disc via the same azimuthal-equidistant
-      // formula the earth uses. Circumpolar (high-Dec) stars cluster at
-      // the centre, equatorial stars form a mid-disc ring, and southern-
-      // Dec stars fall near the rim. The whole disk spins about +z as the
-      // sky rotates (TransMatVaultToFe handles that).
+      const starLatRad = lat * Math.PI / 180;
+      const starGpLonDeg = ((lon - (c.SkyRotAngle || 0) + 540) % 360) - 180;
+      const dLon = (starGpLonDeg - sunGpLonDeg) * Math.PI / 180;
+      const cosDist = Math.sin(starLatRad) * sinSun
+                    + Math.cos(starLatRad) * cosSun * Math.cos(dLon);
+      const nightSide = cosDist < 0;
+
+      // Flat starfield disk at constant altitude. Sky rotation is
+      // applied via TransMatVaultToFe.
       const discR = FE_RADIUS * (90 - lat) / 180;
       const lo = lon * Math.PI / 180;
       const diskLocal = [discR * Math.cos(lo), discR * Math.sin(lo), s.StarfieldVaultHeight];
       const gd = vaultCoordToGlobalFeCoord(diskLocal, c.TransMatVaultToFe);
-      domePos[i * 3]     = gd[0];
-      domePos[i * 3 + 1] = gd[1];
-      domePos[i * 3 + 2] = gd[2];
+      if (!nightSide) {
+        domePos[i * 3]     = 0;
+        domePos[i * 3 + 1] = 0;
+        domePos[i * 3 + 2] = -1000;
+      } else {
+        domePos[i * 3]     = gd[0];
+        domePos[i * 3 + 1] = gd[1];
+        domePos[i * 3 + 2] = gd[2];
+      }
 
       // --- Inner-sphere projection -----------------------------------
       // celest unit dir -> observer's local-globe -> fe-local (axis swap)
@@ -3928,6 +3945,13 @@ export class CelNavStars {
       ? new Set(Array.isArray(s.TrackerTargets) ? s.TrackerTargets : [])
       : null;
 
+    // Dark-side gate for the heavenly-vault points: sun below horizon
+    // at the star's ground point.
+    const sunLatRad = (c.SunCelestLatLong.lat || 0) * Math.PI / 180;
+    const sunGpLonDeg = (((c.SunRA || 0) * 180 / Math.PI - (c.SkyRotAngle || 0) + 540) % 360) - 180;
+    const sinSun = Math.sin(sunLatRad);
+    const cosSun = Math.cos(sunLatRad);
+
     for (let i = 0; i < n; i++) {
       const star = stars[i];
       const isTracked = !stm || trackerSet.has(`star:${star.id}`);
@@ -3940,10 +3964,23 @@ export class CelNavStars {
         sp[i * 3 + 2] = -1000;
         continue;
       }
-      // Heavenly vault position (precomputed by app.js).
-      dp[i * 3    ] = star.vaultCoord[0];
-      dp[i * 3 + 1] = star.vaultCoord[1];
-      dp[i * 3 + 2] = star.vaultCoord[2];
+      // Heavenly-vault dark-side test at this star's GP.
+      const starLatRad = (star.celestLatLong.lat || 0) * Math.PI / 180;
+      const starGpLonDeg = ((star.celestLatLong.lng - (c.SkyRotAngle || 0) + 540) % 360) - 180;
+      const dLon = (starGpLonDeg - sunGpLonDeg) * Math.PI / 180;
+      const cosDist = Math.sin(starLatRad) * sinSun
+                    + Math.cos(starLatRad) * cosSun * Math.cos(dLon);
+      const nightSide = cosDist < 0;
+      if (!nightSide) {
+        dp[i * 3    ] = 0;
+        dp[i * 3 + 1] = 0;
+        dp[i * 3 + 2] = -1000;
+      } else {
+        // Heavenly vault position (precomputed by app.js).
+        dp[i * 3    ] = star.vaultCoord[0];
+        dp[i * 3 + 1] = star.vaultCoord[1];
+        dp[i * 3 + 2] = star.vaultCoord[2];
+      }
       // Optical vault: below-horizon stars parked far below the disc so
       // the disc clip plane hides them (matches Stars class convention).
       const localGlobe = M.Trans(c.TransMatCelestToGlobe, star.celestCoord);

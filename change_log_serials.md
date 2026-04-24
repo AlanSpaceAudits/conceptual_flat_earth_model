@@ -409,3 +409,13 @@ Format:
   per-fragment clipping that broke constellation outlines at certain
   camera pitches.
 - **Revert:** `git checkout v-s000237 -- js/render/constellations.js`.
+
+## S239 — Play/pause button resets speed to default
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/ui/controlPanel.js`.
+- **Change:** `btnPlay` now calls `autoplay.setSpeed(1/24)` before
+  `toggle()`, so clicking the play/pause in the transport bar always
+  resets the speed to the Day preset regardless of prior rewind/FF
+  state.
+- **Revert:** `git checkout v-s000238 -- js/ui/controlPanel.js`.

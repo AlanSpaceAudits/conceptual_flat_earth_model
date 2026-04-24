@@ -903,7 +903,9 @@ export function buildControlPanel(host, model, demos) {
     const s = autoplay.speed;
     speedReadout.textContent = `${s >= 0 ? '+' : ''}${s.toFixed(3)} d/s`;
   };
+  const DEFAULT_SPEED = 1 / 24; // Day preset: 1 sim-hour per real-second.
   btnPlay.addEventListener('click', () => {
+    autoplay.setSpeed(DEFAULT_SPEED);
     autoplay.toggle();
     refreshTimeControls();
   });

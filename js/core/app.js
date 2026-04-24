@@ -118,7 +118,13 @@ function defaultState() {
     ShowLiveEphemeris:       false,
     MoonPhaseExpanded:       false,
     ShowSatellites:          false,
-    ShowGPPath:              false,
+    GPPathPlanets:           false,
+    GPPathCelNav:            false,
+    GPPathConstellations:    false,
+    GPPathBlackHoles:        false,
+    GPPathQuasars:           false,
+    GPPathGalaxies:          false,
+    GPPathSatellites:        false,
     ShowCelestialBodies:     true,
     ShowCelNav:              true,
     ShowBlackHoles:          true,
@@ -578,53 +584,95 @@ export class FeModel extends EventTarget {
       c.Satellites = [];
     }
 
-    // GP path overlay: sample each body's sub-point (lat = dec, lon =
-    // ra − gmst) at 48 half-hour intervals across the next 24 h and
-    // project through canonicalLatLongToDisc. Built only when the
-    // ShowGPPath master toggle is on so the extra ephemeris calls
-    // only happen when the visualisation is in use.
-    c.GPPaths = null;
-    if (s.ShowGPPath) {
+    // GP path overlay: per-category 24 h sub-point traces. Flat map
+    // from a unique id → { pts, color } so the renderer doesn't need
+    // category metadata. Each category's contribution is gated by its
+    // own GPPath<Category> state flag.
+    c.GPPaths = {};
+    const gmstDegAt = (date) => {
+      const jd = date.getTime() / 86400000 + 2440587.5;
+      const T = (jd - 2451545.0) / 36525;
+      let g = (280.46061837 + 360.98564736629 * (jd - 2451545.0)
+              + 0.000387933 * T * T) % 360;
+      if (g < 0) g += 360;
+      return g;
+    };
+    const dayMs  = utcDate.getTime();
+    const N_GP   = 48;
+    const sampleFrom = (getRaDec) => {
+      const pts = [];
+      for (let i = 0; i <= N_GP; i++) {
+        const d = new Date(dayMs + (i / N_GP) * 86400000);
+        const eq = getRaDec(d);
+        if (!eq || !Number.isFinite(eq.ra) || !Number.isFinite(eq.dec)) return null;
+        const gpLat = eq.dec * 180 / Math.PI;
+        const raDeg = ((eq.ra * 180 / Math.PI) % 360 + 360) % 360;
+        let gpLon = raDeg - gmstDegAt(d);
+        gpLon = ((gpLon + 180) % 360 + 360) % 360 - 180;
+        pts.push(canonicalLatLongToDisc(gpLat, gpLon, FE_RADIUS));
+      }
+      return pts;
+    };
+    const sampleFromSubPointFn = (subFn) => {
+      const pts = [];
+      for (let i = 0; i <= N_GP; i++) {
+        const d = new Date(dayMs + (i / N_GP) * 86400000);
+        const sub = subFn(d);
+        pts.push(canonicalLatLongToDisc(sub.lat, sub.lon, FE_RADIUS));
+      }
+      return pts;
+    };
+
+    // Celestial Bodies (sun / moon / 7 planets) uses the active
+    // ephemeris pipeline so the trace matches whichever pipeline
+    // drives the scene.
+    if (s.GPPathPlanets) {
       const activeEph = bodySource === 'heliocentric' ? ephHelio
                       : bodySource === 'geocentric'   ? ephGeo
                       : bodySource === 'ptolemy'      ? ephPtol
                       : bodySource === 'vsop87'       ? ephVsop
                       :                                 ephApix;
-      const TWO_PI = 2 * Math.PI;
-      const gmstDegAt = (date) => {
-        const jd = date.getTime() / 86400000 + 2440587.5;
-        const T = (jd - 2451545.0) / 36525;
-        let g = (280.46061837 + 360.98564736629 * (jd - 2451545.0)
-                + 0.000387933 * T * T) % 360;
-        if (g < 0) g += 360;
-        return g;
+      const PLANET_COLORS = {
+        sun: 0xffc844, moon: 0xf4f4f4,
+        mercury: 0xd0b090, venus: 0xfff0c8, mars: 0xd05040,
+        jupiter: 0xffa060, saturn: 0xe4c888,
+        uranus: 0xa8d8e0, neptune: 0x7fa6e8,
       };
-      const samplePath = (body) => {
-        const N = 48;
-        const pts = [];
-        for (let i = 0; i <= N; i++) {
-          const t = utcDate.getTime() + (i / N) * 86400000;
-          const d = new Date(t);
-          let eq;
-          try { eq = activeEph.bodyGeocentric(body, d); }
-          catch { return null; }
-          if (!eq || !Number.isFinite(eq.ra) || !Number.isFinite(eq.dec)) return null;
-          const gpLat = eq.dec * 180 / Math.PI;
-          const raDeg = ((eq.ra * 180 / Math.PI) % 360 + 360) % 360;
-          let gpLon = raDeg - gmstDegAt(d);
-          gpLon = ((gpLon + 180) % 360 + 360) % 360 - 180;
-          pts.push(canonicalLatLongToDisc(gpLat, gpLon, FE_RADIUS));
-        }
-        return pts;
-      };
-      const GP_BODIES = ['sun', 'moon', 'mercury', 'venus', 'mars',
-                         'jupiter', 'saturn', 'uranus', 'neptune'];
-      const paths = {};
-      for (const b of GP_BODIES) {
-        const p = samplePath(b);
-        if (p) paths[b] = p;
+      for (const body of Object.keys(PLANET_COLORS)) {
+        const pts = sampleFrom((d) => {
+          try { return activeEph.bodyGeocentric(body, d); } catch { return null; }
+        });
+        if (pts) c.GPPaths[`p:${body}`] = { pts, color: PLANET_COLORS[body] };
       }
-      c.GPPaths = paths;
+    }
+
+    // Star catalogues: RA/Dec fixed per entry, the sub-point circles
+    // once per sidereal day. Cheap — just GMST + trig.
+    const sampleFixedStar = (raRad, decRad) =>
+      sampleFrom(() => ({ ra: raRad, dec: decRad }));
+    const starCategories = [
+      ['GPPathCelNav',        CEL_NAV_STARS,    0xffe8a0, 'cn'],
+      ['GPPathConstellations', CATALOGUED_STARS, 0xffffff, 'cat'],
+      ['GPPathBlackHoles',     BLACK_HOLES,      0x9966ff, 'bh'],
+      ['GPPathQuasars',        QUASARS,          0x40e0d0, 'q'],
+      ['GPPathGalaxies',       GALAXIES,         0xff80c0, 'gal'],
+    ];
+    for (const [flag, list, color, prefix] of starCategories) {
+      if (!s[flag]) continue;
+      for (const star of list) {
+        const raRad  = (star.raH / 24) * 2 * Math.PI;
+        const decRad = star.decD * Math.PI / 180;
+        const pts = sampleFixedStar(raRad, decRad);
+        if (pts) c.GPPaths[`${prefix}:${star.id}`] = { pts, color };
+      }
+    }
+
+    // Satellites use their own two-body sub-point function.
+    if (s.GPPathSatellites) {
+      for (const sat of SATELLITES) {
+        const pts = sampleFromSubPointFn((d) => satelliteSubPoint(sat, d));
+        c.GPPaths[`sat:${sat.id}`] = { pts, color: 0x66ff88 };
+      }
     }
 
     c.TrackerInfos = [];

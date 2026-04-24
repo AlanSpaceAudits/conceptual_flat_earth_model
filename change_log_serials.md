@@ -532,6 +532,37 @@ Format:
   js/render/index.js js/ui/controlPanel.js js/ui/urlState.js`;
   delete `js/core/satellites.js`.
 
+## S331 — GP Path moves out of Show into every Tracker sub-menu
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/core/app.js`,
+  `js/render/worldObjects.js`, `js/ui/controlPanel.js`,
+  `js/ui/urlState.js`.
+- **Change:**
+  - Single `ShowGPPath` state removed. Seven new keys replace
+    it, each default `false`:
+    `GPPathPlanets`, `GPPathCelNav`, `GPPathConstellations`,
+    `GPPathBlackHoles`, `GPPathQuasars`, `GPPathGalaxies`,
+    `GPPathSatellites`.
+  - `Show tab → Ground / Disc` drops the `GP Paths (24 h)`
+    row; every Tracker sub-menu (Celestial Bodies on down)
+    gains its own `GP Path (24 h)` checkbox just below the
+    existing GP Override row.
+  - `app.update()` builds `c.GPPaths` as a flat `{ key →
+    { pts, color } }` map. Planets draw from the active
+    ephemeris pipeline, star catalogues sample directly from
+    fixed RA/Dec + GMST (no per-frame ephemeris call),
+    satellites use `satelliteSubPoint`. Only populated for the
+    categories whose flag is set.
+  - `GPPathOverlay` rewritten to lazily create a Line per key
+    and hide (drawRange 0) keys that disappear from the map
+    between frames.
+  - `URL_SCHEMA_VERSION` bumped `330` → `331` so the old
+    `ShowGPPath` key is dropped on load.
+- **Revert:** `git checkout v-s000330 -- js/core/app.js
+  js/render/worldObjects.js js/ui/controlPanel.js
+  js/ui/urlState.js`.
+
 ## S330 — Tracker is sole source of visibility; default TrackerTargets pre-seeded full
 
 - **Date:** 2026-04-24

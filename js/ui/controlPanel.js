@@ -600,7 +600,6 @@ const FIELD_GROUPS = [
         { key: 'ShowFeGrid',          label: 'FE Grid',            bool: true },
         { key: 'ShowLatitudeLines',   label: 'Tropics / Polar',    bool: true },
         { key: 'ShowGroundPoints',    label: 'Sun / Moon GP',      bool: true },
-        { key: 'ShowGPPath',          label: 'GP Paths (24 h)',    bool: true },
         { key: 'ShowLongitudeRing',   label: 'Longitude ring',     bool: true },
         { key: 'ShowShadow',          label: 'Shadow',             bool: true },
       ]},
@@ -686,6 +685,7 @@ const FIELD_GROUPS = [
       { title: 'Celestial Bodies', rows: [
         { key: 'ShowCelestialBodies', label: 'Show', bool: true },
         { key: 'GPOverridePlanets', label: 'GP Override', bool: true },
+        { key: 'GPPathPlanets',     label: 'GP Path (24 h)', bool: true },
         { key: 'TrackerTargets', label: '', buttonGrid: [
           { value: 'sun',     label: 'Sun',     color: '#ffc844' },
           { value: 'moon',    label: 'Moon',    color: '#f4f4f4' },
@@ -701,6 +701,7 @@ const FIELD_GROUPS = [
       { title: 'Cel Nav', rows: [
         { key: 'ShowCelNav', label: 'Show', bool: true },
         { key: 'GPOverrideCelNav', label: 'GP Override', bool: true },
+        { key: 'GPPathCelNav',     label: 'GP Path (24 h)', bool: true },
         { key: 'TrackerTargets', label: '', buttonGrid:
           [...CEL_NAV_STARS]
             .sort((a, b) => a.name.localeCompare(b.name))
@@ -710,6 +711,7 @@ const FIELD_GROUPS = [
       { title: 'Constellations', rows: [
         { key: 'ShowConstellations', label: 'Show', bool: true },
         { key: 'GPOverrideConstellations', label: 'GP Override', bool: true },
+        { key: 'GPPathConstellations',     label: 'GP Path (24 h)', bool: true },
         { key: 'TrackerTargets', label: '', buttonGrid:
           (() => {
             const celnavIds = new Set(CEL_NAV_STARS.map((s) => s.id));
@@ -727,6 +729,7 @@ const FIELD_GROUPS = [
       { title: 'Black Holes', rows: [
         { key: 'ShowBlackHoles', label: 'Show', bool: true },
         { key: 'GPOverrideBlackHoles', label: 'GP Override', bool: true },
+        { key: 'GPPathBlackHoles',     label: 'GP Path (24 h)', bool: true },
         { key: 'TrackerTargets', label: '', buttonGrid:
           [...BLACK_HOLES]
             .sort((a, b) => a.name.localeCompare(b.name))
@@ -736,6 +739,7 @@ const FIELD_GROUPS = [
       { title: 'Quasars', rows: [
         { key: 'ShowQuasars', label: 'Show', bool: true },
         { key: 'GPOverrideQuasars', label: 'GP Override', bool: true },
+        { key: 'GPPathQuasars',     label: 'GP Path (24 h)', bool: true },
         { key: 'TrackerTargets', label: '', buttonGrid:
           [...QUASARS]
             .sort((a, b) => a.name.localeCompare(b.name))
@@ -745,6 +749,7 @@ const FIELD_GROUPS = [
       { title: 'Galaxies', rows: [
         { key: 'ShowGalaxies', label: 'Show', bool: true },
         { key: 'GPOverrideGalaxies', label: 'GP Override', bool: true },
+        { key: 'GPPathGalaxies',     label: 'GP Path (24 h)', bool: true },
         { key: 'TrackerTargets', label: '', buttonGrid:
           [...GALAXIES]
             .sort((a, b) => a.name.localeCompare(b.name))
@@ -754,6 +759,7 @@ const FIELD_GROUPS = [
       { title: 'Satellites', rows: [
         { key: 'ShowSatellites', label: 'Show Satellites', bool: true },
         { key: 'GPOverrideSatellites', label: 'GP Override', bool: true },
+        { key: 'GPPathSatellites',     label: 'GP Path (24 h)', bool: true },
         { key: 'TrackerTargets', label: '', buttonGrid:
           [...SATELLITES]
             .sort((a, b) => a.name.localeCompare(b.name))

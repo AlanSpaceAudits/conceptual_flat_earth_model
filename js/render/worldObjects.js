@@ -4138,64 +4138,65 @@ export class CatalogPointStars {
   }
 }
 
-// Per-body ground-point path overlay. Consumes `computed.GPPaths`
-// (built in app.update() when ShowGPPath is on) and paints a
-// polyline on the disc for each sampled body.
-const GP_PATH_COLORS = {
-  sun:     0xffc844,
-  moon:    0xf4f4f4,
-  mercury: 0xd0b090,
-  venus:   0xfff0c8,
-  mars:    0xd05040,
-  jupiter: 0xffa060,
-  saturn:  0xe4c888,
-  uranus:  0xa8d8e0,
-  neptune: 0x7fa6e8,
-};
-
+// Per-entry ground-point path overlay. `computed.GPPaths` is a flat
+// map `{ key → { pts, color } }` built in app.update() from whichever
+// GPPath<Category> flags are on. Lines get lazily created per id and
+// hidden (drawRange 0) when their key disappears from the map.
 export class GPPathOverlay {
   constructor() {
     this.group = new THREE.Group();
     this.group.name = 'gp-path-overlay';
-    this._lines = {};
-    const MAX_PTS = 64;
-    for (const [body, color] of Object.entries(GP_PATH_COLORS)) {
-      const buf = new Float32Array(MAX_PTS * 3);
-      const geo = new THREE.BufferGeometry();
-      geo.setAttribute('position', new THREE.BufferAttribute(buf, 3));
-      geo.setDrawRange(0, 0);
-      const mat = new THREE.LineBasicMaterial({
-        color, transparent: true, opacity: 0.7,
-        depthTest: false, depthWrite: false,
-      });
-      const line = new THREE.Line(geo, mat);
-      line.frustumCulled = false;
-      line.renderOrder = 41;
-      this.group.add(line);
-      this._lines[body] = { line, buf, maxPts: MAX_PTS };
+    this._lines = new Map();
+  }
+
+  _ensureLine(key, color) {
+    let rec = this._lines.get(key);
+    if (rec) {
+      if (rec.color !== color) {
+        rec.line.material.color.setHex(color);
+        rec.color = color;
+      }
+      return rec;
     }
+    const MAX_PTS = 64;
+    const buf = new Float32Array(MAX_PTS * 3);
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(buf, 3));
+    geo.setDrawRange(0, 0);
+    const mat = new THREE.LineBasicMaterial({
+      color, transparent: true, opacity: 0.6,
+      depthTest: false, depthWrite: false,
+    });
+    const line = new THREE.Line(geo, mat);
+    line.frustumCulled = false;
+    line.renderOrder = 41;
+    this.group.add(line);
+    rec = { line, buf, maxPts: MAX_PTS, color };
+    this._lines.set(key, rec);
+    return rec;
   }
 
   update(model) {
     const s = model.state;
     const c = model.computed;
-    const on = !!s.ShowGPPath && !s.InsideVault && !!c.GPPaths;
-    this.group.visible = on;
-    if (!on) return;
-    for (const [body, rec] of Object.entries(this._lines)) {
-      const pts = c.GPPaths[body];
-      if (!pts || !pts.length) {
-        rec.line.geometry.setDrawRange(0, 0);
-        continue;
-      }
-      const n = Math.min(pts.length, rec.maxPts);
+    this.group.visible = !s.InsideVault;
+    const paths = c.GPPaths || {};
+    const seen = new Set();
+    for (const [key, entry] of Object.entries(paths)) {
+      if (!entry || !entry.pts || !entry.pts.length) continue;
+      const rec = this._ensureLine(key, entry.color || 0xffffff);
+      const n = Math.min(entry.pts.length, rec.maxPts);
       for (let i = 0; i < n; i++) {
-        rec.buf[i * 3    ] = pts[i][0];
-        rec.buf[i * 3 + 1] = pts[i][1];
+        rec.buf[i * 3    ] = entry.pts[i][0];
+        rec.buf[i * 3 + 1] = entry.pts[i][1];
         rec.buf[i * 3 + 2] = 0.002;
       }
       rec.line.geometry.setDrawRange(0, n);
       rec.line.geometry.attributes.position.needsUpdate = true;
+      seen.add(key);
+    }
+    for (const [key, rec] of this._lines) {
+      if (!seen.has(key)) rec.line.geometry.setDrawRange(0, 0);
     }
   }
 }

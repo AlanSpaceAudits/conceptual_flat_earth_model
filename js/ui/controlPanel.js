@@ -1137,6 +1137,12 @@ export function buildHud(hudEl, model) {
   moonWrapper.appendChild(moonHeader);
   const moonBody = document.createElement('div');
   moonBody.className = 'moon-phase-body';
+  const lines = ['time', 'sun', 'moon'].map(() => {
+    const d = document.createElement('div');
+    d.className = 'line';
+    moonBody.appendChild(d);
+    return d;
+  });
   const canvas = document.createElement('canvas');
   canvas.width = 132; canvas.height = 56;
   canvas.className = 'moon-phase-canvas';
@@ -1155,13 +1161,6 @@ export function buildHud(hudEl, model) {
   moonBody.appendChild(lunarEcLine);
   moonWrapper.appendChild(moonBody);
   hudEl.appendChild(moonWrapper);
-
-  const lines = ['time', 'sun', 'moon'].map(() => {
-    const d = document.createElement('div');
-    d.className = 'line';
-    hudEl.appendChild(d);
-    return d;
-  });
 
   moonHeader.addEventListener('click', () => {
     model.setState({ MoonPhaseExpanded: !model.state.MoonPhaseExpanded });

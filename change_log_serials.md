@@ -500,6 +500,16 @@ Format:
 - **Revert:** `git checkout v-s000256 -- js/render/worldObjects.js
   js/render/constellations.js`.
 
+## S277 — Fold time / sun / moon lines into Live Moon Phases collapsible
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/ui/controlPanel.js`.
+- **Change:** Time, Sun, and Moon az/el lines moved from direct
+  `#hud` children to the start of the moon collapsible's body.
+  When the collapsible is closed only the header and the Live
+  Ephemeris Data button are visible.
+- **Revert:** `git checkout v-s000276 -- js/ui/controlPanel.js`.
+
 ## S276 — Move Live Moon Phases to top of HUD; include eclipse lines
 
 - **Date:** 2026-04-24

@@ -3,6 +3,7 @@
 import { FeModel } from './core/app.js';
 import { Renderer } from './render/index.js';
 import { attachMouseHandler } from './ui/mouseHandler.js';
+import { attachKeyboardHandler } from './ui/keyboardHandler.js';
 import { buildControlPanel, buildHud, buildTrackerHud } from './ui/controlPanel.js';
 import { Demos } from './demos/index.js';
 import { attachUrlState } from './ui/urlState.js';
@@ -26,6 +27,7 @@ try {
     console.warn('Failed to load land data:', err);
   });
   attachMouseHandler(canvas, model);
+  attachKeyboardHandler(model);
 } catch (err) {
   console.error('WebGL unavailable — 3D view disabled:', err);
   const warn = document.createElement('div');

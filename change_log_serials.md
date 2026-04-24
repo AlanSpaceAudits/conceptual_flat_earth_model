@@ -483,6 +483,26 @@ Format:
   is active.
 - **Revert:** `git checkout v-s000243 -- js/ui/controlPanel.js`.
 
+## S256 — Keyboard control: arrow-key observer move + space pause
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/ui/keyboardHandler.js` (new),
+  `js/main.js`.
+- **Change:**
+  - New `keyboardHandler.js` attaches a global keydown/keyup pair:
+    - `ArrowUp` / `ArrowDown` → ObserverLat ± 1° step.
+    - `ArrowLeft` / `ArrowRight` → ObserverLong ± 1° step.
+    - Tap = single 1° step + starts a 150 ms repeating tick at 1°/tick.
+    - After 2 s of holding, the tick grows to 10°/tick until release.
+    - Keyup clears the interval; window blur clears everything.
+    - Ignored while an `INPUT` / `TEXTAREA` / `SELECT` / contenteditable
+      element is focused.
+  - Spacebar (not in a form field) toggles `model._autoplay.play/pause`.
+  - `main.js` wires `attachKeyboardHandler(model)` after the mouse
+    handler inside the WebGL try-block.
+- **Revert:** `git checkout v-s000255 -- js/main.js`, then delete
+  `js/ui/keyboardHandler.js`.
+
 ## S255 — Info tab: Twitter Community section + wrappable link labels
 
 - **Date:** 2026-04-24

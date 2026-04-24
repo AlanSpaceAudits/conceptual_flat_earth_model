@@ -483,7 +483,7 @@ Format:
   is active.
 - **Revert:** `git checkout v-s000243 -- js/ui/controlPanel.js`.
 
-## S257 — Heavenly-vault stars gated to the dark side
+## S257 — Heavenly-vault stars gated to the dark side [REVERTED in S258]
 
 - **Date:** 2026-04-24
 - **Files changed:** `js/render/worldObjects.js` (Stars + CelNavStars),
@@ -498,6 +498,16 @@ Format:
   hide if either endpoint is on the day side. Optical-vault
   rendering is unchanged.
 - **Revert:** `git checkout v-s000256 -- js/render/worldObjects.js
+  js/render/constellations.js`.
+
+## S258 — Revert S257 dark-side gate
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/render/worldObjects.js`,
+  `js/render/constellations.js`.
+- **Change:** restored both files to the `v-s000256` state, removing
+  the dark-side filter added in S257.
+- **Revert:** `git checkout v-s000257 -- js/render/worldObjects.js
   js/render/constellations.js`.
 
 ## S256 — Keyboard control: arrow-key observer move + space pause

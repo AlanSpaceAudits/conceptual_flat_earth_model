@@ -171,7 +171,6 @@ export class Constellations {
     const domePos = new Array(this._nStars);
     const sphPos  = new Array(this._nStars);
     const aboveHorizon = new Array(this._nStars);
-    const onNightSide  = new Array(this._nStars);
 
     // Specified Tracker Mode filter: hide any constellation
     // star whose id isn't in `TrackerTargets`. Cel-nav duplicates
@@ -181,20 +180,8 @@ export class Constellations {
       ? new Set(Array.isArray(s.TrackerTargets) ? s.TrackerTargets : [])
       : null;
 
-    // Dark-side gate for the heavenly vault.
-    const sunLatRad = (c.SunCelestLatLong.lat || 0) * Math.PI / 180;
-    const sunGpLonDeg = (((c.SunRA || 0) * 180 / Math.PI - (c.SkyRotAngle || 0) + 540) % 360) - 180;
-    const sinSun = Math.sin(sunLatRad);
-    const cosSun = Math.cos(sunLatRad);
-
     for (let i = 0; i < this._nStars; i++) {
       const [lat, lon] = this._stars[i];
-      const starLatRad = lat * Math.PI / 180;
-      const starGpLonDeg = ((lon - (c.SkyRotAngle || 0) + 540) % 360) - 180;
-      const dLon = (starGpLonDeg - sunGpLonDeg) * Math.PI / 180;
-      const cosDist = Math.sin(starLatRad) * sinSun
-                    + Math.cos(starLatRad) * cosSun * Math.cos(dLon);
-      onNightSide[i] = cosDist < 0;
       const vect = this._starVect[i];
       // cel-nav duplicates get their POINT sprite parked off
       // screen so the cel-nav renderer owns the visible star. Line
@@ -205,13 +192,13 @@ export class Constellations {
       const untrackedInStm = stm && (!starId || !trackerSet.has(`star:${starId}`));
       const skipPoint = this._celnavDup[i] || untrackedInStm;
 
-      // Heavenly-vault (AE disk). Parked off-screen on the day side.
+      // Heavenly-vault (AE disk).
       const discR = FE_RADIUS * (90 - lat) / 180;
       const lo = lon * Math.PI / 180;
       const diskLocal = [discR * Math.cos(lo), discR * Math.sin(lo), s.StarfieldVaultHeight];
       const gd = vaultCoordToGlobalFeCoord(diskLocal, c.TransMatVaultToFe);
       domePos[i] = gd;
-      if (skipPoint || !onNightSide[i]) {
+      if (skipPoint) {
         this._domeStarPos[i * 3]     = 0;
         this._domeStarPos[i * 3 + 1] = 0;
         this._domeStarPos[i * 3 + 2] = -1000;
@@ -253,20 +240,13 @@ export class Constellations {
         const [a, b] = this._lines[k];
         const o = k * 6;
 
-        // Dome line hidden if either endpoint is on the day side.
-        if (!onNightSide[a] || !onNightSide[b]) {
-          for (let j = 0; j < 6; j++) this._domeLinePos[o + j] = 0;
-          this._domeLinePos[o + 2] = -1000;
-          this._domeLinePos[o + 5] = -1000;
-        } else {
-          const da = domePos[a], db = domePos[b];
-          this._domeLinePos[o]     = da[0];
-          this._domeLinePos[o + 1] = da[1];
-          this._domeLinePos[o + 2] = da[2];
-          this._domeLinePos[o + 3] = db[0];
-          this._domeLinePos[o + 4] = db[1];
-          this._domeLinePos[o + 5] = db[2];
-        }
+        const da = domePos[a], db = domePos[b];
+        this._domeLinePos[o]     = da[0];
+        this._domeLinePos[o + 1] = da[1];
+        this._domeLinePos[o + 2] = da[2];
+        this._domeLinePos[o + 3] = db[0];
+        this._domeLinePos[o + 4] = db[1];
+        this._domeLinePos[o + 5] = db[2];
 
         // Hide optical-vault line segments where either endpoint is below
         // the observer's horizon — collapse to a single point so the

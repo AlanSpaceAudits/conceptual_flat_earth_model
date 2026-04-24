@@ -64,7 +64,7 @@ header .info-popup p:last-child { margin-bottom: 0; }
   max-width: 440px;
 }
 #hud .line { white-space: pre; }
-#hud .moon-phase-wrapper { margin-top: 4px; pointer-events: auto; }
+#hud .moon-phase-wrapper { margin-bottom: 4px; pointer-events: auto; }
 #hud .moon-phase-header {
   display: block;
   width: 100%;
@@ -80,7 +80,8 @@ header .info-popup p:last-child { margin-bottom: 0; }
 }
 #hud .moon-phase-header:hover { background: rgba(244, 166, 64, 0.10); }
 #hud .moon-phase-header .tri { display: inline-block; width: 10px; color: #f4a640; }
-#hud .moon-phase-body { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
+#hud .moon-phase-body { margin-top: 4px; }
+#hud .moon-phase-row { display: flex; align-items: center; gap: 8px; }
 #hud .moon-phase-canvas { display: block; }
 #hud .moon-phase-label { font-size: 11px; color: #f4f6fa; }
 

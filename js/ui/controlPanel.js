@@ -1123,16 +1123,9 @@ function drawIlluminationBar(ctx, x, y, w, h, frac) {
 }
 
 export function buildHud(hudEl, model) {
-  const lines = ['time', 'sun', 'moon', 'solar-ec', 'lunar-ec'].map(() => {
-    const d = document.createElement('div');
-    d.className = 'line';
-    hudEl.appendChild(d);
-    return d;
-  });
-
-  // Collapsible moon-phase widget. Header toggles MoonPhaseExpanded;
-  // default expanded. When collapsed only the header shows so the
-  // Live Ephemeris Data button below shifts up.
+  // "Live Moon Phases" collapsible at the top. Body holds the moon
+  // canvas + label plus the eclipse countdown lines so the whole
+  // moon / eclipse stack collapses together.
   const moonWrapper = document.createElement('div');
   moonWrapper.className = 'moon-phase-wrapper';
   const moonHeader = document.createElement('button');
@@ -1149,10 +1142,26 @@ export function buildHud(hudEl, model) {
   canvas.className = 'moon-phase-canvas';
   const moonLabel = document.createElement('div');
   moonLabel.className = 'moon-phase-label';
-  moonBody.appendChild(canvas);
-  moonBody.appendChild(moonLabel);
+  const moonPhaseRow = document.createElement('div');
+  moonPhaseRow.className = 'moon-phase-row';
+  moonPhaseRow.appendChild(canvas);
+  moonPhaseRow.appendChild(moonLabel);
+  moonBody.appendChild(moonPhaseRow);
+  const solarEcLine = document.createElement('div');
+  solarEcLine.className = 'line';
+  const lunarEcLine = document.createElement('div');
+  lunarEcLine.className = 'line';
+  moonBody.appendChild(solarEcLine);
+  moonBody.appendChild(lunarEcLine);
   moonWrapper.appendChild(moonBody);
   hudEl.appendChild(moonWrapper);
+
+  const lines = ['time', 'sun', 'moon'].map(() => {
+    const d = document.createElement('div');
+    d.className = 'line';
+    hudEl.appendChild(d);
+    return d;
+  });
 
   moonHeader.addEventListener('click', () => {
     model.setState({ MoonPhaseExpanded: !model.state.MoonPhaseExpanded });
@@ -1180,10 +1189,10 @@ export function buildHud(hudEl, model) {
 
     const ec = nextEclipses(s.DateTime);
     const now = dateTimeToDate(s.DateTime);
-    lines[3].textContent = ec.nextSolar
+    solarEcLine.textContent = ec.nextSolar
       ? `Next solar eclipse: ${shortDate(ec.nextSolar)}  ${formatCountdown(now, ec.nextSolar)}`
       : 'Next solar eclipse: —';
-    lines[4].textContent = ec.nextLunar
+    lunarEcLine.textContent = ec.nextLunar
       ? `Next lunar eclipse: ${shortDate(ec.nextLunar)}  ${formatCountdown(now, ec.nextLunar)}`
       : 'Next lunar eclipse: —';
 

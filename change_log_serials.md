@@ -500,6 +500,25 @@ Format:
 - **Revert:** `git checkout v-s000256 -- js/render/worldObjects.js
   js/render/constellations.js`.
 
+## S276 — Move Live Moon Phases to top of HUD; include eclipse lines
+
+- **Date:** 2026-04-24
+- **Files changed:** `css/styles.css`, `js/ui/controlPanel.js`.
+- **Change:**
+  - `#hud` order reshuffled: "Live Moon Phases" collapsible is
+    now the first child; time / sun / moon lines follow, Live
+    Ephemeris Data button still last.
+  - Collapsible body now contains three children: the moon
+    canvas + label row (`.moon-phase-row`), the solar-eclipse
+    line, and the lunar-eclipse line. Collapsing the widget
+    hides all three together.
+  - CSS: `.moon-phase-row` takes over the old flex layout;
+    `.moon-phase-body` is a plain stacking container; wrapper
+    uses `margin-bottom` (was `margin-top`) now that it's the
+    first child.
+- **Revert:** `git checkout v-s000275 -- css/styles.css
+  js/ui/controlPanel.js`.
+
 ## S275 — Default moon-phase widget to collapsed
 
 - **Date:** 2026-04-24

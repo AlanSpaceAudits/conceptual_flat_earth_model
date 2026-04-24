@@ -500,6 +500,36 @@ Format:
 - **Revert:** `git checkout v-s000256 -- js/render/worldObjects.js
   js/render/constellations.js`.
 
+## S303 — Body-search box on the far-left of the bottom bar
+
+- **Date:** 2026-04-24
+- **Files changed:** `css/styles.css`, `js/ui/controlPanel.js`.
+- **Change:**
+  - New `.body-search` input lives inside `.bar-left` (the
+    previously empty space on the far left of the bottom bar).
+  - Typing 3+ characters filters a flat index of every
+    track-able body (sun, moon, 7 planets, cel-nav stars,
+    catalogued constellation stars, black holes, quasars,
+    galaxies) by prefix; falls back to substring if no prefix
+    hits. Up to 12 suggestions, coloured per catalogue category.
+  - ↑ / ↓ keys move the highlight, <kbd>Enter</kbd> engages,
+    <kbd>Esc</kbd> closes.
+  - Selecting a suggestion runs the tracking protocol: in
+    Optical it sets `FollowTarget` + snaps
+    `ObserverHeading / CameraHeight` to the body; in Heavenly it
+    sets `FollowTarget`, flips `FreeCamActive`, and applies the
+    bird's-eye preset (`CameraHeight 80.3 / CameraDistance 10 /
+    Zoom 4.67`).
+  - New `resolveTargetAngles()` helper in `controlPanel.js`
+    mirrors the one in `mouseHandler.js` (local to avoid a cross
+    import).
+  - CSS: `.body-search` + `.body-search-input` +
+    `.body-search-panel` + `.body-search-row` all added.
+    `.bar-left` becomes `display: flex` so the search input
+    anchors to the left edge with 260 px width / 40% max.
+- **Revert:** `git checkout v-s000302 -- css/styles.css
+  js/ui/controlPanel.js`.
+
 ## S302 — Always show the followed body's GP in Heavenly mode
 
 - **Date:** 2026-04-24

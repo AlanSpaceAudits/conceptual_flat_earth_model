@@ -17,6 +17,159 @@ const PLANET_NAMES = {
   saturn: 'Saturn', uranus: 'Uranus', neptune: 'Neptune',
 };
 
+// Flat list of every body the search box can target. Built once at
+// module load; entries carry the tracker id + display name + the
+// accent colour used by the autocomplete chip.
+const BODY_SEARCH_INDEX = (() => {
+  const out = [];
+  out.push({ id: 'sun',  name: 'Sun',  color: '#ffc844' });
+  out.push({ id: 'moon', name: 'Moon', color: '#f4f4f4' });
+  const planets = [
+    ['mercury', 'Mercury', '#d0b090'], ['venus',   'Venus',   '#fff0c8'],
+    ['mars',    'Mars',    '#d05040'], ['jupiter', 'Jupiter', '#ffa060'],
+    ['saturn',  'Saturn',  '#e4c888'], ['uranus',  'Uranus',  '#a8d8e0'],
+    ['neptune', 'Neptune', '#7fa6e8'],
+  ];
+  for (const [id, name, color] of planets) out.push({ id, name, color });
+  for (const s of CEL_NAV_STARS)     out.push({ id: `star:${s.id}`, name: s.name, color: '#ffe8a0' });
+  for (const s of CATALOGUED_STARS)  out.push({ id: `star:${s.id}`, name: s.name, color: '#ffffff' });
+  for (const b of BLACK_HOLES)       out.push({ id: `star:${b.id}`, name: b.name, color: '#9966ff' });
+  for (const q of QUASARS)           out.push({ id: `star:${q.id}`, name: q.name, color: '#40e0d0' });
+  for (const g of GALAXIES)          out.push({ id: `star:${g.id}`, name: g.name, color: '#ff80c0' });
+  return out;
+})();
+
+function resolveTargetAngles(targetId, c) {
+  if (!targetId) return null;
+  if (targetId === 'sun')  return c.SunAnglesGlobe  || null;
+  if (targetId === 'moon') return c.MoonAnglesGlobe || null;
+  if (c.Planets && c.Planets[targetId]) return c.Planets[targetId].anglesGlobe || null;
+  if (targetId.startsWith('star:')) {
+    const id = targetId.slice(5);
+    for (const list of [c.CelNavStars, c.CataloguedStars, c.BlackHoles, c.Quasars, c.Galaxies]) {
+      if (!list) continue;
+      const f = list.find((x) => x.id === id);
+      if (f) return f.anglesGlobe || null;
+    }
+  }
+  return null;
+}
+
+// Search box + suggestion dropdown. Typing 3+ characters filters the
+// index by prefix match (case-insensitive); clicking a suggestion or
+// pressing Enter on the highlighted row engages the tracking protocol:
+// sets FollowTarget, and in Optical snaps heading/pitch; in Heavenly
+// flips FreeCamActive + the bird's-eye preset.
+function attachBodySearch(host, model) {
+  const wrap = document.createElement('div');
+  wrap.className = 'body-search';
+
+  const input = document.createElement('input');
+  input.type = 'search';
+  input.className = 'body-search-input';
+  input.placeholder = 'Search body (3+ chars)';
+  input.autocomplete = 'off';
+  input.spellcheck = false;
+  wrap.appendChild(input);
+
+  const panel = document.createElement('div');
+  panel.className = 'body-search-panel';
+  panel.hidden = true;
+  wrap.appendChild(panel);
+
+  host.appendChild(wrap);
+
+  let activeIdx = -1;
+  let matches = [];
+
+  const hide = () => {
+    panel.hidden = true;
+    panel.replaceChildren();
+    activeIdx = -1;
+    matches = [];
+  };
+
+  const engage = (match) => {
+    if (!match) return;
+    const angles = resolveTargetAngles(match.id, model.computed);
+    const patch = { FollowTarget: match.id };
+    if (model.state.InsideVault) {
+      if (angles) {
+        patch.ObserverHeading = ((angles.azimuth % 360) + 360) % 360;
+        patch.CameraHeight    = Math.max(0, Math.min(89.9, angles.elevation));
+      }
+    } else {
+      patch.FreeCamActive  = true;
+      patch.CameraHeight   = 80.3;
+      patch.CameraDistance = 10;
+      patch.Zoom           = 4.67;
+    }
+    model.setState(patch);
+    input.value = match.name;
+    input.blur();
+    hide();
+  };
+
+  const renderSuggestions = () => {
+    panel.replaceChildren();
+    if (!matches.length) { panel.hidden = true; return; }
+    matches.forEach((m, i) => {
+      const row = document.createElement('button');
+      row.type = 'button';
+      row.className = 'body-search-row';
+      if (i === activeIdx) row.classList.add('active');
+      row.style.color = m.color;
+      row.textContent = m.name;
+      row.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        engage(m);
+      });
+      panel.appendChild(row);
+    });
+    panel.hidden = false;
+  };
+
+  input.addEventListener('input', () => {
+    const q = input.value.trim().toLowerCase();
+    if (q.length < 3) { hide(); return; }
+    matches = BODY_SEARCH_INDEX
+      .filter((m) => m.name.toLowerCase().startsWith(q))
+      .slice(0, 12);
+    if (!matches.length) {
+      const loose = BODY_SEARCH_INDEX
+        .filter((m) => m.name.toLowerCase().includes(q))
+        .slice(0, 12);
+      matches = loose;
+    }
+    activeIdx = matches.length ? 0 : -1;
+    renderSuggestions();
+  });
+
+  input.addEventListener('keydown', (e) => {
+    if (panel.hidden) return;
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      activeIdx = Math.min(activeIdx + 1, matches.length - 1);
+      renderSuggestions();
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      activeIdx = Math.max(activeIdx - 1, 0);
+      renderSuggestions();
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      engage(matches[activeIdx]);
+    } else if (e.key === 'Escape') {
+      hide();
+      input.blur();
+    }
+  });
+
+  input.addEventListener('blur', () => {
+    // Defer so a click on a row still fires before the panel hides.
+    setTimeout(hide, 120);
+  });
+}
+
 function resolveTrackName(targetId) {
   if (!targetId) return null;
   if (targetId === 'sun')  return 'Sun';
@@ -838,6 +991,7 @@ export function buildControlPanel(host, model, demos) {
 
   const barLeft = document.createElement('div');
   barLeft.className = 'bar-left';
+  attachBodySearch(barLeft, model);
 
   const timeControls = document.createElement('div');
   timeControls.className = 'time-controls';

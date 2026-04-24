@@ -532,6 +532,30 @@ Format:
   js/render/index.js js/ui/controlPanel.js js/ui/urlState.js`;
   delete `js/core/satellites.js`.
 
+## S318 — Feature-search box next to body search
+
+- **Date:** 2026-04-24
+- **Files changed:** `css/styles.css`, `js/ui/controlPanel.js`.
+- **Change:**
+  - New `attachFeatureSearch()` helper builds a flat index from
+    `FIELD_GROUPS` (every group title + every row's label /
+    buttonLabel). Typing 2+ characters filters with prefix-first
+    then substring, up to 14 suggestions, each showing the label
+    and a `Tab › Group` breadcrumb.
+  - Selecting a row calls `openFeature(tab, group)`: opens the
+    matching tab popup, expands the target collapsible (uses the
+    existing header-click flow so the mutually-exclusive group
+    rule still applies), and scrolls it into view.
+  - `buildGroup()` now tags each `.group` with
+    `data-group-title` so feature-search can find the right DOM
+    node.
+  - New `.search-host` dropped in the bar between the body
+    search and the tab row. `.body-search-row` gets a
+    two-line variant (`.feature-row-label` plus a small muted
+    breadcrumb `.feature-row-path`).
+- **Revert:** `git checkout v-s000317 -- css/styles.css
+  js/ui/controlPanel.js`.
+
 ## S317 — Per-category Show toggles for every tracker sub-menu
 
 - **Date:** 2026-04-24

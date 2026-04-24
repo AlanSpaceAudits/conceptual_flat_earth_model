@@ -272,6 +272,13 @@ header .info-popup p:last-child { margin-bottom: 0; }
 .body-search-row:last-child { border-bottom: 0; }
 .body-search-row:hover,
 .body-search-row.active { background: rgba(255, 154, 60, 0.14); }
+.body-search-row .feature-row-label { display: block; color: var(--fg); }
+.body-search-row .feature-row-path {
+  display: block;
+  font-size: 10px;
+  color: var(--muted);
+  margin-top: 1px;
+}
 #bottom-bar .time-controls { display: flex; align-items: center; gap: 4px; flex: 0 0 auto; }
 #bottom-bar .vault-swap { font-size: 15px; margin-right: 8px; }
 #bottom-bar .vault-swap[aria-pressed="true"] {

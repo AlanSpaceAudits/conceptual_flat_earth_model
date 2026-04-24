@@ -172,6 +172,139 @@ function attachBodySearch(host, model) {
   });
 }
 
+// Feature-search: find a settings row / collapsible group by typing
+// part of its label. Needs the tab popup registry + `openFeature`
+// callback from buildControlPanel because that's where the tab/group
+// DOM actually lives. Index is built lazily on first keystroke so
+// FIELD_GROUPS has been fully populated.
+function attachFeatureSearch(host, openFeature) {
+  const wrap = document.createElement('div');
+  wrap.className = 'body-search';
+
+  const input = document.createElement('input');
+  input.type = 'search';
+  input.className = 'body-search-input';
+  input.placeholder = 'Search settings (e.g. "ray", "vault")';
+  input.autocomplete = 'off';
+  input.spellcheck = false;
+  wrap.appendChild(input);
+
+  const panel = document.createElement('div');
+  panel.className = 'body-search-panel';
+  panel.hidden = true;
+  wrap.appendChild(panel);
+
+  host.appendChild(wrap);
+
+  let activeIdx = -1;
+  let matches = [];
+  let index = null;
+
+  const buildIndex = () => {
+    const out = [];
+    for (const tab of FIELD_GROUPS) {
+      for (const g of tab.groups) {
+        out.push({
+          kind: 'group',
+          tab: tab.tab,
+          group: g.title,
+          label: g.title,
+          matchText: g.title.toLowerCase(),
+        });
+        for (const row of g.rows) {
+          const parts = [];
+          if (row.label) parts.push(row.label);
+          if (row.buttonLabel) parts.push(row.buttonLabel);
+          if (!parts.length) continue;
+          const label = parts.join(' / ');
+          out.push({
+            kind: 'row',
+            tab: tab.tab,
+            group: g.title,
+            label,
+            matchText: (label + ' ' + g.title).toLowerCase(),
+          });
+        }
+      }
+    }
+    return out;
+  };
+
+  const hide = () => {
+    panel.hidden = true;
+    panel.replaceChildren();
+    activeIdx = -1;
+    matches = [];
+  };
+
+  const engage = (match) => {
+    if (!match) return;
+    openFeature(match.tab, match.group);
+    input.value = '';
+    input.blur();
+    hide();
+  };
+
+  const renderSuggestions = () => {
+    panel.replaceChildren();
+    if (!matches.length) { panel.hidden = true; return; }
+    matches.forEach((m, i) => {
+      const row = document.createElement('button');
+      row.type = 'button';
+      row.className = 'body-search-row';
+      if (i === activeIdx) row.classList.add('active');
+      row.innerHTML =
+        `<span class="feature-row-label">${m.label}</span>`
+        + `<span class="feature-row-path">${m.tab} › ${m.group}</span>`;
+      row.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        engage(m);
+      });
+      panel.appendChild(row);
+    });
+    panel.hidden = false;
+  };
+
+  input.addEventListener('input', () => {
+    if (!index) index = buildIndex();
+    const q = input.value.trim().toLowerCase();
+    if (q.length < 2) { hide(); return; }
+    const starts = [];
+    const contains = [];
+    for (const item of index) {
+      const mt = item.matchText;
+      if (mt.startsWith(q)) starts.push(item);
+      else if (mt.includes(q)) contains.push(item);
+    }
+    matches = [...starts, ...contains].slice(0, 14);
+    activeIdx = matches.length ? 0 : -1;
+    renderSuggestions();
+  });
+
+  input.addEventListener('keydown', (e) => {
+    if (panel.hidden) return;
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      activeIdx = Math.min(activeIdx + 1, matches.length - 1);
+      renderSuggestions();
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      activeIdx = Math.max(activeIdx - 1, 0);
+      renderSuggestions();
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      engage(matches[activeIdx]);
+    } else if (e.key === 'Escape') {
+      hide();
+      input.blur();
+    }
+  });
+
+  input.addEventListener('blur', () => {
+    setTimeout(hide, 120);
+  });
+}
+
 function resolveTrackName(targetId) {
   if (!targetId) return null;
   if (targetId === 'sun')  return 'Sun';
@@ -915,6 +1048,7 @@ function buildRow(model, row) {
 function buildGroup(model, title, rows, popupGroups) {
   const el = document.createElement('div');
   el.className = 'group';
+  el.dataset.groupTitle = title;
   const header = document.createElement('button');
   header.type = 'button';
   header.className = 'group-header collapsed';
@@ -1099,11 +1233,17 @@ export function buildControlPanel(host, model, demos) {
   searchHost.className = 'search-host';
   attachBodySearch(searchHost, model);
 
+  const featureHost = document.createElement('div');
+  featureHost.className = 'search-host';
+  // Placeholder function — replaced once tabEntries / openTab exist.
+  const featureOpen = { fn: () => {} };
+  attachFeatureSearch(featureHost, (tab, group) => featureOpen.fn(tab, group));
+
   const tabsBar = document.createElement('div');
   tabsBar.className = 'tabs';
   tabsBar.setAttribute('role', 'tablist');
 
-  bar.append(barLeft, timeControls, compassControls, searchHost, tabsBar);
+  bar.append(barLeft, timeControls, compassControls, searchHost, featureHost, tabsBar);
 
   const refreshVaultBtn = () => {
     const inVault = !!model.state.InsideVault;
@@ -1177,6 +1317,27 @@ export function buildControlPanel(host, model, demos) {
     tabEntries[i].popup.hidden = false;
     tabEntries[i].btn.setAttribute('aria-selected', 'true');
     activeIdx = i;
+  };
+
+  // Wire the feature-search's "open this tab + expand this group"
+  // callback now that tabEntries / openTab exist. Falls back to a
+  // no-op if either the tab name or the group title can't be
+  // resolved in the DOM.
+  featureOpen.fn = (tabName, groupTitle) => {
+    const idx = tabEntries.findIndex(
+      (t) => t.btn.textContent.trim() === tabName,
+    );
+    if (idx < 0) return;
+    if (activeIdx !== idx) openTab(idx);
+    const popup = tabEntries[idx].popup;
+    if (!groupTitle) return;
+    const groupEl = popup.querySelector(
+      `.group[data-group-title="${CSS.escape(groupTitle)}"]`,
+    );
+    if (!groupEl) return;
+    const header = groupEl.querySelector('.group-header');
+    if (header && header.classList.contains('collapsed')) header.click();
+    groupEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
   // Keep the open popup anchored if the window resizes.

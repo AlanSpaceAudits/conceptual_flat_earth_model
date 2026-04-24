@@ -32,10 +32,27 @@ The main canvas fills the viewport. A collapsible HUD in the top-left gives live
 
 The dark bar anchors everything else. From left to right:
 
-- **Mode toggles** — vault swap (🌐 / 👁) flips between Heavenly and Optical views; 🌙 pins permanent night so stars stay visible through daylight.
-- **Transport controls** — ⏪ rewind, ▶ play/pause, ⏩ fast-forward. Speed presets stack on each press; the speed readout chip lives next to them.
-- **Compass quick-buttons** — 🎯 Specified-Tracker-Mode toggle, then **N / S / E / W** to snap `ObserverHeading` to a cardinal and drop any active follow. The active cardinal takes an accent border while the heading is within 0.5° of it.
-- **Tabs** — View, Time, Show, Tracker, Demos, Info. Each opens a popup anchored above its tab button.
+### Transport cluster (left-of-centre)
+- **🌐 / 👁** — vault swap. 🌐 icon = currently in Heavenly (orbit); 👁 = currently in Optical (first-person). Click to flip.
+- **⏪** — rewind. First click flips autoplay to −1 × current magnitude (reverse direction); subsequent clicks double the negative magnitude.
+- **▶ / ⏸** — play / pause. Pressing ▶ also resets the autoplay speed to the Day preset (1 sim-hour per real-second) so a fresh press lands at a known cadence. While a demo is playing, this same button pauses / resumes the demo without ending it.
+- **⏩** — fast-forward. Mirror of ⏪: doubles positive magnitude or flips from negative to positive.
+- **½× / 2×** — direction-agnostic speed scalers. Halve / double the current autoplay magnitude (so rewinding at −1/24 becomes −1/48 on ½× or −1/12 on 2×). While a demo is running they scale the demo's tempo (0.01–64× of its authored pacing) and resume from pause if needed.
+- **Speed / End Demo stack** — tiny readout on the right of the transport group: `+0.042 d/s` during normal autoplay, `demo N.NN×` during demo playback. The **End Demo** button stacks above the chip and is only visible while a demo is active; click to stop the demo and reset to DE405 defaults.
+
+### Compass cluster (right of the search boxes)
+- **🌙** — toggle Permanent Night (`NightFactor` pinned to 1 so stars stay visible regardless of where the sun sits).
+- **🎯** — Specified Tracker Mode. When on, the scene narrows to just the current `FollowTarget`; everything else in every category is hidden. STM off (default) uses the full `TrackerTargets` set.
+- **◉** — toggle true-position markers (`ShowTruePositions`), the dots on the heavenly vault showing each body's geographic ground direction.
+- **📍** — jump directly to the View tab's Observer group so you can see / edit latitude, longitude, elevation, heading without hunting through the menus.
+- **N / S / E / W** — snap `ObserverHeading` to the cardinal direction and clear any active follow. The cardinal that currently matches the heading (within 0.5°) takes an accent border.
+
+### Search boxes (just left of View)
+- **Body search** — type 3+ characters of a celestial body name (sun, moon, any planet, any cel-nav / catalogued / black-hole / quasar / galaxy / satellite entry). Suggestions coloured by category; Enter / click engages the tracking protocol: lock `FollowTarget`, snap Optical heading/pitch to the body, or flip on Heavenly free-cam with the bird's-eye preset.
+- **Visibility search** — type 2+ characters of any Show-tab setting ("ray", "vault", "star"…). Results list the target Tab › Group path; click to open that tab and expand the matching group. Swaps the current popup if a different tab is already open.
+
+### Tabs (rightmost)
+- **View / Time / Show / Tracker / Demos / Info**. Each opens a popup anchored above its button; click again or press <kbd>Esc</kbd> to close. Only one tab popup is open at a time. Groups inside a popup are mutually exclusive — opening one collapses the others.
 
 ---
 
@@ -102,10 +119,10 @@ The `Visibility` group is now split into collapsible subgroups:
 
 ## Tracker tab
 
-Seven top-level collapsible groups, mutually exclusive:
+Nine top-level collapsible groups, mutually exclusive. The Tracker is the single source of truth for body visibility: each sub-menu's Show checkbox gates the whole category, and TrackerTargets membership decides which individual ids render. Empty = nothing shown; Track All = everything back.
 
 ### Ephemeris
-- **Source** — which of five ephemeris pipelines drives sun / moon / planet positions. All five run every frame; the Tracker HUD shows every pipeline side-by-side so discrepancies are visible.
+- **Source** — which of five ephemeris pipelines drives sun / moon / planet positions. All five run every frame; the Live Ephemeris HUD shows every pipeline side-by-side so discrepancies are visible.
   - **HelioC** — Schlyter simplified Kepler composed with the Sun's geocentric orbit.
   - **GeoC** — Earth-focus Kepler (single ellipse per planet, no Sun stage).
   - **Ptolemy** — deferent + epicycle from *Almagest*.
@@ -115,35 +132,48 @@ Seven top-level collapsible groups, mutually exclusive:
 - **Precession / Nutation / Aberration / Trepidation** — classical corrections brought to J2000 star positions.
 
 ### Tracker Options
-- **Clear All Tracked** — empty the target list.
-- **Specified Tracker Mode** — only tracked bodies render; all other celestial objects hide. Mirrored by the 🎯 quick-button on the bar.
-- **GP Override** — tracker GPs paint regardless of the master `Show Ground Points` toggle.
+- **Clear All** — empty `TrackerTargets` (nothing rendered).
+- **Track All** — seed `TrackerTargets` with every id across every catalogue (sun / moon / 7 planets / all cel nav / catalogued / black holes / quasars / galaxies / satellites).
+- **Specified Tracker Mode** — narrow the effective render set to just `FollowTarget`; mirrored by the 🎯 bar button.
+- **GP Override** — tracker GPs paint in Heavenly mode regardless of the master Show Ground Points toggle.
+- **True Positions** — show the heavenly-vault true-source dots. Mirrored by the ◉ bar button.
+- **GP Path (24 h)** — single master toggle. When on, each body currently in `TrackerTargets` gets a 24-hour sub-point polyline drawn on the disc (sun / moon / planets sample the active ephemeris; stars use fixed RA/Dec + GMST; satellites use their two-body sub-point function).
 
 ### Celestial Bodies
-Multi-select button grid for the classical bodies: Sun, Moon, Mercury, Venus, Mars, Jupiter, Saturn, Uranus, Neptune.
+Show / GP Override checkboxes plus a multi-select grid for the classical bodies: Sun, Moon, Mercury, Venus, Mars, Jupiter, Saturn, Uranus, Neptune.
 
 ### Cel Nav
-All 58 Nautical-Almanac navigational stars, alphabetised, each a warm-yellow toggle.
+Show / GP Override plus all 58 Nautical-Almanac navigational stars, alphabetised, each a warm-yellow toggle.
 
 ### Constellations
-Named catalogued stars minus cel-nav crossovers (which live in their own sub-menu).
+Show / GP Override plus named catalogued stars minus cel-nav crossovers (those live in their own sub-menu).
 
 ### Black Holes
-Sgr A*, M87*, M31*, Cygnus X-1, V404 Cygni, NGC 4258, A0620-00, NGC 1275, NGC 5128, M81*, 3C 273 BH.
+Show / GP Override plus: Sgr A*, M87*, M31*, Cygnus X-1, V404 Cygni, NGC 4258, A0620-00, NGC 1275, NGC 5128, M81*, 3C 273 BH.
 
 ### Quasars
-3C 273, 3C 48, 3C 279, 3C 351, S5 0014+81, TON 618, OJ 287, APM 08279+5255, 3C 454.3, PKS 2000-330, 3C 345, 3C 147, PG 1634+706, Twin Quasar, Mrk 421, Mrk 501, 3C 66A, PKS 1510-089, BL Lacertae.
+Show / GP Override plus: 3C 273, 3C 48, 3C 279, 3C 351, S5 0014+81, TON 618, OJ 287, APM 08279+5255, 3C 454.3, PKS 2000-330, 3C 345, 3C 147, PG 1634+706, Twin Quasar, Mrk 421, Mrk 501, 3C 66A, PKS 1510-089, BL Lacertae.
 
 ### Galaxies
-M31, M32, M33, M51, M63, M64, M77, M81, M82, M87, M101, M104, M110, NGC 253, NGC 4565, NGC 4631, NGC 5128, LMC, SMC, Cartwheel.
+Show / GP Override plus: M31, M32, M33, M51, M63, M64, M77, M81, M82, M87, M101, M104, M110, NGC 253, NGC 4565, NGC 4631, NGC 5128, LMC, SMC, Cartwheel.
 
-Each catalogued body renders on the heavenly dome and the Optical vault in a distinct colour (cel nav warm-yellow, catalogued white, black holes purple, quasars cyan, galaxies pink). Tracking a body from any sub-menu produces a coloured GP on the disc when Heavenly mode is active.
+### Satellites
+Show Satellites (master gate — default on) / GP Override plus 12 entries: ISS, Hubble, Tiangong, eight Starlink-shell representatives, James Webb. Two-body Kepler elements; accuracy drifts ~1°/day from 2024-04-15 epoch (conceptual, not precision). Satellites always require explicit membership — toggling Show Satellites on without picking any entry renders nothing.
+
+Each catalogued body renders on the heavenly dome and the Optical vault in a distinct colour (cel nav warm-yellow, catalogued white, black holes purple, quasars cyan, galaxies pink, satellites lime green). Tracking a body from any sub-menu produces a coloured GP on the disc when Heavenly mode is active.
 
 ---
 
 ## Demos tab
 
-Scripted-animation browser. Controls along the top: **Stop**, **Pause / Resume**, **Prev / Next**. Sections:
+Scripted-animation browser. Controls along the top: **Stop**, **Pause / Resume**, **Prev / Next**. While a demo plays the bottom bar's ▶ / ⏸ pauses the demo in place, ½× / 2× scale its tempo, and a red **End Demo** button appears above the speed readout to cleanly stop the run (clears DE405 defaults, sun / moon tracks, and GP Path). Camera drag, zoom, tab / menu work — none of it interrupts the demo. Sections:
+
+### 24 h Sun (4 entries)
+Polar-sun demonstrations, all anchored on DE405:
+- **24h sun at 82°30′N (Alert, Nunavut)** — 2025-06-21 solstice, one full sidereal day.
+- **24h sun at 79°46′S 83°15′W (West Antarctica)** — starting 2024-12-14, one sidereal day.
+- **Midnight sun at 75°N: start to end** — walks April → September: first day of midnight sun, solstice peak, last day.
+- **Midnight sun at 75°S: start to end** — mirror in October → March.
 
 ### General (6 entries)
 Everyday sky demos: equinox-at-equator, summer and winter solstice at 45°N, one-month moon phase cycle, an observer travelling equator→pole→equator, 78°N summer-solstice 24-hour-daylight.
@@ -174,12 +204,13 @@ External-link groups for communities and creators around this work:
 
 ---
 
-# Interactive tracking (Optical mode)
+# Interactive tracking (any mode)
 
-- **Hover** — the cursor shows a tooltip next to any celestial body in range (`Name · az X.XX° el ±Y.YY°`). The click-hit box scales with FOV so you don't have to land pixel-perfect.
-- **Click to lock** — clicking a body (within the same threshold) snaps `ObserverHeading` and `CameraHeight` to it and sets `FollowTarget`. Subsequent time advances re-aim the camera every frame. Below-horizon targets pin pitch to 0 so the camera keeps swinging with the azimuth along the horizon.
+- **Hover** — cursor shows a stacked tooltip (`Name / Azi / Alt`) next to any visible body. In Optical the hit test uses pinhole az/el; in Heavenly / free-cam it projects each body's 3D vault (and optical-cap) coordinate back to screen pixels and picks within a 40 px radius. Works with true-position dome markers AND optical-vault projected dots in Heavenly.
+- **Click to lock** — clicks the exact body whose tooltip is currently shown. In Optical this snaps `ObserverHeading` + `CameraHeight` to the body and sets `FollowTarget`; subsequent time advances re-aim every frame (below-horizon targets pin pitch to 0 so the camera keeps swinging with the azimuth along the horizon). In Heavenly it flips `FreeCamActive` on and applies the bird's-eye preset (`CameraHeight 80.3 / CameraDistance 10 / Zoom 4.67`) so the orbit recentres on the tracked body's ground point.
+- **Free-cam** — flipping Optical → Heavenly while a `FollowTarget` is set engages free-cam. The orbit camera now anchors around the body's ground point instead of the disc origin, tracking the GP as it moves across the disc. The GP's own disc dot always paints while free-cam is active, regardless of the master Show Ground Points toggle. Any real drag in Heavenly clears both `FollowTarget` and `FreeCamActive`, snapping back to normal observer-anchored orbit.
 - **Overlap resolution** — whichever body is currently showing the hover tooltip is the one that gets locked on click, even if another body is slightly nearer the click pixel.
-- **Break the lock** — any real drag (≥ 4 pixels) clears `FollowTarget` and resumes manual control. The bottom-bar compass buttons clear it too.
+- **Break the lock** — any real drag (≥ 4 pixels) clears `FollowTarget`, `FreeCamActive`, and `SpecifiedTrackerMode` so the full sky comes back. The compass bar buttons clear it too.
 
 # Free-cam mode (Heavenly with tracking)
 

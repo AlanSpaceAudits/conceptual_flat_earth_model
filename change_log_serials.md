@@ -532,6 +532,32 @@ Format:
   js/render/index.js js/ui/controlPanel.js js/ui/urlState.js`;
   delete `js/core/satellites.js`.
 
+## S338 — about.md refresh: every bar icon + new Tracker layout
+
+- **Date:** 2026-04-24
+- **Files changed:** `about.md`.
+- **Change:**
+  - Transport cluster section rewritten to document each
+    icon: 🌐/👁 vault swap, ⏪ / ▶⏸ / ⏩, ½× / 2× speed
+    scalers, the `demo N.NN×` speed readout, the stacked
+    **End Demo** button.
+  - Compass cluster section documents 🌙 / 🎯 / ◉ / 📍 / N-
+    S-E-W behaviour.
+  - New Search-boxes section covering both the body search
+    and the visibility search.
+  - Tracker tab section: now "nine top-level groups" — Ephemeris,
+    Tracker Options (Clear All / Track All / STM / GP Override /
+    True Positions / GP Path), Celestial Bodies, Cel Nav,
+    Constellations, Black Holes, Quasars, Galaxies, Satellites.
+    Each sub-menu's Show + GP Override checkboxes noted.
+  - Demos tab introduces the new **24 h Sun** section + bullet
+    list of the four demos. Transport behaviour during a demo
+    (pause / speed / End Demo / camera freedom) now documented.
+  - Interactive-tracking section extended to cover Heavenly /
+    free-cam hover, click-to-lock branching per mode, and
+    free-cam behaviour.
+- **Revert:** `git checkout v-s000337 -- about.md`.
+
 ## S337 — Info-bar Tracking slot also shows the target's az / el
 
 - **Date:** 2026-04-24

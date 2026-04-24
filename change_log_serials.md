@@ -500,6 +500,27 @@ Format:
 - **Revert:** `git checkout v-s000256 -- js/render/worldObjects.js
   js/render/constellations.js`.
 
+## S310 — More reliable Heavenly / free-cam hover
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/ui/mouseHandler.js`.
+- **Change:**
+  - Screen-space hit radius bumped `24 px → 40 px` for the
+    Heavenly / free-cam hover test — dome markers project
+    smaller than their Optical-cap counterparts, so the tighter
+    radius was frequently missing.
+  - `projectToCanvasPixels()` now forces
+    `camera.updateMatrixWorld()` and recomputes
+    `matrixWorldInverse` before projecting, so hover stays
+    accurate even if the RAF render hasn't run between the
+    last camera move and the pointer event. Same function also
+    rejects points projecting further than ±1.2 in NDC so
+    off-edge hits don't leak in.
+  - `collectHeavenlyCandidates()` early-returns when
+    `ShowTruePositions === false`; with dome markers hidden
+    there's nothing to hover.
+- **Revert:** `git checkout v-s000309 -- js/ui/mouseHandler.js`.
+
 ## S309 — Default TrackerTargets empty so STM actually hides bodies
 
 - **Date:** 2026-04-24

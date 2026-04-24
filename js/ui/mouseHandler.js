@@ -21,7 +21,7 @@ const FP_ZOOM_MIN = 0.2;
 const FP_ZOOM_MAX = 75;      // fov_min = 75/75 = 1°
 const CLICK_DRAG_PX   = 4;    // pointer movement below this counts as click
 const CLICK_EPS_DEG   = 0.01; // heading/pitch diff for follow setState skip
-const HEAVENLY_HIT_PX = 24;   // screen-space hover radius in Heavenly / free-cam
+const HEAVENLY_HIT_PX = 40;   // screen-space hover radius in Heavenly / free-cam
 
 function opticalCadenceStepDeg(fovDeg) {
   if (fovDeg >= 8) return 5;
@@ -160,6 +160,9 @@ function displayNameFor(id, c) {
 // in the allow-set (TrackerTargets ∪ FollowTarget) to match the
 // render-layer visibility rules.
 function collectHeavenlyCandidates(c, state) {
+  // Dome markers are hidden when ShowTruePositions is off, so nothing
+  // to hover; return early. InsideVault callers never use this path.
+  if (state.ShowTruePositions === false) return [];
   const stm = !!state.SpecifiedTrackerMode;
   const allow = stm
     ? new Set(Array.isArray(state.TrackerTargets) ? state.TrackerTargets : [])
@@ -197,13 +200,18 @@ function collectHeavenlyCandidates(c, state) {
 
 // Project a world-space point through the active Three.js camera and
 // return the canvas-pixel coordinates. Returns null if the point is
-// behind the near plane (or camera isn't available yet).
+// behind the near plane or off-NDC outside [-1.2, 1.2]. Forces a
+// matrixWorldInverse refresh so hover keeps working even when the
+// RAF render loop hasn't ticked yet.
 function projectToCanvasPixels(coord, camera, canvas) {
   if (!camera) return null;
   const w = canvas.clientWidth || 1;
   const h = canvas.clientHeight || 1;
+  camera.updateMatrixWorld();
+  if (camera.matrixWorldInverse && camera.matrixWorldInverse.copy) {
+    camera.matrixWorldInverse.copy(camera.matrixWorld).invert();
+  }
   const x = coord[0], y = coord[1], z = coord[2];
-  // Inline matrix-project to avoid importing Three here.
   const m = camera.matrixWorldInverse.elements;
   const p = camera.projectionMatrix.elements;
   const vx = m[0]*x + m[4]*y + m[8]*z  + m[12];
@@ -216,7 +224,7 @@ function projectToCanvasPixels(coord, camera, canvas) {
   const cw = p[3]*vx + p[7]*vy + p[11]*vz + p[15]*vw;
   if (cw <= 0) return null;
   const ndcX = cx / cw, ndcY = cy / cw, ndcZ = cz / cw;
-  if (ndcZ >= 1) return null;
+  if (ndcZ >= 1 || Math.abs(ndcX) > 1.2 || Math.abs(ndcY) > 1.2) return null;
   return { x: (ndcX + 1) * 0.5 * w, y: (1 - ndcY) * 0.5 * h };
 }
 

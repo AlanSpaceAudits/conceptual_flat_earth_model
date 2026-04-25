@@ -532,6 +532,25 @@ Format:
   js/render/index.js js/ui/controlPanel.js js/ui/urlState.js`;
   delete `js/core/satellites.js`.
 
+## S383 — Decouple canonicalLatLongToDisc from MapProjection (rollback ground↔sky linking)
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/core/canonical.js`,
+  `change_log_serials.md`.
+- **Change:** `canonicalLatLongToDisc` rewritten to return the
+  fixed north-pole AE-polar formula
+  (`r = (90 - lat) / 180`, `xy = r·(cos lon, sin lon)`)
+  regardless of the loaded `MapProjection`. `setActiveProjection`
+  reduced to a no-op stub so existing callers in `main.js` still
+  resolve. FE grid lines, observer placement, and every
+  above-disc anchor (`pointOnFE`, `vaultCoordAt`,
+  `celestLatLongToVaultCoord`) reach this function and therefore
+  all share one fixed AE-polar coordinate framework. The
+  `MapProjection` selector continues to drive the art layer
+  (HQ raster textures via `buildImageMap`, math projections via
+  `buildGeoJsonLand`) without touching the coordinate framework.
+- **Revert:** `git checkout v-s000382 -- js/core/canonical.js`.
+
 ## S382 — Bottom-bar reshuffle: search next to View, bigger compass icons, speed in info-bar, combined FE+Vault grid toggle
 
 - **Date:** 2026-04-24

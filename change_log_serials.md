@@ -532,6 +532,21 @@ Format:
   js/render/index.js js/ui/controlPanel.js js/ui/urlState.js`;
   delete `js/core/satellites.js`.
 
+## S381 — Centre bear sprite over observer GP; hide cross marker when figure is drawn
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/render/worldObjects.js`,
+  `change_log_serials.md`.
+- **Change:**
+  - Bear sprite position derived from the image's content bbox
+    (centre x = 968 / 1920, feet y = 839 / 1080) so its feet sit
+    on the disc at z = 0 and its horizontal centre lands directly
+    over the observer ground point.
+  - Observer's red `cross` LineSegments now hidden whenever
+    `ObserverFigure !== 'none'`, matching the existing
+    `marker` visibility rule.
+- **Revert:** `git checkout v-s000380 -- js/render/worldObjects.js`.
+
 ## S380 — Replace bear primitive figure with sprite-based bear
 
 - **Date:** 2026-04-24

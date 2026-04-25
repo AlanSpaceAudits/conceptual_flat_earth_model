@@ -2451,6 +2451,9 @@ export class Observer {
       const tail = new THREE.Mesh(horzCyl(0.0013, 0.004, 'x'), hide);
       add(tail, -0.013, 0, 0.009);
     } else if (kind === 'bear') {
+      // Sprite sized so the bear's feet (image y = 839 / 1080) land
+      // on the disc at z = 0 and its horizontal centre (image x = 968
+      // / 1920) sits over the observer GP.
       const tex = new THREE.TextureLoader().load('assets/observer_bear.png');
       tex.colorSpace = THREE.SRGBColorSpace;
       const mat = new THREE.SpriteMaterial({
@@ -2458,9 +2461,15 @@ export class Observer {
       });
       const sprite = new THREE.Sprite(mat);
       const h = 0.10;
-      const aspect = 1920 / 1080;
+      const W = 1920, H = 1080;
+      const FEET_PY = 839, CENTER_PX = 968;
+      const aspect = W / H;
       sprite.scale.set(h * aspect, h, 1);
-      sprite.position.set(0, 0, h / 2);
+      sprite.position.set(
+        -((CENTER_PX / W) - 0.5) * h * aspect,
+        0,
+        (FEET_PY / H - 0.5) * h,
+      );
       sprite.renderOrder = 110;
       this.figureGroup.add(sprite);
     } else if (kind === 'llama') {
@@ -2957,9 +2966,10 @@ export class Observer {
 
     const kind = model.state.ObserverFigure || 'male';
     if (kind !== this._currentFigure) this._buildFigure(kind);
-    // Red ground-point marker is only useful when no figure is drawn —
-    // otherwise it reads as a stray red dot next to the figure.
+    // Red marker + cross only useful when no figure is drawn — they
+    // read as stray dots / lines next to the figure otherwise.
     this.marker.visible = kind === 'none';
+    this.cross.visible  = kind === 'none';
     // Keep the figure facing "outward" from disc centre so the observer's
     // body orientation feels stable as lat/long changes. We rotate about z
     // to point the figure's +x (forward) along the observer's radial direction.

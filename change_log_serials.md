@@ -3801,3 +3801,35 @@ Format:
     180)"`.
 - **Revert:** `git checkout v-s000426 -- js/core/app.js
   js/render/index.js js/demos/definitions.js`.
+
+## S428 — Eclipse Position Map demo (2021-2040)
+
+- **Date:** 2026-04-25
+- **Files changed:** `js/core/app.js`,
+  `js/render/worldObjects.js`, `js/render/index.js`,
+  `js/demos/definitions.js`.
+- **Change:**
+  - New state `EclipseMapSolar` and `EclipseMapLunar`
+    (default `[]`).
+  - `MonthMarkers` constructor extended with `worldSpace`
+    (force disc-anchor regardless of state) and `noLoop`
+    (skip the closed-loop polyline) options. The renderer
+    update path checks `this._loop` before touching the
+    loop buffer.
+  - Two new disc-anchored, no-loop `MonthMarkers` instances
+    in `render/index.js`: `eclipseMapSolar` (`#ffd040`,
+    bound to `EclipseMapSolar`) and `eclipseMapLunar`
+    (`#a0c8ff`, bound to `EclipseMapLunar`).
+  - New `ECLIPSE_MAP_DEMO`: a single Tcall iterates the
+    full AstroPixels / DE405 eclipse registry (44 solar +
+    67 lunar, 2021-2040), suppresses emit while stepping
+    `DateTime` through every event's UT, captures
+    `c.SunVaultCoord` (solar) or `c.MoonVaultCoord` (lunar)
+    into the map arrays, then re-emits once at the end.
+  - Demo placed in a new `eclipse-map` section labelled
+    `"Eclipse Position Map"`.
+  - 100-year coverage requires extending the registry — the
+    demo description states the actual span (20 years).
+- **Revert:** `git checkout v-s000427 -- js/core/app.js
+  js/render/worldObjects.js js/render/index.js
+  js/demos/definitions.js`.

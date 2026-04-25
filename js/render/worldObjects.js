@@ -2373,6 +2373,9 @@ export class MonthMarkers {
     clippingPlanes = [],
     markersKey = 'SunMonthMarkers',
     worldSpaceKey = 'SunMonthMarkersWorldSpace',
+    worldSpace = false,
+    noLoop = false,
+    maxLoopPts = 64,
     name = 'month-markers',
   } = {}) {
     this.group = new THREE.Group();
@@ -2391,24 +2394,29 @@ export class MonthMarkers {
     this._sprites = [];
     this._markersKey = markersKey;
     this._worldSpaceKey = worldSpaceKey;
+    this._forceWorldSpace = !!worldSpace;
+    this._noLoop = !!noLoop;
 
     // Closed-loop polyline through every marker, in append order. The
     // closing segment from the last back to the first is what makes
     // the analemma read as a figure-8 / loop instead of an open chain.
-    const MAX_LOOP_PTS = 64;
-    this._loopBuf = new Float32Array(MAX_LOOP_PTS * 3);
-    const loopGeo = new THREE.BufferGeometry();
-    loopGeo.setAttribute('position', new THREE.BufferAttribute(this._loopBuf, 3));
-    loopGeo.setDrawRange(0, 0);
-    const loopMat = new THREE.LineBasicMaterial({
-      color, transparent: true, opacity: 0.7,
-      depthTest: false, depthWrite: false,
-    });
-    this._loop = new THREE.LineLoop(loopGeo, loopMat);
-    this._loop.frustumCulled = false;
-    this._loop.renderOrder = 59;
-    this.skyGroup.add(this._loop);
-    this._loopMaxPts = MAX_LOOP_PTS;
+    // Skipped entirely when `noLoop` is set (e.g. eclipse-position
+    // markers, which are independent events with no meaningful order).
+    if (!this._noLoop) {
+      this._loopBuf = new Float32Array(maxLoopPts * 3);
+      const loopGeo = new THREE.BufferGeometry();
+      loopGeo.setAttribute('position', new THREE.BufferAttribute(this._loopBuf, 3));
+      loopGeo.setDrawRange(0, 0);
+      const loopMat = new THREE.LineBasicMaterial({
+        color, transparent: true, opacity: 0.7,
+        depthTest: false, depthWrite: false,
+      });
+      this._loop = new THREE.LineLoop(loopGeo, loopMat);
+      this._loop.frustumCulled = false;
+      this._loop.renderOrder = 59;
+      this.skyGroup.add(this._loop);
+      this._loopMaxPts = maxLoopPts;
+    }
   }
 
   _ensureSprite(i) {
@@ -2430,7 +2438,7 @@ export class MonthMarkers {
     const s = model.state;
     const c = model.computed;
     const arr = Array.isArray(s[this._markersKey]) ? s[this._markersKey] : [];
-    const worldSpace = !!s[this._worldSpaceKey];
+    const worldSpace = this._forceWorldSpace || !!s[this._worldSpaceKey];
     // World-space markers don't need ShowOpticalVault since they live
     // on the heavenly vault, not the observer's optical vault.
     const visible = arr.length > 0
@@ -2455,17 +2463,19 @@ export class MonthMarkers {
       this._sprites[i].visible = false;
     }
 
-    const n = Math.min(arr.length, this._loopMaxPts);
-    for (let i = 0; i < n; i++) {
-      const m = arr[i];
-      this._loopBuf[i * 3    ] = m[0];
-      this._loopBuf[i * 3 + 1] = m[1];
-      this._loopBuf[i * 3 + 2] = m[2];
+    if (this._loop) {
+      const n = Math.min(arr.length, this._loopMaxPts);
+      for (let i = 0; i < n; i++) {
+        const m = arr[i];
+        this._loopBuf[i * 3    ] = m[0];
+        this._loopBuf[i * 3 + 1] = m[1];
+        this._loopBuf[i * 3 + 2] = m[2];
+      }
+      // LineLoop closes on its own once it has ≥ 2 points; keep it
+      // hidden at a single point so we don't draw a degenerate edge.
+      this._loop.geometry.setDrawRange(0, n >= 2 ? n : 0);
+      this._loop.geometry.attributes.position.needsUpdate = true;
     }
-    // LineLoop closes on its own once it has ≥ 2 points; keep it
-    // hidden at a single point so we don't draw a degenerate edge.
-    this._loop.geometry.setDrawRange(0, n >= 2 ? n : 0);
-    this._loop.geometry.attributes.position.needsUpdate = true;
   }
 }
 

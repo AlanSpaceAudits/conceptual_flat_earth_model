@@ -129,6 +129,8 @@ function defaultState() {
     SunMonthMarkersWorldSpace: false,
     SunMonthMarkersOpp:      [],
     SunMonthMarkersOppWorldSpace: false,
+    EclipseMapSolar:         [],
+    EclipseMapLunar:         [],
     MoonMonthMarkers:        [],
     MoonVaultArcOn:          false,
     MoonMonthMarkersWorldSpace: false,

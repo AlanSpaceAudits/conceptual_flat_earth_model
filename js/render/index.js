@@ -159,9 +159,23 @@ export class Renderer {
       worldSpaceKey: 'MoonMonthMarkersWorldSpace',
       name: 'moon-month-markers',
     });
+    this.eclipseMapSolar = new MonthMarkers({
+      color: '#ffd040', size: 0.010, clippingPlanes: clipPlanes,
+      markersKey: 'EclipseMapSolar',
+      worldSpace: true, noLoop: true, maxLoopPts: 1,
+      name: 'eclipse-map-solar',
+    });
+    this.eclipseMapLunar = new MonthMarkers({
+      color: '#a0c8ff', size: 0.010, clippingPlanes: clipPlanes,
+      markersKey: 'EclipseMapLunar',
+      worldSpace: true, noLoop: true, maxLoopPts: 1,
+      name: 'eclipse-map-lunar',
+    });
     this.sm.world.add(this.sunMonthMarkers.group);
     this.sm.world.add(this.sunMonthMarkersOpp.group);
     this.sm.world.add(this.moonMonthMarkers.group);
+    this.sm.world.add(this.eclipseMapSolar.group);
+    this.sm.world.add(this.eclipseMapLunar.group);
 
     this.satelliteStars = new CatalogPointStars({
       sourceKey: 'Satellites',
@@ -439,6 +453,8 @@ export class Renderer {
     this.sunMonthMarkers.update(m);
     this.sunMonthMarkersOpp.update(m);
     this.moonMonthMarkers.update(m);
+    this.eclipseMapSolar.update(m);
+    this.eclipseMapLunar.update(m);
     this.starfieldChart.update(m);
     this.constellations.update(m);
     // When a chart starfield is active, hide both the heavenly-vault and

@@ -13,6 +13,8 @@
 import { Ttxt, Tval, Thold, Tcall } from './animation.js';
 import { SOLAR_ECLIPSE_DEMOS, LUNAR_ECLIPSE_DEMOS } from './eclipseRegistry.js';
 import { FE_ECLIPSE_PREDICTION_DEMOS } from './feEclipseTrack.js';
+import { ASTROPIXELS_ECLIPSES } from '../data/astropixelsEclipses.js';
+import { TIME_ORIGIN } from '../core/constants.js';
 
 const T1 = 1000, T3 = 3000, T5 = 5000, T8 = 8000;
 
@@ -490,6 +492,71 @@ const SUN_PAIRED_DEMOS = ANALEMMA_LATS.map(([lat, t]) =>
   makeSunAnalemmaPaired(`Sun analemma paired · ${t} (lon 0 + lon 180)`, lat),
 );
 
+// Eclipse-position map: at every event in the AstroPixels / DE405
+// eclipse registry (2021-2040), set DateTime to that event's UT,
+// snap the heavenly-vault sun coord (solar event) or moon coord
+// (lunar event) into the eclipse-map state arrays. Renders as
+// disc-anchored dots — no closed loop, since these are independent
+// events. The entire scan is one synchronous Tcall.
+function _utisoToDateTime(utISO) {
+  return (new Date(utISO).getTime() / TIME_ORIGIN.msPerDay) - TIME_ORIGIN.ZeroDate;
+}
+
+function plotAllEclipses(model) {
+  const solarPts = [];
+  const lunarPts = [];
+  const origDateTime = model.state.DateTime;
+  for (const ev of ASTROPIXELS_ECLIPSES.solar) {
+    const dt = _utisoToDateTime(ev.utISO);
+    if (!isFinite(dt)) continue;
+    model.setState({ DateTime: dt }, false);
+    const sv = model.computed.SunVaultCoord;
+    if (sv) solarPts.push([sv[0], sv[1], sv[2]]);
+  }
+  for (const ev of ASTROPIXELS_ECLIPSES.lunar) {
+    const dt = _utisoToDateTime(ev.utISO);
+    if (!isFinite(dt)) continue;
+    model.setState({ DateTime: dt }, false);
+    const mv = model.computed.MoonVaultCoord;
+    if (mv) lunarPts.push([mv[0], mv[1], mv[2]]);
+  }
+  model.setState({
+    DateTime: origDateTime,
+    EclipseMapSolar: solarPts,
+    EclipseMapLunar: lunarPts,
+  });
+}
+
+const ECLIPSE_MAP_DEMO = {
+  name: 'Eclipse position map · 2021-2040 (AstroPixels / DE405)',
+  group: 'eclipse-map',
+  intro: {
+    ObserverLat: 0, ObserverLong: 0, ObserverHeading: 0,
+    BodySource: 'astropixels',
+    DateTime: 2922,                      // 2025-01-01 00:00 UTC
+    InsideVault: false,                  // orbital view
+    Zoom: 1.6,
+    CameraDirection: 0, CameraHeight: 60,
+    VaultSize: 1, VaultHeight: 0.45,
+    TrackerTargets: ['sun', 'moon'],
+    ShowSunAnalemma: false, ShowMoonAnalemma: false,
+    ShowSunTrack: false, ShowMoonTrack: false,
+    ShowShadow: false, ShowTruePositions: true,
+    ShowOpticalVault: false, ShowStars: true,
+    FollowTarget: null, FreeCamActive: false, FreeCameraMode: false,
+    SpecifiedTrackerMode: false,
+    SunVaultArcOn: false, MoonVaultArcOn: false,
+    SunMonthMarkers: [], MoonMonthMarkers: [], SunMonthMarkersOpp: [],
+    EclipseMapSolar: [], EclipseMapLunar: [],
+  },
+  tasks: () => [
+    Ttxt('Plotting all eclipse positions in the AstroPixels / DE405 registry (44 solar + 67 lunar across 2021-2040)…'),
+    Tcall(plotAllEclipses),
+    Ttxt('Done · 44 solar (gold) + 67 lunar (pale blue) heavenly-vault positions across 20 years. Saros bands cluster the dots into the familiar nodal pattern.'),
+    Thold(),
+  ],
+};
+
 // 24-hour sun demos grouped under their own sub-menu. Order matches
 // the UI section: two 24h overhead-sun demos first, then the two
 // season-spanning midnight-sun demos.
@@ -605,6 +672,7 @@ export const DEMOS = [
   ...ANALEMMA_DEMOS,
   ...MOON_SYNODIC_DEMOS,
   ...SUN_PAIRED_DEMOS,
+  ECLIPSE_MAP_DEMO,
   ...SOLAR_ECLIPSE_DEMOS,
   ...LUNAR_ECLIPSE_DEMOS,
   ...FE_ECLIPSE_PREDICTION_DEMOS,
@@ -619,6 +687,7 @@ export const DEMO_GROUPS = [
   { id: 'combo-analemma',  label: 'Sun + Moon Analemma' },
   { id: 'moon-synodic',    label: 'Moon Path (Synodic)' },
   { id: 'sun-paired',      label: 'Sun Analemma Paired (lon 0 + lon 180)' },
+  { id: 'eclipse-map',     label: 'Eclipse Position Map' },
   { id: 'solar-eclipses',  label: 'Solar Eclipses (AstroPixels / DE405, 2021-2040)' },
   { id: 'lunar-eclipses',  label: 'Lunar Eclipses (AstroPixels / DE405, 2021-2040)' },
   { id: 'fe-predictions',  label: 'FE Eclipse Predictions (placeholder)' },

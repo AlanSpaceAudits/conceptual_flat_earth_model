@@ -532,6 +532,17 @@ Format:
   js/render/index.js js/ui/controlPanel.js js/ui/urlState.js`;
   delete `js/core/satellites.js`.
 
+## S391 — Default ObserverFigure switched from 'bear' to 'nikki'
+
+- **Date:** 2026-04-25
+- **Files changed:** `js/core/app.js`,
+  `change_log_serials.md`.
+- **Change:** `defaultState().ObserverFigure` flipped from
+  `'bear'` to `'nikki'`. Returning visitors keep whatever
+  value their URL hash carries; first-time loads get
+  Not-Nikki-Minaj as the observer figure.
+- **Revert:** `git checkout v-s000390 -- js/core/app.js`.
+
 ## S390 — BSC isolated to its own BscTargets list, ShowBsc is the single render gate
 
 - **Date:** 2026-04-25

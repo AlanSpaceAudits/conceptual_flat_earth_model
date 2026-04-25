@@ -141,7 +141,7 @@ function defaultState() {
 
     InsideVault: false,
 
-    ObserverFigure: 'bear',
+    ObserverFigure: 'nikki',
 
     // Minutes east of UTC. -360 = CST.
     TimezoneOffsetMinutes: -360,

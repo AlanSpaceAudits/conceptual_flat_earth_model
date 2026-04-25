@@ -12,8 +12,12 @@ import { GALAXIES }    from '../core/galaxies.js';
 import { SATELLITES }  from '../core/satellites.js';
 import { BRIGHT_STAR_CATALOG } from '../core/brightStarCatalog.js';
 import { NAMED_STARS_HYG }    from '../core/_namedStarsHyg.js';
+import { NAMED_STARS_HYG_EXTRA } from '../core/_namedStarsHygExtra.js';
 import { GALAXIES_EXTRA }     from '../core/galaxiesExtra.js';
+import { GALAXIES_EXTRA2 }    from '../core/galaxiesExtra2.js';
 import { QUASARS_EXTRA }      from '../core/quasarsExtra.js';
+import { QUASARS_EXTRA2 }     from '../core/quasarsExtra2.js';
+import { SATELLITES_EXTRA }   from '../core/satellitesExtra.js';
 import { listProjections, listGeneratedProjections, listHqMaps, PROJECTIONS } from '../core/projections.js';
 import { Autoplay } from './autoplay.js';
 
@@ -42,9 +46,14 @@ const BODY_SEARCH_INDEX = (() => {
   for (const q of QUASARS)           out.push({ id: `star:${q.id}`, name: q.name, color: '#40e0d0' });
   for (const g of GALAXIES)          out.push({ id: `star:${g.id}`, name: g.name, color: '#ff80c0' });
   for (const s of SATELLITES)        out.push({ id: `star:${s.id}`, name: s.name, color: '#66ff88' });
-  for (const s of NAMED_STARS_HYG)   out.push({ id: `star:${s.id}`, name: s.name, color: '#fff5d8' });
-  for (const g of GALAXIES_EXTRA)    out.push({ id: `star:${g.id}`, name: g.name, color: '#ff80c0' });
-  for (const q of QUASARS_EXTRA)     out.push({ id: `star:${q.id}`, name: q.name, color: '#40e0d0' });
+  for (const s of NAMED_STARS_HYG)        out.push({ id: `star:${s.id}`, name: s.name, color: '#fff5d8' });
+  for (const s of NAMED_STARS_HYG_EXTRA)  out.push({ id: `star:${s.id}`, name: s.name, color: '#fff5d8' });
+  for (const g of GALAXIES_EXTRA)         out.push({ id: `star:${g.id}`, name: g.name, color: '#ff80c0' });
+  for (const g of GALAXIES_EXTRA2)        out.push({ id: `star:${g.id}`, name: g.name, color: '#ff80c0' });
+  for (const q of QUASARS_EXTRA)          out.push({ id: `star:${q.id}`, name: q.name, color: '#40e0d0' });
+  for (const q of QUASARS_EXTRA2)         out.push({ id: `star:${q.id}`, name: q.name, color: '#40e0d0' });
+  for (const s of SATELLITES_EXTRA)       out.push({ id: `star:${s.id}`, name: s.name, color: '#66ff88' });
+  out.push({ id: 'star:pluto', name: 'Pluto', color: '#a07c66' });
   return out;
 })();
 
@@ -896,13 +905,13 @@ const FIELD_GROUPS = [
             TrackerTargets: [
               ...new Set([
                 ...(Array.isArray(m.state.TrackerTargets) ? m.state.TrackerTargets : []),
-                ...BRIGHT_STAR_CATALOG.map((x) => `star:${x.id}`),
+                ...BRIGHT_STAR_CATALOG.map((x) => x.kind === 'planet' ? x.id : `star:${x.id}`),
               ]),
             ],
           }) },
         { label: '', buttonLabel: 'Disable All',
           onClick: (m) => {
-            const ids = new Set(BRIGHT_STAR_CATALOG.map((x) => `star:${x.id}`));
+            const ids = new Set(BRIGHT_STAR_CATALOG.map((x) => x.kind === 'planet' ? x.id : `star:${x.id}`));
             const cur = Array.isArray(m.state.TrackerTargets) ? m.state.TrackerTargets : [];
             m.setState({ TrackerTargets: cur.filter((t) => !ids.has(t)) });
           } },
@@ -910,7 +919,7 @@ const FIELD_GROUPS = [
           [...BRIGHT_STAR_CATALOG]
             .sort((a, b) => a.name.localeCompare(b.name))
             .map((x) => ({
-              value: `star:${x.id}`,
+              value: x.kind === 'planet' ? x.id : `star:${x.id}`,
               label: x.name,
               color: '#' + (x.color != null ? x.color : 0xfff5d8).toString(16).padStart(6, '0'),
             })),

@@ -532,6 +532,74 @@ Format:
   js/render/index.js js/ui/controlPanel.js js/ui/urlState.js`;
   delete `js/core/satellites.js`.
 
+## S388 — Bulk catalog expansion: +500 stars, +500 galaxies, +500 quasars, +500 satellites, sun/moon/planets/Pluto
+
+- **Date:** 2026-04-25
+- **Files changed:** `js/core/_namedStarsHygExtra.js` (new),
+  `js/core/galaxiesExtra2.js` (new),
+  `js/core/quasarsExtra2.js` (new),
+  `js/core/satellitesExtra.js` (new),
+  `js/core/solarSystem.js` (new),
+  `js/core/brightStarCatalog.js`,
+  `js/core/app.js`,
+  `js/render/index.js`,
+  `js/ui/controlPanel.js`,
+  `css/styles.css`,
+  `change_log_serials.md`.
+- **Change:**
+  - **+500 named-designation stars** built from HYG v41
+    entries lacking a proper name. Bayer / Flamsteed
+    designation preferred, falling back to HD / HIP catalogue
+    number. Brightest 500 by `mag`.
+    `js/core/_namedStarsHygExtra.js` exports
+    `NAMED_STARS_HYG_EXTRA`.
+  - **+500 galaxies** drawn from OpenNGC entries 200..700
+    (next-brightest after the existing extras).
+    `js/core/galaxiesExtra2.js` exports `GALAXIES_EXTRA2`.
+  - **+500 quasars** drawn from VizieR VII/258 entries 200..700
+    by `Vmag`. `js/core/quasarsExtra2.js` exports
+    `QUASARS_EXTRA2`.
+  - **+~500 satellites** parsed from CelesTrak TLE feeds
+    (`stations`, `visual`, `science`, `weather`, `iridium-NEXT`,
+    `gps-ops`, `glo-ops`, `geo`, sample of `starlink`).
+    Per-group caps prevent any single feed from dominating.
+    Two-line elements converted to the existing simplified
+    Kepler schema (`epoch JD`, `incl`, `raan`, `argPerigee`,
+    `meanAnom`, `meanMotion`, `ecc`).
+    `js/core/satellitesExtra.js` exports `SATELLITES_EXTRA`.
+  - **Solar-system roster** in `js/core/solarSystem.js`:
+    nine `kind: 'planet'` entries (Sun, Moon, Mercury–Neptune)
+    that map onto the existing planet tracker ids, plus a
+    static placeholder Pluto entry at J2000.0 RA/Dec
+    (16.78639 h, -11.37361°) that flows through the BSC star
+    pipeline.
+  - `brightStarCatalog.js` consumes every new source. Eight
+    contributing source modules now feed the union, deduped by
+    id, total ~2967 entries.
+  - `app.js` projects the combined `[...SATELLITES,
+    ...SATELLITES_EXTRA]` into `c.Satellites` so the existing
+    satellite renderer paints all of them; the GP-path loop
+    iterates the same union. Satellite info-resolver falls
+    back to the projected entry when `satelliteById` returns
+    null for an extras id.
+  - `render/index.js` satellite layer `maxCount` raised to
+    1024 to fit the union.
+  - `controlPanel.js`: `BODY_SEARCH_INDEX` extended with the
+    four new sources plus a Pluto entry. BSC button-grid +
+    Enable All / Disable All routes planets through the plain
+    tracker id (`'sun'`, `'moon'`, `'mercury'`, …) and stars
+    through `'star:<id>'`, so toggling a planet entry adds the
+    same id the existing Celestial-Bodies sub-menu uses.
+  - `css/styles.css`: `#bottom-bar .compass-controls`
+    `margin-top` adjusted to `-18px` so the cluster sits
+    further above the bar baseline.
+- **Revert:** `git checkout v-s000387 -- js/core/app.js
+  js/core/brightStarCatalog.js js/render/index.js
+  js/ui/controlPanel.js css/styles.css`; `rm
+  js/core/_namedStarsHygExtra.js js/core/galaxiesExtra2.js
+  js/core/quasarsExtra2.js js/core/satellitesExtra.js
+  js/core/solarSystem.js`.
+
 ## S387 — Revert S386; raise compass cluster vertically; ▦ also toggles azimuth ring + longitude ring
 
 - **Date:** 2026-04-24

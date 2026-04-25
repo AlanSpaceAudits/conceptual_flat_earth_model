@@ -141,6 +141,7 @@ export class Renderer {
       color: 0x66ff88,
       domeSize: 4,
       sphereSize: 3.5,
+      maxCount: 1024,
       clippingPlanes: clipPlanes,
       requireMembership: true,
       showKey: 'ShowSatellites',

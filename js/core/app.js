@@ -23,6 +23,7 @@ import { QUASARS,      quasarById }    from './quasars.js';
 import { GALAXIES,     galaxyById }    from './galaxies.js';
 import { BRIGHT_STAR_CATALOG, bscStarById } from './brightStarCatalog.js';
 import { SATELLITES,   satelliteById, satelliteSubPoint } from './satellites.js';
+import { SATELLITES_EXTRA } from './satellitesExtra.js';
 import {
   compTransMatCelestToGlobe, compTransMatLocalFeToGlobalFe, compTransMatVaultToFe,
   celestCoordToLocalGlobeCoord, coordToLatLong, localGlobeCoordToAngles,
@@ -605,7 +606,7 @@ export class FeModel extends EventTarget {
           anglesGlobe,
         };
       };
-      c.Satellites = SATELLITES.map(projectSatellite);
+      c.Satellites = [...SATELLITES, ...SATELLITES_EXTRA].map(projectSatellite);
     } else {
       c.Satellites = [];
     }
@@ -697,7 +698,7 @@ export class FeModel extends EventTarget {
         }
       }
 
-      for (const sat of SATELLITES) {
+      for (const sat of [...SATELLITES, ...SATELLITES_EXTRA]) {
         if (!gpSet.has(`star:${sat.id}`)) continue;
         const pts = sampleFromSubPointFn((d) => satelliteSubPoint(sat, d));
         c.GPPaths[`sat:${sat.id}`] = { pts, color: 0x66ff88 };
@@ -807,7 +808,7 @@ export class FeModel extends EventTarget {
         }
         if (!entry) {
           entry = c.Satellites.find((x) => x.id === starId);
-          def   = satelliteById(starId);
+          def   = satelliteById(starId) || (entry ? { name: entry.name, mag: -1.5 } : null);
           if (entry) cat = 'satellite';
         }
         if (!entry) {

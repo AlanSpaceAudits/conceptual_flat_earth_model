@@ -331,7 +331,7 @@ header .info-popup p:last-child { margin-bottom: 0; }
   gap: 6px;
   flex: 0 0 auto;
   margin-left: 12px;
-  margin-top: -6px;
+  margin-top: -18px;
 }
 #bottom-bar .mode-grid,
 #bottom-bar .cycle-row,

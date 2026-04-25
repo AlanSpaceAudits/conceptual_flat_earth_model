@@ -39,10 +39,10 @@ header .info-btn {
 header .info-btn:hover { border-color: var(--accent); color: var(--accent); }
 header .info-popup {
   position: absolute; top: calc(100% + 6px); right: 0;
-  width: 520px; max-width: 92vw;
+  width: 620px; max-width: 94vw;
   background: var(--panel); color: var(--fg);
   border: 1px solid var(--border); border-radius: 6px;
-  padding: 14px 18px; font-size: 16px; line-height: 1.5;
+  padding: 18px 22px; font-size: 19px; line-height: 1.55;
   font-style: italic; color: var(--muted);
   box-shadow: 0 4px 12px rgba(0,0,0,0.5);
   z-index: 50;
@@ -51,35 +51,35 @@ header .info-popup p { margin: 0 0 8px; }
 header .info-popup p:last-child { margin-bottom: 0; }
 header .info-box > .info-btn + .info-btn { margin-left: 6px; }
 header .info-popup.legend-popup {
-  width: 880px; max-width: 94vw;
-  max-height: 82vh; overflow-y: auto;
+  width: 1040px; max-width: 96vw;
+  max-height: 86vh; overflow-y: auto;
   font-style: normal; color: var(--fg);
-  font-size: 16px; line-height: 1.55;
+  font-size: 19px; line-height: 1.6;
 }
-header .info-popup.legend-popup h1 { font-size: 24px; margin: 0 0 12px; color: var(--accent); }
-header .info-popup.legend-popup h2 { font-size: 20px; margin: 20px 0 10px; color: var(--accent); }
-header .info-popup.legend-popup h3 { font-size: 17px; margin: 16px 0 8px; }
-header .info-popup.legend-popup p { margin: 0 0 10px; }
+header .info-popup.legend-popup h1 { font-size: 30px; margin: 0 0 14px; color: var(--accent); }
+header .info-popup.legend-popup h2 { font-size: 24px; margin: 24px 0 12px; color: var(--accent); }
+header .info-popup.legend-popup h3 { font-size: 20px; margin: 18px 0 10px; }
+header .info-popup.legend-popup p { margin: 0 0 12px; }
 header .info-popup.legend-popup hr {
-  border: 0; border-top: 1px solid var(--border); margin: 16px 0;
+  border: 0; border-top: 1px solid var(--border); margin: 20px 0;
 }
 header .info-popup.legend-popup ul {
-  margin: 6px 0 12px; padding-left: 24px;
+  margin: 8px 0 14px; padding-left: 28px;
 }
-header .info-popup.legend-popup li { margin: 4px 0; }
+header .info-popup.legend-popup li { margin: 5px 0; }
 header .info-popup.legend-popup table {
-  width: 100%; border-collapse: collapse; margin: 10px 0;
-  font-size: 15px;
+  width: 100%; border-collapse: collapse; margin: 12px 0;
+  font-size: 17px;
 }
 header .info-popup.legend-popup th,
 header .info-popup.legend-popup td {
-  border: 1px solid var(--border); padding: 6px 10px; text-align: left;
+  border: 1px solid var(--border); padding: 8px 12px; text-align: left;
   vertical-align: top;
 }
 header .info-popup.legend-popup th { background: var(--row); }
 header .info-popup.legend-popup code {
-  background: var(--row); padding: 2px 6px; border-radius: 3px;
-  font-family: ui-monospace, Menlo, monospace; font-size: 14px;
+  background: var(--row); padding: 2px 7px; border-radius: 3px;
+  font-family: ui-monospace, Menlo, monospace; font-size: 16px;
 }
 header .info-popup.legend-popup a { color: var(--accent); }
 

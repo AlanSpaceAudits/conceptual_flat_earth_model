@@ -344,10 +344,10 @@ header .info-popup p:last-child { margin-bottom: 0; }
 #bottom-bar .mode-grid .time-btn,
 #bottom-bar .cycle-row .time-btn,
 #bottom-bar .cardinal-grid .time-btn {
-  min-width: 30px;
-  padding: 0 6px;
-  font-size: 11px;
-  line-height: 14px;
+  min-width: 36px;
+  padding: 2px 8px;
+  font-size: 14px;
+  line-height: 18px;
   margin: 0;
 }
 #bottom-bar .az-ring-btn[aria-pressed="true"] {
@@ -420,6 +420,18 @@ header .info-popup p:last-child { margin-bottom: 0; }
   font-weight: 600;
 }
 #bottom-bar .starfield-btn { min-width: 32px; padding: 4px 6px; margin-left: 4px; }
+#bottom-bar .grids-btn {
+  min-width: 36px;
+  padding: 2px 8px;
+  font-size: 16px;
+  line-height: 18px;
+  margin-left: 4px;
+}
+#bottom-bar .grids-btn[aria-pressed="true"] {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(255, 154, 60, 0.10);
+}
 #bottom-bar .freecam-btn { min-width: 32px; padding: 4px 6px; margin-left: 4px; }
 #bottom-bar .freecam-btn[aria-pressed="true"] {
   border-color: var(--accent);

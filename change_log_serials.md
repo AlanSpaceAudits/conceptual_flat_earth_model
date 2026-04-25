@@ -532,6 +532,32 @@ Format:
   js/render/index.js js/ui/controlPanel.js js/ui/urlState.js`;
   delete `js/core/satellites.js`.
 
+## S382 — Bottom-bar reshuffle: search next to View, bigger compass icons, speed in info-bar, combined FE+Vault grid toggle
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/ui/controlPanel.js`, `css/styles.css`,
+  `change_log_serials.md`.
+- **Change:**
+  - Search hosts (`searchHost`, `featureHost`) moved out of
+    `bar` and inserted at the head of `tabsBar`. With
+    `tabsBar`'s `justify-content: flex-end`, the search inputs
+    now sit immediately to the left of the View tab on the
+    right side of the bar.
+  - Compass-cluster buttons (mode-grid, cycle-row,
+    cardinal-grid `.time-btn`s) bumped to `min-width 36px`,
+    `font-size 14px`, `line-height 18px`, `padding 2px 8px`.
+  - New `.info-slot[data-k="speed"]` appended after the date
+    slot in the info-bar. `refreshTimeControls` now writes the
+    same `+x.xxx d/s` (or `demo X×` during a demo) string to
+    both `speedReadout` and the new info-bar slot.
+  - New `▦ grids-btn` appended to `compassControls` after the
+    cardinal grid. Click toggles `ShowFeGrid` and
+    `ShowOpticalVaultGrid` together. `aria-pressed` follows
+    `ShowFeGrid || ShowOpticalVaultGrid`. Accent border on
+    pressed state styled in `css/styles.css`.
+- **Revert:** `git checkout v-s000381 -- js/ui/controlPanel.js
+  css/styles.css`.
+
 ## S381 — Centre bear sprite over observer GP; hide cross marker when figure is drawn
 
 - **Date:** 2026-04-24

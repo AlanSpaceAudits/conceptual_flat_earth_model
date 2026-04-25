@@ -1314,6 +1314,7 @@ export function buildControlPanel(host, model, demos) {
       <span class="info-slot" data-k="eph">ephem: —</span>
       <span class="info-sep">│</span>
       <span class="info-slot" data-k="time">—</span>
+      <span class="info-slot" data-k="speed">—</span>
     </div>
     <div class="info-row info-row-bot">
       <span class="info-slot info-track" data-k="track">Tracking: —</span>
@@ -1327,6 +1328,7 @@ export function buildControlPanel(host, model, demos) {
   const slotMaz   = infoBar.querySelector('[data-k="maz"]');
   const slotEph   = infoBar.querySelector('[data-k="eph"]');
   const slotTime  = infoBar.querySelector('[data-k="time"]');
+  const slotSpeed = infoBar.querySelector('[data-k="speed"]');
   const slotTrack = infoBar.querySelector('[data-k="track"]');
   const fmtLat = (v) => `Lat ${v >= 0 ? '+' : ''}${v.toFixed(4)}°`;
   const fmtLon = (v) => `Lon ${v >= 0 ? '+' : ''}${v.toFixed(4)}°`;
@@ -1572,6 +1574,27 @@ export function buildControlPanel(host, model, demos) {
   });
   compassControls.appendChild(cardinalGrid);
 
+  // Combined FE-grid + Optical-vault-grid toggle. Sits on the right
+  // edge of the compass cluster so the two graticules can be flipped
+  // on/off as a single unit.
+  const btnGrids = document.createElement('button');
+  btnGrids.className = 'time-btn grids-btn';
+  btnGrids.type = 'button';
+  btnGrids.textContent = '▦';
+  btnGrids.title = 'Toggle FE grid + Optical-vault grid';
+  btnGrids.addEventListener('click', () => {
+    const cur = !!(model.state.ShowFeGrid && model.state.ShowOpticalVaultGrid);
+    const next = !cur;
+    model.setState({ ShowFeGrid: next, ShowOpticalVaultGrid: next });
+  });
+  const refreshGrids = () => {
+    const on = !!(model.state.ShowFeGrid || model.state.ShowOpticalVaultGrid);
+    btnGrids.setAttribute('aria-pressed', on ? 'true' : 'false');
+  };
+  model.addEventListener('update', refreshGrids);
+  refreshGrids();
+  compassControls.appendChild(btnGrids);
+
 
   const searchHost = document.createElement('div');
   searchHost.className = 'search-host';
@@ -1586,8 +1609,12 @@ export function buildControlPanel(host, model, demos) {
   const tabsBar = document.createElement('div');
   tabsBar.className = 'tabs';
   tabsBar.setAttribute('role', 'tablist');
+  // Search hosts live inside tabsBar so they sit immediately to the
+  // left of the View tab in the right-aligned tab cluster.
+  tabsBar.appendChild(searchHost);
+  tabsBar.appendChild(featureHost);
 
-  bar.append(barLeft, timeControls, compassControls, searchHost, featureHost, tabsBar);
+  bar.append(barLeft, timeControls, compassControls, tabsBar);
 
   const refreshVaultBtn = () => {
     const inVault = !!model.state.InsideVault;
@@ -1824,12 +1851,16 @@ export function buildControlPanel(host, model, demos) {
                               || model.state.FreeCamActive);
     if (demoPlaying) {
       btnPlay.textContent = a.isPaused() ? '▶' : '⏸';
-      speedReadout.textContent = `demo ${a.speedScale.toFixed(2)}×`;
+      const lbl = `demo ${a.speedScale.toFixed(2)}×`;
+      speedReadout.textContent = lbl;
+      if (slotSpeed) slotSpeed.textContent = lbl;
       return;
     }
     btnPlay.textContent = autoplay.playing ? '⏸' : '▶';
     const s = autoplay.speed;
-    speedReadout.textContent = `${s >= 0 ? '+' : ''}${s.toFixed(3)} d/s`;
+    const lbl = `${s >= 0 ? '+' : ''}${s.toFixed(3)} d/s`;
+    speedReadout.textContent = lbl;
+    if (slotSpeed) slotSpeed.textContent = lbl;
   };
   const DEFAULT_SPEED = 1 / 24; // Day preset: 1 sim-hour per real-second.
   const MIN_SPEED = DEFAULT_SPEED / 128;

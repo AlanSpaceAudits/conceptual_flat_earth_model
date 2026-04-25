@@ -532,6 +532,26 @@ Format:
   js/render/index.js js/ui/controlPanel.js js/ui/urlState.js`;
   delete `js/core/satellites.js`.
 
+## S401 — Add 15 more languages (FR / DE / IT / PT / PL / NL / SK / RU / AR / HE / ZH / JA / KO / TH / HI)
+
+- **Date:** 2026-04-25
+- **Files changed:** `js/ui/i18n.js`,
+  `js/main.js`,
+  `change_log_serials.md`.
+- **Change:**
+  - 15 language blocks appended to `STRINGS`, each
+    covering all 96 i18n keys.
+  - `LANGUAGES` list expanded to 18 entries (existing
+    EN / CZ / ES + 15 new).
+  - `js/ui/i18n.js` exports `isRtl(id)` and an
+    `RTL_LANGS` set covering `ar`, `he`.
+  - `js/main.js` `refreshTitle` now also sets
+    `document.documentElement.dir` to `'rtl'` for RTL
+    languages and `'ltr'` otherwise, so the layout
+    mirrors when Arabic or Hebrew is active.
+- **Revert:** `git checkout v-s000400 -- js/ui/i18n.js
+  js/main.js`.
+
 ## S400 — Translate Sun/Moon-vault status text + next eclipse readouts
 
 - **Date:** 2026-04-25

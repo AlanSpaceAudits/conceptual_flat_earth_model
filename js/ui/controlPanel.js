@@ -915,6 +915,16 @@ const FIELD_GROUPS = [
             const cur = Array.isArray(m.state.TrackerTargets) ? m.state.TrackerTargets : [];
             m.setState({ TrackerTargets: cur.filter((t) => !ids.has(t)) });
           } },
+        { label: '', buttonLabel: 'Disable Satellites',
+          onClick: (m) => {
+            const ids = new Set(
+              BRIGHT_STAR_CATALOG
+                .filter((x) => x.cat === 'satellite')
+                .map((x) => `star:${x.id}`),
+            );
+            const cur = Array.isArray(m.state.TrackerTargets) ? m.state.TrackerTargets : [];
+            m.setState({ TrackerTargets: cur.filter((t) => !ids.has(t)) });
+          } },
         { key: 'TrackerTargets', label: '', buttonGrid:
           [...BRIGHT_STAR_CATALOG]
             .sort((a, b) => a.name.localeCompare(b.name))

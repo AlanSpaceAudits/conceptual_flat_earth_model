@@ -532,6 +532,34 @@ Format:
   js/render/index.js js/ui/controlPanel.js js/ui/urlState.js`;
   delete `js/core/satellites.js`.
 
+## S389 — Tag native-rendered BSC entries; new "Disable Satellites" button
+
+- **Date:** 2026-04-25
+- **Files changed:** `js/core/brightStarCatalog.js`,
+  `js/core/app.js`,
+  `js/ui/controlPanel.js`,
+  `change_log_serials.md`.
+- **Change:**
+  - `brightStarCatalog.js` `tag()` helper gains an optional
+    `nativeRendered` flag. CEL_NAV_STARS, CATALOGUED_STARS,
+    BLACK_HOLES, original GALAXIES / QUASARS / SATELLITES, and
+    every entry whose `kind === 'planet'` are tagged
+    `nativeRendered: true` because their native renderer
+    already paints them.
+  - `app.js` builds `c.BscStars` from
+    `BRIGHT_STAR_CATALOG.filter((e) => !e.nativeRendered)`.
+    Toggling `ShowBsc` only spins up dots for the genuinely-
+    new extras (HYG-named, GALAXIES_EXTRA / EXTRA2,
+    QUASARS_EXTRA / EXTRA2, SATELLITES_EXTRA, Pluto). The
+    button-grid still iterates the full union so highlights
+    cover every entry.
+  - New "Disable Satellites" button in the BSC sub-menu.
+    Clears every `'star:sat_*'` id (both the original 12 and
+    the ~500 extras) from `TrackerTargets` while leaving
+    other categories untouched.
+- **Revert:** `git checkout v-s000388 -- js/core/brightStarCatalog.js
+  js/core/app.js js/ui/controlPanel.js`.
+
 ## S388 — Bulk catalog expansion: +500 stars, +500 galaxies, +500 quasars, +500 satellites, sun/moon/planets/Pluto
 
 - **Date:** 2026-04-25

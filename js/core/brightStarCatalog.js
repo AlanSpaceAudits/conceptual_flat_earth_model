@@ -35,21 +35,27 @@ const COLOR_BY_CAT = {
   planet:     0xffa060,
 };
 
-function tag(list, cat) {
+function tag(list, cat, nativeRendered = false) {
   return list.map((e) => ({
     ...e,
     cat,
     color: e.color != null ? e.color : COLOR_BY_CAT[cat],
+    // entries flagged nativeRendered are skipped by the BSC layer's
+    // own render pass — their dot is already painted by the cel-nav /
+    // catalogued / black-hole / galaxy / quasar / satellite / planet
+    // layer that owns them. Without this, ShowBsc paints them a
+    // second time and the FPS halves once both layers are on.
+    nativeRendered: nativeRendered || e.kind === 'planet',
   }));
 }
 
 const SOURCES = [
-  ...tag(CEL_NAV_STARS,           'celnav'),
-  ...tag(CATALOGUED_STARS,        'catalogued'),
-  ...tag(BLACK_HOLES,             'blackhole'),
-  ...tag(GALAXIES,                'galaxy'),
-  ...tag(QUASARS,                 'quasar'),
-  ...tag(SATELLITES,              'satellite'),
+  ...tag(CEL_NAV_STARS,           'celnav',     true),
+  ...tag(CATALOGUED_STARS,        'catalogued', true),
+  ...tag(BLACK_HOLES,             'blackhole',  true),
+  ...tag(GALAXIES,                'galaxy',     true),
+  ...tag(QUASARS,                 'quasar',     true),
+  ...tag(SATELLITES,              'satellite',  true),
   ...tag(NAMED_STARS_HYG,         'named'),
   ...tag(NAMED_STARS_HYG_EXTRA,   'named'),
   ...tag(GALAXIES_EXTRA,          'galaxy'),

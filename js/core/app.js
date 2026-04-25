@@ -573,7 +573,9 @@ export class FeModel extends EventTarget {
     c.BlackHoles      = BLACK_HOLES.map(projectStar);
     c.Quasars         = QUASARS.map(projectStar);
     c.Galaxies        = GALAXIES.map(projectStar);
-    c.BscStars        = s.ShowBsc ? BRIGHT_STAR_CATALOG.map(projectStar) : [];
+    c.BscStars        = s.ShowBsc
+      ? BRIGHT_STAR_CATALOG.filter((e) => !e.nativeRendered).map(projectStar)
+      : [];
 
     // Satellites: sub-point (lat, lon) computed per-frame from
     // two-body Kepler; projected through the same vault /

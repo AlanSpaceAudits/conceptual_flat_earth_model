@@ -111,7 +111,7 @@ export class SceneManager {
     // First-person mode: camera at observer's eye height, looking along the
     // ObserverHeading compass direction. CameraHeight is reused as look
     // pitch in this mode so the can tilt up toward the zenith.
-    if (s.InsideVault) {
+    if (s.InsideVault && !s.FreeCameraMode) {
       // Optical FOV reads the mode-local `OpticalZoom` scalar,
       // NOT `Zoom`. Mode switches therefore don't leak: the Heavenly
       // orbit camera never sees OpticalZoom, and Optical never sees
@@ -199,7 +199,14 @@ export class SceneManager {
     this.camera.position.set(x, y, z);
 
     if (s.FreeCameraMode) {
-      this.camera.lookAt(0, 0, 0);
+      // In InsideVault, orbit the observer so the optical-vault dome
+      // stays in frame; in Heavenly, orbit the disc origin.
+      if (s.InsideVault) {
+        this.camera.position.set(obs[0] + x, obs[1] + y, obs[2] + z);
+        this.camera.lookAt(obs[0], obs[1], obs[2]);
+      } else {
+        this.camera.lookAt(0, 0, 0);
+      }
       return;
     }
 

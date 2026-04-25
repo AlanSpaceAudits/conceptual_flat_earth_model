@@ -3520,3 +3520,19 @@ Format:
     pan / zoom independently while body tracking and HUD
     readouts continue.
 - **Revert:** `git checkout v-s000413 -- js/render/scene.js`.
+
+## S415 — Free Camera Mode works inside Optical Vault
+
+- **Date:** 2026-04-25
+- **Files changed:** `js/render/scene.js`.
+- **Change:**
+  - The first-person `InsideVault` branch is now skipped when
+    `FreeCameraMode` is set, falling through to the orbital
+    camera path so the user can orbit / zoom freely inside
+    Optical mode.
+  - The `FreeCameraMode` orbital `lookAt` is now mode-aware:
+    in `InsideVault` the camera is offset relative to the
+    observer and looks at `ObserverFeCoord` so the optical-
+    vault dome stays in frame; outside `InsideVault` it
+    keeps the previous `lookAt(0, 0, 0)` behaviour.
+- **Revert:** `git checkout v-s000414 -- js/render/scene.js`.

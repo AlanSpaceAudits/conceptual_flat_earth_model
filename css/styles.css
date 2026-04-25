@@ -327,10 +327,11 @@ header .info-popup p:last-child { margin-bottom: 0; }
 
 #bottom-bar .compass-controls {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 6px;
   flex: 0 0 auto;
   margin-left: 12px;
+  margin-top: -6px;
 }
 #bottom-bar .mode-grid,
 #bottom-bar .cycle-row,
@@ -339,8 +340,8 @@ header .info-popup p:last-child { margin-bottom: 0; }
   grid-auto-rows: 1fr;
   gap: 2px;
 }
-#bottom-bar .mode-grid { grid-template-columns: repeat(6, auto); grid-template-rows: 1fr; }
-#bottom-bar .cycle-row { grid-template-columns: repeat(3, auto); grid-template-rows: 1fr; }
+#bottom-bar .mode-grid { grid-template-columns: repeat(3, auto); grid-template-rows: repeat(2, 1fr); }
+#bottom-bar .cycle-row { grid-template-columns: repeat(2, auto); grid-template-rows: repeat(2, 1fr); }
 #bottom-bar .mode-grid .time-btn,
 #bottom-bar .cycle-row .time-btn,
 #bottom-bar .cardinal-grid .time-btn {

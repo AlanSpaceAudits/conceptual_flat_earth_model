@@ -1581,14 +1581,25 @@ export function buildControlPanel(host, model, demos) {
   btnGrids.className = 'time-btn grids-btn';
   btnGrids.type = 'button';
   btnGrids.textContent = '▦';
-  btnGrids.title = 'Toggle FE grid + Optical-vault grid';
+  btnGrids.title = 'Toggle FE grid + Optical-vault grid + heavenly-vault azimuth degrees';
   btnGrids.addEventListener('click', () => {
-    const cur = !!(model.state.ShowFeGrid && model.state.ShowOpticalVaultGrid);
+    const cur = !!(model.state.ShowFeGrid
+                   && model.state.ShowOpticalVaultGrid
+                   && model.state.ShowAzimuthRing
+                   && model.state.ShowLongitudeRing);
     const next = !cur;
-    model.setState({ ShowFeGrid: next, ShowOpticalVaultGrid: next });
+    model.setState({
+      ShowFeGrid: next,
+      ShowOpticalVaultGrid: next,
+      ShowAzimuthRing: next,
+      ShowLongitudeRing: next,
+    });
   });
   const refreshGrids = () => {
-    const on = !!(model.state.ShowFeGrid || model.state.ShowOpticalVaultGrid);
+    const on = !!(model.state.ShowFeGrid
+                  || model.state.ShowOpticalVaultGrid
+                  || model.state.ShowAzimuthRing
+                  || model.state.ShowLongitudeRing);
     btnGrids.setAttribute('aria-pressed', on ? 'true' : 'false');
   };
   model.addEventListener('update', refreshGrids);

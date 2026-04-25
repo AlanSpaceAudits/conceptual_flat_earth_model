@@ -532,6 +532,25 @@ Format:
   js/render/index.js js/ui/controlPanel.js js/ui/urlState.js`;
   delete `js/core/satellites.js`.
 
+## S387 — Revert S386; raise compass cluster vertically; ▦ also toggles azimuth ring + longitude ring
+
+- **Date:** 2026-04-24
+- **Files changed:** `css/styles.css`,
+  `js/ui/controlPanel.js`,
+  `change_log_serials.md`.
+- **Change:**
+  - `mode-grid` and `cycle-row` `grid-template` reverted to
+    the prior 3×2 / 2×2 layouts.
+  - `#bottom-bar .compass-controls` now uses
+    `align-items: flex-start` and `margin-top: -6px` so the
+    cluster sits higher on the bar.
+  - `▦ grids-btn` toggle expanded to also flip
+    `ShowAzimuthRing` and `ShowLongitudeRing` together with
+    `ShowFeGrid` and `ShowOpticalVaultGrid`. Pressed-state
+    highlight follows the OR of all four flags.
+- **Revert:** `git checkout v-s000386 -- css/styles.css
+  js/ui/controlPanel.js`.
+
 ## S386 — Compass mode-grid and cycle-row collapsed to single rows
 
 - **Date:** 2026-04-24

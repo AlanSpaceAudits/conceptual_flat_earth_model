@@ -532,6 +532,37 @@ Format:
   js/render/index.js js/ui/controlPanel.js js/ui/urlState.js`;
   delete `js/core/satellites.js`.
 
+## S392 — Language picker (EN / CZ / ES) + i18n scaffolding
+
+- **Date:** 2026-04-25
+- **Files changed:** `js/ui/i18n.js` (new),
+  `js/core/app.js`,
+  `js/ui/controlPanel.js`,
+  `js/ui/urlState.js`,
+  `css/styles.css`,
+  `change_log_serials.md`.
+- **Change:**
+  - New `js/ui/i18n.js` exports `t(key)`, `setLang(id)`,
+    `onLangChange(fn)`, and `LANGUAGES`. Translations
+    bundled for `en`, `cs`, `es` covering tab labels,
+    BSC sub-menu button labels, and key bottom-bar
+    tooltips.
+  - New state field `Language` (default `'en'`) in
+    `defaultState()`. Persisted in URL hash via
+    `PERSISTED_KEYS` + `STRING_KEYS`.
+  - Tab-button registration translates each label via
+    `t(TAB_KEY[label])` and registers an `onLangChange`
+    handler so each button retranslates in place when
+    the language flips.
+  - Info-bar gains an `EN / CZ / ES` `<select>`. Change
+    flows into `state.Language`; a model-update listener
+    pushes the value into `setLang` so subscribed labels
+    re-translate.
+  - `.lang-sel` styled to match the row inputs.
+- **Revert:** `git checkout v-s000391 -- js/core/app.js
+  js/ui/controlPanel.js js/ui/urlState.js css/styles.css`;
+  `rm js/ui/i18n.js`.
+
 ## S391 — Default ObserverFigure switched from 'bear' to 'nikki'
 
 - **Date:** 2026-04-25

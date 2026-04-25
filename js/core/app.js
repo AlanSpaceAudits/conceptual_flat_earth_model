@@ -130,6 +130,7 @@ function defaultState() {
     ShowGalaxies:            true,
     ShowBsc:                 false,
     BscTargets:              [],
+    Language:                'en',
     GPOverridePlanets:         false,
     GPOverrideCelNav:          false,
     GPOverrideConstellations:  false,

@@ -20,6 +20,7 @@ import { QUASARS_EXTRA2 }     from '../core/quasarsExtra2.js';
 import { SATELLITES_EXTRA }   from '../core/satellitesExtra.js';
 import { listProjections, listGeneratedProjections, listHqMaps, PROJECTIONS } from '../core/projections.js';
 import { Autoplay } from './autoplay.js';
+import { t, setLang, onLangChange, LANGUAGES } from './i18n.js';
 
 const PLANET_NAMES = {
   mercury: 'Mercury', venus: 'Venus', mars: 'Mars', jupiter: 'Jupiter',
@@ -1333,6 +1334,12 @@ export function buildControlPanel(host, model, demos) {
       <span class="info-sep">│</span>
       <span class="info-slot" data-k="time">—</span>
       <span class="info-slot" data-k="speed">—</span>
+      <span class="info-sep">│</span>
+      <span class="info-slot info-lang">
+        <select class="lang-sel">
+          ${LANGUAGES.map((l) => `<option value="${l.id}">${l.label}</option>`).join('')}
+        </select>
+      </span>
     </div>
     <div class="info-row info-row-bot">
       <span class="info-slot info-track" data-k="track">Tracking: —</span>
@@ -1347,6 +1354,19 @@ export function buildControlPanel(host, model, demos) {
   const slotEph   = infoBar.querySelector('[data-k="eph"]');
   const slotTime  = infoBar.querySelector('[data-k="time"]');
   const slotSpeed = infoBar.querySelector('[data-k="speed"]');
+  const langSel   = infoBar.querySelector('.lang-sel');
+  if (langSel) {
+    langSel.value = model.state.Language || 'en';
+    langSel.addEventListener('change', () => {
+      model.setState({ Language: langSel.value });
+    });
+  }
+  setLang(model.state.Language || 'en');
+  model.addEventListener('update', () => {
+    const lang = model.state.Language || 'en';
+    setLang(lang);
+    if (langSel && langSel.value !== lang) langSel.value = lang;
+  });
   const slotTrack = infoBar.querySelector('[data-k="track"]');
   const fmtLat = (v) => `Lat ${v >= 0 ? '+' : ''}${v.toFixed(4)}°`;
   const fmtLon = (v) => `Lon ${v >= 0 ? '+' : ''}${v.toFixed(4)}°`;
@@ -1758,13 +1778,19 @@ export function buildControlPanel(host, model, demos) {
     if (activeIdx >= 0) positionPopup(activeIdx);
   });
 
+  const TAB_KEY = {
+    View: 'tab_view', Time: 'tab_time', Show: 'tab_show',
+    Tracker: 'tab_tracker', Demos: 'tab_demos', Info: 'tab_info',
+  };
   const registerTab = (label, buildInto) => {
     const btn = document.createElement('button');
     btn.className = 'tab-btn';
     btn.type = 'button';
     btn.setAttribute('role', 'tab');
     btn.setAttribute('aria-selected', 'false');
-    btn.textContent = label;
+    const key = TAB_KEY[label];
+    btn.textContent = key ? t(key) : label;
+    if (key) onLangChange(() => { btn.textContent = t(key); });
     tabsBar.appendChild(btn);
 
     const popup = document.createElement('div');

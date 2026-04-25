@@ -31,6 +31,7 @@ const PERSISTED_KEYS = [
   'MapProjection',
   'StarfieldType',
   'BodySource', 'PermanentNight', 'TrackerTargets', 'BscTargets',
+  'Language',
   'ShowEphemerisReadings', 'SpecifiedTrackerMode', 'TrackerGPOverride',
   'GPOverridePlanets', 'GPOverrideCelNav', 'GPOverrideConstellations',
   'GPOverrideBlackHoles', 'GPOverrideQuasars', 'GPOverrideGalaxies',
@@ -41,7 +42,7 @@ const PERSISTED_KEYS = [
 
 const STRING_KEYS = new Set([
   'ObserverFigure', 'Cosmology', 'MapProjection', 'StarfieldType',
-  'BodySource',
+  'BodySource', 'Language',
 ]);
 
 // Comma-joined in the URL hash.

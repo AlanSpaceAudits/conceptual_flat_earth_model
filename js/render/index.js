@@ -9,7 +9,7 @@ import {
   CelestialPoles, DeclinationCircles, Yggdrasil, MtMeru, ToroidalVortex,
   LongitudeRing, CelNavStars, TrackedGroundPoints, CatalogPointStars,
   GPPathOverlay, GPTracer, Discworld, AnalemmaLine, SunMoonGlyph,
-  MonthMarkers,
+  MonthMarkers, WorldGlobe, GlobeHeavenlyVault,
 } from './worldObjects.js';
 import { loadLandGeo, buildGeoJsonLand, buildImageMap, buildBlankMap } from './earthMap.js';
 import { Constellations } from './constellations.js';
@@ -34,6 +34,12 @@ export class Renderer {
 
     this.discBase = new DiscBase(FE_RADIUS);
     this.sm.world.add(this.discBase.group);
+
+    this.worldGlobe = new WorldGlobe(FE_RADIUS);
+    this.sm.world.add(this.worldGlobe.group);
+
+    this.globeHeavenlyVault = new GlobeHeavenlyVault();
+    this.sm.world.add(this.globeHeavenlyVault.group);
 
     this.longitudeRing = new LongitudeRing(FE_RADIUS);
     this.sm.world.add(this.longitudeRing.group);
@@ -371,6 +377,32 @@ export class Renderer {
     if (projId !== this._landProjection) {
       this._rebuildLand(projId);
     }
+    // FE disc geometry + FE-centric overlays hide whole-cloth in
+    // Globe-Earth mode so only the sphere + observer + optical vault
+    // read. Optical-vault graticule, celestial poles, and observer-
+    // anchored markers stay live since they share the observer's
+    // local frame regardless of world model.
+    const ge = s.WorldModel === 'ge';
+    this.discBase.group.visible      = !ge;
+    this.discGrid.group.visible      = !ge;
+    this.latLines.group.visible      = !ge;
+    this.longitudeRing.group.visible = !ge;
+    this.shadow.group.visible        = !ge;
+    this.eclipseShadow.group.visible = !ge;
+    this.vaultOfHeavens.group.visible = !ge;
+    this.starfieldChart.group.visible = !ge;
+    this.sunGP.group.visible         = !ge;
+    this.moonGP.group.visible        = !ge;
+    this.trackedGPs.group.visible    = !ge;
+    this.gpPathOverlay.group.visible = !ge;
+    this.yggdrasil.group.visible     = !ge && this.yggdrasil.group.visible;
+    this.mtMeru.group.visible        = !ge && this.mtMeru.group.visible;
+    this.discworld.group.visible     = !ge && this.discworld.group.visible;
+    this.toroidalVortex.group.visible     = !ge && this.toroidalVortex.group.visible;
+    this.toroidalVortexDual.group.visible = !ge && this.toroidalVortexDual.group.visible;
+    if (this.land) this.land.visible = !ge;
+    this.worldGlobe.update(m);
+    this.globeHeavenlyVault.update(m);
     this.discGrid.update(m);
     this.shadow.update(m);
     // eclipse shadow + observer darkening feature-flagged off
@@ -412,8 +444,9 @@ export class Renderer {
 
     // Vault markers use the canonical vault coords app.js already
     // computes. No overlay-level re-projection.
-    const sunVaultVis  = c.SunVaultCoord;
-    const moonVaultVis = c.MoonVaultCoord;
+    const _ge = s.WorldModel === 'ge';
+    const sunVaultVis  = _ge ? (c.SunGlobeVaultCoord  || c.SunVaultCoord)  : c.SunVaultCoord;
+    const moonVaultVis = _ge ? (c.MoonGlobeVaultCoord || c.MoonVaultCoord) : c.MoonVaultCoord;
 
     // Vertical dashed line from each body's sub-point on its vault down
     // to its ground point on the disc. Hidden when the true-source end is
@@ -544,7 +577,8 @@ export class Renderer {
         continue;
       }
       mk.group.visible = true;
-      mk.update(p.vaultCoord, p.opticalVaultCoord,
+      const planetVaultVis = _ge ? (p.globeVaultCoord || p.vaultCoord) : p.vaultCoord;
+      mk.update(planetVaultVis, p.opticalVaultCoord,
                 showTrueVault, s.ShowOpticalVault,
                 p.anglesGlobe.elevation, c.NightFactor);
     }

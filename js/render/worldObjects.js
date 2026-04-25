@@ -378,6 +378,144 @@ export class LongitudeRing {
 
 // --- FE disc + grid --------------------------------------------------------
 
+// Globe heavenly vault: a translucent shell concentric with the
+// terrestrial globe at `c.GlobeVaultRadius`. Visible only in GE
+// mode. True positions of celestial bodies (sun/moon/planets) live
+// on this shell — the GE analogue of the FE flat-disc dome.
+export class GlobeHeavenlyVault {
+  constructor() {
+    this.group = new THREE.Group();
+    this.group.name = 'globe-heavenly-vault';
+    this.group.visible = false;
+
+    this._radius = 1;
+    // Three.js SphereGeometry's poles default to ±y. Rotate so the
+    // poles align with ±z, matching the rest of this scene's z-up
+    // convention (celestial north pole = +z) — otherwise the shell
+    // graticule and the body globe-vault coords would disagree on
+    // which axis is "the pole".
+    const geom = new THREE.SphereGeometry(1, 96, 64);
+    geom.rotateX(Math.PI / 2);
+    this.shell = new THREE.Mesh(geom, new THREE.MeshBasicMaterial({
+      color: 0x88a4c8, transparent: true, opacity: 0.06,
+      side: THREE.BackSide, depthWrite: false,
+    }));
+    this.group.position.set(0, 0, 0);
+    this.group.add(this.shell);
+
+    // Wireframe graticule so the shell reads as 3D rather than a
+    // diffuse glow.
+    const wireMat = new THREE.LineBasicMaterial({
+      color: 0x88a4c8, transparent: true, opacity: 0.18,
+    });
+    for (let lat = -75; lat <= 75; lat += 15) {
+      const phi = ToRad(lat);
+      const rr = Math.cos(phi);
+      const z = Math.sin(phi);
+      const segs = 96;
+      const pts = new Float32Array((segs + 1) * 3);
+      for (let i = 0; i <= segs; i++) {
+        const t = (i / segs) * Math.PI * 2;
+        pts[i * 3    ] = rr * Math.cos(t);
+        pts[i * 3 + 1] = rr * Math.sin(t);
+        pts[i * 3 + 2] = z;
+      }
+      const g = new THREE.BufferGeometry();
+      g.setAttribute('position', new THREE.BufferAttribute(pts, 3));
+      this.group.add(new THREE.LineLoop(g, wireMat));
+    }
+    for (let lon = 0; lon < 360; lon += 30) {
+      const t = ToRad(lon);
+      const ct = Math.cos(t), st = Math.sin(t);
+      const segs = 48;
+      const pts = new Float32Array((segs + 1) * 3);
+      for (let i = 0; i <= segs; i++) {
+        const phi = -Math.PI / 2 + (i / segs) * Math.PI;
+        const rr = Math.cos(phi);
+        pts[i * 3    ] = rr * ct;
+        pts[i * 3 + 1] = rr * st;
+        pts[i * 3 + 2] = Math.sin(phi);
+      }
+      const g = new THREE.BufferGeometry();
+      g.setAttribute('position', new THREE.BufferAttribute(pts, 3));
+      this.group.add(new THREE.Line(g, wireMat));
+    }
+  }
+
+  update(model) {
+    const ge = model.state.WorldModel === 'ge';
+    this.group.visible = ge;
+    if (!ge) return;
+    const r = model.computed.GlobeVaultRadius || 1;
+    this.group.scale.set(r, r, r);
+  }
+}
+
+// Globe-Earth: a unit sphere of radius `radius` (matching FE_RADIUS so
+// the orbital camera scale is consistent across world models). Visible
+// only when state.WorldModel === 'ge'. Adds a faint lat/lon graticule
+// so the user can read placement.
+export class WorldGlobe {
+  constructor(radius = FE_RADIUS) {
+    this.group = new THREE.Group();
+    this.group.name = 'world-globe';
+    this.group.visible = false;
+
+    const sphereGeom = new THREE.SphereGeometry(radius, 96, 64);
+    sphereGeom.rotateX(Math.PI / 2);     // poles → ±z (celestial axis)
+    const sphereMat = new THREE.MeshBasicMaterial({
+      color: 0x1a3a5e, transparent: true, opacity: 0.85,
+    });
+    this.sphere = new THREE.Mesh(sphereGeom, sphereMat);
+    this.group.position.set(0, 0, 0);
+    this.group.add(this.sphere);
+
+    const gridMat = new THREE.LineBasicMaterial({
+      color: 0x88a4c8, transparent: true, opacity: 0.45,
+    });
+    const lineRadius = radius * 1.0005;
+
+    // Parallels every 15°.
+    for (let lat = -75; lat <= 75; lat += 15) {
+      const phi = ToRad(lat);
+      const r = lineRadius * Math.cos(phi);
+      const z = lineRadius * Math.sin(phi);
+      const segs = 128;
+      const pts = new Float32Array((segs + 1) * 3);
+      for (let i = 0; i <= segs; i++) {
+        const t = (i / segs) * Math.PI * 2;
+        pts[i * 3    ] = r * Math.cos(t);
+        pts[i * 3 + 1] = r * Math.sin(t);
+        pts[i * 3 + 2] = z;
+      }
+      const g = new THREE.BufferGeometry();
+      g.setAttribute('position', new THREE.BufferAttribute(pts, 3));
+      this.group.add(new THREE.LineLoop(g, gridMat));
+    }
+    // Meridians every 15°.
+    for (let lon = 0; lon < 360; lon += 15) {
+      const t = ToRad(lon);
+      const ct = Math.cos(t), st = Math.sin(t);
+      const segs = 64;
+      const pts = new Float32Array((segs + 1) * 3);
+      for (let i = 0; i <= segs; i++) {
+        const phi = -Math.PI / 2 + (i / segs) * Math.PI;
+        const r = lineRadius * Math.cos(phi);
+        pts[i * 3    ] = r * ct;
+        pts[i * 3 + 1] = r * st;
+        pts[i * 3 + 2] = lineRadius * Math.sin(phi);
+      }
+      const g = new THREE.BufferGeometry();
+      g.setAttribute('position', new THREE.BufferAttribute(pts, 3));
+      this.group.add(new THREE.Line(g, gridMat));
+    }
+  }
+
+  update(model) {
+    this.group.visible = model.state.WorldModel === 'ge';
+  }
+}
+
 export class DiscBase {
   constructor(feRadius = FE_RADIUS) {
     this.group = new THREE.Group();
@@ -1047,16 +1185,19 @@ export class ObserversOpticalVault {
     this.group.add(this.wire);
 
     // Axes to indicate local north/east/up.
+    //   +x north → green, +y east → blue, +z up (zenith) → red.
+    // Red marks "perpendicular to the ground" so it reads consistently
+    // on both the FE disc and the GE sphere; green/blue stay tangent.
     const axisLen = 1;
     const axes = [
-      0, 0, 0, axisLen, 0, 0, // +x north (red)
-      0, 0, 0, 0, axisLen, 0, // +y east (blue)
-      0, 0, 0, 0, 0, axisLen, // +z up (green)
+      0, 0, 0, axisLen, 0, 0, // +x north
+      0, 0, 0, 0, axisLen, 0, // +y east
+      0, 0, 0, 0, 0, axisLen, // +z up (zenith)
     ];
     const axisColors = [
-      1, 0, 0, 1, 0, 0,
-      0, 0, 1, 0, 0, 1,
-      0, 0.6, 0, 0, 0.6, 0,
+      0, 0.6, 0, 0, 0.6, 0,   // north → green
+      0, 0, 1, 0, 0, 1,       // east  → blue
+      1, 0, 0, 1, 0, 0,       // up    → red
     ];
     const axisGeom = new THREE.BufferGeometry();
     axisGeom.setAttribute('position', new THREE.Float32BufferAttribute(axes, 3));
@@ -1399,9 +1540,28 @@ export class ObserversOpticalVault {
     // match the object-projection math. The `OpticalVaultHeight`
     // slider is honoured only when viewing from Heavenly.
     const h = c.OpticalVaultHeightEffective;
-    const obs = c.ObserverFeCoord;
+    const ge = s.WorldModel === 'ge';
+    const obs = ge ? c.GlobeObserverCoord : c.ObserverFeCoord;
 
     this.group.position.set(obs[0], obs[1], obs[2]);
+    // Globe-Earth mode: rotate the vault group so its local +z axis
+    // aligns with the radial-outward direction at the observer's
+    // surface point (instead of world +z, which is what the FE flat
+    // disc expects). The local +x = north and +y = east axes follow
+    // the GlobeObserverFrame computed in app.js.
+    if (ge && c.GlobeObserverFrame) {
+      const f = c.GlobeObserverFrame;
+      const m = new THREE.Matrix4();
+      m.set(
+        f.northX, f.eastX, f.upX, 0,
+        f.northY, f.eastY, f.upY, 0,
+        f.northZ, f.eastZ, f.upZ, 0,
+        0,        0,       0,     1,
+      );
+      this.group.quaternion.setFromRotationMatrix(m);
+    } else {
+      this.group.quaternion.identity();
+    }
     // Optical vault: x/y by R, z by effective H. Hemisphere (H=R) in
     // Optical mode; configurable flattened cap in Heavenly.
     this.mesh.scale.set(r, r, h);
@@ -3165,20 +3325,41 @@ export class Observer {
   }
 
   update(model) {
-    const p = model.computed.ObserverFeCoord;
+    const s = model.state;
+    const c = model.computed;
+    const ge = s.WorldModel === 'ge';
+    const p = ge ? c.GlobeObserverCoord : c.ObserverFeCoord;
     this.group.position.set(p[0], p[1], p[2]);
 
-    const kind = model.state.ObserverFigure || 'male';
+    const kind = s.ObserverFigure || 'male';
     if (kind !== this._currentFigure) this._buildFigure(kind);
     // Red marker + cross only useful when no figure is drawn — they
     // read as stray dots / lines next to the figure otherwise.
     this.marker.visible = kind === 'none';
     this.cross.visible  = kind === 'none';
-    // Keep the figure facing "outward" from disc centre so the observer's
-    // body orientation feels stable as lat/long changes. We rotate about z
-    // to point the figure's +x (forward) along the observer's radial direction.
-    const ang = Math.atan2(p[1], p[0]);
-    this.figureGroup.rotation.set(0, 0, ang);
+
+    if (ge && c.GlobeObserverFrame) {
+      // Stand the figure tangent to the sphere: local +z = radial
+      // outward; +x = north (so the body faces toward the pole, the
+      // sphere analogue of "facing outward from disc centre"); +y =
+      // east. Build the rotation from the GlobeObserverFrame columns.
+      const f = c.GlobeObserverFrame;
+      const m = new THREE.Matrix4();
+      m.set(
+        f.northX, f.eastX, f.upX, 0,
+        f.northY, f.eastY, f.upY, 0,
+        f.northZ, f.eastZ, f.upZ, 0,
+        0,        0,       0,     1,
+      );
+      this.group.quaternion.setFromRotationMatrix(m);
+      this.figureGroup.rotation.set(0, 0, 0);
+    } else {
+      this.group.quaternion.identity();
+      // Keep the figure facing "outward" from disc centre so the
+      // observer's body orientation feels stable as lat/long changes.
+      const ang = Math.atan2(p[1], p[0]);
+      this.figureGroup.rotation.set(0, 0, ang);
+    }
   }
 }
 

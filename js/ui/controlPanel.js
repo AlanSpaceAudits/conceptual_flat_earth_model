@@ -1735,6 +1735,23 @@ export function buildControlPanel(host, model, demos) {
   model.addEventListener('update', refreshLangBtn);
   refreshLangBtn();
 
+  // World-model toggle: FE (flat-earth disc) ↔ GE (globe-earth
+  // sphere). State key `WorldModel` ('fe' / 'ge'). Button face
+  // displays the *current* model. Stacked directly under the grids
+  // toggle (▦) — see the grids-stack assembly below.
+  const btnWorld = document.createElement('button');
+  btnWorld.className = 'time-btn world-btn';
+  btnWorld.type = 'button';
+  const refreshWorldBtn = () => {
+    btnWorld.textContent = (model.state.WorldModel === 'ge') ? 'GE' : 'FE';
+  };
+  btnWorld.addEventListener('click', () => {
+    const cur = model.state.WorldModel === 'ge' ? 'ge' : 'fe';
+    model.setState({ WorldModel: cur === 'fe' ? 'ge' : 'fe' });
+  });
+  model.addEventListener('update', refreshWorldBtn);
+  refreshWorldBtn();
+
   cycleRow.append(btnMap, btnStarfield, btnAzRing, btnLang);
   compassControls.appendChild(cycleRow);
 
@@ -1792,7 +1809,13 @@ export function buildControlPanel(host, model, demos) {
   };
   model.addEventListener('update', refreshGrids);
   refreshGrids();
-  compassControls.appendChild(btnGrids);
+  // Stack the world-model toggle (FE / GE) directly under the grids
+  // button so the two related "what am I looking at" toggles share a
+  // column at the right edge of the compass cluster.
+  const gridsStack = document.createElement('div');
+  gridsStack.className = 'grids-stack';
+  gridsStack.append(btnGrids, btnWorld);
+  compassControls.appendChild(gridsStack);
 
 
   const searchHost = document.createElement('div');

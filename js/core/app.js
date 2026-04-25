@@ -131,6 +131,7 @@ function defaultState() {
     SunMonthMarkersOppWorldSpace: false,
     EclipseMapSolar:         [],
     EclipseMapLunar:         [],
+    WorldModel:              'fe',
     MoonMonthMarkers:        [],
     MoonVaultArcOn:          false,
     MoonMonthMarkersWorldSpace: false,
@@ -371,6 +372,46 @@ export class FeModel extends EventTarget {
       c.ObserverFeCoord, s.ObserverLong,
     );
 
+    // Globe-Earth observer placement: a unit sphere of radius
+    // GLOBE_RADIUS (matching FE_RADIUS so the camera scale is stable).
+    // Position uses standard spherical → cartesian; orientation is
+    // built so local +x = north, +y = east, +z = up (radial outward),
+    // matching the optical-vault hemisphere geometry. Stored as a
+    // row-major 3x3 the renderer can copy directly into a Matrix4.
+    {
+      const GLOBE_RADIUS = FE_RADIUS;
+      const latR = ToRad(s.ObserverLat);
+      const lonR = ToRad(s.ObserverLong);
+      const cl = Math.cos(latR), sl = Math.sin(latR);
+      const co = Math.cos(lonR), so = Math.sin(lonR);
+      const px = GLOBE_RADIUS * cl * co;
+      const py = GLOBE_RADIUS * cl * so;
+      const pz = GLOBE_RADIUS * sl;
+      // Local axes at (lat, lon):
+      //   up    = ( cl*co,  cl*so,  sl)   radial outward
+      //   north = (-sl*co, -sl*so,  cl)   along ∂/∂lat
+      //   east  = (-so,     co,     0 )   along ∂/∂lon at the equator
+      c.GlobeObserverCoord = [px, py, pz];
+      c.GlobeObserverFrame = {
+        northX: -sl * co, northY: -sl * so, northZ:  cl,
+        eastX:  -so,      eastY:   co,      eastZ:   0,
+        upX:     cl * co, upY:     cl * so, upZ:     sl,
+      };
+      c.GlobeVaultRadius = GLOBE_RADIUS * 1.6;
+    }
+    // helper: place a celestial point on the globe heavenly-vault
+    // shell at (declination, GP longitude). GP longitude folds GMST
+    // out of RA so the vault co-rotates with Earth — same convention
+    // the FE vault uses, just on a sphere instead of a dome.
+    const _globeVaultAt = (decDeg, gpLonDeg) => {
+      const R = c.GlobeVaultRadius;
+      const phi = ToRad(decDeg);
+      const lam = ToRad(gpLonDeg);
+      const cp = Math.cos(phi);
+      return [R * cp * Math.cos(lam), R * cp * Math.sin(lam), R * Math.sin(phi)];
+    };
+    const _wrapLon180 = (x) => ((x + 180) % 360 + 360) % 360 - 180;
+
     // --- sun ---
     c.SunRA = sunEq.ra; c.SunDec = sunEq.dec;
     c.SunCelestCoord   = equatorialToCelestCoord(sunEq);
@@ -390,6 +431,10 @@ export class FeModel extends EventTarget {
     s.SunVaultHeight = Math.min(
       sunCeil,
       s.StarfieldVaultHeight + HEADROOM + sunDecNorm * SUN_RANGE,
+    );
+    c.SunGlobeVaultCoord = _globeVaultAt(
+      c.SunCelestLatLong.lat,
+      _wrapLon180(c.SunRA * 180 / Math.PI - c.SkyRotAngle),
     );
     c.SunVaultCoord = vaultCoordToGlobalFeCoord(
       vaultCoordAt(c.SunCelestLatLong.lat, c.SunCelestLatLong.lng,
@@ -420,6 +465,10 @@ export class FeModel extends EventTarget {
     s.MoonVaultHeight = Math.min(
       moonCeil,
       s.StarfieldVaultHeight + HEADROOM + moonDecNorm * MOON_RANGE,
+    );
+    c.MoonGlobeVaultCoord = _globeVaultAt(
+      c.MoonCelestLatLong.lat,
+      _wrapLon180(c.MoonRA * 180 / Math.PI - c.SkyRotAngle),
     );
     c.MoonVaultCoord = vaultCoordToGlobalFeCoord(
       vaultCoordAt(c.MoonCelestLatLong.lat, c.MoonCelestLatLong.lng,
@@ -565,6 +614,10 @@ export class FeModel extends EventTarget {
         vaultCoordAt(ll.lat, ll.lng, planetZ, FE_RADIUS),
         c.TransMatVaultToFe,
       );
+      const globeVaultCoord = _globeVaultAt(
+        ll.lat,
+        _wrapLon180(eq.ra * 180 / Math.PI - c.SkyRotAngle),
+      );
       const localGlobe = celestCoordToLocalGlobeCoord(celestCoord, c.TransMatCelestToGlobe);
       const anglesGlobe = localGlobeCoordToAngles(localGlobe);
       const opticalVaultCoord = localGlobeCoordToGlobalFeCoord(
@@ -574,7 +627,7 @@ export class FeModel extends EventTarget {
       c.Planets[name] = {
         ra: eq.ra, dec: eq.dec,
         celestCoord, celestLatLong: ll,
-        vaultCoord, opticalVaultCoord,
+        vaultCoord, globeVaultCoord, opticalVaultCoord,
         anglesGlobe,
       };
     }

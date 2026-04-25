@@ -3833,3 +3833,56 @@ Format:
 - **Revert:** `git checkout v-s000427 -- js/core/app.js
   js/render/worldObjects.js js/render/index.js
   js/demos/definitions.js`.
+
+## S429 — Globe-Earth (GE) world model + heavenly-vault shell
+
+- **Date:** 2026-04-25
+- **Files changed:** `js/core/app.js`,
+  `js/render/worldObjects.js`, `js/render/index.js`,
+  `js/ui/controlPanel.js`, `css/styles.css`.
+- **Change:**
+  - New state `WorldModel` (`'fe'` default, `'ge'` alt) and
+    per-frame compute outputs `GlobeObserverCoord`,
+    `GlobeObserverFrame` (north / east / up axes at the
+    observer's lat/lon on a unit sphere of radius
+    `FE_RADIUS`), and `GlobeVaultRadius`
+    (`FE_RADIUS * 1.6`).
+  - Per-body globe heavenly-vault coords computed each
+    frame: `c.SunGlobeVaultCoord`, `c.MoonGlobeVaultCoord`,
+    and per-planet `p.globeVaultCoord`. Each is
+    `(declination, RA − GMST)` placed on the shell, so the
+    vault co-rotates with Earth (matching the FE dome
+    convention).
+  - New `WorldGlobe` class (`js/render/worldObjects.js`):
+    translucent terrestrial sphere + 15° lat/lon graticule,
+    pinned to origin, `SphereGeometry` rotated +π/2 about X
+    so its poles align with `±z` (the celestial axis the
+    rest of the scene already uses).
+  - New `GlobeHeavenlyVault` class: translucent BackSide
+    shell + 15°/30° wireframe graticule at
+    `c.GlobeVaultRadius`, same z-up rotation, also pinned to
+    origin.
+  - `ObserversOpticalVault.update` and `Observer.update` now
+    branch on `WorldModel`. In GE they read
+    `GlobeObserverCoord` for placement and apply a
+    quaternion built from `GlobeObserverFrame` so the
+    optical-vault hemisphere and the observer figure both
+    stand tangent to the sphere with local +z = radial
+    outward.
+  - Sun / Moon / planet `CelestialMarker.update` calls in
+    `render/index.js` are routed to the corresponding
+    `*GlobeVaultCoord` when `WorldModel === 'ge'`.
+  - FE-only overlays (disc base, disc grid, lat lines,
+    longitude ring, shadow, eclipse shadow,
+    vault-of-heavens, starfield chart, sun/moon GP markers,
+    GP path overlay, FE cosmology centerpieces, land mesh)
+    hide while in GE mode; `worldGlobe` and
+    `globeHeavenlyVault` show only in GE.
+  - Optical-vault axis colours rotated so red maps to local
+    +z (zenith / perpendicular to the ground), green to +x
+    (north tangent), blue to +y (east tangent). Red is the
+    "perpendicular to the ground" axis on both FE and GE.
+  - New `WorldModel` toggle button (face shows `FE` or `GE`)
+    stacked in a `.grids-stack` flex column directly under
+    the existing grids (▦) toggle at the right edge of the
+    compass cluster. Cycle-row CSS reverts to 2 rows.

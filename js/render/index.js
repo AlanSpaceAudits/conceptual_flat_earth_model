@@ -255,8 +255,10 @@ export class Renderer {
 
     this.sunAnalemma  = new AnalemmaLine(0xffd060, 0.95);
     this.moonAnalemma = new AnalemmaLine(0xc0c0d8, 0.85);
+    this.sunVaultArc  = new AnalemmaLine(0xffe680, 0.85);
     this.sm.world.add(this.sunAnalemma.group);
     this.sm.world.add(this.moonAnalemma.group);
+    this.sm.world.add(this.sunVaultArc.group);
 
     model.addEventListener('update', () => this.frame());
 
@@ -565,6 +567,7 @@ export class Renderer {
 
     this.sunAnalemma.update(c.SunAnalemmaPoints, s.ShowSunAnalemma);
     this.moonAnalemma.update(c.MoonAnalemmaPoints, s.ShowMoonAnalemma);
+    this.sunVaultArc.update(c.SunVaultArcPoints, !!s.SunVaultArcOn);
   }
 
   _updateRays() {

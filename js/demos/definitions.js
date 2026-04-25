@@ -217,15 +217,13 @@ const ANALEMMA_MONTH_DAYS = [
 ];
 const MONTHLY_DAY_DURATION_MS = 3500;
 
-function snapSunNoonLocal(model) {
+function snapSunNoonVault(model) {
   const c = model.computed;
-  const obs = c.ObserverFeCoord || [0, 0, 0];
-  const opt = c.SunOpticalVaultCoord;
-  if (!opt) return;
-  const local = [opt[0] - obs[0], opt[1] - obs[1], opt[2] - obs[2]];
+  const sv = c.SunVaultCoord;
+  if (!sv) return;
   const cur = Array.isArray(model.state.SunMonthMarkers)
     ? model.state.SunMonthMarkers : [];
-  model.setState({ SunMonthMarkers: [...cur, local] });
+  model.setState({ SunMonthMarkers: [...cur, [sv[0], sv[1], sv[2]]] });
 }
 
 function makeSunAnalemmaMonthly(label, lat) {
@@ -254,31 +252,33 @@ function makeSunAnalemmaMonthly(label, lat) {
       ShowSunTrack: false, ShowMoonTrack: false,
       ShowShadow: false, ShowTruePositions: true,
       ShowOpticalVault: true, ShowStars: true,
-      FollowTarget: null, FreeCamActive: false,
+      FollowTarget: null, FreeCamActive: false, FreeCameraMode: false,
       SpecifiedTrackerMode: false,
-      ShowGPTracer: true, GPTracerTargets: ['sun'],
+      ShowGPTracer: false, GPTracerTargets: [],
+      SunVaultArcOn: true,
       SunMonthMarkers: [],
+      SunMonthMarkersWorldSpace: true,
     },
     tasks: () => {
       const t = [
-        Ttxt(`${label} · 12 monthly daily arcs · 21st of each month from 2025-03-21 (vernal equinox) · noon-position circle on each.`),
-        // Re-assert observer placement after the intro so any
-        // transient state from a previous demo can't leak through
-        // and pin the user at the wrong latitude.
+        Ttxt(`${label} · 12 monthly daily arcs on the heavenly vault · 21st of each month from 2025-03-21 (vernal equinox) · noon-position circle on each.`),
+        // Re-assert observer placement and reset both the vault-arc
+        // accumulator and the noon-marker list off→on so a re-run is
+        // clean and prior state can't leak through.
         Tcall((m) => m.setState({
           ObserverLat: lat, ObserverLong: 0, ObserverHeading: heading,
           CameraHeight: camH, CameraDirection: 0, InsideVault: true,
         })),
-        Tcall((m) => m.setState({ ShowGPTracer: false })),
-        Tcall((m) => m.setState({ ShowGPTracer: true, SunMonthMarkers: [] })),
+        Tcall((m) => m.setState({ SunVaultArcOn: false })),
+        Tcall((m) => m.setState({ SunVaultArcOn: true, SunMonthMarkers: [] })),
       ];
       for (const dayStart of ANALEMMA_MONTH_DAYS) {
         t.push(Tval('DateTime', dayStart, 1, 0, 'linear'));
         t.push(Tval('DateTime', dayStart + 0.5, MONTHLY_DAY_DURATION_MS / 2, 0, 'linear'));
-        t.push(Tcall(snapSunNoonLocal));
+        t.push(Tcall(snapSunNoonVault));
         t.push(Tval('DateTime', dayStart + 1.0, MONTHLY_DAY_DURATION_MS / 2, 0, 'linear'));
       }
-      t.push(Ttxt('12 daily arcs traced · 12 noon snapshots placed. Pause/resume or End Demo.'));
+      t.push(Ttxt('12 daily arcs traced · 12 noon snapshots placed on the heavenly vault. Pause/resume or End Demo.'));
       t.push(Thold());
       return t;
     },

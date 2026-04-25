@@ -2421,12 +2421,20 @@ export class MonthMarkers {
     const s = model.state;
     const c = model.computed;
     const arr = Array.isArray(s.SunMonthMarkers) ? s.SunMonthMarkers : [];
-    const visible = (s.ShowOpticalVault !== false) && arr.length > 0;
+    const worldSpace = !!s.SunMonthMarkersWorldSpace;
+    // World-space markers don't need ShowOpticalVault since they live
+    // on the heavenly vault, not the observer's optical vault.
+    const visible = arr.length > 0
+      && (worldSpace || s.ShowOpticalVault !== false);
     this.group.visible = visible;
     if (!visible) return;
 
-    const obs = c.ObserverFeCoord || [0, 0, 0];
-    this.skyGroup.position.set(obs[0], obs[1], obs[2]);
+    if (worldSpace) {
+      this.skyGroup.position.set(0, 0, 0);
+    } else {
+      const obs = c.ObserverFeCoord || [0, 0, 0];
+      this.skyGroup.position.set(obs[0], obs[1], obs[2]);
+    }
 
     for (let i = 0; i < arr.length; i++) {
       const m = arr[i];

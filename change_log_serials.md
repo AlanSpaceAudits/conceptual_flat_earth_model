@@ -3674,3 +3674,37 @@ Format:
     intro patch is applied, so any leftover state from a prior
     demo can't pin the observer at the wrong latitude.
 - **Revert:** `git checkout v-s000421 -- js/demos/definitions.js`.
+
+## S423 — Sun analemma rendered on the heavenly vault (disc-anchored)
+
+- **Date:** 2026-04-25
+- **Files changed:** `js/core/app.js`,
+  `js/render/worldObjects.js`, `js/render/index.js`,
+  `js/demos/definitions.js`.
+- **Change:**
+  - New state `SunVaultArcOn` (default `false`) and computed
+    output `SunVaultArcPoints`. While the flag is on, app.js
+    appends `c.SunVaultCoord` (heavenly vault, disc-anchored)
+    every frame, deduping consecutive samples. Resets on
+    flag off→on or when observer-lat / year / body-source key
+    changes.
+  - New state `SunMonthMarkersWorldSpace` (default `false`).
+    `MonthMarkers.update` keeps `skyGroup` at the origin when
+    the flag is set instead of pinning it to `ObserverFeCoord`,
+    so notch sprites live in disc-anchored world coords. The
+    visibility gate also drops `ShowOpticalVault` for that
+    case since the markers no longer ride on the optical vault.
+  - `render/index.js` adds a third `AnalemmaLine` instance
+    (`sunVaultArc`) bound to `SunVaultArcPoints` /
+    `SunVaultArcOn`.
+  - Sun analemma demo (every latitude) now turns on
+    `SunVaultArcOn` instead of `ShowGPTracer`, sets
+    `SunMonthMarkersWorldSpace: true`, and the noon snap
+    captures `c.SunVaultCoord` (absolute) instead of an
+    observer-local optical-vault offset. The figure-8 +
+    daily arcs are now anchored to the FE disc grid (the
+    tropics / equator rings the user pointed at), not to the
+    observer's optical vault.
+- **Revert:** `git checkout v-s000422 -- js/core/app.js
+  js/render/worldObjects.js js/render/index.js
+  js/demos/definitions.js`.

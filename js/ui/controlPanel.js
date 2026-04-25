@@ -1319,6 +1319,12 @@ function bindTranslatable(textNode, originalText, keyMap) {
   if (key) onLangChange(() => { textNode.textContent = t(key); });
 }
 
+function bindTip(el, key) {
+  if (!el || !key) return;
+  el.title = t(key);
+  onLangChange(() => { el.title = t(key); });
+}
+
 // Dispatch a field-group row definition to the right row-builder.
 function buildRow(model, row) {
   let el;
@@ -1520,31 +1526,31 @@ export function buildControlPanel(host, model, demos) {
   const btnVault = document.createElement('button');
   btnVault.className = 'time-btn vault-swap';
   btnVault.type = 'button';
-  btnVault.title = 'Swap Heavenly ⇄ Optical Vault';
+  bindTip(btnVault, 'tip_vault_swap');
   const btnRew  = document.createElement('button');
   btnRew.className = 'time-btn';  btnRew.type = 'button';
-  btnRew.textContent = '⏪';  btnRew.title = 'Rewind';
+  btnRew.textContent = '⏪'; bindTip(btnRew, 'tip_rewind');
   const btnPlay = document.createElement('button');
   btnPlay.className = 'time-btn'; btnPlay.type = 'button';
-  btnPlay.textContent = '▶';  btnPlay.title = 'Play / Pause';
+  btnPlay.textContent = '▶'; bindTip(btnPlay, 'tip_play_pause');
   const btnFf   = document.createElement('button');
   btnFf.className = 'time-btn';  btnFf.type = 'button';
-  btnFf.textContent = '⏩';  btnFf.title = 'Fast forward';
+  btnFf.textContent = '⏩'; bindTip(btnFf, 'tip_fast_forward');
   const btnSlow = document.createElement('button');
   btnSlow.className = 'time-btn';  btnSlow.type = 'button';
   btnSlow.textContent = '½×';
-  btnSlow.title = 'Slow play speed (halve). Resumes at this speed if paused.';
+  bindTip(btnSlow, 'tip_slow');
   const btnSpeed = document.createElement('button');
   btnSpeed.className = 'time-btn';  btnSpeed.type = 'button';
   btnSpeed.textContent = '2×';
-  btnSpeed.title = 'Speed up play (double). Resumes at this speed if paused.';
+  bindTip(btnSpeed, 'tip_speed');
   const speedStack = document.createElement('div');
   speedStack.className = 'speed-stack';
   const btnEndDemo = document.createElement('button');
   btnEndDemo.className = 'time-btn end-demo-btn';
   btnEndDemo.type = 'button';
   btnEndDemo.textContent = 'End Demo';
-  btnEndDemo.title = 'Stop the currently playing demo';
+  bindTip(btnEndDemo, 'tip_end_demo');
   btnEndDemo.hidden = true;
   btnEndDemo.addEventListener('click', () => {
     if (demos && typeof demos.stop === 'function') demos.stop();
@@ -1553,7 +1559,7 @@ export function buildControlPanel(host, model, demos) {
   btnEndTracking.className = 'time-btn end-demo-btn end-tracking-btn';
   btnEndTracking.type = 'button';
   btnEndTracking.textContent = 'End Tracking';
-  btnEndTracking.title = 'Clear follow target (Esc also works)';
+  bindTip(btnEndTracking, 'tip_clear_follow');
   btnEndTracking.hidden = true;
   btnEndTracking.addEventListener('click', () => {
     model.setState({
@@ -1581,7 +1587,7 @@ export function buildControlPanel(host, model, demos) {
   btnNight.className = 'time-btn night-btn';
   btnNight.type = 'button';
   btnNight.textContent = '🌙';
-  btnNight.title = 'Toggle permanent night (dark sky with stars)';
+  bindTip(btnNight, 'tip_permanent_night');
   btnNight.addEventListener('click', () => {
     model.setState({ PermanentNight: !model.state.PermanentNight });
   });
@@ -1590,7 +1596,7 @@ export function buildControlPanel(host, model, demos) {
   btnTrue.className = 'time-btn true-btn';
   btnTrue.type = 'button';
   btnTrue.textContent = '◉';
-  btnTrue.title = 'Toggle true-position markers on the Heavenly vault';
+  bindTip(btnTrue, 'tip_true_positions');
   btnTrue.addEventListener('click', () => {
     model.setState({ ShowTruePositions: !model.state.ShowTruePositions });
   });
@@ -1599,7 +1605,7 @@ export function buildControlPanel(host, model, demos) {
   btnStm.className = 'time-btn stm-btn';
   btnStm.type = 'button';
   btnStm.textContent = '🎯';
-  btnStm.title = 'Specified Tracker Mode — focus scene on FollowTarget only';
+  bindTip(btnStm, 'tip_stm');
   btnStm.addEventListener('click', () => {
     model.setState({ SpecifiedTrackerMode: !model.state.SpecifiedTrackerMode });
   });
@@ -1608,7 +1614,7 @@ export function buildControlPanel(host, model, demos) {
   btnTrackerOpts.className = 'time-btn tracker-opts-btn';
   btnTrackerOpts.type = 'button';
   btnTrackerOpts.textContent = '🎛';
-  btnTrackerOpts.title = 'Jump to Tracker Options (Clear / Track All / STM / GP Override / True Positions / GP Path)';
+  bindTip(btnTrackerOpts, 'tip_tracker_opts_jump');
   btnTrackerOpts.addEventListener('click', () => {
     featureOpen.fn('Tracker', 'Tracker Options');
   });
@@ -1617,7 +1623,7 @@ export function buildControlPanel(host, model, demos) {
   btnObserver.className = 'time-btn observer-btn';
   btnObserver.type = 'button';
   btnObserver.textContent = '📍';
-  btnObserver.title = 'Jump to Observer (lat / long / elevation / heading)';
+  bindTip(btnObserver, 'tip_observer_jump');
   btnObserver.addEventListener('click', () => {
     featureOpen.fn('View', 'Observer');
   });
@@ -1626,7 +1632,7 @@ export function buildControlPanel(host, model, demos) {
   btnFreeCamKb.className = 'time-btn freecam-btn';
   btnFreeCamKb.type = 'button';
   btnFreeCamKb.textContent = '🎥';
-  btnFreeCamKb.title = 'Free-camera mode — arrow keys rotate / tilt the orbit camera instead of moving the observer.';
+  bindTip(btnFreeCamKb, 'tip_freecam');
   btnFreeCamKb.addEventListener('click', () => {
     model.setState({ FreeCameraMode: !model.state.FreeCameraMode });
   });
@@ -1647,7 +1653,7 @@ export function buildControlPanel(host, model, demos) {
   btnMap.className = 'time-btn map-btn';
   btnMap.type = 'button';
   btnMap.textContent = '🗺';
-  btnMap.title = 'Open Map Projection settings';
+  bindTip(btnMap, 'tip_map');
   btnMap.addEventListener('click', () => {
     if (typeof featureOpen.fn === 'function') {
       featureOpen.fn('Show', 'Map Projection');
@@ -1659,7 +1665,7 @@ export function buildControlPanel(host, model, demos) {
   btnStarfield.className = 'time-btn starfield-btn';
   btnStarfield.type = 'button';
   btnStarfield.textContent = '✨';
-  btnStarfield.title = 'Cycle starfield (random / chart dark / chart light / cel nav)';
+  bindTip(btnStarfield, 'tip_starfield');
   btnStarfield.addEventListener('click', () => {
     const cur = model.state.StarfieldType || 'random';
     const idx = STARFIELD_CYCLE.indexOf(cur);
@@ -1671,7 +1677,7 @@ export function buildControlPanel(host, model, demos) {
   btnAzRing.className = 'time-btn az-ring-btn';
   btnAzRing.type = 'button';
   btnAzRing.textContent = '🧭';
-  btnAzRing.title = 'Toggle the full compass readout: azimuth ring, ground longitude ring, and Optical-vault grid lines';
+  bindTip(btnAzRing, 'tip_az_ring');
   btnAzRing.addEventListener('click', () => {
     const on = !!model.state.ShowAzimuthRing;
     // One-click compass set: the Optical-cap degree labels, the
@@ -1718,7 +1724,7 @@ export function buildControlPanel(host, model, demos) {
   btnGrids.className = 'time-btn grids-btn';
   btnGrids.type = 'button';
   btnGrids.textContent = '▦';
-  btnGrids.title = 'Toggle FE grid + Optical-vault grid + heavenly-vault azimuth degrees';
+  bindTip(btnGrids, 'tip_grids');
   btnGrids.addEventListener('click', () => {
     const cur = !!(model.state.ShowFeGrid
                    && model.state.ShowOpticalVaultGrid

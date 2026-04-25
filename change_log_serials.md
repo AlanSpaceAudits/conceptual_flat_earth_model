@@ -532,6 +532,26 @@ Format:
   js/render/index.js js/ui/controlPanel.js js/ui/urlState.js`;
   delete `js/core/satellites.js`.
 
+## S398 — Translate bottom-bar tooltips
+
+- **Date:** 2026-04-25
+- **Files changed:** `js/ui/i18n.js`,
+  `js/ui/controlPanel.js`,
+  `change_log_serials.md`.
+- **Change:**
+  - 18 `tip_*` keys added to `STRINGS` for the bottom-bar
+    button tooltips (vault swap, rew/play/ff, slow/speed,
+    end-demo, clear-follow, night, true-positions, STM,
+    tracker-opts jump, observer jump, freecam, map,
+    starfield, az-ring, grids). `cs` and `es` translations
+    supplied.
+  - New `bindTip(el, key)` helper sets `el.title = t(key)`
+    and registers an `onLangChange` callback.
+  - Every `btn.title = '...'` assignment in
+    `buildBottomBar` swapped for `bindTip(btn, '<key>')`.
+- **Revert:** `git checkout v-s000397 -- js/ui/i18n.js
+  js/ui/controlPanel.js`.
+
 ## S397 — Translate row labels and clickRow button labels
 
 - **Date:** 2026-04-25

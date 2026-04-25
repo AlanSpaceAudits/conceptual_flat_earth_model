@@ -2451,53 +2451,18 @@ export class Observer {
       const tail = new THREE.Mesh(horzCyl(0.0013, 0.004, 'x'), hide);
       add(tail, -0.013, 0, 0.009);
     } else if (kind === 'bear') {
-      // Space Audits — brown bear. Barrel torso, round head with a
-      // pronounced snout and rounded ears, four stout legs.
-      const fur     = new THREE.MeshBasicMaterial({ color: 0x6b3e22 });
-      const furDark = new THREE.MeshBasicMaterial({ color: 0x4a2a14 });
-      const muzzle  = new THREE.MeshBasicMaterial({ color: 0x8a5a32 });
-      const nose    = new THREE.MeshBasicMaterial({ color: 0x141414 });
-      const eyeMat  = new THREE.MeshBasicMaterial({ color: 0x141414 });
-
-      // Torso — scaled sphere to elongate fore/aft.
-      const body = new THREE.Mesh(new THREE.SphereGeometry(0.013, 22, 16), fur);
-      body.scale.set(1.25, 0.95, 0.95);
-      add(body, 0, 0, 0.024);
-
-      // Head + snout + nose.
-      const headMesh = new THREE.Mesh(
-        new THREE.SphereGeometry(0.009, 20, 14), fur,
-      );
-      add(headMesh, 0.012, 0, 0.040);
-      const snoutMesh = new THREE.Mesh(
-        new THREE.SphereGeometry(0.0045, 14, 10), muzzle,
-      );
-      snoutMesh.scale.set(1.4, 1.0, 0.85);
-      add(snoutMesh, 0.020, 0, 0.038);
-      add(new THREE.Mesh(new THREE.SphereGeometry(0.0013, 10, 8), nose),
-          0.0245, 0, 0.040);
-
-      // Ears (rounded buttons on top of head).
-      const earGeo = new THREE.SphereGeometry(0.0028, 12, 8);
-      add(new THREE.Mesh(earGeo, fur),  0.009, -0.0065, 0.048);
-      add(new THREE.Mesh(earGeo, fur),  0.009,  0.0065, 0.048);
-
-      // Eyes.
-      const eyeGeo = new THREE.SphereGeometry(0.001, 8, 6);
-      add(new THREE.Mesh(eyeGeo, eyeMat), 0.017, -0.003, 0.043);
-      add(new THREE.Mesh(eyeGeo, eyeMat), 0.017,  0.003, 0.043);
-
-      // Four stout legs.
-      const legGeo = vertCyl(0.004, 0.004, 0.014);
-      const legs = [
-        [ 0.010,  0.008], [ 0.010, -0.008],
-        [-0.010,  0.008], [-0.010, -0.008],
-      ];
-      for (const [x, y] of legs) add(new THREE.Mesh(legGeo, furDark), x, y, 0.009);
-
-      // Small stub tail at the back.
-      add(new THREE.Mesh(new THREE.SphereGeometry(0.0025, 10, 8), fur),
-          -0.015, 0, 0.028);
+      const tex = new THREE.TextureLoader().load('assets/observer_bear.png');
+      tex.colorSpace = THREE.SRGBColorSpace;
+      const mat = new THREE.SpriteMaterial({
+        map: tex, transparent: true, depthTest: true, depthWrite: false,
+      });
+      const sprite = new THREE.Sprite(mat);
+      const h = 0.10;
+      const aspect = 1920 / 1080;
+      sprite.scale.set(h * aspect, h, 1);
+      sprite.position.set(0, 0, h / 2);
+      sprite.renderOrder = 110;
+      this.figureGroup.add(sprite);
     } else if (kind === 'llama') {
       // Llamazing — white llama. Long-legged body, long curving neck,
       // small head with tall ears, tiny dark eyes and nose.

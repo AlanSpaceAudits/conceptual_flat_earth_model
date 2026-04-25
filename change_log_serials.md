@@ -532,6 +532,23 @@ Format:
   js/render/index.js js/ui/controlPanel.js js/ui/urlState.js`;
   delete `js/core/satellites.js`.
 
+## S380 — Replace bear primitive figure with sprite-based bear
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/render/worldObjects.js`,
+  `assets/observer_bear.png` (new, copied from
+  `~/Downloads/bear.png`),
+  `change_log_serials.md`.
+- **Change:** the bear branch of `_buildFigure` switched from the
+  primitive-mesh build (sphere torso + head + snout + four legs)
+  to a `THREE.Sprite` driven by the new
+  `assets/observer_bear.png` (1920×1080, transparent
+  background). Mirrors the Nikki sprite path: height
+  0.10 disc-units, aspect 1920/1080, centred at `z = h/2`,
+  `renderOrder = 110`.
+- **Revert:** `git checkout v-s000379 -- js/render/worldObjects.js`;
+  `rm assets/observer_bear.png`.
+
 ## S379 — Route observer + above-disc body anchors through canonicalLatLongToDisc
 
 - **Date:** 2026-04-24

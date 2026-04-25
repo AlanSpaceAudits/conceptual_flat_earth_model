@@ -4507,49 +4507,98 @@ const GP_TRACER_MAX_PTS = 8192;
 const _wrapLon = (x) => ((x + 180) % 360 + 360) % 360 - 180;
 
 export class GPTracer {
-  constructor() {
+  constructor(clippingPlanes = []) {
     this.group = new THREE.Group();
     this.group.name = 'gp-tracer';
+
+    // Disc lines live directly under group; their buffers store global FE
+    // disc coords. Sky lines live under skyGroup, which is re-anchored to
+    // the observer each frame, so their buffers store observer-local
+    // optical-vault offsets.
+    this.discGroup = new THREE.Group();
+    this.skyGroup  = new THREE.Group();
+    this.group.add(this.discGroup);
+    this.group.add(this.skyGroup);
+
+    this._clippingPlanes = clippingPlanes;
     this._lines = new Map();
     this._wasOn = false;
     this._lastTargetsKey = '';
   }
 
-  _ensureLine(key, color) {
+  _ensureRec(key, color) {
     let rec = this._lines.get(key);
     if (rec) return rec;
-    const buf = new Float32Array(GP_TRACER_MAX_PTS * 3);
-    const geo = new THREE.BufferGeometry();
-    geo.setAttribute('position', new THREE.BufferAttribute(buf, 3));
-    geo.setDrawRange(0, 0);
-    const mat = new THREE.LineBasicMaterial({
-      color, transparent: true, opacity: 0.85,
-      depthTest: false, depthWrite: false,
-    });
-    const line = new THREE.Line(geo, mat);
-    line.frustumCulled = false;
-    line.renderOrder = 42;
-    this.group.add(line);
-    rec = { line, buf, n: 0, lastX: NaN, lastY: NaN };
+
+    const makeLine = (parent, renderOrder, depthTest, clipPlanes) => {
+      const buf = new Float32Array(GP_TRACER_MAX_PTS * 3);
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.BufferAttribute(buf, 3));
+      geo.setDrawRange(0, 0);
+      const mat = new THREE.LineBasicMaterial({
+        color, transparent: true, opacity: 0.85,
+        depthTest, depthWrite: false,
+        clippingPlanes: clipPlanes,
+      });
+      const line = new THREE.Line(geo, mat);
+      line.frustumCulled = false;
+      line.renderOrder = renderOrder;
+      parent.add(line);
+      return { line, buf, n: 0, lastX: NaN, lastY: NaN, lastZ: NaN };
+    };
+
+    rec = {
+      disc: makeLine(this.discGroup, 42, false, []),
+      sky:  makeLine(this.skyGroup,  43, false, this._clippingPlanes),
+    };
     this._lines.set(key, rec);
     return rec;
   }
 
+  _resetSub(sub) {
+    sub.n = 0;
+    sub.lastX = NaN; sub.lastY = NaN; sub.lastZ = NaN;
+    sub.line.geometry.setDrawRange(0, 0);
+  }
+
   _resetRec(rec) {
-    rec.n = 0;
-    rec.lastX = NaN; rec.lastY = NaN;
-    rec.line.geometry.setDrawRange(0, 0);
+    this._resetSub(rec.disc);
+    this._resetSub(rec.sky);
   }
 
   _resetAll() {
     for (const rec of this._lines.values()) this._resetRec(rec);
   }
 
+  _appendPoint(sub, x, y, z) {
+    const dx = x - sub.lastX;
+    const dy = y - sub.lastY;
+    const dz = z - sub.lastZ;
+    const moved = !(dx * dx + dy * dy + dz * dz < 1e-8);
+    if (!moved && sub.n > 0) return;
+
+    if (sub.n >= GP_TRACER_MAX_PTS) {
+      const keep = Math.floor(GP_TRACER_MAX_PTS * 0.75);
+      const drop = sub.n - keep;
+      sub.buf.copyWithin(0, drop * 3, sub.n * 3);
+      sub.n = keep;
+    }
+    sub.buf[sub.n * 3    ] = x;
+    sub.buf[sub.n * 3 + 1] = y;
+    sub.buf[sub.n * 3 + 2] = z;
+    sub.n++;
+    sub.lastX = x; sub.lastY = y; sub.lastZ = z;
+    sub.line.geometry.setDrawRange(0, sub.n);
+    sub.line.geometry.attributes.position.needsUpdate = true;
+  }
+
   update(model) {
     const s = model.state;
     const c = model.computed;
     const on = !!s.ShowGPTracer;
-    this.group.visible = on && !s.InsideVault;
+    this.group.visible = on;
+    this.discGroup.visible = on && !s.InsideVault;
+    this.skyGroup.visible  = on && (s.ShowOpticalVault !== false);
 
     if (on && !this._wasOn) this._resetAll();
     this._wasOn = on;
@@ -4565,42 +4614,39 @@ export class GPTracer {
     }
     this._lastTargetsKey = key;
 
+    const obs = c.ObserverFeCoord || [0, 0, 0];
+    this.skyGroup.position.set(obs[0], obs[1], obs[2]);
+
     const skyRot = c.SkyRotAngle || 0;
     for (const name of targets) {
-      let lat, lon;
+      let lat, lon, optical;
       if (name === 'sun') {
         lat = c.SunCelestLatLong.lat;
         lon = _wrapLon(c.SunRA * 180 / Math.PI - skyRot);
+        optical = c.SunOpticalVaultCoord;
       } else if (name === 'moon') {
         lat = c.MoonCelestLatLong.lat;
         lon = _wrapLon(c.MoonRA * 180 / Math.PI - skyRot);
+        optical = c.MoonOpticalVaultCoord;
       } else if (c.Planets && c.Planets[name]) {
         const p = c.Planets[name];
         lat = p.celestLatLong.lat;
         lon = _wrapLon(p.ra * 180 / Math.PI - skyRot);
+        optical = p.opticalVaultCoord;
       } else {
         continue;
       }
-      const [x, y] = canonicalLatLongToDisc(lat, lon, FE_RADIUS);
-      const rec = this._ensureLine(name, GP_TRACER_COLORS[name] || 0xffffff);
-      const dx = x - rec.lastX;
-      const dy = y - rec.lastY;
-      const moved = !(dx * dx + dy * dy < 1e-6);
-      if (!moved && rec.n > 0) continue;
+      const rec = this._ensureRec(name, GP_TRACER_COLORS[name] || 0xffffff);
 
-      if (rec.n >= GP_TRACER_MAX_PTS) {
-        const keep = Math.floor(GP_TRACER_MAX_PTS * 0.75);
-        const drop = rec.n - keep;
-        rec.buf.copyWithin(0, drop * 3, rec.n * 3);
-        rec.n = keep;
+      const [dx, dy] = canonicalLatLongToDisc(lat, lon, FE_RADIUS);
+      this._appendPoint(rec.disc, dx, dy, 0.003);
+
+      if (optical) {
+        const lx = optical[0] - obs[0];
+        const ly = optical[1] - obs[1];
+        const lz = optical[2] - obs[2];
+        this._appendPoint(rec.sky, lx, ly, lz);
       }
-      rec.buf[rec.n * 3    ] = x;
-      rec.buf[rec.n * 3 + 1] = y;
-      rec.buf[rec.n * 3 + 2] = 0.003;
-      rec.n++;
-      rec.lastX = x; rec.lastY = y;
-      rec.line.geometry.setDrawRange(0, rec.n);
-      rec.line.geometry.attributes.position.needsUpdate = true;
     }
   }
 }

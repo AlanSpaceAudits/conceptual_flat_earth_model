@@ -3482,3 +3482,26 @@ Format:
     `GPTracerTargets` (default `[]`) added to `defaultState()`.
 - **Revert:** `git checkout v-s000411 -- js/render/worldObjects.js
   js/render/index.js js/ui/controlPanel.js js/core/app.js`.
+
+## S413 — GP Tracer: optical-vault sky trace
+
+- **Date:** 2026-04-25
+- **Files changed:** `js/render/worldObjects.js`,
+  `js/render/index.js`.
+- **Change:**
+  - `GPTracer` now keeps two polylines per body. Disc-line
+    behaviour (per S412) is unchanged. A second `sky` line is
+    appended each frame from the body's
+    `*OpticalVaultCoord`, stored in observer-local offsets so
+    a sub-group anchored to the observer can re-render the
+    historical samples at the current observer position.
+  - Both lines are reset together by the existing on→off / per-
+    body controls; the sky line additionally hides when
+    `ShowOpticalVault` is off, while the disc line continues to
+    hide when `InsideVault` is set.
+  - Constructor now takes `clippingPlanes` so the sky line
+    respects the disc clip plane shared with the rest of the
+    optical-vault layer.
+  - `render/index.js` passes `clipPlanes` to `new GPTracer(...)`.
+- **Revert:** `git checkout v-s000412 -- js/render/worldObjects.js
+  js/render/index.js`.

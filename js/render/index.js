@@ -137,7 +137,7 @@ export class Renderer {
     this.gpPathOverlay = new GPPathOverlay();
     this.sm.world.add(this.gpPathOverlay.group);
 
-    this.gpTracer = new GPTracer();
+    this.gpTracer = new GPTracer(clipPlanes);
     this.sm.world.add(this.gpTracer.group);
 
     this.satelliteStars = new CatalogPointStars({

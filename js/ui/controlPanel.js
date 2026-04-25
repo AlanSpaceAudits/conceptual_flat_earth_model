@@ -1454,12 +1454,6 @@ export function buildControlPanel(host, model, demos) {
       <span class="info-sep">│</span>
       <span class="info-slot" data-k="time">—</span>
       <span class="info-slot" data-k="speed">—</span>
-      <span class="info-sep">│</span>
-      <span class="info-slot info-lang">
-        <select class="lang-sel">
-          ${LANGUAGES.map((l) => `<option value="${l.id}">${l.label}</option>`).join('')}
-        </select>
-      </span>
     </div>
     <div class="info-row info-row-bot">
       <span class="info-slot info-track" data-k="track">Tracking: —</span>
@@ -1474,18 +1468,9 @@ export function buildControlPanel(host, model, demos) {
   const slotEph   = infoBar.querySelector('[data-k="eph"]');
   const slotTime  = infoBar.querySelector('[data-k="time"]');
   const slotSpeed = infoBar.querySelector('[data-k="speed"]');
-  const langSel   = infoBar.querySelector('.lang-sel');
-  if (langSel) {
-    langSel.value = model.state.Language || 'en';
-    langSel.addEventListener('change', () => {
-      model.setState({ Language: langSel.value });
-    });
-  }
   setLang(model.state.Language || 'en');
   model.addEventListener('update', () => {
-    const lang = model.state.Language || 'en';
-    setLang(lang);
-    if (langSel && langSel.value !== lang) langSel.value = lang;
+    setLang(model.state.Language || 'en');
   });
   const slotTrack = infoBar.querySelector('[data-k="track"]');
   const fmtLat = (v) => `Lat ${v >= 0 ? '+' : ''}${v.toFixed(4)}°`;
@@ -1705,7 +1690,28 @@ export function buildControlPanel(host, model, demos) {
     });
   });
 
-  cycleRow.append(btnMap, btnStarfield, btnAzRing);
+  // Language cycler — sits in the cycle-row's bottom-right slot
+  // (under ✨). Click cycles through LANGUAGES; current id label
+  // (EN / CZ / ES / …) shows on the button face.
+  const btnLang = document.createElement('button');
+  btnLang.className = 'time-btn lang-btn';
+  btnLang.type = 'button';
+  const refreshLangBtn = () => {
+    const cur = model.state.Language || 'en';
+    const entry = LANGUAGES.find((l) => l.id === cur) || LANGUAGES[0];
+    btnLang.textContent = entry.label;
+  };
+  btnLang.addEventListener('click', () => {
+    const cur = model.state.Language || 'en';
+    const idx = LANGUAGES.findIndex((l) => l.id === cur);
+    const next = LANGUAGES[(idx + 1) % LANGUAGES.length].id;
+    model.setState({ Language: next });
+  });
+  bindTip(btnLang, 'lang_label');
+  model.addEventListener('update', refreshLangBtn);
+  refreshLangBtn();
+
+  cycleRow.append(btnMap, btnStarfield, btnAzRing, btnLang);
   compassControls.appendChild(cycleRow);
 
   // Cardinals live in their own 2×2 sub-grid so the N / S / E / W

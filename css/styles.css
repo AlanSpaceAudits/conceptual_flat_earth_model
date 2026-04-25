@@ -591,14 +591,9 @@ header .info-popup p:last-child { margin-bottom: 0; }
   align-items: start;
   gap: 6px;
 }
-.lang-sel {
-  background: var(--row); color: var(--fg);
-  border: 1px solid var(--border);
-  border-radius: 3px;
-  padding: 1px 4px;
-  font: inherit;
-  pointer-events: auto;
-  cursor: pointer;
+#bottom-bar .lang-btn {
+  font-weight: 600;
+  letter-spacing: 0.5px;
 }
 .row.pair-select select.sel {
   width: 100%;

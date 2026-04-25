@@ -532,6 +532,27 @@ Format:
   js/render/index.js js/ui/controlPanel.js js/ui/urlState.js`;
   delete `js/core/satellites.js`.
 
+## S402 — Move language picker into compass cycle-row as a cycler button
+
+- **Date:** 2026-04-25
+- **Files changed:** `js/ui/controlPanel.js`,
+  `css/styles.css`,
+  `change_log_serials.md`.
+- **Change:**
+  - Info-bar `<select class="lang-sel">` removed.
+  - New `btnLang` (`.time-btn .lang-btn`) appended to
+    `cycleRow` after `btnAzRing`, filling the empty
+    bottom-right slot under the starfield button. Click
+    cycles `state.Language` through `LANGUAGES`. Button
+    face shows the current short id (EN / CZ / ES / …).
+  - `bindTip(btnLang, 'lang_label')` so the tooltip
+    reads "Language" / "Jazyk" / etc.
+  - `.lang-sel` CSS deleted; new `.lang-btn` rule sets
+    bold + 0.5px letter-spacing so the 2-char codes read
+    cleanly.
+- **Revert:** `git checkout v-s000401 -- js/ui/controlPanel.js
+  css/styles.css`.
+
 ## S401 — Add 15 more languages (FR / DE / IT / PT / PL / NL / SK / RU / AR / HE / ZH / JA / KO / TH / HI)
 
 - **Date:** 2026-04-25

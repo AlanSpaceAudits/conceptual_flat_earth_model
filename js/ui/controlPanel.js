@@ -427,6 +427,7 @@ function dateTimeRow(model) {
   el.innerHTML = `<label>Date / time</label>
     <input type="date" class="date">
     <input type="time" class="time" step="1">`;
+  bindTranslatable(el.querySelector('label'), 'Date / time', LABEL_KEY);
   const dateEl = el.querySelector('input.date');
   const timeEl = el.querySelector('input.time');
 
@@ -469,6 +470,7 @@ function timezoneRow(model) {
   el.className = 'row bool';
   const opts = TIMEZONES.map(z => `<option value="${z.min}">${z.label}</option>`).join('');
   el.innerHTML = `<label>Timezone</label><select class="sel">${opts}</select>`;
+  bindTranslatable(el.querySelector('label'), 'Timezone', LABEL_KEY);
   const sel = el.querySelector('select');
   function refresh() { sel.value = String(model.state.TimezoneOffsetMinutes || 0); }
   sel.addEventListener('change', () => {
@@ -1306,6 +1308,19 @@ const LABEL_KEY = {
   'Height': 'lbl_height',
   'HQ Map Art': 'lbl_hq_map_art',
   'Generated': 'lbl_generated',
+  'CameraDir': 'lbl_camera_dir',
+  'CameraHeight': 'lbl_camera_height',
+  'CameraDist': 'lbl_camera_dist',
+  'Zoom': 'lbl_zoom',
+  'Elevation': 'lbl_elevation',
+  'VaultSize': 'lbl_vault_size',
+  'VaultHeight': 'lbl_vault_height',
+  'DayOfYear': 'lbl_day_of_year',
+  'Time': 'lbl_time',
+  'DateTime': 'lbl_datetime',
+  'Timezone': 'lbl_timezone',
+  'Date / time': 'lbl_date_time_field',
+  'Speed': 'lbl_speed',
 };
 const BUTTON_LABEL_KEY = {
   'Enable All': 'btn_enable_all',
@@ -2217,7 +2232,9 @@ export function buildHud(hudEl, model) {
   moonHeader.className = 'moon-phase-header';
   const moonTri = document.createElement('span');
   moonTri.className = 'tri';
-  moonHeader.append(moonTri, document.createTextNode(' Live Moon Phases'));
+  const moonLabelNode = document.createTextNode(' ' + t('panel_live_moon_phases'));
+  moonHeader.append(moonTri, moonLabelNode);
+  onLangChange(() => { moonLabelNode.nodeValue = ' ' + t('panel_live_moon_phases'); });
   moonWrapper.appendChild(moonHeader);
   const moonBody = document.createElement('div');
   moonBody.className = 'moon-phase-body';
@@ -2315,7 +2332,8 @@ export function buildTrackerHud(trackerEl, model) {
     tabBtn = document.createElement('button');
     tabBtn.id = 'live-ephem-tab';
     tabBtn.type = 'button';
-    tabBtn.textContent = 'Live Ephemeris Data';
+    tabBtn.textContent = t('panel_live_ephemeris_data');
+    onLangChange(() => { tabBtn.textContent = t('panel_live_ephemeris_data'); });
     const hudEl = document.getElementById('hud')
       || document.getElementById('view')
       || document.body;

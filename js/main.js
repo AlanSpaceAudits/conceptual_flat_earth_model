@@ -8,6 +8,7 @@ import { buildControlPanel, buildHud, buildTrackerHud } from './ui/controlPanel.
 import { Demos } from './demos/index.js';
 import { attachUrlState } from './ui/urlState.js';
 import { setActiveProjection } from './core/canonical.js';
+import { t, onLangChange } from './ui/i18n.js';
 
 const model = new FeModel();
 const canvas = document.getElementById('feCanvas');
@@ -215,6 +216,16 @@ function syncMeeusBanner() {
 }
 model.addEventListener('update', syncMeeusBanner);
 syncMeeusBanner();
+
+// Translatable header bits.
+const _titleEl = document.getElementById('app-title');
+const _subEl   = document.getElementById('app-subtitle');
+const refreshTitle = () => {
+  if (_titleEl) _titleEl.textContent = t('app_title');
+  if (_subEl)   _subEl.textContent   = t('app_subtitle');
+};
+onLangChange(refreshTitle);
+refreshTitle();
 
 window.model = model;
 window.renderer = renderer;

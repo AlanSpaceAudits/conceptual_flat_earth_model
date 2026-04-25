@@ -1,3 +1,4 @@
+import { t, onLangChange } from './i18n.js';
 // Autoplay: advance model.DateTime at a configurable rate so the dynamics
 // (sun/moon rising, moon phase cycle, seasons) animate on their own.
 
@@ -74,9 +75,12 @@ export class Autoplay {
     // Row 2: presets
     const presetRow = document.createElement('div');
     presetRow.className = 'autoplay-presets';
-    const presetBtns = PRESETS.map((p) => {
+    const PRESET_KEYS = ['btn_day', 'btn_week', 'btn_month', 'btn_year'];
+    const presetBtns = PRESETS.map((p, i) => {
       const b = document.createElement('button');
-      b.textContent = p.label;
+      const key = PRESET_KEYS[i];
+      b.textContent = key ? t(key) : p.label;
+      if (key) onLangChange(() => { b.textContent = t(key); });
       b.dataset.speed = p.days_per_sec;
       b.addEventListener('click', () => this.setSpeed(p.days_per_sec));
       presetRow.appendChild(b);
@@ -91,6 +95,9 @@ export class Autoplay {
       <input type="number" class="num" min="0.001" max="100" step="0.001">
       <span class="unit">d/s</span>
       <input type="range" class="slider" min="-4" max="2" step="0.01">`;
+    const speedLabelEl = speedRow.querySelector('label');
+    speedLabelEl.textContent = t('lbl_speed');
+    onLangChange(() => { speedLabelEl.textContent = t('lbl_speed'); });
     const numEl = speedRow.querySelector('input.num');
     const rangeEl = speedRow.querySelector('input.slider');
     // Slider is log10-scaled for a useful range (0.0001 to 100 days/sec).
@@ -104,8 +111,8 @@ export class Autoplay {
     btn.addEventListener('click', () => this.toggle());
 
     const refresh = () => {
-      btn.textContent = this.playing ? '⏸  Pause' : '▶  Play';
-      status.textContent = this.playing ? 'running' : 'paused';
+      btn.textContent = this.playing ? '⏸  ' + t('btn_pause') : '▶  ' + t('btn_play');
+      status.textContent = this.playing ? t('status_running') : t('status_paused');
       numEl.value = (+this.speed).toFixed(4);
       rangeEl.value = Math.log10(Math.max(1e-6, this.speed)).toFixed(2);
       presetBtns.forEach((b) => {
@@ -114,6 +121,7 @@ export class Autoplay {
       });
     };
     this.onChange(refresh);
+    onLangChange(refresh);
     refresh();
   }
 }

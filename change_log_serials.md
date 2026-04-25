@@ -532,6 +532,48 @@ Format:
   js/render/index.js js/ui/controlPanel.js js/ui/urlState.js`;
   delete `js/core/satellites.js`.
 
+## S399 — Translate header text, Camera/Vault/Date sliders, autoplay UI, Live panels
+
+- **Date:** 2026-04-25
+- **Files changed:** `js/ui/i18n.js`,
+  `js/ui/controlPanel.js`,
+  `js/ui/autoplay.js`,
+  `js/main.js`,
+  `index.html`,
+  `change_log_serials.md`.
+- **Change:**
+  - i18n STRINGS gains keys for the app header
+    (`app_title`, `app_subtitle`), the Live Moon Phases
+    panel header, the Live Ephemeris Data tab button,
+    Camera / Vault / Date numeric-row labels
+    (`lbl_camera_dir`, `lbl_camera_height`,
+    `lbl_camera_dist`, `lbl_zoom`, `lbl_elevation`,
+    `lbl_vault_size`, `lbl_vault_height`,
+    `lbl_day_of_year`, `lbl_time`, `lbl_datetime`,
+    `lbl_timezone`, `lbl_date_time_field`), and autoplay
+    chrome (`btn_pause`, `btn_play`, `status_running`,
+    `status_paused`, `btn_day`, `btn_week`, `btn_month`,
+    `btn_year`, `lbl_speed`). `cs` and `es` translations
+    supplied.
+  - `LABEL_KEY` extended with the new English label
+    strings.
+  - `dateTimeRow` and `timezoneRow` (built outside the
+    `buildRow` dispatcher) now bind their `<label>` via
+    `bindTranslatable`.
+  - Live Moon Phases header text node and the Live
+    Ephemeris Data tab button text now read through
+    `t()` and re-render via `onLangChange`.
+  - `js/ui/autoplay.js` imports `t` and `onLangChange`,
+    binds the Day / Week / Month / Year preset buttons,
+    the Speed label, and the Pause / Play / running /
+    paused refresh strings.
+  - `index.html` h1 + `.sub` get ids `app-title` and
+    `app-subtitle`; `js/main.js` translates them on
+    boot and on every language change.
+- **Revert:** `git checkout v-s000398 -- js/ui/i18n.js
+  js/ui/controlPanel.js js/ui/autoplay.js js/main.js
+  index.html`.
+
 ## S398 — Translate bottom-bar tooltips
 
 - **Date:** 2026-04-25

@@ -230,11 +230,13 @@ function snapSunNoonLocal(model) {
 
 function makeSunAnalemmaMonthly(label, lat) {
   const heading = lat >= 0 ? 180 : 0;
-  // Steeper tilt at the poles (where the sun stays near the horizon
-  // and circles azimuthally over the day) and at the equator (where
-  // the noon sun is near zenith). 45° is fine for mid-latitudes.
-  const camH = lat === 0 ? 60
-             : Math.abs(lat) === 90 ? 30
+  // At the equator the noon sun is near zenith and the analemma
+  // straddles the up-vector; at the poles the sun's daily motion is a
+  // horizontal circle around the zenith. In both cases the cleanest
+  // single-camera view is nearly straight up. Mid-latitudes still
+  // read best at a 45° tilt.
+  const camH = lat === 0 ? 85
+             : Math.abs(lat) === 90 ? 85
              : 45;
   return {
     name: label,
@@ -260,6 +262,13 @@ function makeSunAnalemmaMonthly(label, lat) {
     tasks: () => {
       const t = [
         Ttxt(`${label} · 12 monthly daily arcs · 21st of each month from 2025-03-21 (vernal equinox) · noon-position circle on each.`),
+        // Re-assert observer placement after the intro so any
+        // transient state from a previous demo can't leak through
+        // and pin the user at the wrong latitude.
+        Tcall((m) => m.setState({
+          ObserverLat: lat, ObserverLong: 0, ObserverHeading: heading,
+          CameraHeight: camH, CameraDirection: 0, InsideVault: true,
+        })),
         Tcall((m) => m.setState({ ShowGPTracer: false })),
         Tcall((m) => m.setState({ ShowGPTracer: true, SunMonthMarkers: [] })),
       ];

@@ -3657,3 +3657,20 @@ Format:
     arc skirting the horizon clip; `30` keeps the horizon and
     the sun's azimuthal day-circle both in frame.
 - **Revert:** `git checkout v-s000420 -- js/demos/definitions.js`.
+
+## S422 — Sun analemma: zenith-pointing camera at 0° / ±90°, observer pinned per task
+
+- **Date:** 2026-04-25
+- **Files changed:** `js/demos/definitions.js`.
+- **Change:**
+  - `makeSunAnalemmaMonthly` now uses `camH = 85` at the
+    equator and at both poles, so the analemma figure-8 (which
+    straddles the zenith at 0° and circles azimuthally near
+    the zenith at ±90°) lands inside the field of view instead
+    of half-behind the camera. ±45° still uses 45°.
+  - First demo task now re-asserts `ObserverLat`,
+    `ObserverLong`, `ObserverHeading`, `CameraHeight`,
+    `CameraDirection`, and `InsideVault` via `Tcall` after the
+    intro patch is applied, so any leftover state from a prior
+    demo can't pin the observer at the wrong latitude.
+- **Revert:** `git checkout v-s000421 -- js/demos/definitions.js`.

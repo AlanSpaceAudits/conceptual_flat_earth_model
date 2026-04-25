@@ -121,6 +121,7 @@ function defaultState() {
     MoonPhaseExpanded:       false,
     ShowSatellites:          true,
     ShowGPPath:              false,
+    ShowSunMoonNine:         false,
     ShowSunAnalemma:         false,
     ShowMoonAnalemma:        false,
     ShowCelestialBodies:     true,

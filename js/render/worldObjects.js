@@ -2275,6 +2275,76 @@ export class CelestialMarker {
   }
 }
 
+// Underlined-digit canvas for the Sun / Moon "9" overlay. Underline
+// disambiguates 9 from 6 once perspective rotates the glyph.
+function makeUnderlinedDigitCanvas(text, color) {
+  const W = 256, H = 256;
+  const cv = document.createElement('canvas');
+  cv.width = W; cv.height = H;
+  const ctx = cv.getContext('2d');
+  ctx.clearRect(0, 0, W, H);
+  ctx.font = 'bold 200px sans-serif';
+  ctx.fillStyle = color;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(text, W / 2, H / 2 - 8);
+  const m = ctx.measureText(text);
+  ctx.lineWidth = 14;
+  ctx.strokeStyle = color;
+  ctx.beginPath();
+  ctx.moveTo(W / 2 - m.width / 2, H / 2 + 92);
+  ctx.lineTo(W / 2 + m.width / 2, H / 2 + 92);
+  ctx.stroke();
+  return cv;
+}
+
+export class SunMoonGlyph {
+  constructor(text, color, clippingPlanes = []) {
+    const tex = new THREE.CanvasTexture(makeUnderlinedDigitCanvas(text, color));
+    tex.colorSpace = THREE.SRGBColorSpace;
+    tex.minFilter  = THREE.LinearMipMapLinearFilter;
+    tex.magFilter  = THREE.LinearFilter;
+    tex.anisotropy = 4;
+    this.tex = tex;
+
+    const geom = new THREE.PlaneGeometry(1, 1);
+
+    this.vaultMat = new THREE.MeshBasicMaterial({
+      map: tex,
+      transparent: true,
+      side: THREE.DoubleSide,
+      depthTest: true,
+      depthWrite: false,
+    });
+    this.vaultMesh = new THREE.Mesh(geom, this.vaultMat);
+    this.vaultMesh.renderOrder = 102;
+
+    this.opticalMat = new THREE.MeshBasicMaterial({
+      map: tex,
+      transparent: true,
+      side: THREE.DoubleSide,
+      depthTest: false,
+      depthWrite: false,
+      clippingPlanes,
+    });
+    this.opticalMesh = new THREE.Mesh(geom, this.opticalMat);
+    this.opticalMesh.renderOrder = 54;
+
+    this.group = new THREE.Group();
+    this.group.add(this.vaultMesh);
+    this.group.add(this.opticalMesh);
+  }
+
+  update(vaultPos, opticalPos, vaultSize, opticalSize, show) {
+    this.group.visible = !!show;
+    if (!show) return;
+    this.vaultMesh.position.set(vaultPos[0], vaultPos[1], vaultPos[2]);
+    this.vaultMesh.scale.set(vaultSize, vaultSize, 1);
+    this.opticalMesh.position.set(opticalPos[0], opticalPos[1], opticalPos[2]);
+    this.opticalMesh.scale.set(opticalSize, opticalSize, 1);
+  }
+}
+
 // --- Rays from observer to a target ---------------------------------------
 
 export class Ray {

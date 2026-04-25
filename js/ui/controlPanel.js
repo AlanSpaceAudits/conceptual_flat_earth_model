@@ -717,6 +717,7 @@ const FIELD_GROUPS = [
         { key: 'TrackerGPOverride',    label: 'GP Override',              bool: true },
         { key: 'ShowTruePositions',    label: 'True Positions',           bool: true },
         { key: 'ShowGPPath',           label: 'GP Path (24 h)',           bool: true },
+        { key: 'ShowSunMoonNine',      label: 'Sun / Moon "9" Glyph',     bool: true },
       ]},
       { title: 'Celestial Bodies', rows: [
         { key: 'ShowCelestialBodies', label: 'Show', bool: true },

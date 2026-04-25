@@ -3435,3 +3435,24 @@ Format:
     in-row `STARFIELD_CYCLE` constant is removed.
 - **Revert:** `git checkout v-s000409 -- js/render/starfieldChart.js
   js/ui/controlPanel.js`.
+
+## S411 — Sun / Moon "9" overlay toggle
+
+- **Date:** 2026-04-25
+- **Files changed:** `js/render/worldObjects.js`,
+  `js/render/index.js`, `js/ui/controlPanel.js`,
+  `js/core/app.js`.
+- **Change:**
+  - New `SunMoonGlyph` class in `worldObjects.js`: a flat
+    `PlaneGeometry` textured with an underlined digit (rendered
+    via canvas), drawn both at the body's vault coord and its
+    optical-vault coord. Plane is double-sided and parented to
+    the world frame (no billboarding) so observer perspective
+    rotates the glyph.
+  - `render/index.js` instantiates `sunNine` and `moonNine`
+    (digit `'9'`) and updates them next to the existing
+    sun/moon markers.
+  - `Tracker Options` group gains a `Sun / Moon "9" Glyph`
+    boolean. State key `ShowSunMoonNine` defaults to `false`.
+- **Revert:** `git checkout v-s000410 -- js/render/worldObjects.js
+  js/render/index.js js/ui/controlPanel.js js/core/app.js`.

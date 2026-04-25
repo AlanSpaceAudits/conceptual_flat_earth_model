@@ -8,7 +8,7 @@ import {
   CelestialMarker, Observer, Stars, LatitudeLines, GroundPoint,
   CelestialPoles, DeclinationCircles, Yggdrasil, MtMeru, ToroidalVortex,
   LongitudeRing, CelNavStars, TrackedGroundPoints, CatalogPointStars,
-  GPPathOverlay, Discworld, AnalemmaLine,
+  GPPathOverlay, Discworld, AnalemmaLine, SunMoonGlyph,
 } from './worldObjects.js';
 import { loadLandGeo, buildGeoJsonLand, buildImageMap, buildBlankMap } from './earthMap.js';
 import { Constellations } from './constellations.js';
@@ -224,6 +224,11 @@ export class Renderer {
     }
     this.sm.world.add(this.sunMarker.group);
     this.sm.world.add(this.moonMarker.group);
+
+    this.sunNine  = new SunMoonGlyph('9', '#1a1a1a', clipPlanes);
+    this.moonNine = new SunMoonGlyph('9', '#1a1a1a', clipPlanes);
+    this.sm.world.add(this.sunNine.group);
+    this.sm.world.add(this.moonNine.group);
 
     this._clipPlanes = clipPlanes;
 
@@ -463,6 +468,16 @@ export class Renderer {
         c.MoonAnglesGlobe.elevation,
       );
     }
+
+    const nineOn = !!s.ShowSunMoonNine;
+    this.sunNine.update(
+      sunVaultVis, c.SunOpticalVaultCoord, 0.10, 0.025,
+      nineOn && showSun,
+    );
+    this.moonNine.update(
+      moonVaultVis, c.MoonOpticalVaultCoord, 0.08, 0.020,
+      nineOn && showMoon,
+    );
 
     // Planet markers: same pipeline as sun/moon but each has its own vault
     // height so they're layered above the starfield. Optical-vault dots

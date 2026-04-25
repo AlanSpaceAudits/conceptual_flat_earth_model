@@ -180,7 +180,7 @@ export class SceneManager {
     // around (gp_x, gp_y, 0), with the look-at pinned on the GP so the
     // body stays in screen centre. Falls back to the normal orbit math
     // if the target can't be resolved.
-    if (s.FreeCamActive && s.FollowTarget) {
+    if (s.FreeCamActive && s.FollowTarget && !s.FreeCameraMode) {
       const gp = resolveTargetGp(s.FollowTarget, this.model.computed);
       if (gp) {
         const gpXY = canonicalLatLongToDisc(gp.lat, gp.lon, FE_RADIUS);
@@ -197,6 +197,11 @@ export class SceneManager {
     const y = dist * Math.cos(hgt) * Math.sin(dir);
     const z = dist * Math.sin(hgt);
     this.camera.position.set(x, y, z);
+
+    if (s.FreeCameraMode) {
+      this.camera.lookAt(0, 0, 0);
+      return;
+    }
 
     const domeH = s.VaultHeight;
     const zoomParam = Math.max(0, Math.min(1, (s.Zoom - 1) / (10 - 1)));

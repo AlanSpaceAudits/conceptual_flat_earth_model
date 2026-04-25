@@ -3505,3 +3505,18 @@ Format:
   - `render/index.js` passes `clipPlanes` to `new GPTracer(...)`.
 - **Revert:** `git checkout v-s000412 -- js/render/worldObjects.js
   js/render/index.js`.
+
+## S414 — Free Camera Mode detaches from observer + tracked body
+
+- **Date:** 2026-04-25
+- **Files changed:** `js/render/scene.js`.
+- **Change:**
+  - When `FreeCameraMode` is set, the orbital-camera path now
+    skips both auto-follow behaviours: the
+    `FreeCamActive`/`FollowTarget` GP-orbit branch is bypassed,
+    and the observer-pull `lookAt` blend is replaced with a
+    fixed `lookAt(0, 0, 0)`. Result: the camera detaches from
+    both the observer and the active track, so the user can
+    pan / zoom independently while body tracking and HUD
+    readouts continue.
+- **Revert:** `git checkout v-s000413 -- js/render/scene.js`.

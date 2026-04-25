@@ -532,6 +532,19 @@ Format:
   js/render/index.js js/ui/controlPanel.js js/ui/urlState.js`;
   delete `js/core/satellites.js`.
 
+## S384 — BSC render cap raised 1024 → 4096
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/render/index.js`,
+  `change_log_serials.md`.
+- **Change:** `bscStars` `CatalogPointStars` constructor arg
+  `maxCount` raised from 1024 to 4096 so the full Bright Star
+  Catalog union (947 entries today, headroom for additions)
+  fits without being silently truncated by
+  `Math.min(entries.length, this._maxStars)` in
+  `update()`.
+- **Revert:** `git checkout v-s000383 -- js/render/index.js`.
+
 ## S383 — Decouple canonicalLatLongToDisc from MapProjection (rollback ground↔sky linking)
 
 - **Date:** 2026-04-24

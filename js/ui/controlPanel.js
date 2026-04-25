@@ -1305,7 +1305,7 @@ function buildGroup(model, title, rows, popupGroups) {
   arrow.className = 'group-arrow';
   arrow.textContent = '▸';
   const titleSpan = document.createElement('span');
-  titleSpan.className = 'group-title';
+  titleSpan.className = 'group-header-title';
   const titleKey = GROUP_KEY[title];
   titleSpan.textContent = titleKey ? t(titleKey) : title;
   if (titleKey) {

@@ -532,6 +532,17 @@ Format:
   js/render/index.js js/ui/controlPanel.js js/ui/urlState.js`;
   delete `js/core/satellites.js`.
 
+## S396 — Rename group-header title span class to avoid display:none collision
+
+- **Date:** 2026-04-25
+- **Files changed:** `js/ui/controlPanel.js`,
+  `change_log_serials.md`.
+- **Change:** the title span class `.group-title` collided with an
+  existing rule `.group-title { display: none; }` in
+  `css/styles.css`, hiding every group header title. Renamed to
+  `.group-header-title`.
+- **Revert:** `git checkout v-s000395 -- js/ui/controlPanel.js`.
+
 ## S395 — Build group header via createElement instead of innerHTML
 
 - **Date:** 2026-04-25

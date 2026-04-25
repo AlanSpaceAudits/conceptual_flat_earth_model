@@ -182,19 +182,108 @@ model.addEventListener('update', () => {
   }
 });
 
-const infoBtn   = document.querySelector('header .info-btn');
-const infoPopup = document.querySelector('header .info-popup');
-if (infoBtn && infoPopup) {
-  infoBtn.addEventListener('click', (e) => {
+const aboutBtn    = document.getElementById('about-btn');
+const aboutPopup  = document.getElementById('about-popup');
+const legendBtn   = document.getElementById('legend-btn');
+const legendPopup = document.getElementById('legend-popup');
+const infoBoxBtns = [aboutBtn, legendBtn].filter(Boolean);
+const infoBoxPopups = [aboutPopup, legendPopup].filter(Boolean);
+
+function openInfoPopup(popup) {
+  for (const p of infoBoxPopups) p.hidden = (p !== popup) ? true : !p.hidden;
+}
+
+if (aboutBtn && aboutPopup) {
+  aboutBtn.addEventListener('click', (e) => { e.stopPropagation(); openInfoPopup(aboutPopup); });
+}
+if (legendBtn && legendPopup) {
+  let legendLoaded = false;
+  legendBtn.addEventListener('click', async (e) => {
     e.stopPropagation();
-    infoPopup.hidden = !infoPopup.hidden;
-  });
-  document.addEventListener('click', (e) => {
-    if (!infoPopup.hidden && !infoPopup.contains(e.target) && e.target !== infoBtn) {
-      infoPopup.hidden = true;
+    if (!legendLoaded) {
+      try {
+        const res = await fetch('about.md');
+        const md = await res.text();
+        legendPopup.innerHTML = renderMarkdown(md);
+        legendLoaded = true;
+      } catch (err) {
+        legendPopup.textContent = 'Legend unavailable.';
+      }
     }
+    openInfoPopup(legendPopup);
   });
 }
+document.addEventListener('click', (e) => {
+  for (const popup of infoBoxPopups) {
+    if (popup.hidden) continue;
+    if (popup.contains(e.target)) continue;
+    if (infoBoxBtns.some((b) => b && b.contains(e.target))) continue;
+    popup.hidden = true;
+  }
+});
+
+// Tiny markdown renderer — handles headings, paragraphs, bullet
+// lists, GFM tables, code spans, and bold / italic. Enough for
+// the Legend popup; intentionally minimal.
+function renderMarkdown(src) {
+  const lines = src.replace(/\r\n?/g, '\n').split('\n');
+  const out = [];
+  let i = 0;
+  const inline = (s) => s
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*([^*]+)\*/g, '<em>$1</em>')
+    .replace(/<kbd>([^<]+)<\/kbd>/g, '<kbd>$1</kbd>')
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+  while (i < lines.length) {
+    const ln = lines[i];
+    if (/^---+\s*$/.test(ln)) { out.push('<hr>'); i++; continue; }
+    const h = ln.match(/^(#{1,6})\s+(.*)$/);
+    if (h) { out.push(`<h${h[1].length}>${inline(h[2])}</h${h[1].length}>`); i++; continue; }
+    if (ln.startsWith('| ')) {
+      const rows = [];
+      while (i < lines.length && lines[i].startsWith('|')) { rows.push(lines[i]); i++; }
+      if (rows.length >= 2) {
+        const split = (r) => r.replace(/^\||\|$/g, '').split('|').map((c) => c.trim());
+        const headers = split(rows[0]);
+        const body = rows.slice(2).map(split);
+        out.push('<table>');
+        out.push('<thead><tr>' + headers.map((h) => `<th>${inline(h)}</th>`).join('') + '</tr></thead>');
+        out.push('<tbody>' + body.map((r) => '<tr>' + r.map((c) => `<td>${inline(c)}</td>`).join('') + '</tr>').join('') + '</tbody>');
+        out.push('</table>');
+        continue;
+      }
+    }
+    if (/^[-*]\s+/.test(ln)) {
+      const items = [];
+      while (i < lines.length && /^[-*]\s+/.test(lines[i])) {
+        items.push(`<li>${inline(lines[i].replace(/^[-*]\s+/, ''))}</li>`);
+        i++;
+      }
+      out.push('<ul>' + items.join('') + '</ul>');
+      continue;
+    }
+    if (ln.trim() === '') { i++; continue; }
+    const p = [ln];
+    i++;
+    while (i < lines.length && lines[i].trim() && !/^(#|---|\||[-*]\s)/.test(lines[i])) {
+      p.push(lines[i]); i++;
+    }
+    out.push(`<p>${inline(p.join(' '))}</p>`);
+  }
+  return out.join('\n');
+}
+
+// Translate any data-i18n nodes (About popup paragraphs, etc.).
+function refreshI18nNodes() {
+  document.querySelectorAll('[data-i18n]').forEach((el) => {
+    const k = el.getAttribute('data-i18n');
+    el.textContent = t(k);
+  });
+}
+onLangChange(refreshI18nNodes);
+refreshI18nNodes();
 
 attachUrlState(model, demos);
 

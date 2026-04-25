@@ -102,6 +102,10 @@ const STRINGS = {
     sun_never_enters: '(sun never enters optical vault)',
     next_solar_eclipse: 'Next solar eclipse',
     next_lunar_eclipse: 'Next lunar eclipse',
+    about_btn: 'About', legend_btn: 'Legend',
+    about_p1: "This is a conceptual model. The positions of the stars are based purely on kinematics; the observer's optical vault defines the limit of vision onto which the starfield is projected.",
+    about_p2: 'Any conceptual model that uses the lat/long graticule is no better or worse than any other projection. The graticule is internally consistent and self-referential to a fictitious observer at the center of the earth — it is that fictitious observer that binds the 60 NMi / 1° relationship to the ground positions of the stars.',
+    about_p3: '"Fictitious observer" is not mutually exclusive with the conceptual model: every such model is ultimately grounded in what a single real observer sees in their own hemisphere of vision, and the graticule is simply one bookkeeping convention on top of that.',
   },
   cs: {
     tab_view: 'Pohled', tab_time: 'Čas', tab_show: 'Zobrazit',
@@ -201,6 +205,10 @@ const STRINGS = {
     sun_never_enters: '(slunce nevstupuje do optické klenby)',
     next_solar_eclipse: 'Další zatmění Slunce',
     next_lunar_eclipse: 'Další zatmění Měsíce',
+    about_btn: 'O modelu', legend_btn: 'Legenda',
+    about_p1: 'Toto je koncepční model. Pozice hvězd jsou založeny čistě na kinematice; optická klenba pozorovatele definuje hranici viditelnosti, na kterou se promítá hvězdné pole.',
+    about_p2: 'Žádný koncepční model používající mřížku zeměp. šířky/délky není lepší ani horší než jakákoli jiná projekce. Mřížka je vnitřně konzistentní a samoreferenční vůči fiktivnímu pozorovateli ve středu Země — právě tento fiktivní pozorovatel váže vztah 60 NMi / 1° na pozice hvězd na zemi.',
+    about_p3: '„Fiktivní pozorovatel" se nevylučuje s koncepčním modelem: každý takový model je nakonec zakotven v tom, co jeden skutečný pozorovatel vidí ve své vlastní hemisféře vidění, a mřížka je pouze jedna účetní konvence nad tím.',
   },
   es: {
     tab_view: 'Vista', tab_time: 'Tiempo', tab_show: 'Mostrar',
@@ -300,6 +308,10 @@ const STRINGS = {
     sun_never_enters: '(el Sol no entra en la bóveda óptica)',
     next_solar_eclipse: 'Próximo eclipse solar',
     next_lunar_eclipse: 'Próximo eclipse lunar',
+    about_btn: 'Acerca', legend_btn: 'Leyenda',
+    about_p1: 'Este es un modelo conceptual. Las posiciones de las estrellas se basan puramente en la cinemática; la bóveda óptica del observador define el límite de visión sobre el que se proyecta el campo de estrellas.',
+    about_p2: 'Cualquier modelo conceptual que utilice la cuadrícula lat/long no es ni mejor ni peor que cualquier otra proyección. La cuadrícula es internamente coherente y autorreferencial a un observador ficticio en el centro de la Tierra — es ese observador ficticio quien vincula la relación 60 NMi / 1° a las posiciones terrestres de las estrellas.',
+    about_p3: '"Observador ficticio" no es mutuamente excluyente con el modelo conceptual: cada modelo de este tipo se basa, en última instancia, en lo que un único observador real ve en su propio hemisferio de visión, y la cuadrícula es simplemente una convención de contabilidad sobre eso.',
   },
 
   fr: {
@@ -389,6 +401,10 @@ const STRINGS = {
     sun_never_enters: '(le Soleil n’entre pas dans la voûte optique)',
     next_solar_eclipse: 'Prochaine éclipse solaire',
     next_lunar_eclipse: 'Prochaine éclipse lunaire',
+    about_btn: 'À propos', legend_btn: 'Légende',
+    about_p1: "Ceci est un modèle conceptuel. Les positions des étoiles sont basées uniquement sur la cinématique ; la voûte optique de l'observateur définit la limite de vision sur laquelle le champ d'étoiles est projeté.",
+    about_p2: "Tout modèle conceptuel utilisant le quadrillage lat/long n'est ni meilleur ni pire qu'une autre projection. Le quadrillage est intrinsèquement cohérent et auto-référentiel à un observateur fictif au centre de la Terre — c'est cet observateur fictif qui lie le rapport 60 NMi / 1° aux positions au sol des étoiles.",
+    about_p3: "« Observateur fictif » n'est pas exclusif au modèle conceptuel : chaque tel modèle est ancré dans ce qu'un observateur réel voit dans son propre hémisphère de vision, et le quadrillage n'est qu'une convention de comptabilité par-dessus.",
   },
 
   de: {
@@ -478,6 +494,10 @@ const STRINGS = {
     sun_never_enters: '(Sonne tritt nie ins optische Gewölbe ein)',
     next_solar_eclipse: 'Nächste Sonnenfinsternis',
     next_lunar_eclipse: 'Nächste Mondfinsternis',
+    about_btn: 'Über', legend_btn: 'Legende',
+    about_p1: 'Dies ist ein konzeptionelles Modell. Die Positionen der Sterne basieren rein auf Kinematik; das optische Gewölbe des Beobachters definiert die Sichtgrenze, auf die das Sternfeld projiziert wird.',
+    about_p2: 'Jedes konzeptionelle Modell, das das Lat/Lon-Gitter verwendet, ist nicht besser oder schlechter als jede andere Projektion. Das Gitter ist intern konsistent und selbstreferenziell zu einem fiktiven Beobachter im Erdmittelpunkt — dieser fiktive Beobachter verknüpft die Beziehung 60 NMi / 1° mit den Bodenpositionen der Sterne.',
+    about_p3: '„Fiktiver Beobachter" schließt das konzeptionelle Modell nicht aus: jedes solche Modell gründet letztlich darauf, was ein einzelner realer Beobachter in seiner eigenen Sichthemisphäre sieht, und das Gitter ist nur eine Buchhaltungskonvention darüber.',
   },
 
   it: {
@@ -567,6 +587,10 @@ const STRINGS = {
     sun_never_enters: '(il Sole non entra nella volta ottica)',
     next_solar_eclipse: 'Prossima eclissi solare',
     next_lunar_eclipse: 'Prossima eclissi lunare',
+    about_btn: 'Info', legend_btn: 'Legenda',
+    about_p1: "Questo è un modello concettuale. Le posizioni delle stelle si basano puramente sulla cinematica; la volta ottica dell'osservatore definisce il limite della visione su cui viene proiettato il campo stellare.",
+    about_p2: "Qualsiasi modello concettuale che utilizzi il reticolo lat/long non è né migliore né peggiore di qualsiasi altra proiezione. Il reticolo è internamente coerente e auto-referenziale a un osservatore fittizio al centro della Terra — è quell'osservatore fittizio che lega il rapporto 60 NMi / 1° alle posizioni terrestri delle stelle.",
+    about_p3: "\"Osservatore fittizio\" non è mutuamente esclusivo con il modello concettuale: ogni tale modello si fonda in definitiva su ciò che un singolo osservatore reale vede nel proprio emisfero visivo, e il reticolo è semplicemente una convenzione contabile su questo.",
   },
 
   pt: {
@@ -656,6 +680,10 @@ const STRINGS = {
     sun_never_enters: '(o Sol nunca entra na abóbada óptica)',
     next_solar_eclipse: 'Próximo eclipse solar',
     next_lunar_eclipse: 'Próximo eclipse lunar',
+    about_btn: 'Sobre', legend_btn: 'Legenda',
+    about_p1: 'Este é um modelo conceitual. As posições das estrelas são baseadas puramente em cinemática; a abóbada óptica do observador define o limite de visão sobre o qual o campo de estrelas é projetado.',
+    about_p2: 'Qualquer modelo conceitual que use a grade lat/long não é nem melhor nem pior que qualquer outra projeção. A grade é internamente consistente e auto-referencial a um observador fictício no centro da Terra — é esse observador fictício que liga a relação 60 NMi / 1° às posições terrestres das estrelas.',
+    about_p3: '"Observador fictício" não é mutuamente exclusivo do modelo conceitual: cada modelo desse tipo está, em última análise, ancorado no que um único observador real vê em seu próprio hemisfério de visão, e a grade é simplesmente uma convenção contábil sobre isso.',
   },
 
   pl: {
@@ -745,6 +773,10 @@ const STRINGS = {
     sun_never_enters: '(Słońce nie wchodzi w optyczne sklepienie)',
     next_solar_eclipse: 'Następne zaćmienie Słońca',
     next_lunar_eclipse: 'Następne zaćmienie Księżyca',
+    about_btn: 'O modelu', legend_btn: 'Legenda',
+    about_p1: 'To jest model koncepcyjny. Pozycje gwiazd opierają się wyłącznie na kinematyce; optyczne sklepienie obserwatora definiuje granicę widzenia, na którą rzutowane jest pole gwiazd.',
+    about_p2: 'Każdy model koncepcyjny używający siatki szer./dług. nie jest ani lepszy, ani gorszy niż jakakolwiek inna projekcja. Siatka jest wewnętrznie spójna i samoodniesieniowa wobec fikcyjnego obserwatora w centrum Ziemi — to ten fikcyjny obserwator wiąże relację 60 NMi / 1° z naziemnymi pozycjami gwiazd.',
+    about_p3: '„Fikcyjny obserwator" nie wyklucza modelu koncepcyjnego: każdy taki model jest ostatecznie zakorzeniony w tym, co pojedynczy rzeczywisty obserwator widzi we własnej hemisferze widzenia, a siatka jest po prostu konwencją księgową na tym osadzoną.',
   },
 
   nl: {
@@ -834,6 +866,10 @@ const STRINGS = {
     sun_never_enters: '(zon komt niet in het optische gewelf)',
     next_solar_eclipse: 'Volgende zonsverduistering',
     next_lunar_eclipse: 'Volgende maansverduistering',
+    about_btn: 'Over', legend_btn: 'Legenda',
+    about_p1: 'Dit is een conceptueel model. De posities van de sterren zijn puur gebaseerd op kinematica; het optische gewelf van de waarnemer definieert de zichtgrens waarop het sterrenveld wordt geprojecteerd.',
+    about_p2: 'Elk conceptueel model dat het lat/long-raster gebruikt is niet beter of slechter dan welke andere projectie. Het raster is intern consistent en zelfreferentieel naar een fictieve waarnemer in het centrum van de aarde — die fictieve waarnemer verbindt de 60 NMi / 1°-relatie met de grondposities van de sterren.',
+    about_p3: '"Fictieve waarnemer" sluit het conceptuele model niet uit: elk zo\'n model is uiteindelijk geworteld in wat één werkelijke waarnemer ziet in zijn eigen zichthalfrond, en het raster is gewoon één boekhoudconventie daarbovenop.',
   },
 
   sk: {
@@ -923,6 +959,10 @@ const STRINGS = {
     sun_never_enters: '(Slnko nevstupuje do optickej klenby)',
     next_solar_eclipse: 'Ďalšie zatmenie Slnka',
     next_lunar_eclipse: 'Ďalšie zatmenie Mesiaca',
+    about_btn: 'O modeli', legend_btn: 'Legenda',
+    about_p1: 'Toto je koncepčný model. Pozície hviezd sú založené čisto na kinematike; optická klenba pozorovateľa definuje hranicu viditeľnosti, na ktorú sa premieta hviezdne pole.',
+    about_p2: 'Žiadny koncepčný model používajúci mriežku zem. šírky/dĺžky nie je lepší ani horší než akákoľvek iná projekcia. Mriežka je vnútorne konzistentná a samoreferenčná voči fiktívnemu pozorovateľovi v strede Zeme — práve tento fiktívny pozorovateľ viaže vzťah 60 NMi / 1° na pozície hviezd na zemi.',
+    about_p3: '„Fiktívny pozorovateľ" sa nevylučuje s koncepčným modelom: každý taký model je nakoniec zakotvený v tom, čo jeden skutočný pozorovateľ vidí vo svojej pologuli vízie, a mriežka je iba jedna účtovná konvencia nad tým.',
   },
 
   ru: {
@@ -1012,6 +1052,10 @@ const STRINGS = {
     sun_never_enters: '(Солнце не входит в оптический свод)',
     next_solar_eclipse: 'Следующее солнечное затмение',
     next_lunar_eclipse: 'Следующее лунное затмение',
+    about_btn: 'О модели', legend_btn: 'Легенда',
+    about_p1: 'Это концептуальная модель. Положения звёзд основаны исключительно на кинематике; оптический свод наблюдателя определяет границу видимости, на которую проецируется звёздное поле.',
+    about_p2: 'Любая концептуальная модель, использующая широтно-долготную сетку, не лучше и не хуже любой другой проекции. Сетка внутренне согласована и самореферентна к фиктивному наблюдателю в центре Земли — именно этот фиктивный наблюдатель связывает соотношение 60 NMi / 1° с наземными положениями звёзд.',
+    about_p3: '«Фиктивный наблюдатель» не исключает концептуальной модели: каждая такая модель в конечном счёте основана на том, что один реальный наблюдатель видит в собственной полусфере зрения, а сетка — это просто одна бухгалтерская конвенция поверх этого.',
   },
 
   ar: {
@@ -1101,6 +1145,10 @@ const STRINGS = {
     sun_never_enters: '(الشمس لا تدخل القبة البصرية)',
     next_solar_eclipse: 'كسوف الشمس القادم',
     next_lunar_eclipse: 'خسوف القمر القادم',
+    about_btn: 'حول', legend_btn: 'وصف',
+    about_p1: 'هذا نموذج مفاهيمي. مواقع النجوم تعتمد بحتاً على الحركية؛ القبة البصرية للمراقب تحدد حد الرؤية الذي يُعرض عليه حقل النجوم.',
+    about_p2: 'أي نموذج مفاهيمي يستخدم شبكة خطوط الطول والعرض ليس أفضل ولا أسوأ من أي إسقاط آخر. الشبكة متسقة داخلياً ومرجعية ذاتياً لمراقب وهمي في مركز الأرض — هذا المراقب الوهمي هو الذي يربط علاقة 60 ميل بحري / 1° بمواقع النجوم على الأرض.',
+    about_p3: '"المراقب الوهمي" لا يتعارض مع النموذج المفاهيمي: كل نموذج من هذا النوع يستند في النهاية إلى ما يراه مراقب حقيقي واحد في نصف الكرة المرئي الخاص به، والشبكة هي ببساطة اتفاقية محاسبية واحدة فوق ذلك.',
   },
 
   he: {
@@ -1190,6 +1238,10 @@ const STRINGS = {
     sun_never_enters: '(השמש לא נכנסת לכיפה האופטית)',
     next_solar_eclipse: 'ליקוי חמה הבא',
     next_lunar_eclipse: 'ליקוי ירח הבא',
+    about_btn: 'אודות', legend_btn: 'מקרא',
+    about_p1: 'זהו מודל מושגי. מיקומי הכוכבים מבוססים אך ורק על קינמטיקה; הכיפה האופטית של המתבונן מגדירה את גבול הראייה שעליו מוקרן שדה הכוכבים.',
+    about_p2: 'כל מודל מושגי המשתמש ברשת קווי אורך/רוחב אינו טוב ולא רע יותר מכל הטלה אחרת. הרשת עקבית פנימית ועצמית-התייחסות למתבונן בדיוני במרכז הארץ — זה אותו מתבונן בדיוני שקושר את היחס 60 NMi / 1° למיקומי הכוכבים על הקרקע.',
+    about_p3: '"מתבונן בדיוני" אינו סותר את המודל המושגי: כל מודל כזה מעוגן בסופו של דבר במה שמתבונן אמיתי אחד רואה בחצי הכדור הראייתי שלו, והרשת היא פשוט מוסכמה ראשית אחת מעל זה.',
   },
 
   zh: {
@@ -1279,6 +1331,10 @@ const STRINGS = {
     sun_never_enters: '（太阳从不进入光学穹）',
     next_solar_eclipse: '下次日食',
     next_lunar_eclipse: '下次月食',
+    about_btn: '关于', legend_btn: '图例',
+    about_p1: '这是一个概念模型。星星的位置纯粹基于运动学；观察者的光学穹定义了视野的极限，星场就投影在其上。',
+    about_p2: '任何使用经纬度网格的概念模型并不比任何其他投影更好或更差。该网格内部一致并自指于地球中心的虚拟观察者——正是这位虚拟观察者将 60 NMi / 1° 关系绑定到星星的地面位置。',
+    about_p3: '"虚拟观察者" 并不与概念模型互斥：每个这样的模型最终都根植于单个真实观察者在自己的视觉半球中所见，而网格只是其上的一个记账约定。',
   },
 
   ja: {
@@ -1368,6 +1424,10 @@ const STRINGS = {
     sun_never_enters: '（太陽は光学穹に入らない）',
     next_solar_eclipse: '次の日食',
     next_lunar_eclipse: '次の月食',
+    about_btn: '概要', legend_btn: '凡例',
+    about_p1: 'これは概念モデルです。星の位置は純粋に運動学に基づいており、観察者の光学穹が星野が投影される視野の限界を定義します。',
+    about_p2: '緯度経度のグラティキュールを使う概念モデルは、他のどの投影よりも優れたものでも劣ったものでもありません。グラティキュールは地球中心の架空の観察者に対して内部的に一貫し自己参照的です — その架空の観察者が 60 NMi / 1° の関係を星の地上位置に結びつけます。',
+    about_p3: '「架空の観察者」は概念モデルと相互排他的ではありません: そのようなすべてのモデルは、最終的に一人の現実の観察者が自分の視野半球で見るものに根ざしており、グラティキュールはその上の一つの会計上の慣習に過ぎません。',
   },
 
   ko: {
@@ -1457,6 +1517,10 @@ const STRINGS = {
     sun_never_enters: '(태양이 광학 궁륭에 들어오지 않음)',
     next_solar_eclipse: '다음 일식',
     next_lunar_eclipse: '다음 월식',
+    about_btn: '정보', legend_btn: '범례',
+    about_p1: '이것은 개념적 모델입니다. 별의 위치는 순수하게 운동학에 기반합니다; 관측자의 광학 궁륭이 별자리장이 투영되는 시야의 한계를 정의합니다.',
+    about_p2: '위도/경도 격자를 사용하는 어떤 개념적 모델도 다른 투영보다 더 좋거나 나쁘지 않습니다. 격자는 지구 중심의 가상 관측자에 대해 내부적으로 일관되고 자기 참조적입니다 — 그 가상 관측자가 60 NMi / 1° 관계를 별의 지상 위치에 연결합니다.',
+    about_p3: '"가상 관측자"는 개념적 모델과 상호 배타적이지 않습니다: 모든 그러한 모델은 결국 한 명의 실제 관측자가 자신의 시각 반구에서 보는 것에 뿌리를 두고 있으며, 격자는 그 위에 있는 하나의 회계 규약일 뿐입니다.',
   },
 
   th: {
@@ -1546,6 +1610,10 @@ const STRINGS = {
     sun_never_enters: '(อาทิตย์ไม่เข้าโดมแสง)',
     next_solar_eclipse: 'สุริยุปราคาครั้งถัดไป',
     next_lunar_eclipse: 'จันทรุปราคาครั้งถัดไป',
+    about_btn: 'เกี่ยวกับ', legend_btn: 'คำอธิบาย',
+    about_p1: 'นี่คือแบบจำลองแนวคิด ตำแหน่งของดาวอิงเฉพาะกับจลนศาสตร์ โดมแสงของผู้สังเกตกำหนดขอบเขตการมองเห็นที่สนามดาวถูกฉาย',
+    about_p2: 'แบบจำลองแนวคิดใดที่ใช้ตารางละติจูด/ลองจิจูดไม่ดีกว่าและไม่แย่กว่าการฉายอื่น ตารางมีความสอดคล้องภายในและอ้างอิงตนเองกับผู้สังเกตสมมติที่ศูนย์กลางโลก — ผู้สังเกตสมมตินั้นเชื่อมความสัมพันธ์ 60 NMi / 1° กับตำแหน่งของดาวบนพื้น',
+    about_p3: '"ผู้สังเกตสมมติ" ไม่ได้แยกออกจากแบบจำลองแนวคิด: แบบจำลองทุกประเภทดังกล่าวสุดท้ายตั้งอยู่บนสิ่งที่ผู้สังเกตจริงคนหนึ่งเห็นในซีกการมองเห็นของตน และตารางเป็นเพียงข้อตกลงทางบัญชีหนึ่งบนนั้น',
   },
 
   hi: {
@@ -1635,6 +1703,10 @@ const STRINGS = {
     sun_never_enters: '(सूर्य ऑप्टिकल मेहराब में नहीं प्रवेश करता)',
     next_solar_eclipse: 'अगला सूर्य ग्रहण',
     next_lunar_eclipse: 'अगला चंद्र ग्रहण',
+    about_btn: 'बारे में', legend_btn: 'विवरण',
+    about_p1: 'यह एक संकल्पनात्मक मॉडल है। तारों की स्थिति विशुद्ध रूप से गतिकी पर आधारित है; पर्यवेक्षक का ऑप्टिकल मेहराब दृष्टि की सीमा को परिभाषित करता है जिस पर तारा क्षेत्र प्रक्षेपित होता है।',
+    about_p2: 'अक्षांश/देशांतर ग्रेटिक्यूल का उपयोग करने वाला कोई भी संकल्पनात्मक मॉडल किसी अन्य प्रक्षेपण से न तो बेहतर है और न ही खराब। ग्रेटिक्यूल पृथ्वी के केंद्र पर एक काल्पनिक पर्यवेक्षक के लिए आंतरिक रूप से सुसंगत और स्व-संदर्भात्मक है — वही काल्पनिक पर्यवेक्षक 60 NMi / 1° संबंध को तारों की भू-स्थितियों से जोड़ता है।',
+    about_p3: '"काल्पनिक पर्यवेक्षक" संकल्पनात्मक मॉडल के साथ परस्पर अनन्य नहीं है: ऐसा हर मॉडल अंततः इस पर आधारित होता है कि एक वास्तविक पर्यवेक्षक अपने दृष्टि अर्धगोले में क्या देखता है, और ग्रेटिक्यूल केवल उस पर एक बहीखाता परिपाटी है।',
   },
 };
 

@@ -532,6 +532,44 @@ Format:
   js/render/index.js js/ui/controlPanel.js js/ui/urlState.js`;
   delete `js/core/satellites.js`.
 
+## S403 — Updated `about.md`; new Legend popup; About paragraphs + button labels translated
+
+- **Date:** 2026-04-25
+- **Files changed:** `about.md`,
+  `index.html`,
+  `js/main.js`,
+  `js/ui/i18n.js`,
+  `css/styles.css`,
+  `change_log_serials.md`.
+- **Change:**
+  - `about.md` rewritten as a comprehensive feature
+    reference + bottom-bar icon legend. Covers transport,
+    compass, cycle row, cardinals, search boxes, every tab,
+    every Tracker sub-menu, BSC architecture, demos,
+    HUD panels, keyboard, languages, URL persistence, and
+    credits. Single source of truth in English.
+  - `index.html`: existing About button gains an `id`; a
+    sibling **Legend** button (`📖`) added; the existing
+    paragraphs gain `data-i18n` keys; an empty
+    `legend-popup` div is the target for fetched markdown.
+  - `js/main.js`: tiny markdown renderer (headings, lists,
+    GFM tables, code spans, bold / italic, links).
+    Legend button lazily fetches `about.md`, renders it,
+    and shows the popup. Click-outside closes both popups
+    via shared open helper. `refreshI18nNodes` walks
+    `[data-i18n]` and pushes `t(key)` into each, registered
+    on `onLangChange` so the About paragraphs swap when the
+    picker changes.
+  - `js/ui/i18n.js`: 5 new keys added per language —
+    `about_btn`, `legend_btn`, `about_p1`, `about_p2`,
+    `about_p3`. Translations in all 18 supported
+    languages.
+  - `css/styles.css`: `.legend-popup` rule for wider
+    popup, scroll, table styling, code spans, accent
+    headings.
+- **Revert:** `git checkout v-s000402 -- about.md
+  index.html js/main.js js/ui/i18n.js css/styles.css`.
+
 ## S402 — Move language picker into compass cycle-row as a cycler button
 
 - **Date:** 2026-04-25

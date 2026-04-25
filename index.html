@@ -21,12 +21,14 @@
     <h1 id="app-title">FE CONCEPTUAL MODEL</h1>
     <p class="sub" id="app-subtitle">Modular port. All distances are unitless (FE radius = 1).</p>
     <div class="info-box">
-      <button class="info-btn" type="button" aria-label="About this model">ⓘ About</button>
-      <div class="info-popup" hidden>
-        <p>This is a conceptual model. The positions of the stars are based purely on kinematics; the observer's optical vault defines the limit of vision onto which the starfield is projected.</p>
-        <p>Any conceptual model that uses the lat/long graticule is no better or worse than any other projection. The graticule is internally consistent and self-referential to a fictitious observer at the center of the earth — it is that fictitious observer that binds the 60 NMi / 1° relationship to the ground positions of the stars.</p>
-        <p>"Fictitious observer" is not mutually exclusive with the conceptual model: every such model is ultimately grounded in what a single real observer sees in their own hemisphere of vision, and the graticule is simply one bookkeeping convention on top of that.</p>
+      <button class="info-btn" type="button" aria-label="About this model" id="about-btn">ⓘ <span data-i18n="about_btn">About</span></button>
+      <button class="info-btn" type="button" aria-label="Feature legend" id="legend-btn">📖 <span data-i18n="legend_btn">Legend</span></button>
+      <div class="info-popup" id="about-popup" hidden>
+        <p data-i18n="about_p1">This is a conceptual model. The positions of the stars are based purely on kinematics; the observer's optical vault defines the limit of vision onto which the starfield is projected.</p>
+        <p data-i18n="about_p2">Any conceptual model that uses the lat/long graticule is no better or worse than any other projection. The graticule is internally consistent and self-referential to a fictitious observer at the center of the earth — it is that fictitious observer that binds the 60 NMi / 1° relationship to the ground positions of the stars.</p>
+        <p data-i18n="about_p3">"Fictitious observer" is not mutually exclusive with the conceptual model: every such model is ultimately grounded in what a single real observer sees in their own hemisphere of vision, and the graticule is simply one bookkeeping convention on top of that.</p>
       </div>
+      <div class="info-popup legend-popup" id="legend-popup" hidden></div>
     </div>
   </header>
 

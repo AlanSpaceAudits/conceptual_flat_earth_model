@@ -49,6 +49,38 @@ header .info-popup {
 }
 header .info-popup p { margin: 0 0 8px; }
 header .info-popup p:last-child { margin-bottom: 0; }
+header .info-box > .info-btn + .info-btn { margin-left: 6px; }
+header .info-popup.legend-popup {
+  width: 720px; max-width: 92vw;
+  max-height: 80vh; overflow-y: auto;
+  font-style: normal; color: var(--fg);
+  font-size: 12px; line-height: 1.45;
+}
+header .info-popup.legend-popup h1 { font-size: 16px; margin: 0 0 8px; color: var(--accent); }
+header .info-popup.legend-popup h2 { font-size: 14px; margin: 14px 0 6px; color: var(--accent); }
+header .info-popup.legend-popup h3 { font-size: 13px; margin: 12px 0 4px; }
+header .info-popup.legend-popup hr {
+  border: 0; border-top: 1px solid var(--border); margin: 12px 0;
+}
+header .info-popup.legend-popup ul {
+  margin: 4px 0 8px; padding-left: 20px;
+}
+header .info-popup.legend-popup li { margin: 2px 0; }
+header .info-popup.legend-popup table {
+  width: 100%; border-collapse: collapse; margin: 6px 0;
+  font-size: 11px;
+}
+header .info-popup.legend-popup th,
+header .info-popup.legend-popup td {
+  border: 1px solid var(--border); padding: 3px 6px; text-align: left;
+  vertical-align: top;
+}
+header .info-popup.legend-popup th { background: var(--row); }
+header .info-popup.legend-popup code {
+  background: var(--row); padding: 1px 4px; border-radius: 3px;
+  font-family: ui-monospace, Menlo, monospace; font-size: 11px;
+}
+header .info-popup.legend-popup a { color: var(--accent); }
 
 #view { grid-area: view; position: relative; background: #000; min-height: 0; overflow: hidden; }
 #feCanvas { display: block; width: 100%; height: 100%; }

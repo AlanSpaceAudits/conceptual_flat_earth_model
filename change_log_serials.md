@@ -532,6 +532,19 @@ Format:
   js/render/index.js js/ui/controlPanel.js js/ui/urlState.js`;
   delete `js/core/satellites.js`.
 
+## S395 — Build group header via createElement instead of innerHTML
+
+- **Date:** 2026-04-25
+- **Files changed:** `js/ui/controlPanel.js`,
+  `change_log_serials.md`.
+- **Change:** group header construction switched from a single
+  `header.innerHTML = '<span>...</span><span>...</span>'` template
+  literal to explicit `createElement` calls for the arrow and
+  title spans. Avoids edge cases where the template-literal
+  output rendered an empty title; the `onLangChange` handler
+  binds directly to the created `titleSpan` reference.
+- **Revert:** `git checkout v-s000394 -- js/ui/controlPanel.js`.
+
 ## S394 — Translate group titles (Observer, Camera, Vault of the Heavens, …)
 
 - **Date:** 2026-04-25

@@ -1301,13 +1301,17 @@ function buildGroup(model, title, rows, popupGroups) {
   const header = document.createElement('button');
   header.type = 'button';
   header.className = 'group-header collapsed';
+  const arrow = document.createElement('span');
+  arrow.className = 'group-arrow';
+  arrow.textContent = '▸';
+  const titleSpan = document.createElement('span');
+  titleSpan.className = 'group-title';
   const titleKey = GROUP_KEY[title];
-  const initialTitle = titleKey ? t(titleKey) : title;
-  header.innerHTML = `<span class="group-arrow">▸</span><span class="group-title">${initialTitle}</span>`;
+  titleSpan.textContent = titleKey ? t(titleKey) : title;
   if (titleKey) {
-    const titleSpan = header.querySelector('.group-title');
     onLangChange(() => { titleSpan.textContent = t(titleKey); });
   }
+  header.append(arrow, titleSpan);
   const body = document.createElement('div');
   body.className = 'group-body';
   body.hidden = true;

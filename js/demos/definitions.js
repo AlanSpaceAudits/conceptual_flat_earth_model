@@ -10,7 +10,7 @@
 //     general demos by the `group` field on each entry. The control
 //     panel can render them as grouped sections.
 
-import { Ttxt, Tval, Thold } from './animation.js';
+import { Ttxt, Tval, Thold, Tcall } from './animation.js';
 import { SOLAR_ECLIPSE_DEMOS, LUNAR_ECLIPSE_DEMOS } from './eclipseRegistry.js';
 import { FE_ECLIPSE_PREDICTION_DEMOS } from './feEclipseTrack.js';
 
@@ -194,8 +194,75 @@ const ANALEMMA_LATS = [
   [-45, '45°S'           ],
   [-90, '90°S (south pole)'],
 ];
+
+// Monthly daily-arc variant for the 45° sun analemma. Starts at the
+// 2025 vernal equinox, plays a full simulated day, snaps a noon
+// circle, jumps +30 days, repeats 12 times. Astropixels (Fred
+// Espenak's tabulated DE405) drives the ephemeris.
+const VERNAL_EQUINOX_2025 = 3000;       // 2025-03-20 00:00 UTC
+const MONTH_STEP_DAYS = 30;
+const MONTHLY_DAY_DURATION_MS = 3500;
+
+function snapSunNoonLocal(model) {
+  const c = model.computed;
+  const obs = c.ObserverFeCoord || [0, 0, 0];
+  const opt = c.SunOpticalVaultCoord;
+  if (!opt) return;
+  const local = [opt[0] - obs[0], opt[1] - obs[1], opt[2] - obs[2]];
+  const cur = Array.isArray(model.state.SunMonthMarkers)
+    ? model.state.SunMonthMarkers : [];
+  model.setState({ SunMonthMarkers: [...cur, local] });
+}
+
+function makeSunAnalemma45Months(label, lat) {
+  const heading = lat >= 0 ? 180 : 0;
+  return {
+    name: label,
+    group: 'sun-analemma',
+    intro: {
+      ObserverLat: lat, ObserverLong: 0, ObserverHeading: heading,
+      BodySource: 'astropixels',
+      DateTime: VERNAL_EQUINOX_2025,
+      InsideVault: true,
+      OpticalZoom: 1.0,
+      VaultSize: 1, VaultHeight: 0.45,
+      CameraHeight: 45, CameraDirection: 0,
+      TrackerTargets: ['sun'],
+      ShowSunAnalemma: false, ShowMoonAnalemma: false,
+      ShowSunTrack: false, ShowMoonTrack: false,
+      ShowShadow: false, ShowTruePositions: true,
+      ShowOpticalVault: true, ShowStars: true,
+      FollowTarget: null, FreeCamActive: false,
+      SpecifiedTrackerMode: false,
+      ShowGPTracer: true, GPTracerTargets: ['sun'],
+      SunMonthMarkers: [],
+    },
+    tasks: () => {
+      const t = [
+        Ttxt(`${label} · 12 monthly daily arcs from vernal equinox 2025 · noon-position circle on each.`),
+        Tcall((m) => m.setState({ ShowGPTracer: false })),
+        Tcall((m) => m.setState({ ShowGPTracer: true, SunMonthMarkers: [] })),
+      ];
+      for (let i = 0; i < 12; i++) {
+        const dayStart = VERNAL_EQUINOX_2025 + i * MONTH_STEP_DAYS;
+        t.push(Tval('DateTime', dayStart, 1, 0, 'linear'));
+        t.push(Tval('DateTime', dayStart + 0.5, MONTHLY_DAY_DURATION_MS / 2, 0, 'linear'));
+        t.push(Tcall(snapSunNoonLocal));
+        t.push(Tval('DateTime', dayStart + 1.0, MONTHLY_DAY_DURATION_MS / 2, 0, 'linear'));
+      }
+      t.push(Ttxt('12 daily arcs traced · 12 noon snapshots placed. Pause/resume or End Demo.'));
+      t.push(Thold());
+      return t;
+    },
+  };
+}
+
 const ANALEMMA_DEMOS = [
-  ...ANALEMMA_LATS.map(([lat, t]) => makeAnalemma(`Sun analemma · ${t}`,        lat, 'sun')),
+  ...ANALEMMA_LATS.map(([lat, t]) => (
+    Math.abs(lat) === 45
+      ? makeSunAnalemma45Months(`Sun analemma · ${t}`, lat)
+      : makeAnalemma(`Sun analemma · ${t}`, lat, 'sun')
+  )),
   ...ANALEMMA_LATS.map(([lat, t]) => makeAnalemma(`Moon analemma · ${t}`,       lat, 'moon')),
   ...ANALEMMA_LATS.map(([lat, t]) => makeAnalemma(`Sun + Moon analemma · ${t}`, lat, 'both')),
 ];

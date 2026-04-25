@@ -122,6 +122,10 @@ export class Animator {
       this.model.setState({ [task.key]: v });
       return t >= 1;
     }
+    if (task.kind === 'call') {
+      task.fn(this.model);
+      return true;
+    }
     return true;
   }
 }
@@ -132,3 +136,4 @@ export const Thold = () => ({ kind: 'hold', delay: 0 });
 export const Ttxt = (txt, delay = 0) => ({ kind: 'text', text: txt, delay });
 export const Tval = (key, endValue, duration = 500, delay = 0, ease = 'cosine') =>
   ({ kind: 'val', key, endValue, duration, delay, ease });
+export const Tcall = (fn) => ({ kind: 'call', fn, delay: 0 });

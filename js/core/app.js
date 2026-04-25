@@ -124,6 +124,7 @@ function defaultState() {
     ShowSunMoonNine:         false,
     ShowGPTracer:            false,
     GPTracerTargets:         [],
+    SunMonthMarkers:         [],
     ShowSunAnalemma:         false,
     ShowMoonAnalemma:        false,
     ShowCelestialBodies:     true,

@@ -9,6 +9,7 @@ import {
   CelestialPoles, DeclinationCircles, Yggdrasil, MtMeru, ToroidalVortex,
   LongitudeRing, CelNavStars, TrackedGroundPoints, CatalogPointStars,
   GPPathOverlay, GPTracer, Discworld, AnalemmaLine, SunMoonGlyph,
+  MonthMarkers,
 } from './worldObjects.js';
 import { loadLandGeo, buildGeoJsonLand, buildImageMap, buildBlankMap } from './earthMap.js';
 import { Constellations } from './constellations.js';
@@ -139,6 +140,9 @@ export class Renderer {
 
     this.gpTracer = new GPTracer(clipPlanes);
     this.sm.world.add(this.gpTracer.group);
+
+    this.sunMonthMarkers = new MonthMarkers('#ffe680', 0.018, clipPlanes);
+    this.sm.world.add(this.sunMonthMarkers.group);
 
     this.satelliteStars = new CatalogPointStars({
       sourceKey: 'Satellites',
@@ -409,6 +413,7 @@ export class Renderer {
     this.satelliteStars.update(m);
     this.gpPathOverlay.update(m);
     this.gpTracer.update(m);
+    this.sunMonthMarkers.update(m);
     this.starfieldChart.update(m);
     this.constellations.update(m);
     // When a chart starfield is active, hide both the heavenly-vault and

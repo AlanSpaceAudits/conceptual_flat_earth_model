@@ -2345,6 +2345,83 @@ export class SunMoonGlyph {
   }
 }
 
+// Filled-circle disc texture, used by MonthMarkers.
+function _circleDiscCanvas(color) {
+  const W = 64, H = 64;
+  const cv = document.createElement('canvas');
+  cv.width = W; cv.height = H;
+  const ctx = cv.getContext('2d');
+  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.arc(W / 2, H / 2, W / 2 - 2, 0, 2 * Math.PI);
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(20, 20, 20, 0.6)';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  return cv;
+}
+
+// Per-month sun position notches drawn as billboarded sprites on the
+// observer's optical vault. Markers store observer-local offsets, so a
+// sub-group anchored to ObserverFeCoord re-renders them at the current
+// observer position each frame (mirrors GPTracer's sky behaviour).
+export class MonthMarkers {
+  constructor(color = '#ffe680', size = 0.018, clippingPlanes = []) {
+    this.group = new THREE.Group();
+    this.group.name = 'month-markers';
+
+    this.skyGroup = new THREE.Group();
+    this.group.add(this.skyGroup);
+
+    const tex = new THREE.CanvasTexture(_circleDiscCanvas(color));
+    tex.minFilter = THREE.LinearMipMapLinearFilter;
+    tex.magFilter = THREE.LinearFilter;
+    tex.colorSpace = THREE.SRGBColorSpace;
+    this._tex = tex;
+    this._size = size;
+    this._clippingPlanes = clippingPlanes;
+    this._sprites = [];
+  }
+
+  _ensureSprite(i) {
+    while (this._sprites.length <= i) {
+      const mat = new THREE.SpriteMaterial({
+        map: this._tex, transparent: true,
+        depthTest: false, depthWrite: false,
+      });
+      const sp = new THREE.Sprite(mat);
+      sp.scale.set(this._size, this._size, 1);
+      sp.renderOrder = 60;
+      this.skyGroup.add(sp);
+      this._sprites.push(sp);
+    }
+    return this._sprites[i];
+  }
+
+  update(model) {
+    const s = model.state;
+    const c = model.computed;
+    const arr = Array.isArray(s.SunMonthMarkers) ? s.SunMonthMarkers : [];
+    const visible = (s.ShowOpticalVault !== false) && arr.length > 0;
+    this.group.visible = visible;
+    if (!visible) return;
+
+    const obs = c.ObserverFeCoord || [0, 0, 0];
+    this.skyGroup.position.set(obs[0], obs[1], obs[2]);
+
+    for (let i = 0; i < arr.length; i++) {
+      const m = arr[i];
+      const sp = this._ensureSprite(i);
+      sp.visible = true;
+      sp.position.set(m[0], m[1], m[2]);
+    }
+    for (let i = arr.length; i < this._sprites.length; i++) {
+      this._sprites[i].visible = false;
+    }
+  }
+}
+
 // --- Rays from observer to a target ---------------------------------------
 
 export class Ray {

@@ -3556,3 +3556,34 @@ Format:
     auto-aim resume — pointing first-person view back at the
     `FollowTarget` if one exists.
 - **Revert:** `git checkout v-s000415 -- js/ui/mouseHandler.js`.
+
+## S417 — 45° sun analemma rebuilt as 12 monthly daily-arc snapshots
+
+- **Date:** 2026-04-25
+- **Files changed:** `js/demos/animation.js`,
+  `js/demos/definitions.js`, `js/render/worldObjects.js`,
+  `js/render/index.js`, `js/core/app.js`.
+- **Change:**
+  - New `Tcall(fn)` task primitive in `demos/animation.js`:
+    invokes `fn(model)` when the queue head reaches it, allowing
+    side-effects beyond `Tval`'s tweened state-key updates.
+  - New `MonthMarkers` renderer (`worldObjects.js`): reads the
+    `SunMonthMarkers` array (observer-local offsets), draws each
+    entry as a circle sprite under a sub-group anchored to the
+    current observer position. Sprite-style billboarding so the
+    notches stay legible at any orbit angle.
+  - `render/index.js` instantiates `sunMonthMarkers` and updates
+    it per frame.
+  - New state key `SunMonthMarkers` (default `[]`) in
+    `defaultState()`.
+  - Sun analemma · 45°N and 45°S rebuilt via
+    `makeSunAnalemma45Months`: starts at 2025-03-20 (vernal
+    equinox, DateTime 3000) on Astropixels, then 12 cycles of
+    "set DateTime to month-day midnight → sweep half-day to
+    noon → snap a notch (circle on the line) → sweep second
+    half to next-midnight → jump +30 days". GP Tracer's sky
+    polyline draws the 12 daily arcs; `MonthMarkers` draws the
+    12 noon notches. Both reset on demo start.
+- **Revert:** `git checkout v-s000416 -- js/demos/animation.js
+  js/demos/definitions.js js/render/worldObjects.js
+  js/render/index.js js/core/app.js`.

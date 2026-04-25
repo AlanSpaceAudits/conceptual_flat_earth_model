@@ -1700,7 +1700,28 @@ export function buildControlPanel(host, model, demos) {
     });
   });
 
-  cycleRow.append(btnMap, btnStarfield, btnAzRing);
+  // Shortcut to the Info → Language Select group. Sits in the
+  // cycle-row's bottom-right slot so users can swap language
+  // without hunting through the Info tab. Button face shows the
+  // current 2-letter id (EN / CZ / ES / …).
+  const btnLang = document.createElement('button');
+  btnLang.className = 'time-btn lang-btn';
+  btnLang.type = 'button';
+  const refreshLangBtn = () => {
+    const cur = model.state.Language || 'en';
+    const entry = LANGUAGES.find((l) => l.id === cur) || LANGUAGES[0];
+    btnLang.textContent = entry.label;
+  };
+  btnLang.addEventListener('click', () => {
+    if (typeof featureOpen.fn === 'function') {
+      featureOpen.fn('Info', 'Language Select');
+    }
+  });
+  bindTip(btnLang, 'lang_label');
+  model.addEventListener('update', refreshLangBtn);
+  refreshLangBtn();
+
+  cycleRow.append(btnMap, btnStarfield, btnAzRing, btnLang);
   compassControls.appendChild(cycleRow);
 
   // Cardinals live in their own 2×2 sub-grid so the N / S / E / W

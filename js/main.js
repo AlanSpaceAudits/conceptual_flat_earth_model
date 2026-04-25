@@ -215,20 +215,49 @@ if (aboutBtn && aboutPopup) {
   aboutBtn.addEventListener('click', (e) => { e.stopPropagation(); openInfoPopup(aboutPopup); });
 }
 if (legendBtn && legendPopup) {
-  let legendLoaded = false;
-  legendBtn.addEventListener('click', async (e) => {
-    e.stopPropagation();
-    if (!legendLoaded) {
-      try {
-        const res = await fetch('about.md');
-        const md = await res.text();
+  // Translatable legend: try `about_<lang>.md` for the current
+  // language; fall back to `about.md` (English) if missing.
+  // Re-fetch + re-render when the language changes.
+  let legendLoadedLang = null;
+  let legendLoading = null;
+  const loadLegend = async () => {
+    const lang = model.state.Language || 'en';
+    if (legendLoadedLang === lang) return;
+    if (legendLoading) await legendLoading;
+    legendLoading = (async () => {
+      let md = null;
+      if (lang !== 'en') {
+        try {
+          const res = await fetch(`about_${lang}.md`);
+          if (res.ok) md = await res.text();
+        } catch (_) {}
+      }
+      if (md == null) {
+        try {
+          const res = await fetch('about.md');
+          if (res.ok) md = await res.text();
+        } catch (_) {}
+      }
+      if (md != null) {
         legendPopup.innerHTML = renderMarkdown(md);
-        legendLoaded = true;
-      } catch (err) {
+        legendLoadedLang = lang;
+      } else {
         legendPopup.textContent = 'Legend unavailable.';
       }
-    }
+    })();
+    await legendLoading;
+    legendLoading = null;
+  };
+  legendBtn.addEventListener('click', async (e) => {
+    e.stopPropagation();
+    await loadLegend();
     openInfoPopup(legendPopup);
+  });
+  // Reload whenever the language changes — invalidate the cached
+  // language so the next click (or current open popup) refreshes.
+  onLangChange(() => {
+    legendLoadedLang = null;
+    if (!legendPopup.hidden) loadLegend();
   });
 }
 document.addEventListener('click', (e) => {

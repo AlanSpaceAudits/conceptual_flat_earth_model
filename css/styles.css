@@ -624,6 +624,10 @@ header .info-popup.legend-popup a { color: var(--accent); }
   align-items: start;
   gap: 6px;
 }
+#bottom-bar .lang-btn {
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
 .lang-select-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);

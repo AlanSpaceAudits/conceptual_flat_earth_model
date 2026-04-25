@@ -532,6 +532,31 @@ Format:
   js/render/index.js js/ui/controlPanel.js js/ui/urlState.js`;
   delete `js/core/satellites.js`.
 
+## S407 — Cycle-row language button restored as a shortcut; Legend fetches `about_<lang>.md`
+
+- **Date:** 2026-04-25
+- **Files changed:** `js/ui/controlPanel.js`,
+  `js/main.js`,
+  `css/styles.css`,
+  `change_log_serials.md`.
+- **Change:**
+  - Cycle-row `btnLang` reinstated. Click no longer
+    cycles; it calls `featureOpen.fn('Info', 'Language
+    Select')`, which opens the Info tab and expands the
+    Language Select group. Button face still shows the
+    current 2-letter id (`EN` / `CZ` / `ES` / …).
+  - `js/main.js`: Legend popup now tries
+    `fetch('about_<lang>.md')` first and falls back to
+    `about.md` if that 404s. Cached per-language; an
+    `onLangChange` callback invalidates the cache and
+    reloads if the popup is open. To translate the
+    legend into a language, drop an `about_<lang>.md`
+    file at the project root.
+  - `css/styles.css`: `.lang-btn` style restored
+    (bold + letter-spacing).
+- **Revert:** `git checkout v-s000406 -- js/ui/controlPanel.js
+  js/main.js css/styles.css`.
+
 ## S406 — Move language picker to Info → Language Select; browser-locale auto-detect; about.md tweaks
 
 - **Date:** 2026-04-25

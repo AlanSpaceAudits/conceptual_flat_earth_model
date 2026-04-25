@@ -61,14 +61,14 @@ function defaultStatus(s, c) {
   const latStr = `${Math.abs(lat).toFixed(1)}°${lat >= 0 ? 'N' : 'S'}`;
 
   let sun;
-  if (elev > 0)        sun = 'sun within observer’s optical vault — daylight';
-  else if (elev > -6)  sun = 'sun beyond observer’s optical vault — civil twilight';
-  else if (elev > -12) sun = 'sun beyond observer’s optical vault — nautical twilight';
-  else if (elev > -18) sun = 'sun beyond observer’s optical vault — astronomical twilight';
-  else                 sun = 'sun beyond observer’s optical vault — night';
+  if (elev > 0)        sun = `${t('within_vault')} — ${t('daylight')}`;
+  else if (elev > -6)  sun = `${t('beyond_vault')} — ${t('twilight_civil')}`;
+  else if (elev > -12) sun = `${t('beyond_vault')} — ${t('twilight_nautical')}`;
+  else if (elev > -18) sun = `${t('beyond_vault')} — ${t('twilight_astronomical')}`;
+  else                 sun = `${t('beyond_vault')} — ${t('night')}`;
 
-  if (Math.abs(lat + dec) > 90) return `${latStr} — ${sun} (sun never leaves optical vault).`;
-  if (Math.abs(lat - dec) > 90) return `${latStr} — ${sun} (sun never enters optical vault).`;
+  if (Math.abs(lat + dec) > 90) return `${latStr} — ${sun} ${t('sun_never_leaves')}.`;
+  if (Math.abs(lat - dec) > 90) return `${latStr} — ${sun} ${t('sun_never_enters')}.`;
   return `${latStr} — ${sun}.`;
 }
 

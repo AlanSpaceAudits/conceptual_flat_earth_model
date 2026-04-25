@@ -2282,19 +2282,19 @@ export function buildHud(hudEl, model) {
     lines[0].textContent = dateTimeToString(s.DateTime);
     lines[1].textContent = c.SunAnglesGlobe.elevation >= 0
       ? `Sun:  az ${fmt(c.SunAnglesGlobe.azimuth)}°  el ${fmt(c.SunAnglesGlobe.elevation)}°`
-      : "Sun:  beyond observer's optical vault";
+      : `Sun:  ${t('beyond_vault')}`;
     lines[2].textContent = c.MoonAnglesGlobe.elevation >= 0
       ? `Moon: az ${fmt(c.MoonAnglesGlobe.azimuth)}°  el ${fmt(c.MoonAnglesGlobe.elevation)}°  phase ${(c.MoonPhaseFraction * 100).toFixed(0)}%`
-      : `Moon: beyond observer's optical vault  phase ${(c.MoonPhaseFraction * 100).toFixed(0)}%`;
+      : `Moon: ${t('beyond_vault')}  phase ${(c.MoonPhaseFraction * 100).toFixed(0)}%`;
 
     const ec = nextEclipses(s.DateTime);
     const now = dateTimeToDate(s.DateTime);
     solarEcLine.textContent = ec.nextSolar
-      ? `Next solar eclipse: ${shortDate(ec.nextSolar)}  ${formatCountdown(now, ec.nextSolar)}`
-      : 'Next solar eclipse: —';
+      ? `${t('next_solar_eclipse')}: ${shortDate(ec.nextSolar)}  ${formatCountdown(now, ec.nextSolar)}`
+      : `${t('next_solar_eclipse')}: —`;
     lunarEcLine.textContent = ec.nextLunar
-      ? `Next lunar eclipse: ${shortDate(ec.nextLunar)}  ${formatCountdown(now, ec.nextLunar)}`
-      : 'Next lunar eclipse: —';
+      ? `${t('next_lunar_eclipse')}: ${shortDate(ec.nextLunar)}  ${formatCountdown(now, ec.nextLunar)}`
+      : `${t('next_lunar_eclipse')}: —`;
 
     // Waxing / waning from moon-sun longitude difference: when the moon is
     // east of the sun (RA difference 0..π) it's waxing toward full.

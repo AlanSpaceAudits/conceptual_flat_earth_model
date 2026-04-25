@@ -532,6 +532,28 @@ Format:
   js/render/index.js js/ui/controlPanel.js js/ui/urlState.js`;
   delete `js/core/satellites.js`.
 
+## S400 — Translate Sun/Moon-vault status text + next eclipse readouts
+
+- **Date:** 2026-04-25
+- **Files changed:** `js/ui/i18n.js`,
+  `js/ui/controlPanel.js`,
+  `js/main.js`,
+  `change_log_serials.md`.
+- **Change:**
+  - i18n keys added: `beyond_vault`, `within_vault`,
+    `twilight_civil`, `twilight_nautical`,
+    `twilight_astronomical`, `daylight`, `night`,
+    `sun_never_leaves`, `sun_never_enters`,
+    `next_solar_eclipse`, `next_lunar_eclipse`. `cs` and
+    `es` translations supplied.
+  - `js/main.js` `defaultStatus` builds the description
+    string from the new keys.
+  - `controlPanel.js` HUD lines for Sun and Moon use
+    `t('beyond_vault')` when below horizon; eclipse readout
+    lines use `t('next_solar_eclipse')` / `t('next_lunar_eclipse')`.
+- **Revert:** `git checkout v-s000399 -- js/ui/i18n.js
+  js/ui/controlPanel.js js/main.js`.
+
 ## S399 — Translate header text, Camera/Vault/Date sliders, autoplay UI, Live panels
 
 - **Date:** 2026-04-25

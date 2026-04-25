@@ -3536,3 +3536,23 @@ Format:
     vault dome stays in frame; outside `InsideVault` it
     keeps the previous `lookAt(0, 0, 0)` behaviour.
 - **Revert:** `git checkout v-s000414 -- js/render/scene.js`.
+
+## S416 — Free Camera Mode toggle: clean exit + tracking resume in Optical Vault
+
+- **Date:** 2026-04-25
+- **Files changed:** `js/ui/mouseHandler.js`.
+- **Change:**
+  - Drag handler: the `InsideVault` first-person branch now
+    additionally requires `!FreeCameraMode`; otherwise it
+    falls through to the orbital drag (CameraDirection /
+    CameraHeight), so mouse drag in Free Cam + Optical works
+    consistently with Free Cam + Heavenly.
+  - Wheel handler: same gate. `InsideVault && !FreeCameraMode`
+    drives `OpticalZoom`; Free Cam in Optical now drives the
+    orbital `Zoom` like Heavenly.
+  - Auto-aim handler: returns early when `FreeCameraMode` is
+    set, so it doesn't fight the user's free orbit. When the
+    user toggles Free Cam off, the next state update lets the
+    auto-aim resume — pointing first-person view back at the
+    `FollowTarget` if one exists.
+- **Revert:** `git checkout v-s000415 -- js/ui/mouseHandler.js`.

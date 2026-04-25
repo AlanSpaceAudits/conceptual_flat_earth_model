@@ -459,7 +459,7 @@ export function attachMouseHandler(canvas, model) {
     // freely while a body is locked. End tracking explicitly via the
     // End Tracking button, Escape, or a cardinal quick-button.
 
-    if (model.state.InsideVault) {
+    if (model.state.InsideVault && !model.state.FreeCameraMode) {
       // Drag right: heading+. Drag up: pitch+. Pitch clamped 0..90°.
       const heading = model.state.ObserverHeading || 0;
       const pitch   = model.state.CameraHeight || 0;
@@ -481,7 +481,7 @@ export function attachMouseHandler(canvas, model) {
   canvas.addEventListener('wheel', (e) => {
     e.preventDefault();
     const inVault = !!model.state.InsideVault;
-    if (inVault) {
+    if (inVault && !model.state.FreeCameraMode) {
       const cur = model.state.OpticalZoom || 5.09;
       const dir = e.deltaY > 0 ? -1 : 1;
       model.setState({ OpticalZoom: opticalWheelStep(cur, dir) });
@@ -498,6 +498,7 @@ export function attachMouseHandler(canvas, model) {
   model.addEventListener('update', () => {
     const s = model.state;
     if (!s.FollowTarget || !s.InsideVault) return;
+    if (s.FreeCameraMode) return;
     // Let the user pan / drag without fighting the auto-recentre.
     if (dragging) return;
     const angles = resolveTargetAngles(s.FollowTarget, model.computed);

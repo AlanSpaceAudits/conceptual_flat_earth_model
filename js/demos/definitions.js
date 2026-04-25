@@ -195,12 +195,26 @@ const ANALEMMA_LATS = [
   [-90, '90°S (south pole)'],
 ];
 
-// Monthly daily-arc variant for the 45° sun analemma. Starts at the
-// 2025 vernal equinox, plays a full simulated day, snaps a noon
-// circle, jumps +30 days, repeats 12 times. Astropixels (Fred
-// Espenak's tabulated DE405) drives the ephemeris.
-const VERNAL_EQUINOX_2025 = 3000;       // 2025-03-20 00:00 UTC
-const MONTH_STEP_DAYS = 30;
+// Monthly daily-arc variant for the 45° sun analemma. Samples on the
+// 21st of each month so the four solstice / equinox dates (Mar 21,
+// Jun 21, Sep 21, Dec 21) anchor the figure-8 symmetrically — the
+// other eight samples land halfway between, giving the classic
+// evenly-spaced analemma layout. Astropixels (Fred Espenak's
+// tabulated DE405) drives the ephemeris.
+const ANALEMMA_MONTH_DAYS = [
+  3001, // 2025-03-21 — vernal equinox
+  3032, // 2025-04-21
+  3062, // 2025-05-21
+  3093, // 2025-06-21 — summer solstice
+  3123, // 2025-07-21
+  3154, // 2025-08-21
+  3185, // 2025-09-21 — autumnal equinox
+  3215, // 2025-10-21
+  3246, // 2025-11-21
+  3276, // 2025-12-21 — winter solstice
+  3307, // 2026-01-21
+  3338, // 2026-02-21
+];
 const MONTHLY_DAY_DURATION_MS = 3500;
 
 function snapSunNoonLocal(model) {
@@ -222,7 +236,7 @@ function makeSunAnalemma45Months(label, lat) {
     intro: {
       ObserverLat: lat, ObserverLong: 0, ObserverHeading: heading,
       BodySource: 'astropixels',
-      DateTime: VERNAL_EQUINOX_2025,
+      DateTime: ANALEMMA_MONTH_DAYS[0],
       InsideVault: true,
       OpticalZoom: 1.0,
       VaultSize: 1, VaultHeight: 0.45,
@@ -239,12 +253,11 @@ function makeSunAnalemma45Months(label, lat) {
     },
     tasks: () => {
       const t = [
-        Ttxt(`${label} · 12 monthly daily arcs from vernal equinox 2025 · noon-position circle on each.`),
+        Ttxt(`${label} · 12 monthly daily arcs · 21st of each month from 2025-03-21 (vernal equinox) · noon-position circle on each.`),
         Tcall((m) => m.setState({ ShowGPTracer: false })),
         Tcall((m) => m.setState({ ShowGPTracer: true, SunMonthMarkers: [] })),
       ];
-      for (let i = 0; i < 12; i++) {
-        const dayStart = VERNAL_EQUINOX_2025 + i * MONTH_STEP_DAYS;
+      for (const dayStart of ANALEMMA_MONTH_DAYS) {
         t.push(Tval('DateTime', dayStart, 1, 0, 'linear'));
         t.push(Tval('DateTime', dayStart + 0.5, MONTHLY_DAY_DURATION_MS / 2, 0, 'linear'));
         t.push(Tcall(snapSunNoonLocal));

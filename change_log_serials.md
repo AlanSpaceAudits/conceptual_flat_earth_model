@@ -3587,3 +3587,21 @@ Format:
 - **Revert:** `git checkout v-s000416 -- js/demos/animation.js
   js/demos/definitions.js js/render/worldObjects.js
   js/render/index.js js/core/app.js`.
+
+## S418 — 45° sun analemma: symmetric monthly snapshot dates
+
+- **Date:** 2026-04-25
+- **Files changed:** `js/demos/definitions.js`.
+- **Change:**
+  - The 12 daily-arc snapshots now sample the 21st of each
+    month (Mar 21 2025 → Feb 21 2026) instead of striding
+    +30 days from a single anchor. Mar 21, Jun 21, Sep 21,
+    Dec 21 line up with the four equinoxes / solstices and
+    pin the figure-8 symmetrically; the other eight points
+    land halfway between, giving the classic evenly-spaced
+    analemma layout.
+  - The fixed `MONTH_STEP_DAYS = 30` constant is replaced by
+    an explicit `ANALEMMA_MONTH_DAYS` array of DateTime
+    values; intro `DateTime` and the per-month loop both
+    read from it.
+- **Revert:** `git checkout v-s000417 -- js/demos/definitions.js`.

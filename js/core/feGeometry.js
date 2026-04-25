@@ -4,30 +4,21 @@ import { ToRad, sqr } from '../math/utils.js';
 import { coordToLatLong, localGlobeCoordToGlobalFeCoord } from './transforms.js';
 import { latLongToCoord } from './transforms.js';
 
-// Azimuthal-equidistant projection centred on the north pole:
-//   lat = +90  ->  disc centre
-//   lat =   0  ->  half-radius ring (equator)
-//   lat = -90  ->  outer rim
-//
-// Returns a 3D point [x, y, 0] on the disc.
+// Routes (lat, lon) -> disc xy through the active map projection so the
+// observer and every above-disc anchor share the same coordinate
+// framework as the FE grid lines.
+import { canonicalLatLongToDisc } from './canonical.js';
+import { getProjection } from './projections.js';
+
 export function pointOnFE(latDeg, longDeg, feRadius = 1) {
-  const r = feRadius * (90 - latDeg) / 180;
-  const lo = ToRad(longDeg);
-  return [r * Math.cos(lo), r * Math.sin(lo), 0];
+  const p = canonicalLatLongToDisc(latDeg, longDeg, feRadius);
+  return [p[0], p[1], 0];
 }
 
-// Compatibility shim. The canonical home of every projection's
-// coordinate transform is now `js/core/projections.js`. Callers should
-// prefer `getProjection(id).project(lat, lon, feRadius)` directly; this
-// shim exists so any lingering call sites keep working during the
-// transition.
-import { getProjection } from './projections.js';
 export function pointOnFeMap(latDeg, longDeg, feRadius = 1, projectionId = 'ae') {
   return getProjection(projectionId).project(latDeg, longDeg, feRadius);
 }
 
-// Global FE coord for a fe-style lat/long (i.e. the disc position of a
-// geographical point).
 export function feLatLongToGlobalFeCoord(latDeg, longDeg, feRadius = 1) {
   return pointOnFE(latDeg, longDeg, feRadius);
 }
@@ -49,10 +40,10 @@ export function celestLatLongToVaultCoord(
   latDeg, longDeg, domeSize, domeHeight, feRadius = 1, floor = 0, seasonalBand = 0,
 ) {
   const domeRadius = domeSize * feRadius;
-  const r = feRadius * (90 - latDeg) / 180;
-  const lo = ToRad(longDeg);
-  const x = r * Math.cos(lo);
-  const y = r * Math.sin(lo);
+  const p = canonicalLatLongToDisc(latDeg, longDeg, feRadius);
+  const x = p[0];
+  const y = p[1];
+  const r = Math.hypot(x, y);
 
   let z;
   if (seasonalBand > 0) {
@@ -76,9 +67,8 @@ export function celestLatLongToVaultCoord(
 // across a day) — rather than sitting on a curved cap whose z varies with
 // the body's projected radius.
 export function vaultCoordAt(latDeg, longDeg, z, feRadius = 1) {
-  const r = feRadius * (90 - latDeg) / 180;
-  const lo = ToRad(longDeg);
-  return [r * Math.cos(lo), r * Math.sin(lo), z];
+  const p = canonicalLatLongToDisc(latDeg, longDeg, feRadius);
+  return [p[0], p[1], z];
 }
 
 export function celestCoordToVaultCoord(celestVect, domeSize, domeHeight, feRadius = 1) {

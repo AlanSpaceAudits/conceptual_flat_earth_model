@@ -532,6 +532,28 @@ Format:
   js/render/index.js js/ui/controlPanel.js js/ui/urlState.js`;
   delete `js/core/satellites.js`.
 
+## S379 — Route observer + above-disc body anchors through canonicalLatLongToDisc
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/core/feGeometry.js`,
+  `change_log_serials.md`.
+- **Change:** `pointOnFE`, `feLatLongToGlobalFeCoord`,
+  `vaultCoordAt`, and `celestLatLongToVaultCoord` switched from
+  the hard-coded AE-polar formula to `canonicalLatLongToDisc`.
+  Observer disc position, sun / moon / planet / star / satellite
+  vault anchors, and the vault-cap geometry all now follow the
+  active map projection in lockstep with the FE grid lines, GP
+  polylines, and GeoJSON land outlines.
+  - Comments in `feGeometry.js` reduced to a single neutral line
+    pointing to the canonical router.
+  - `compTransMatLocalFeToGlobalFe` and
+    `compTransMatCelestToGlobe` are intentionally untouched in
+    this serial; the celestial-frame rotation tied to projection
+    geometry is the next step in the chain and is left for a
+    follow-up serial so demos and tracker behavior verifiable
+    against AE polar remain numerically identical at this commit.
+- **Revert:** `git checkout v-s000378 -- js/core/feGeometry.js`.
+
 ## S378 — Move ShowConstellationLines into the Constellations sub-menu
 
 - **Date:** 2026-04-24

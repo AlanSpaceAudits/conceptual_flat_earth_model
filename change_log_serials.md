@@ -532,6 +532,21 @@ Format:
   js/render/index.js js/ui/controlPanel.js js/ui/urlState.js`;
   delete `js/core/satellites.js`.
 
+## S386 — Compass mode-grid and cycle-row collapsed to single rows
+
+- **Date:** 2026-04-24
+- **Files changed:** `css/styles.css`,
+  `change_log_serials.md`.
+- **Change:** `#bottom-bar .mode-grid` switched from
+  `repeat(3, auto) × repeat(2, 1fr)` to
+  `repeat(6, auto) × 1fr`. `#bottom-bar .cycle-row`
+  switched from `repeat(2, auto) × repeat(2, 1fr)` to
+  `repeat(3, auto) × 1fr`. The previous bottom-row icons
+  (▦, 📍, 🎥 in mode-grid; 🧭 in cycle-row) now sit on the
+  single top row alongside the rest. `cardinal-grid` keeps
+  its 2×2 compass-rose layout.
+- **Revert:** `git checkout v-s000385 -- css/styles.css`.
+
 ## S385 — Add Milky Way (Galactic Centre) to GALAXIES
 
 - **Date:** 2026-04-24

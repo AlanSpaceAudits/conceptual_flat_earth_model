@@ -532,6 +532,20 @@ Format:
   js/render/index.js js/ui/controlPanel.js js/ui/urlState.js`;
   delete `js/core/satellites.js`.
 
+## S404 — Bigger font sizes for About + Legend popups
+
+- **Date:** 2026-04-25
+- **Files changed:** `css/styles.css`,
+  `change_log_serials.md`.
+- **Change:**
+  - `header .info-popup` base font 13 → 16, line-height 1.4
+    → 1.5; width 420 → 520; padding 10/12 → 14/18.
+  - `.legend-popup` body font 12 → 16, line-height 1.45 →
+    1.55; width 720 → 880; max-height 80vh → 82vh;
+    h1 16 → 24, h2 14 → 20, h3 13 → 17; tables 11 → 15;
+    code 11 → 14; padding bumped throughout.
+- **Revert:** `git checkout v-s000403 -- css/styles.css`.
+
 ## S403 — Updated `about.md`; new Legend popup; About paragraphs + button labels translated
 
 - **Date:** 2026-04-25

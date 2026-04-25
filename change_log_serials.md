@@ -3605,3 +3605,20 @@ Format:
     values; intro `DateTime` and the per-month loop both
     read from it.
 - **Revert:** `git checkout v-s000417 -- js/demos/definitions.js`.
+
+## S419 — Month markers: smaller dots, closed-loop polyline
+
+- **Date:** 2026-04-25
+- **Files changed:** `js/render/worldObjects.js`,
+  `js/render/index.js`.
+- **Change:**
+  - `MonthMarkers` default sprite size shrunk from `0.018`
+    to `0.011`. Caller in `render/index.js` updated to match.
+  - `MonthMarkers` now also owns a `THREE.LineLoop` that walks
+    every entry in `SunMonthMarkers` in append order and
+    closes back to the first point, so as each notch lands the
+    chain extends and the final 12-point loop draws the
+    figure-8 directly. Buffer cap 64. Loop hidden until ≥ 2
+    points so a single dot doesn't render a degenerate edge.
+- **Revert:** `git checkout v-s000418 -- js/render/worldObjects.js
+  js/render/index.js`.

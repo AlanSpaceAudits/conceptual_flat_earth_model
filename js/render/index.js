@@ -141,7 +141,7 @@ export class Renderer {
     this.gpTracer = new GPTracer(clipPlanes);
     this.sm.world.add(this.gpTracer.group);
 
-    this.sunMonthMarkers = new MonthMarkers('#ffe680', 0.018, clipPlanes);
+    this.sunMonthMarkers = new MonthMarkers('#ffe680', 0.011, clipPlanes);
     this.sm.world.add(this.sunMonthMarkers.group);
 
     this.satelliteStars = new CatalogPointStars({

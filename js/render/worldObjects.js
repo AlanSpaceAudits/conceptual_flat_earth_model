@@ -2367,7 +2367,7 @@ function _circleDiscCanvas(color) {
 // sub-group anchored to ObserverFeCoord re-renders them at the current
 // observer position each frame (mirrors GPTracer's sky behaviour).
 export class MonthMarkers {
-  constructor(color = '#ffe680', size = 0.018, clippingPlanes = []) {
+  constructor(color = '#ffe680', size = 0.011, clippingPlanes = []) {
     this.group = new THREE.Group();
     this.group.name = 'month-markers';
 
@@ -2382,6 +2382,24 @@ export class MonthMarkers {
     this._size = size;
     this._clippingPlanes = clippingPlanes;
     this._sprites = [];
+
+    // Closed-loop polyline through every marker, in append order. The
+    // closing segment from the last back to the first is what makes
+    // the analemma read as a figure-8 / loop instead of an open chain.
+    const MAX_LOOP_PTS = 64;
+    this._loopBuf = new Float32Array(MAX_LOOP_PTS * 3);
+    const loopGeo = new THREE.BufferGeometry();
+    loopGeo.setAttribute('position', new THREE.BufferAttribute(this._loopBuf, 3));
+    loopGeo.setDrawRange(0, 0);
+    const loopMat = new THREE.LineBasicMaterial({
+      color, transparent: true, opacity: 0.7,
+      depthTest: false, depthWrite: false,
+    });
+    this._loop = new THREE.LineLoop(loopGeo, loopMat);
+    this._loop.frustumCulled = false;
+    this._loop.renderOrder = 59;
+    this.skyGroup.add(this._loop);
+    this._loopMaxPts = MAX_LOOP_PTS;
   }
 
   _ensureSprite(i) {
@@ -2419,6 +2437,18 @@ export class MonthMarkers {
     for (let i = arr.length; i < this._sprites.length; i++) {
       this._sprites[i].visible = false;
     }
+
+    const n = Math.min(arr.length, this._loopMaxPts);
+    for (let i = 0; i < n; i++) {
+      const m = arr[i];
+      this._loopBuf[i * 3    ] = m[0];
+      this._loopBuf[i * 3 + 1] = m[1];
+      this._loopBuf[i * 3 + 2] = m[2];
+    }
+    // LineLoop closes on its own once it has ≥ 2 points; keep it
+    // hidden at a single point so we don't draw a degenerate edge.
+    this._loop.geometry.setDrawRange(0, n >= 2 ? n : 0);
+    this._loop.geometry.attributes.position.needsUpdate = true;
   }
 }
 

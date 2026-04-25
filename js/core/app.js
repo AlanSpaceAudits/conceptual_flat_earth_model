@@ -122,6 +122,8 @@ function defaultState() {
     ShowSatellites:          true,
     ShowGPPath:              false,
     ShowSunMoonNine:         false,
+    ShowGPTracer:            false,
+    GPTracerTargets:         [],
     ShowSunAnalemma:         false,
     ShowMoonAnalemma:        false,
     ShowCelestialBodies:     true,

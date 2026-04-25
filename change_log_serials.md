@@ -3456,3 +3456,29 @@ Format:
     boolean. State key `ShowSunMoonNine` defaults to `false`.
 - **Revert:** `git checkout v-s000410 -- js/render/worldObjects.js
   js/render/index.js js/ui/controlPanel.js js/core/app.js`.
+
+## S412 — GP Tracer
+
+- **Date:** 2026-04-25
+- **Files changed:** `js/render/worldObjects.js`,
+  `js/render/index.js`, `js/ui/controlPanel.js`,
+  `js/core/app.js`.
+- **Change:**
+  - New `GPTracer` class in `worldObjects.js`: per-body
+    accumulating polylines. Each frame, for every body in
+    `GPTracerTargets` the current GP `(lat, lon)` is mapped
+    through `canonicalLatLongToDisc` and appended to that
+    body's polyline. Buffer cap 8192 with a slide-down on
+    overflow. Lines reset on `ShowGPTracer` off→on transition,
+    and per-body when a target leaves `GPTracerTargets`.
+  - `render/index.js` adds `gpTracer` and updates it inside
+    the per-frame pipeline.
+  - `Tracker Options` group gains a `GP Tracer` boolean,
+    a `Clear Tracer` button, and a 9-button multi-select
+    grid (Sun / Moon / Mercury / Venus / Mars / Jupiter /
+    Saturn / Uranus / Neptune) bound to `GPTracerTargets`.
+    Per-body button colour matches the tracker palette.
+  - State keys `ShowGPTracer` (default `false`) and
+    `GPTracerTargets` (default `[]`) added to `defaultState()`.
+- **Revert:** `git checkout v-s000411 -- js/render/worldObjects.js
+  js/render/index.js js/ui/controlPanel.js js/core/app.js`.

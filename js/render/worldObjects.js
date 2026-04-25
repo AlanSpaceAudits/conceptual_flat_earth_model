@@ -4496,3 +4496,111 @@ export class GPPathOverlay {
     }
   }
 }
+
+const GP_TRACER_COLORS = {
+  sun: 0xffc844, moon: 0xf4f4f4,
+  mercury: 0xd0b090, venus: 0xfff0c8, mars: 0xd05040,
+  jupiter: 0xffa060, saturn: 0xe4c888,
+  uranus: 0xa8d8e0, neptune: 0x7fa6e8,
+};
+const GP_TRACER_MAX_PTS = 8192;
+const _wrapLon = (x) => ((x + 180) % 360 + 360) % 360 - 180;
+
+export class GPTracer {
+  constructor() {
+    this.group = new THREE.Group();
+    this.group.name = 'gp-tracer';
+    this._lines = new Map();
+    this._wasOn = false;
+    this._lastTargetsKey = '';
+  }
+
+  _ensureLine(key, color) {
+    let rec = this._lines.get(key);
+    if (rec) return rec;
+    const buf = new Float32Array(GP_TRACER_MAX_PTS * 3);
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(buf, 3));
+    geo.setDrawRange(0, 0);
+    const mat = new THREE.LineBasicMaterial({
+      color, transparent: true, opacity: 0.85,
+      depthTest: false, depthWrite: false,
+    });
+    const line = new THREE.Line(geo, mat);
+    line.frustumCulled = false;
+    line.renderOrder = 42;
+    this.group.add(line);
+    rec = { line, buf, n: 0, lastX: NaN, lastY: NaN };
+    this._lines.set(key, rec);
+    return rec;
+  }
+
+  _resetRec(rec) {
+    rec.n = 0;
+    rec.lastX = NaN; rec.lastY = NaN;
+    rec.line.geometry.setDrawRange(0, 0);
+  }
+
+  _resetAll() {
+    for (const rec of this._lines.values()) this._resetRec(rec);
+  }
+
+  update(model) {
+    const s = model.state;
+    const c = model.computed;
+    const on = !!s.ShowGPTracer;
+    this.group.visible = on && !s.InsideVault;
+
+    if (on && !this._wasOn) this._resetAll();
+    this._wasOn = on;
+    if (!on) return;
+
+    const targets = Array.isArray(s.GPTracerTargets) ? s.GPTracerTargets : [];
+    const key = targets.slice().sort().join(',');
+    if (key !== this._lastTargetsKey) {
+      const want = new Set(targets);
+      for (const k of [...this._lines.keys()]) {
+        if (!want.has(k)) this._resetRec(this._lines.get(k));
+      }
+    }
+    this._lastTargetsKey = key;
+
+    const skyRot = c.SkyRotAngle || 0;
+    for (const name of targets) {
+      let lat, lon;
+      if (name === 'sun') {
+        lat = c.SunCelestLatLong.lat;
+        lon = _wrapLon(c.SunRA * 180 / Math.PI - skyRot);
+      } else if (name === 'moon') {
+        lat = c.MoonCelestLatLong.lat;
+        lon = _wrapLon(c.MoonRA * 180 / Math.PI - skyRot);
+      } else if (c.Planets && c.Planets[name]) {
+        const p = c.Planets[name];
+        lat = p.celestLatLong.lat;
+        lon = _wrapLon(p.ra * 180 / Math.PI - skyRot);
+      } else {
+        continue;
+      }
+      const [x, y] = canonicalLatLongToDisc(lat, lon, FE_RADIUS);
+      const rec = this._ensureLine(name, GP_TRACER_COLORS[name] || 0xffffff);
+      const dx = x - rec.lastX;
+      const dy = y - rec.lastY;
+      const moved = !(dx * dx + dy * dy < 1e-6);
+      if (!moved && rec.n > 0) continue;
+
+      if (rec.n >= GP_TRACER_MAX_PTS) {
+        const keep = Math.floor(GP_TRACER_MAX_PTS * 0.75);
+        const drop = rec.n - keep;
+        rec.buf.copyWithin(0, drop * 3, rec.n * 3);
+        rec.n = keep;
+      }
+      rec.buf[rec.n * 3    ] = x;
+      rec.buf[rec.n * 3 + 1] = y;
+      rec.buf[rec.n * 3 + 2] = 0.003;
+      rec.n++;
+      rec.lastX = x; rec.lastY = y;
+      rec.line.geometry.setDrawRange(0, rec.n);
+      rec.line.geometry.attributes.position.needsUpdate = true;
+    }
+  }
+}

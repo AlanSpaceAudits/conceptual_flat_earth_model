@@ -8,7 +8,7 @@ import {
   CelestialMarker, Observer, Stars, LatitudeLines, GroundPoint,
   CelestialPoles, DeclinationCircles, Yggdrasil, MtMeru, ToroidalVortex,
   LongitudeRing, CelNavStars, TrackedGroundPoints, CatalogPointStars,
-  GPPathOverlay, Discworld, AnalemmaLine, SunMoonGlyph,
+  GPPathOverlay, GPTracer, Discworld, AnalemmaLine, SunMoonGlyph,
 } from './worldObjects.js';
 import { loadLandGeo, buildGeoJsonLand, buildImageMap, buildBlankMap } from './earthMap.js';
 import { Constellations } from './constellations.js';
@@ -136,6 +136,9 @@ export class Renderer {
     // array is simply empty when the user hasn't enabled them).
     this.gpPathOverlay = new GPPathOverlay();
     this.sm.world.add(this.gpPathOverlay.group);
+
+    this.gpTracer = new GPTracer();
+    this.sm.world.add(this.gpTracer.group);
 
     this.satelliteStars = new CatalogPointStars({
       sourceKey: 'Satellites',
@@ -405,6 +408,7 @@ export class Renderer {
     this.bscStars.update(m);
     this.satelliteStars.update(m);
     this.gpPathOverlay.update(m);
+    this.gpTracer.update(m);
     this.starfieldChart.update(m);
     this.constellations.update(m);
     // When a chart starfield is active, hide both the heavenly-vault and

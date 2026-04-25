@@ -532,6 +532,20 @@ Format:
   js/render/index.js js/ui/controlPanel.js js/ui/urlState.js`;
   delete `js/core/satellites.js`.
 
+## S385 — Add Milky Way (Galactic Centre) to GALAXIES
+
+- **Date:** 2026-04-24
+- **Files changed:** `js/core/galaxies.js`,
+  `change_log_serials.md`.
+- **Change:** new entry `gal_milky_way` "Milky Way (Galactic
+  Centre)" appended to `GALAXIES`. RA / Dec point at Sgr A*
+  at J2000.0 (`raH: 17.76112`, `decD: -29.00781`); apparent
+  magnitude `4.5` placeholder for the central bulge region.
+  The entry flows through the existing galaxy plumbing
+  (`projectStar`, GP path, tracker info, BSC union, body
+  search) without further wiring.
+- **Revert:** `git checkout v-s000384 -- js/core/galaxies.js`.
+
 ## S384 — BSC render cap raised 1024 → 4096
 
 - **Date:** 2026-04-24

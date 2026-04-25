@@ -24,6 +24,7 @@ export const GALAXIES = [
   { id: 'gal_lmc',       name: 'Large Magellanic Cloud', raH:  5.39278, decD: -69.75611, mag: 0.9  },
   { id: 'gal_smc',       name: 'Small Magellanic Cloud', raH:  0.87889, decD: -72.82861, mag: 2.7  },
   { id: 'gal_cartwheel', name: 'Cartwheel',              raH:  0.62806, decD: -33.71639, mag: 15.2 },
+  { id: 'gal_milky_way', name: 'Milky Way (Galactic Centre)', raH: 17.76112, decD: -29.00781, mag: 4.5 },
 ];
 
 const _GAL_BY_ID = new Map(GALAXIES.map((g) => [g.id, g]));

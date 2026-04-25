@@ -3755,3 +3755,21 @@ Format:
     `0xc0c0d8` / `0.85` to `0xffffff` / `0.9` for the same
     reason. Sun side unchanged.
 - **Revert:** `git checkout v-s000424 -- js/render/index.js`.
+
+## S426 — Moon Path (Synodic) demos: 28 daily samples over one synodic month
+
+- **Date:** 2026-04-25
+- **Files changed:** `js/demos/definitions.js`.
+- **Change:**
+  - New helper `makeMoonSynodic(label, lat)` builds a demo
+    that samples the moon at 12:00 UTC every day for 28 days
+    starting 2025-03-21 (one synodic month). Each day sweeps
+    midnight → noon → next midnight; the noon snap captures
+    `c.MoonVaultCoord` and the moon vault arc accumulates the
+    full daily path on the heavenly vault.
+  - 5-entry `MOON_SYNODIC_DEMOS` array generated from the same
+    `ANALEMMA_LATS` set (90°N, 45°N, 0°, 45°S, 90°S),
+    appended into `DEMOS`.
+  - New section `moon-synodic` with label
+    `"Moon Path (Synodic)"` added to `DEMO_GROUPS`.
+- **Revert:** `git checkout v-s000425 -- js/demos/definitions.js`.

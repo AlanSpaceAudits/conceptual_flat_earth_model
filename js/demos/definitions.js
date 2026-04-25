@@ -321,6 +321,83 @@ const ANALEMMA_DEMOS = [
   ...ANALEMMA_LATS.map(([lat, t]) => makeAnalemmaMonthly(`Sun + Moon analemma · ${t}`, lat, 'both')),
 ];
 
+// One synodic month (~29.5 days) is the moon's natural cycle from new
+// moon to new moon. Sampling daily at the same UTC instant over 28
+// days produces a clean lunar path on the heavenly vault — daily arcs
+// stitched into one continuous trace, with 28 noon-position notches
+// stepping along it. Use astropixels for ephemeris consistency with
+// the sun analemma variant.
+const SYNODIC_DAYS = 28;
+const SYNODIC_DAY_DURATION_MS = 1500;
+
+function snapMoonNoonVault(model) {
+  const c = model.computed;
+  const mv = c.MoonVaultCoord;
+  if (!mv) return;
+  const cur = Array.isArray(model.state.MoonMonthMarkers)
+    ? model.state.MoonMonthMarkers : [];
+  model.setState({ MoonMonthMarkers: [...cur, [mv[0], mv[1], mv[2]]] });
+}
+
+function makeMoonSynodic(label, lat) {
+  const heading = lat >= 0 ? 180 : 0;
+  const camH = lat === 0 ? 85
+             : Math.abs(lat) === 90 ? 85
+             : 45;
+  const startDay = ANALEMMA_MONTH_DAYS[0];
+  return {
+    name: label,
+    group: 'moon-synodic',
+    intro: {
+      ObserverLat: lat, ObserverLong: 0, ObserverHeading: heading,
+      BodySource: 'astropixels',
+      DateTime: startDay,
+      InsideVault: true,
+      OpticalZoom: 1.0,
+      VaultSize: 1, VaultHeight: 0.45,
+      CameraHeight: camH, CameraDirection: 0,
+      TrackerTargets: ['moon'],
+      ShowSunAnalemma: false, ShowMoonAnalemma: false,
+      ShowSunTrack: false, ShowMoonTrack: false,
+      ShowShadow: false, ShowTruePositions: true,
+      ShowOpticalVault: true, ShowStars: true,
+      FollowTarget: null, FreeCamActive: false, FreeCameraMode: false,
+      SpecifiedTrackerMode: false,
+      ShowGPTracer: false, GPTracerTargets: [],
+      SunVaultArcOn: false,
+      MoonVaultArcOn: true,
+      SunMonthMarkers: [],
+      MoonMonthMarkers: [],
+      MoonMonthMarkersWorldSpace: true,
+    },
+    tasks: () => {
+      const t = [
+        Ttxt(`${label} · 28 daily noon-UTC snapshots over one synodic month from 2025-03-21.`),
+        Tcall((m) => m.setState({
+          ObserverLat: lat, ObserverLong: 0, ObserverHeading: heading,
+          CameraHeight: camH, CameraDirection: 0, InsideVault: true,
+        })),
+        Tcall((m) => m.setState({ MoonVaultArcOn: false })),
+        Tcall((m) => m.setState({ MoonVaultArcOn: true, MoonMonthMarkers: [] })),
+      ];
+      for (let i = 0; i < SYNODIC_DAYS; i++) {
+        const dayStart = startDay + i;
+        t.push(Tval('DateTime', dayStart, 1, 0, 'linear'));
+        t.push(Tval('DateTime', dayStart + 0.5, SYNODIC_DAY_DURATION_MS / 2, 0, 'linear'));
+        t.push(Tcall(snapMoonNoonVault));
+        t.push(Tval('DateTime', dayStart + 1.0, SYNODIC_DAY_DURATION_MS / 2, 0, 'linear'));
+      }
+      t.push(Ttxt('28 daily snapshots traced over one synodic month. Pause/resume or End Demo.'));
+      t.push(Thold());
+      return t;
+    },
+  };
+}
+
+const MOON_SYNODIC_DEMOS = ANALEMMA_LATS.map(([lat, t]) =>
+  makeMoonSynodic(`Moon path · ${t} (synodic)`, lat),
+);
+
 // 24-hour sun demos grouped under their own sub-menu. Order matches
 // the UI section: two 24h overhead-sun demos first, then the two
 // season-spanning midnight-sun demos.
@@ -434,6 +511,7 @@ export const DEMOS = [
   ...SUN_24H_DEMOS,
   ...GENERAL_DEMOS,
   ...ANALEMMA_DEMOS,
+  ...MOON_SYNODIC_DEMOS,
   ...SOLAR_ECLIPSE_DEMOS,
   ...LUNAR_ECLIPSE_DEMOS,
   ...FE_ECLIPSE_PREDICTION_DEMOS,
@@ -446,6 +524,7 @@ export const DEMO_GROUPS = [
   { id: 'sun-analemma',    label: 'Sun Analemma' },
   { id: 'moon-analemma',   label: 'Moon Analemma' },
   { id: 'combo-analemma',  label: 'Sun + Moon Analemma' },
+  { id: 'moon-synodic',    label: 'Moon Path (Synodic)' },
   { id: 'solar-eclipses',  label: 'Solar Eclipses (AstroPixels / DE405, 2021-2040)' },
   { id: 'lunar-eclipses',  label: 'Lunar Eclipses (AstroPixels / DE405, 2021-2040)' },
   { id: 'fe-predictions',  label: 'FE Eclipse Predictions (placeholder)' },

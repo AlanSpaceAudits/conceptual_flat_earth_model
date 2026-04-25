@@ -3622,3 +3622,20 @@ Format:
     points so a single dot doesn't render a degenerate edge.
 - **Revert:** `git checkout v-s000418 -- js/render/worldObjects.js
   js/render/index.js`.
+
+## S420 — Monthly daily-arc sun analemma extended to ±90°
+
+- **Date:** 2026-04-25
+- **Files changed:** `js/demos/definitions.js`.
+- **Change:**
+  - `makeSunAnalemma45Months` renamed to
+    `makeSunAnalemmaMonthly` and the hard-coded
+    `CameraHeight: 45` replaced with the same per-latitude
+    pick the original `makeAnalemma` uses
+    (`lat === 0 ? 75 : abs(lat) === 90 ? 12 : 45`).
+  - Sun analemma sun-mode predicate widened from
+    `abs(lat) === 45` to `abs(lat) === 45 || abs(lat) === 90`,
+    so 90°N, 45°N, 45°S, and 90°S all run the 12 daily-arc +
+    monthly-notch + closed-loop variant. 0° (equator) keeps
+    the original 365-day stair-step analemma.
+- **Revert:** `git checkout v-s000419 -- js/demos/definitions.js`.

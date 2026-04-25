@@ -228,8 +228,11 @@ function snapSunNoonLocal(model) {
   model.setState({ SunMonthMarkers: [...cur, local] });
 }
 
-function makeSunAnalemma45Months(label, lat) {
+function makeSunAnalemmaMonthly(label, lat) {
   const heading = lat >= 0 ? 180 : 0;
+  // Match the original makeAnalemma camera tilt per latitude so polar
+  // observers don't end up staring into the disc.
+  const camH = lat === 0 ? 75 : Math.abs(lat) === 90 ? 12 : 45;
   return {
     name: label,
     group: 'sun-analemma',
@@ -240,7 +243,7 @@ function makeSunAnalemma45Months(label, lat) {
       InsideVault: true,
       OpticalZoom: 1.0,
       VaultSize: 1, VaultHeight: 0.45,
-      CameraHeight: 45, CameraDirection: 0,
+      CameraHeight: camH, CameraDirection: 0,
       TrackerTargets: ['sun'],
       ShowSunAnalemma: false, ShowMoonAnalemma: false,
       ShowSunTrack: false, ShowMoonTrack: false,
@@ -272,8 +275,8 @@ function makeSunAnalemma45Months(label, lat) {
 
 const ANALEMMA_DEMOS = [
   ...ANALEMMA_LATS.map(([lat, t]) => (
-    Math.abs(lat) === 45
-      ? makeSunAnalemma45Months(`Sun analemma · ${t}`, lat)
+    Math.abs(lat) === 45 || Math.abs(lat) === 90
+      ? makeSunAnalemmaMonthly(`Sun analemma · ${t}`, lat)
       : makeAnalemma(`Sun analemma · ${t}`, lat, 'sun')
   )),
   ...ANALEMMA_LATS.map(([lat, t]) => makeAnalemma(`Moon analemma · ${t}`,       lat, 'moon')),

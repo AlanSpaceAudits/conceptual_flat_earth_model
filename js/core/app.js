@@ -127,6 +127,9 @@ function defaultState() {
     SunMonthMarkers:         [],
     SunVaultArcOn:           false,
     SunMonthMarkersWorldSpace: false,
+    MoonMonthMarkers:        [],
+    MoonVaultArcOn:          false,
+    MoonMonthMarkersWorldSpace: false,
     ShowSunAnalemma:         false,
     ShowMoonAnalemma:        false,
     ShowCelestialBodies:     true,
@@ -458,30 +461,34 @@ export class FeModel extends EventTarget {
     // observer-local), so the resulting curve sits over the disc grid
     // — that's what binds the analemma to the FE sky like the
     // tropic / equator rings imply. Reset on flag off→on.
-    this._sunVaultArc = this._sunVaultArc || { points: [], wasOn: false, key: null };
-    if (!s.SunVaultArcOn) {
-      this._sunVaultArc.points.length = 0;
-      this._sunVaultArc.wasOn = false;
-      this._sunVaultArc.key = null;
-    } else {
+    const stepVaultArc = (slot, on, srcCoord) => {
+      if (!on) {
+        slot.points.length = 0;
+        slot.wasOn = false;
+        slot.key = null;
+        return;
+      }
       const arcKey = `${s.ObserverLat}|${utcDate.getUTCFullYear()}|${bodySource}`;
-      if (!this._sunVaultArc.wasOn || this._sunVaultArc.key !== arcKey) {
-        this._sunVaultArc.points.length = 0;
-        this._sunVaultArc.key = arcKey;
-        this._sunVaultArc.wasOn = true;
+      if (!slot.wasOn || slot.key !== arcKey) {
+        slot.points.length = 0;
+        slot.key = arcKey;
+        slot.wasOn = true;
       }
-      const sv = c.SunVaultCoord;
-      const pts = this._sunVaultArc.points;
+      const pts = slot.points;
       const n = pts.length;
-      // Skip duplicates so the buffer doesn't blow up while paused.
       if (n < 3
-          || pts[n - 3] !== sv[0]
-          || pts[n - 2] !== sv[1]
-          || pts[n - 1] !== sv[2]) {
-        pts.push(sv[0], sv[1], sv[2]);
+          || pts[n - 3] !== srcCoord[0]
+          || pts[n - 2] !== srcCoord[1]
+          || pts[n - 1] !== srcCoord[2]) {
+        pts.push(srcCoord[0], srcCoord[1], srcCoord[2]);
       }
-    }
-    c.SunVaultArcPoints = this._sunVaultArc.points;
+    };
+    this._sunVaultArc  = this._sunVaultArc  || { points: [], wasOn: false, key: null };
+    this._moonVaultArc = this._moonVaultArc || { points: [], wasOn: false, key: null };
+    stepVaultArc(this._sunVaultArc,  s.SunVaultArcOn,  c.SunVaultCoord);
+    stepVaultArc(this._moonVaultArc, s.MoonVaultArcOn, c.MoonVaultCoord);
+    c.SunVaultArcPoints  = this._sunVaultArc.points;
+    c.MoonVaultArcPoints = this._moonVaultArc.points;
 
     // Moon phase (sun-at-infinity: moon→sun ≈ SunCelestCoord).
     const moonToGlobe = V.Norm(V.Scale(c.MoonCelestCoord, -1));

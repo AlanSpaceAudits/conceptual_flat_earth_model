@@ -3708,3 +3708,35 @@ Format:
 - **Revert:** `git checkout v-s000422 -- js/core/app.js
   js/render/worldObjects.js js/render/index.js
   js/demos/definitions.js`.
+
+## S424 — Moon and Sun + Moon analemma rebuilt to match the sun variant
+
+- **Date:** 2026-04-25
+- **Files changed:** `js/core/app.js`,
+  `js/render/worldObjects.js`, `js/render/index.js`,
+  `js/demos/definitions.js`.
+- **Change:**
+  - New state `MoonVaultArcOn`, `MoonMonthMarkers`,
+    `MoonMonthMarkersWorldSpace`, plus computed
+    `MoonVaultArcPoints`. The vault-arc accumulator was
+    refactored into a generic `stepVaultArc` helper that
+    handles both sun and moon slots.
+  - `MonthMarkers` constructor switched to an options object
+    accepting `markersKey` / `worldSpaceKey` / `name`. Two
+    instances live in `render/index.js`:
+    sun (`#ffe680`) bound to `SunMonthMarkers`,
+    moon (`#c0c0d8`) bound to `MoonMonthMarkers`. A second
+    `AnalemmaLine` (`moonVaultArc`) is bound to
+    `MoonVaultArcPoints` / `MoonVaultArcOn`.
+  - `makeSunAnalemma45Months` → `makeAnalemmaMonthly(label,
+    lat, mode)`. `mode = 'sun' | 'moon' | 'both'` selects
+    which arcs/markers run. `snapNoonVault(model, mode)`
+    dispatches to either or both lists. Group id, label, and
+    tracker targets follow the mode. Every `ANALEMMA_LATS`
+    entry across all three sub-menus (Sun, Moon, Sun + Moon)
+    now uses this helper, so the moon and combo demos pick up
+    the same 12 daily-arc + monthly-notch + closed-loop
+    behaviour the sun variant got in S419/S423.
+- **Revert:** `git checkout v-s000423 -- js/core/app.js
+  js/render/worldObjects.js js/render/index.js
+  js/demos/definitions.js`.

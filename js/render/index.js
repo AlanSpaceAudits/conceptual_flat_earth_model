@@ -141,8 +141,20 @@ export class Renderer {
     this.gpTracer = new GPTracer(clipPlanes);
     this.sm.world.add(this.gpTracer.group);
 
-    this.sunMonthMarkers = new MonthMarkers('#ffe680', 0.011, clipPlanes);
+    this.sunMonthMarkers = new MonthMarkers({
+      color: '#ffe680', size: 0.011, clippingPlanes: clipPlanes,
+      markersKey: 'SunMonthMarkers',
+      worldSpaceKey: 'SunMonthMarkersWorldSpace',
+      name: 'sun-month-markers',
+    });
+    this.moonMonthMarkers = new MonthMarkers({
+      color: '#c0c0d8', size: 0.011, clippingPlanes: clipPlanes,
+      markersKey: 'MoonMonthMarkers',
+      worldSpaceKey: 'MoonMonthMarkersWorldSpace',
+      name: 'moon-month-markers',
+    });
     this.sm.world.add(this.sunMonthMarkers.group);
+    this.sm.world.add(this.moonMonthMarkers.group);
 
     this.satelliteStars = new CatalogPointStars({
       sourceKey: 'Satellites',
@@ -256,9 +268,11 @@ export class Renderer {
     this.sunAnalemma  = new AnalemmaLine(0xffd060, 0.95);
     this.moonAnalemma = new AnalemmaLine(0xc0c0d8, 0.85);
     this.sunVaultArc  = new AnalemmaLine(0xffe680, 0.85);
+    this.moonVaultArc = new AnalemmaLine(0xc0c0d8, 0.85);
     this.sm.world.add(this.sunAnalemma.group);
     this.sm.world.add(this.moonAnalemma.group);
     this.sm.world.add(this.sunVaultArc.group);
+    this.sm.world.add(this.moonVaultArc.group);
 
     model.addEventListener('update', () => this.frame());
 
@@ -416,6 +430,7 @@ export class Renderer {
     this.gpPathOverlay.update(m);
     this.gpTracer.update(m);
     this.sunMonthMarkers.update(m);
+    this.moonMonthMarkers.update(m);
     this.starfieldChart.update(m);
     this.constellations.update(m);
     // When a chart starfield is active, hide both the heavenly-vault and
@@ -567,7 +582,8 @@ export class Renderer {
 
     this.sunAnalemma.update(c.SunAnalemmaPoints, s.ShowSunAnalemma);
     this.moonAnalemma.update(c.MoonAnalemmaPoints, s.ShowMoonAnalemma);
-    this.sunVaultArc.update(c.SunVaultArcPoints, !!s.SunVaultArcOn);
+    this.sunVaultArc.update(c.SunVaultArcPoints,  !!s.SunVaultArcOn);
+    this.moonVaultArc.update(c.MoonVaultArcPoints, !!s.MoonVaultArcOn);
   }
 
   _updateRays() {

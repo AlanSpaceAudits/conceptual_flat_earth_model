@@ -2367,9 +2367,16 @@ function _circleDiscCanvas(color) {
 // sub-group anchored to ObserverFeCoord re-renders them at the current
 // observer position each frame (mirrors GPTracer's sky behaviour).
 export class MonthMarkers {
-  constructor(color = '#ffe680', size = 0.011, clippingPlanes = []) {
+  constructor({
+    color = '#ffe680',
+    size = 0.011,
+    clippingPlanes = [],
+    markersKey = 'SunMonthMarkers',
+    worldSpaceKey = 'SunMonthMarkersWorldSpace',
+    name = 'month-markers',
+  } = {}) {
     this.group = new THREE.Group();
-    this.group.name = 'month-markers';
+    this.group.name = name;
 
     this.skyGroup = new THREE.Group();
     this.group.add(this.skyGroup);
@@ -2382,6 +2389,8 @@ export class MonthMarkers {
     this._size = size;
     this._clippingPlanes = clippingPlanes;
     this._sprites = [];
+    this._markersKey = markersKey;
+    this._worldSpaceKey = worldSpaceKey;
 
     // Closed-loop polyline through every marker, in append order. The
     // closing segment from the last back to the first is what makes
@@ -2420,8 +2429,8 @@ export class MonthMarkers {
   update(model) {
     const s = model.state;
     const c = model.computed;
-    const arr = Array.isArray(s.SunMonthMarkers) ? s.SunMonthMarkers : [];
-    const worldSpace = !!s.SunMonthMarkersWorldSpace;
+    const arr = Array.isArray(s[this._markersKey]) ? s[this._markersKey] : [];
+    const worldSpace = !!s[this._worldSpaceKey];
     // World-space markers don't need ShowOpticalVault since they live
     // on the heavenly vault, not the observer's optical vault.
     const visible = arr.length > 0

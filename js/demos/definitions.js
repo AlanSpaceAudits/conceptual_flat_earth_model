@@ -217,16 +217,29 @@ const ANALEMMA_MONTH_DAYS = [
 ];
 const MONTHLY_DAY_DURATION_MS = 3500;
 
-function snapSunNoonVault(model) {
+function snapNoonVault(model, mode) {
   const c = model.computed;
-  const sv = c.SunVaultCoord;
-  if (!sv) return;
-  const cur = Array.isArray(model.state.SunMonthMarkers)
-    ? model.state.SunMonthMarkers : [];
-  model.setState({ SunMonthMarkers: [...cur, [sv[0], sv[1], sv[2]]] });
+  const patch = {};
+  if (mode === 'sun' || mode === 'both') {
+    const sv = c.SunVaultCoord;
+    if (sv) {
+      const cur = Array.isArray(model.state.SunMonthMarkers)
+        ? model.state.SunMonthMarkers : [];
+      patch.SunMonthMarkers = [...cur, [sv[0], sv[1], sv[2]]];
+    }
+  }
+  if (mode === 'moon' || mode === 'both') {
+    const mv = c.MoonVaultCoord;
+    if (mv) {
+      const cur = Array.isArray(model.state.MoonMonthMarkers)
+        ? model.state.MoonMonthMarkers : [];
+      patch.MoonMonthMarkers = [...cur, [mv[0], mv[1], mv[2]]];
+    }
+  }
+  if (Object.keys(patch).length) model.setState(patch);
 }
 
-function makeSunAnalemmaMonthly(label, lat) {
+function makeAnalemmaMonthly(label, lat, mode) {
   const heading = lat >= 0 ? 180 : 0;
   // At the equator the noon sun is near zenith and the analemma
   // straddles the up-vector; at the poles the sun's daily motion is a
@@ -236,9 +249,18 @@ function makeSunAnalemmaMonthly(label, lat) {
   const camH = lat === 0 ? 85
              : Math.abs(lat) === 90 ? 85
              : 45;
+  const groupId = mode === 'sun'  ? 'sun-analemma'
+                : mode === 'moon' ? 'moon-analemma'
+                :                   'combo-analemma';
+  const targets = [];
+  if (mode === 'sun'  || mode === 'both') targets.push('sun');
+  if (mode === 'moon' || mode === 'both') targets.push('moon');
+  const sunOn  = mode === 'sun'  || mode === 'both';
+  const moonOn = mode === 'moon' || mode === 'both';
+  const bodyLabel = mode === 'moon' ? 'moon' : (mode === 'both' ? 'sun + moon' : 'sun');
   return {
     name: label,
-    group: 'sun-analemma',
+    group: groupId,
     intro: {
       ObserverLat: lat, ObserverLong: 0, ObserverHeading: heading,
       BodySource: 'astropixels',
@@ -247,7 +269,7 @@ function makeSunAnalemmaMonthly(label, lat) {
       OpticalZoom: 1.0,
       VaultSize: 1, VaultHeight: 0.45,
       CameraHeight: camH, CameraDirection: 0,
-      TrackerTargets: ['sun'],
+      TrackerTargets: targets,
       ShowSunAnalemma: false, ShowMoonAnalemma: false,
       ShowSunTrack: false, ShowMoonTrack: false,
       ShowShadow: false, ShowTruePositions: true,
@@ -255,27 +277,35 @@ function makeSunAnalemmaMonthly(label, lat) {
       FollowTarget: null, FreeCamActive: false, FreeCameraMode: false,
       SpecifiedTrackerMode: false,
       ShowGPTracer: false, GPTracerTargets: [],
-      SunVaultArcOn: true,
+      SunVaultArcOn: sunOn,
+      MoonVaultArcOn: moonOn,
       SunMonthMarkers: [],
+      MoonMonthMarkers: [],
       SunMonthMarkersWorldSpace: true,
+      MoonMonthMarkersWorldSpace: true,
     },
     tasks: () => {
       const t = [
-        Ttxt(`${label} · 12 monthly daily arcs on the heavenly vault · 21st of each month from 2025-03-21 (vernal equinox) · noon-position circle on each.`),
-        // Re-assert observer placement and reset both the vault-arc
-        // accumulator and the noon-marker list off→on so a re-run is
-        // clean and prior state can't leak through.
+        Ttxt(`${label} · 12 monthly daily arcs on the heavenly vault (${bodyLabel}) · 21st of each month from 2025-03-21 (vernal equinox) · noon-position circle on each.`),
+        // Re-assert observer placement and reset arc / marker state
+        // off→on so a re-run is clean and prior demo state can't leak
+        // through.
         Tcall((m) => m.setState({
           ObserverLat: lat, ObserverLong: 0, ObserverHeading: heading,
           CameraHeight: camH, CameraDirection: 0, InsideVault: true,
         })),
-        Tcall((m) => m.setState({ SunVaultArcOn: false })),
-        Tcall((m) => m.setState({ SunVaultArcOn: true, SunMonthMarkers: [] })),
+        Tcall((m) => m.setState({ SunVaultArcOn: false, MoonVaultArcOn: false })),
+        Tcall((m) => m.setState({
+          SunVaultArcOn: sunOn,
+          MoonVaultArcOn: moonOn,
+          SunMonthMarkers: [],
+          MoonMonthMarkers: [],
+        })),
       ];
       for (const dayStart of ANALEMMA_MONTH_DAYS) {
         t.push(Tval('DateTime', dayStart, 1, 0, 'linear'));
         t.push(Tval('DateTime', dayStart + 0.5, MONTHLY_DAY_DURATION_MS / 2, 0, 'linear'));
-        t.push(Tcall(snapSunNoonVault));
+        t.push(Tcall((m) => snapNoonVault(m, mode)));
         t.push(Tval('DateTime', dayStart + 1.0, MONTHLY_DAY_DURATION_MS / 2, 0, 'linear'));
       }
       t.push(Ttxt('12 daily arcs traced · 12 noon snapshots placed on the heavenly vault. Pause/resume or End Demo.'));
@@ -286,9 +316,9 @@ function makeSunAnalemmaMonthly(label, lat) {
 }
 
 const ANALEMMA_DEMOS = [
-  ...ANALEMMA_LATS.map(([lat, t]) => makeSunAnalemmaMonthly(`Sun analemma · ${t}`, lat)),
-  ...ANALEMMA_LATS.map(([lat, t]) => makeAnalemma(`Moon analemma · ${t}`,       lat, 'moon')),
-  ...ANALEMMA_LATS.map(([lat, t]) => makeAnalemma(`Sun + Moon analemma · ${t}`, lat, 'both')),
+  ...ANALEMMA_LATS.map(([lat, t]) => makeAnalemmaMonthly(`Sun analemma · ${t}`,        lat, 'sun')),
+  ...ANALEMMA_LATS.map(([lat, t]) => makeAnalemmaMonthly(`Moon analemma · ${t}`,       lat, 'moon')),
+  ...ANALEMMA_LATS.map(([lat, t]) => makeAnalemmaMonthly(`Sun + Moon analemma · ${t}`, lat, 'both')),
 ];
 
 // 24-hour sun demos grouped under their own sub-menu. Order matches

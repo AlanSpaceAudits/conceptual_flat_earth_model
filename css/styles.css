@@ -597,6 +597,8 @@ header .info-popup p:last-child { margin-bottom: 0; }
   border-radius: 3px;
   padding: 1px 4px;
   font: inherit;
+  pointer-events: auto;
+  cursor: pointer;
 }
 .row.pair-select select.sel {
   width: 100%;

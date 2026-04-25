@@ -532,6 +532,17 @@ Format:
   js/render/index.js js/ui/controlPanel.js js/ui/urlState.js`;
   delete `js/core/satellites.js`.
 
+## S393 — Language select clickable through info-bar's pointer-events shield
+
+- **Date:** 2026-04-25
+- **Files changed:** `css/styles.css`,
+  `change_log_serials.md`.
+- **Change:** `.lang-sel` rule gains
+  `pointer-events: auto; cursor: pointer;` so the dropdown
+  receives clicks past the `#info-bar { pointer-events: none }`
+  rule that lets canvas drags pass through.
+- **Revert:** `git checkout v-s000392 -- css/styles.css`.
+
 ## S392 — Language picker (EN / CZ / ES) + i18n scaffolding
 
 - **Date:** 2026-04-25

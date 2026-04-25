@@ -3639,3 +3639,21 @@ Format:
     monthly-notch + closed-loop variant. 0° (equator) keeps
     the original 365-day stair-step analemma.
 - **Revert:** `git checkout v-s000419 -- js/demos/definitions.js`.
+
+## S421 — Sun analemma: route every latitude through the monthly variant; tweak polar camera tilt
+
+- **Date:** 2026-04-25
+- **Files changed:** `js/demos/definitions.js`.
+- **Change:**
+  - Sun-mode predicate dropped: every `ANALEMMA_LATS` entry
+    (90°N, 45°N, 0°, 45°S, 90°S) now goes through
+    `makeSunAnalemmaMonthly`. The 0° equator demo therefore
+    shifts off the legacy 365-day stair-step variant onto the
+    same 12 daily-arc + monthly-notch + closed-loop pipeline as
+    the rest.
+  - Camera tilt rebalanced inside `makeSunAnalemmaMonthly`:
+    `camH = 60` at the equator, `30` at the poles, `45`
+    elsewhere. Previous polar tilt of `12` left the daily
+    arc skirting the horizon clip; `30` keeps the horizon and
+    the sun's azimuthal day-circle both in frame.
+- **Revert:** `git checkout v-s000420 -- js/demos/definitions.js`.

@@ -230,9 +230,12 @@ function snapSunNoonLocal(model) {
 
 function makeSunAnalemmaMonthly(label, lat) {
   const heading = lat >= 0 ? 180 : 0;
-  // Match the original makeAnalemma camera tilt per latitude so polar
-  // observers don't end up staring into the disc.
-  const camH = lat === 0 ? 75 : Math.abs(lat) === 90 ? 12 : 45;
+  // Steeper tilt at the poles (where the sun stays near the horizon
+  // and circles azimuthally over the day) and at the equator (where
+  // the noon sun is near zenith). 45° is fine for mid-latitudes.
+  const camH = lat === 0 ? 60
+             : Math.abs(lat) === 90 ? 30
+             : 45;
   return {
     name: label,
     group: 'sun-analemma',
@@ -274,11 +277,7 @@ function makeSunAnalemmaMonthly(label, lat) {
 }
 
 const ANALEMMA_DEMOS = [
-  ...ANALEMMA_LATS.map(([lat, t]) => (
-    Math.abs(lat) === 45 || Math.abs(lat) === 90
-      ? makeSunAnalemmaMonthly(`Sun analemma · ${t}`, lat)
-      : makeAnalemma(`Sun analemma · ${t}`, lat, 'sun')
-  )),
+  ...ANALEMMA_LATS.map(([lat, t]) => makeSunAnalemmaMonthly(`Sun analemma · ${t}`, lat)),
   ...ANALEMMA_LATS.map(([lat, t]) => makeAnalemma(`Moon analemma · ${t}`,       lat, 'moon')),
   ...ANALEMMA_LATS.map(([lat, t]) => makeAnalemma(`Sun + Moon analemma · ${t}`, lat, 'both')),
 ];

@@ -532,6 +532,18 @@ Format:
   js/render/index.js js/ui/controlPanel.js js/ui/urlState.js`;
   delete `js/core/satellites.js`.
 
+## S408 — Fix `<kbd>` rendering in the Legend popup
+
+- **Date:** 2026-04-25
+- **Files changed:** `js/main.js`,
+  `change_log_serials.md`.
+- **Change:** the Legend's tiny markdown renderer escaped
+  `<` / `>` first and then ran the `<kbd>…</kbd>` rewrite,
+  which never matched. Pattern updated to match the
+  escaped form `&lt;kbd&gt;…&lt;/kbd&gt;` so `<kbd>Esc</kbd>`
+  renders as a real `<kbd>` element.
+- **Revert:** `git checkout v-s000407 -- js/main.js`.
+
 ## S407 — Cycle-row language button restored as a shortcut; Legend fetches `about_<lang>.md`
 
 - **Date:** 2026-04-25

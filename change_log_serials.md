@@ -3411,3 +3411,27 @@ Format:
 - All rows still bind to the same state keys; only the grouping
   changes.
 - **Revert:** `git checkout v-s000244 -- js/ui/controlPanel.js`.
+
+## S410 — Alpabeta Field starfield
+
+- **Date:** 2026-04-25
+- **Files changed:** `js/render/starfieldChart.js`,
+  `js/ui/controlPanel.js`.
+- **Change:**
+  - `starfieldChart.js` adds `makeAlphabetaCanvas()`: a
+    1080×1080 polar-AE canvas with three concentric rings of
+    glyphs at celestial latitudes -60°, 0°, +60°. Outer ring
+    `A`–`M`, mid ring `N`–`Z`, inner ring `1234567890`.
+    Underlines drawn under `6` and `9` to disambiguate them
+    under perspective rotation. Faint reference rings drawn
+    at the three latitudes.
+  - `CHART_DEFS` now also accepts `{ generator, width, height }`
+    in addition to URL-loaded textures, so a runtime canvas
+    can stand in for a PNG.
+  - New entry `'alphabeta'` added to the `StarfieldType` select
+    options.
+  - Cycle-row sparkle button now opens
+    `Tracker → Starfield` instead of cycling the type. The
+    in-row `STARFIELD_CYCLE` constant is removed.
+- **Revert:** `git checkout v-s000409 -- js/render/starfieldChart.js
+  js/ui/controlPanel.js`.

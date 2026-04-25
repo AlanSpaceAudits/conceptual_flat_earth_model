@@ -690,6 +690,7 @@ const FIELD_GROUPS = [
           { value: 'ae_aries',    label: 'AE Aries' },
           { value: 'ae_aries_2',  label: 'AE Aries 2' },
           { value: 'ae_aries_3',  label: 'AE Aries 3' },
+          { value: 'alphabeta',   label: 'Alpabeta Field' },
         ]},
         { key: 'DynamicStars', label: 'Starfield Mode',
           boolSelect: { trueLabel: 'Dynamic (fade w/ day)', falseLabel: 'Static (always visible)' } },
@@ -1670,17 +1671,15 @@ export function buildControlPanel(host, model, demos) {
     }
   });
 
-  const STARFIELD_CYCLE = ['random', 'chart-dark', 'chart-light', 'celnav', 'ae_aries', 'ae_aries_2', 'ae_aries_3'];
   const btnStarfield = document.createElement('button');
   btnStarfield.className = 'time-btn starfield-btn';
   btnStarfield.type = 'button';
   btnStarfield.textContent = '✨';
   bindTip(btnStarfield, 'tip_starfield');
   btnStarfield.addEventListener('click', () => {
-    const cur = model.state.StarfieldType || 'random';
-    const idx = STARFIELD_CYCLE.indexOf(cur);
-    const next = STARFIELD_CYCLE[(idx + 1) % STARFIELD_CYCLE.length];
-    model.setState({ StarfieldType: next });
+    if (typeof featureOpen.fn === 'function') {
+      featureOpen.fn('Tracker', 'Starfield');
+    }
   });
 
   const btnAzRing = document.createElement('button');

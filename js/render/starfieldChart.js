@@ -16,6 +16,62 @@ import * as THREE from 'three';
 import { FE_RADIUS } from '../core/constants.js';
 import { ToRad } from '../math/utils.js';
 
+// Build the Alpabeta Field chart at runtime: three concentric rings
+// of glyphs at celestial latitudes -60°, 0°, +60°. Outer ring carries
+// A-M, mid ring carries N-Z, inner ring carries 1234567890. Polar AE
+// UV layout matches the chart shader (UV centre = NCP, edge = SCP).
+function makeAlphabetaCanvas() {
+  const W = 1080, H = 1080;
+  const cv = document.createElement('canvas');
+  cv.width = W; cv.height = H;
+  const ctx = cv.getContext('2d');
+  ctx.fillStyle = '#0a0e16';
+  ctx.fillRect(0, 0, W, H);
+
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.10)';
+  ctx.lineWidth = 1;
+  for (const lat of [-60, 0, 60]) {
+    const r = (90 - lat) / 360;
+    ctx.beginPath();
+    ctx.arc(W * 0.5, H * 0.5, r * W, 0, 2 * Math.PI);
+    ctx.stroke();
+  }
+
+  ctx.fillStyle = '#fff';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+
+  const placeRing = (glyphs, lat, fontSize) => {
+    ctx.font = `bold ${fontSize}px sans-serif`;
+    const r = (90 - lat) / 360;
+    const n = glyphs.length;
+    for (let i = 0; i < n; i++) {
+      const lon = (i / n) * 2 * Math.PI;
+      const u = 0.5 + r * Math.cos(lon);
+      const v = 0.5 + r * Math.sin(lon);
+      const x = u * W;
+      const y = (1 - v) * H;
+      const g = glyphs[i];
+      ctx.fillText(g, x, y);
+      if (g === '6' || g === '9') {
+        const m = ctx.measureText(g);
+        ctx.beginPath();
+        ctx.moveTo(x - m.width * 0.5, y + fontSize * 0.5);
+        ctx.lineTo(x + m.width * 0.5, y + fontSize * 0.5);
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 3;
+        ctx.stroke();
+      }
+    }
+  };
+
+  placeRing('ABCDEFGHIJKLM'.split(''), -60, 56);
+  placeRing('NOPQRSTUVWXYZ'.split(''),   0, 56);
+  placeRing('1234567890'.split(''),    +60, 56);
+
+  return cv;
+}
+
 const VERT_SHADER = `
   varying vec3 vLocalGlobe;
 
@@ -94,19 +150,25 @@ export class StarfieldChart {
     this.group.visible = false;
 
     const loader = new THREE.TextureLoader();
-    // Each entry: { url, width, height }. Inscribed-circle crop is
-    // computed per-entry so charts with different source aspect ratios
-    // all map onto the disc edge-to-edge.
+    // Each entry: { url | generator, width, height }. Inscribed-
+    // circle crop is computed per-entry so charts with different
+    // source aspect ratios all map onto the disc edge-to-edge.
     const CHART_DEFS = {
       'chart-dark':  { url: 'assets/starfield_dark.png',         width: 1920, height: 1080 },
       'chart-light': { url: 'assets/starfield_light.png',        width: 1920, height: 1080 },
       'ae_aries':    { url: 'assets/starfield_ae_aries.png',     width: 1920, height: 1080 },
       'ae_aries_2':  { url: 'assets/starfield_ae_aries_2.png',   width: 2476, height: 1246 },
       'ae_aries_3':  { url: 'assets/starfield_ae_aries_3.png',   width: 1920, height: 1080 },
+      'alphabeta':   { generator: makeAlphabetaCanvas,           width: 1080, height: 1080 },
     };
     this.charts = {};
     for (const [type, def] of Object.entries(CHART_DEFS)) {
-      const tex = loader.load(def.url);
+      let tex;
+      if (def.generator) {
+        tex = new THREE.CanvasTexture(def.generator());
+      } else {
+        tex = loader.load(def.url);
+      }
       tex.colorSpace = THREE.SRGBColorSpace;
       tex.minFilter  = THREE.LinearMipMapLinearFilter;
       tex.magFilter  = THREE.LinearFilter;

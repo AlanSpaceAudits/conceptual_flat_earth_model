@@ -3773,3 +3773,31 @@ Format:
   - New section `moon-synodic` with label
     `"Moon Path (Synodic)"` added to `DEMO_GROUPS`.
 - **Revert:** `git checkout v-s000425 -- js/demos/definitions.js`.
+
+## S427 — Sun Analemma Paired (lon 0 + lon 180)
+
+- **Date:** 2026-04-25
+- **Files changed:** `js/core/app.js`, `js/render/index.js`,
+  `js/demos/definitions.js`.
+- **Change:**
+  - New state `SunMonthMarkersOpp` (default `[]`) and
+    `SunMonthMarkersOppWorldSpace` (default `false`).
+  - New `MonthMarkers` instance `sunMonthMarkersOpp` in
+    `render/index.js` bound to those keys, drawn in magenta
+    (`#ff80c0`) so it reads distinct from the gold lon 0
+    notches. Each `MonthMarkers` instance owns its own
+    `LineLoop`, so the two analemmas only close to their own
+    dots.
+  - New `makeSunAnalemmaPaired(label, lat)` helper. Each month
+    the demo snaps twice on the same calendar day: once at
+    `dayStart` (UT 00:00, sun over lon 180 → magenta) and
+    once at `dayStart + 0.5` (UT 12:00, sun over lon 0 →
+    gold). Heavenly-vault arc accumulates the full daily
+    circle. Two figure-8s end up on opposite sides of the
+    disc.
+  - 5-entry `SUN_PAIRED_DEMOS` (90°N, 45°N, 0°, 45°S, 90°S)
+    appended to `DEMOS`, with a new `sun-paired` section in
+    `DEMO_GROUPS` labelled `"Sun Analemma Paired (lon 0 + lon
+    180)"`.
+- **Revert:** `git checkout v-s000426 -- js/core/app.js
+  js/render/index.js js/demos/definitions.js`.

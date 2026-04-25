@@ -147,6 +147,12 @@ export class Renderer {
       worldSpaceKey: 'SunMonthMarkersWorldSpace',
       name: 'sun-month-markers',
     });
+    this.sunMonthMarkersOpp = new MonthMarkers({
+      color: '#ff80c0', size: 0.011, clippingPlanes: clipPlanes,
+      markersKey: 'SunMonthMarkersOpp',
+      worldSpaceKey: 'SunMonthMarkersOppWorldSpace',
+      name: 'sun-month-markers-opp',
+    });
     this.moonMonthMarkers = new MonthMarkers({
       color: '#ffffff', size: 0.013, clippingPlanes: clipPlanes,
       markersKey: 'MoonMonthMarkers',
@@ -154,6 +160,7 @@ export class Renderer {
       name: 'moon-month-markers',
     });
     this.sm.world.add(this.sunMonthMarkers.group);
+    this.sm.world.add(this.sunMonthMarkersOpp.group);
     this.sm.world.add(this.moonMonthMarkers.group);
 
     this.satelliteStars = new CatalogPointStars({
@@ -430,6 +437,7 @@ export class Renderer {
     this.gpPathOverlay.update(m);
     this.gpTracer.update(m);
     this.sunMonthMarkers.update(m);
+    this.sunMonthMarkersOpp.update(m);
     this.moonMonthMarkers.update(m);
     this.starfieldChart.update(m);
     this.constellations.update(m);

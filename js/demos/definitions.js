@@ -398,6 +398,98 @@ const MOON_SYNODIC_DEMOS = ANALEMMA_LATS.map(([lat, t]) =>
   makeMoonSynodic(`Moon path · ${t} (synodic)`, lat),
 );
 
+// Paired-side sun analemma: capture the same heavenly-vault sun
+// position twice each month — once at UTC 12:00 (the sun's GP is over
+// lon 0, this observer's noon) and once at UTC 00:00 (sun's GP is
+// over lon 180, the antipodal observer's noon). Two figure-8s form
+// on opposite sides of the disc; each closed loop only connects its
+// own dots.
+function snapSunNoonVaultLon0(model) {
+  const c = model.computed;
+  const sv = c.SunVaultCoord;
+  if (!sv) return;
+  const cur = Array.isArray(model.state.SunMonthMarkers)
+    ? model.state.SunMonthMarkers : [];
+  model.setState({ SunMonthMarkers: [...cur, [sv[0], sv[1], sv[2]]] });
+}
+
+function snapSunNoonVaultLon180(model) {
+  const c = model.computed;
+  const sv = c.SunVaultCoord;
+  if (!sv) return;
+  const cur = Array.isArray(model.state.SunMonthMarkersOpp)
+    ? model.state.SunMonthMarkersOpp : [];
+  model.setState({ SunMonthMarkersOpp: [...cur, [sv[0], sv[1], sv[2]]] });
+}
+
+function makeSunAnalemmaPaired(label, lat) {
+  const heading = lat >= 0 ? 180 : 0;
+  const camH = lat === 0 ? 85
+             : Math.abs(lat) === 90 ? 85
+             : 45;
+  return {
+    name: label,
+    group: 'sun-paired',
+    intro: {
+      ObserverLat: lat, ObserverLong: 0, ObserverHeading: heading,
+      BodySource: 'astropixels',
+      DateTime: ANALEMMA_MONTH_DAYS[0],
+      InsideVault: true,
+      OpticalZoom: 1.0,
+      VaultSize: 1, VaultHeight: 0.45,
+      CameraHeight: camH, CameraDirection: 0,
+      TrackerTargets: ['sun'],
+      ShowSunAnalemma: false, ShowMoonAnalemma: false,
+      ShowSunTrack: false, ShowMoonTrack: false,
+      ShowShadow: false, ShowTruePositions: true,
+      ShowOpticalVault: true, ShowStars: true,
+      FollowTarget: null, FreeCamActive: false, FreeCameraMode: false,
+      SpecifiedTrackerMode: false,
+      ShowGPTracer: false, GPTracerTargets: [],
+      SunVaultArcOn: true,
+      MoonVaultArcOn: false,
+      SunMonthMarkers: [],
+      SunMonthMarkersOpp: [],
+      MoonMonthMarkers: [],
+      SunMonthMarkersWorldSpace: true,
+      SunMonthMarkersOppWorldSpace: true,
+    },
+    tasks: () => {
+      const t = [
+        Ttxt(`${label} · 21st of each month from 2025-03-21 · noon snapshots at lon 0 (UTC 12:00, gold) and at lon 180 (UTC 00:00, magenta).`),
+        Tcall((m) => m.setState({
+          ObserverLat: lat, ObserverLong: 0, ObserverHeading: heading,
+          CameraHeight: camH, CameraDirection: 0, InsideVault: true,
+        })),
+        Tcall((m) => m.setState({ SunVaultArcOn: false })),
+        Tcall((m) => m.setState({
+          SunVaultArcOn: true,
+          SunMonthMarkers: [],
+          SunMonthMarkersOpp: [],
+        })),
+      ];
+      for (const dayStart of ANALEMMA_MONTH_DAYS) {
+        // Snap the lon 180 observer's noon first (UT 00:00 = sun over
+        // lon 180), then sweep forward to UT 12:00 and snap the lon 0
+        // observer's noon, then sweep through the rest of the day so
+        // the heavenly-vault arc traces a complete daily circle.
+        t.push(Tval('DateTime', dayStart, 1, 0, 'linear'));
+        t.push(Tcall(snapSunNoonVaultLon180));
+        t.push(Tval('DateTime', dayStart + 0.5, MONTHLY_DAY_DURATION_MS / 2, 0, 'linear'));
+        t.push(Tcall(snapSunNoonVaultLon0));
+        t.push(Tval('DateTime', dayStart + 1.0, MONTHLY_DAY_DURATION_MS / 2, 0, 'linear'));
+      }
+      t.push(Ttxt('Two figure-8s placed on opposite sides of the disc — gold at lon 0, magenta at lon 180. Each closed loop connects only its own dots.'));
+      t.push(Thold());
+      return t;
+    },
+  };
+}
+
+const SUN_PAIRED_DEMOS = ANALEMMA_LATS.map(([lat, t]) =>
+  makeSunAnalemmaPaired(`Sun analemma paired · ${t} (lon 0 + lon 180)`, lat),
+);
+
 // 24-hour sun demos grouped under their own sub-menu. Order matches
 // the UI section: two 24h overhead-sun demos first, then the two
 // season-spanning midnight-sun demos.
@@ -512,6 +604,7 @@ export const DEMOS = [
   ...GENERAL_DEMOS,
   ...ANALEMMA_DEMOS,
   ...MOON_SYNODIC_DEMOS,
+  ...SUN_PAIRED_DEMOS,
   ...SOLAR_ECLIPSE_DEMOS,
   ...LUNAR_ECLIPSE_DEMOS,
   ...FE_ECLIPSE_PREDICTION_DEMOS,
@@ -525,6 +618,7 @@ export const DEMO_GROUPS = [
   { id: 'moon-analemma',   label: 'Moon Analemma' },
   { id: 'combo-analemma',  label: 'Sun + Moon Analemma' },
   { id: 'moon-synodic',    label: 'Moon Path (Synodic)' },
+  { id: 'sun-paired',      label: 'Sun Analemma Paired (lon 0 + lon 180)' },
   { id: 'solar-eclipses',  label: 'Solar Eclipses (AstroPixels / DE405, 2021-2040)' },
   { id: 'lunar-eclipses',  label: 'Lunar Eclipses (AstroPixels / DE405, 2021-2040)' },
   { id: 'fe-predictions',  label: 'FE Eclipse Predictions (placeholder)' },

@@ -127,6 +127,8 @@ function defaultState() {
     SunMonthMarkers:         [],
     SunVaultArcOn:           false,
     SunMonthMarkersWorldSpace: false,
+    SunMonthMarkersOpp:      [],
+    SunMonthMarkersOppWorldSpace: false,
     MoonMonthMarkers:        [],
     MoonVaultArcOn:          false,
     MoonMonthMarkersWorldSpace: false,

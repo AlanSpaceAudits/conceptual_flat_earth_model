@@ -532,6 +532,31 @@ Format:
   js/render/index.js js/ui/controlPanel.js js/ui/urlState.js`;
   delete `js/core/satellites.js`.
 
+## S397 — Translate row labels and clickRow button labels
+
+- **Date:** 2026-04-25
+- **Files changed:** `js/ui/i18n.js`,
+  `js/ui/controlPanel.js`,
+  `change_log_serials.md`.
+- **Change:**
+  - `i18n.js` STRINGS dict gains `lbl_*` keys for the
+    Show / Tracker tab row labels (Heavenly Vault,
+    Optical Vault Grid, Azimuth ring, FE Grid, Sun Track,
+    Source, Observer lat/long, etc.) plus an extra set of
+    `grp_*` keys for the Show tab's `Heavenly Vault`,
+    `Ground / Disc`, and `Date / Time` group titles.
+    `cs` and `es` translations supplied.
+  - `controlPanel.js` adds `LABEL_KEY` and
+    `BUTTON_LABEL_KEY` reverse-maps and a
+    `bindTranslatable(node, text, keyMap)` helper that
+    sets `textContent` and registers an `onLangChange`
+    callback when the original text has a translation key.
+  - `buildRow` dispatcher captures the built `el`, binds
+    the first `<label>` via `LABEL_KEY`, and binds
+    `clickRow`'s button text via `BUTTON_LABEL_KEY`.
+- **Revert:** `git checkout v-s000396 -- js/ui/i18n.js
+  js/ui/controlPanel.js`.
+
 ## S396 — Rename group-header title span class to avoid display:none collision
 
 - **Date:** 2026-04-25

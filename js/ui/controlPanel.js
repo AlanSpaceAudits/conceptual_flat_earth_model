@@ -1259,19 +1259,92 @@ function pairSelectRow(model, row) {
   return el;
 }
 
+const LABEL_KEY = {
+  'Heavenly Vault': 'lbl_heavenly_vault',
+  'Vault Grid': 'lbl_vault_grid',
+  'Sun Track': 'lbl_sun_track',
+  'Moon Track': 'lbl_moon_track',
+  'Optical Vault': 'lbl_optical_vault',
+  'Optical Vault Grid': 'lbl_optical_vault_grid',
+  'Azimuth ring': 'lbl_azimuth_ring',
+  'Facing Vector / N-S-E-W': 'lbl_facing_vector',
+  'Celestial Poles': 'lbl_celestial_poles',
+  'Declination Circles': 'lbl_declination_circles',
+  'FE Grid': 'lbl_fe_grid',
+  'Tropics / Polar': 'lbl_tropics_polar',
+  'Sun / Moon GP': 'lbl_sun_moon_gp',
+  'Longitude ring': 'lbl_longitude_ring',
+  'Shadow': 'lbl_shadow',
+  'Vault Rays': 'lbl_vault_rays',
+  'Optical Vault Rays': 'lbl_optical_vault_rays',
+  'Projection Rays': 'lbl_projection_rays',
+  'Many Rays': 'lbl_many_rays',
+  'Axis Mundi': 'lbl_axis_mundi',
+  'Planets': 'lbl_planets',
+  'Dark Background': 'lbl_dark_background',
+  'Logo': 'lbl_logo',
+  'Show': 'lbl_show',
+  'GP Override': 'lbl_gp_override',
+  'Outlines': 'lbl_outlines',
+  'Figure': 'lbl_figure',
+  'Starfield': 'lbl_starfield',
+  'Starfield Mode': 'lbl_starfield_mode',
+  'Permanent night': 'lbl_permanent_night',
+  'Show Satellites': 'lbl_show_satellites',
+  'Specified Tracker Mode': 'lbl_specified_tracker_mode',
+  'True Positions': 'lbl_true_positions',
+  'GP Path (24 h)': 'lbl_gp_path_24h',
+  'Ephemeris comparison': 'lbl_ephemeris_comparison',
+  'Precession': 'lbl_precession',
+  'Nutation': 'lbl_nutation',
+  'Aberration': 'lbl_aberration',
+  'Trepidation': 'lbl_trepidation',
+  'Source': 'lbl_source',
+  'ObserverLat': 'lbl_observer_lat',
+  'ObserverLong': 'lbl_observer_long',
+  'Size': 'lbl_size',
+  'Height': 'lbl_height',
+  'HQ Map Art': 'lbl_hq_map_art',
+  'Generated': 'lbl_generated',
+};
+const BUTTON_LABEL_KEY = {
+  'Enable All': 'btn_enable_all',
+  'Disable All': 'btn_disable_all',
+  'Disable Satellites': 'btn_disable_satellites',
+};
+function bindTranslatable(textNode, originalText, keyMap) {
+  if (!textNode || originalText == null) return;
+  const key = keyMap[originalText];
+  textNode.textContent = key ? t(key) : originalText;
+  if (key) onLangChange(() => { textNode.textContent = t(key); });
+}
+
 // Dispatch a field-group row definition to the right row-builder.
 function buildRow(model, row) {
-  if (row.bool) return boolRow(model, row);
-  if (row.boolSelect) return boolSelectRow(model, row);
-  if (row.pairSelect) return pairSelectRow(model, row);
-  if (row.select) return selectRow(model, row);
-  if (row.buttonGrid) return buttonGridRow(model, row);
-  if (row.cardinal) return cardinalRow(model, row);
-  if (row.onClick) return clickRow(model, row);
-  if (row.action) return actionRow(model, row);
-  if (row.nudge) return nudgeRow(model, row);
-  if (row.readout) return readoutRow(model, row);
-  return numericRow(model, row);
+  let el;
+  if (row.bool)            el = boolRow(model, row);
+  else if (row.boolSelect) el = boolSelectRow(model, row);
+  else if (row.pairSelect) el = pairSelectRow(model, row);
+  else if (row.select)     el = selectRow(model, row);
+  else if (row.buttonGrid) el = buttonGridRow(model, row);
+  else if (row.cardinal)   el = cardinalRow(model, row);
+  else if (row.onClick)    el = clickRow(model, row);
+  else if (row.action)     el = actionRow(model, row);
+  else if (row.nudge)      el = nudgeRow(model, row);
+  else if (row.readout)    el = readoutRow(model, row);
+  else                     el = numericRow(model, row);
+
+  // Bind the row's first <label> to the i18n table when the label
+  // matches a known key.
+  const labelEl = el.querySelector('label');
+  if (labelEl && row.label) bindTranslatable(labelEl, row.label, LABEL_KEY);
+
+  // clickRow's button text is row.buttonLabel, not row.label.
+  if (row.onClick && row.buttonLabel) {
+    const btn = el.querySelector('button.action-btn');
+    if (btn) bindTranslatable(btn, row.buttonLabel, BUTTON_LABEL_KEY);
+  }
+  return el;
 }
 
 // Collapsible group inside a tab popup. Header click toggles body.

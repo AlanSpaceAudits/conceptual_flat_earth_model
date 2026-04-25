@@ -22,6 +22,15 @@ import { listProjections, listGeneratedProjections, listHqMaps, PROJECTIONS } fr
 import { Autoplay } from './autoplay.js';
 import { t, setLang, onLangChange, LANGUAGES } from './i18n.js';
 
+const LANG_NATIVE_NAMES = {
+  en: 'English', cs: 'Čeština', es: 'Español',
+  fr: 'Français', de: 'Deutsch', it: 'Italiano',
+  pt: 'Português', pl: 'Polski', nl: 'Nederlands',
+  sk: 'Slovenčina', ru: 'Русский', ar: 'العربية',
+  he: 'עברית', zh: '中文', ja: '日本語',
+  ko: '한국어', th: 'ไทย', hi: 'हिन्दी',
+};
+
 const PLANET_NAMES = {
   mercury: 'Mercury', venus: 'Venus', mars: 'Mars', jupiter: 'Jupiter',
   saturn: 'Saturn', uranus: 'Uranus', neptune: 'Neptune',
@@ -1386,6 +1395,7 @@ const GROUP_KEY = {
   'Satellites': 'grp_satellites',
   'Bright Star Catalog': 'grp_bright_star_catalog',
   'Calendar': 'grp_calendar', 'Autoplay': 'grp_autoplay',
+  'Language Select': 'grp_language_select',
 };
 
 function buildGroup(model, title, rows, popupGroups) {
@@ -1690,28 +1700,7 @@ export function buildControlPanel(host, model, demos) {
     });
   });
 
-  // Language cycler — sits in the cycle-row's bottom-right slot
-  // (under ✨). Click cycles through LANGUAGES; current id label
-  // (EN / CZ / ES / …) shows on the button face.
-  const btnLang = document.createElement('button');
-  btnLang.className = 'time-btn lang-btn';
-  btnLang.type = 'button';
-  const refreshLangBtn = () => {
-    const cur = model.state.Language || 'en';
-    const entry = LANGUAGES.find((l) => l.id === cur) || LANGUAGES[0];
-    btnLang.textContent = entry.label;
-  };
-  btnLang.addEventListener('click', () => {
-    const cur = model.state.Language || 'en';
-    const idx = LANGUAGES.findIndex((l) => l.id === cur);
-    const next = LANGUAGES[(idx + 1) % LANGUAGES.length].id;
-    model.setState({ Language: next });
-  });
-  bindTip(btnLang, 'lang_label');
-  model.addEventListener('update', refreshLangBtn);
-  refreshLangBtn();
-
-  cycleRow.append(btnMap, btnStarfield, btnAzRing, btnLang);
+  cycleRow.append(btnMap, btnStarfield, btnAzRing);
   compassControls.appendChild(cycleRow);
 
   // Cardinals live in their own 2×2 sub-grid so the N / S / E / W
@@ -2021,6 +2010,34 @@ export function buildControlPanel(host, model, demos) {
         href: 'https://x.com/ken_caudle',
       },
     ]);
+
+    // Language Select — full-name buttons, only one active at a time.
+    const langGroup = buildGroup(model, 'Language Select', [], popupGroups);
+    const langGrid = document.createElement('div');
+    langGrid.className = 'lang-select-grid';
+    const langBtnEls = [];
+    for (const l of LANGUAGES) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'lang-select-btn';
+      btn.dataset.langId = l.id;
+      btn.textContent = `${l.label} — ${LANG_NATIVE_NAMES[l.id] || l.id}`;
+      btn.addEventListener('click', () => {
+        if (model.state.Language !== l.id) model.setState({ Language: l.id });
+      });
+      langGrid.appendChild(btn);
+      langBtnEls.push(btn);
+    }
+    const refreshLangActive = () => {
+      const cur = model.state.Language || 'en';
+      for (const b of langBtnEls) {
+        b.setAttribute('aria-pressed', b.dataset.langId === cur ? 'true' : 'false');
+      }
+    };
+    model.addEventListener('update', refreshLangActive);
+    refreshLangActive();
+    langGroup.body.appendChild(langGrid);
+    popup.appendChild(langGroup.el);
   });
 
   // Wire the bar's time controls into Autoplay.

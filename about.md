@@ -1,8 +1,8 @@
 # FE Conceptual Model — Legend & Feature Reference
 
-An interactive sandbox showing what one observer actually sees from a flat-earth disc. No physical units, no assumed earth radius. Everything is built around a single fictitious observer who ties the celestial sphere to the terrestrial graticule by relating a star's geocentric angle to the time it transits overhead.
+An interactive sandbox showing what one observer actually sees on a plane with a limit of vision. No physical units, no assumed earth radius. Everything is built around a single fictitious observer who ties the celestial sphere to the terrestrial graticule by relating a star's geocentric angle to the time it transits overhead.
 
-Live at <https://alanspaceaudits.github.io/conceptual_flat_earth_model/>.
+Live at [alanspaceaudits.github.io/conceptual_flat_earth_model](https://alanspaceaudits.github.io/conceptual_flat_earth_model/).
 
 ---
 

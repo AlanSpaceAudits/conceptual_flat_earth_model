@@ -22,6 +22,24 @@ buildHud(hudEl, model);
 const trackerHudEl = document.getElementById('tracker-hud');
 if (trackerHudEl) buildTrackerHud(trackerHudEl, model);
 
+// First load only: pick a language from navigator.languages so the
+// page boots in the visitor's browser locale when they have no
+// stored Language in the URL hash.
+const _hashHasLang = window.location.hash.includes('Language=');
+if (!_hashHasLang) {
+  const SUPPORTED = new Set(['en','cs','es','fr','de','it','pt','pl','nl','sk','ru','ar','he','zh','ja','ko','th','hi']);
+  const prefs = (navigator.languages && navigator.languages.length)
+    ? navigator.languages
+    : [navigator.language || 'en'];
+  for (const p of prefs) {
+    const id = (p || '').toLowerCase().split('-')[0];
+    if (SUPPORTED.has(id)) {
+      model.setState({ Language: id });
+      break;
+    }
+  }
+}
+
 // Routes MapProjection → canonical.js' active-projection slot.
 // Registered before the Renderer so its 'update' listener runs first
 // and rebuilds DiscGrid / LatitudeLines using the new projection.

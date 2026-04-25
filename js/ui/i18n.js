@@ -44,6 +44,7 @@ const STRINGS = {
     grp_calendar: 'Calendar', grp_autoplay: 'Autoplay',
     grp_heavenly_vault: 'Heavenly Vault', grp_ground_disc: 'Ground / Disc',
     grp_date_time: 'Date / Time',
+    grp_language_select: 'Language Select',
 
     lbl_heavenly_vault: 'Heavenly Vault', lbl_vault_grid: 'Vault Grid',
     lbl_sun_track: 'Sun Track', lbl_moon_track: 'Moon Track',
@@ -147,6 +148,7 @@ const STRINGS = {
     grp_calendar: 'Kalendář', grp_autoplay: 'Automatické přehrávání',
     grp_heavenly_vault: 'Nebeská klenba', grp_ground_disc: 'Země / Disk',
     grp_date_time: 'Datum / Čas',
+    grp_language_select: 'Výběr jazyka',
 
     lbl_heavenly_vault: 'Nebeská klenba', lbl_vault_grid: 'Mřížka klenby',
     lbl_sun_track: 'Stopa Slunce', lbl_moon_track: 'Stopa Měsíce',
@@ -250,6 +252,7 @@ const STRINGS = {
     grp_calendar: 'Calendario', grp_autoplay: 'Reproducción Automática',
     grp_heavenly_vault: 'Bóveda Celeste', grp_ground_disc: 'Suelo / Disco',
     grp_date_time: 'Fecha / Hora',
+    grp_language_select: 'Selección de idioma',
 
     lbl_heavenly_vault: 'Bóveda Celeste', lbl_vault_grid: 'Cuadrícula',
     lbl_sun_track: 'Trayectoria Sol', lbl_moon_track: 'Trayectoria Luna',

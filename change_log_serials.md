@@ -532,6 +532,39 @@ Format:
   js/render/index.js js/ui/controlPanel.js js/ui/urlState.js`;
   delete `js/core/satellites.js`.
 
+## S406 — Move language picker to Info → Language Select; browser-locale auto-detect; about.md tweaks
+
+- **Date:** 2026-04-25
+- **Files changed:** `js/ui/controlPanel.js`,
+  `js/ui/i18n.js`,
+  `js/main.js`,
+  `css/styles.css`,
+  `about.md`,
+  `change_log_serials.md`.
+- **Change:**
+  - `controlPanel.js`: cycle-row `btnLang` removed.
+    `LANG_NATIVE_NAMES` map added. Info tab gains a new
+    `Language Select` group rendered as a 2-column grid of
+    buttons (`label — native name`); click sets
+    `state.Language`; only one button is `aria-pressed`.
+    `GROUP_KEY` extended with `'Language Select' →
+    'grp_language_select'`.
+  - `i18n.js`: `grp_language_select` translations added for
+    `en` / `cs` / `es` (others fall back to en).
+  - `js/main.js`: on first load with no `Language` in the
+    URL hash, walk `navigator.languages`; the first match
+    against the supported set wins and is pushed via
+    `setState`.
+  - `css/styles.css`: `.lang-select-grid` (2-col grid) and
+    `.lang-select-btn` styles, accent border + tinted
+    background on `[aria-pressed="true"]`. Old
+    `.lang-btn` rule removed.
+  - `about.md`: tagline changed from "from a flat-earth
+    disc" to "on a plane with a limit of vision"; the live
+    URL is now an embedded markdown link.
+- **Revert:** `git checkout v-s000405 -- js/ui/controlPanel.js
+  js/ui/i18n.js js/main.js css/styles.css about.md`.
+
 ## S405 — Larger fonts for About + Legend popups (round 2)
 
 - **Date:** 2026-04-25

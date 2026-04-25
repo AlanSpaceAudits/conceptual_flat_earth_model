@@ -624,9 +624,24 @@ header .info-popup.legend-popup a { color: var(--accent); }
   align-items: start;
   gap: 6px;
 }
-#bottom-bar .lang-btn {
+.lang-select-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 4px;
+  padding: 4px 0;
+}
+.lang-select-btn {
+  background: var(--row); color: var(--fg);
+  border: 1px solid var(--border); border-radius: 4px;
+  padding: 6px 10px; font: inherit; font-size: 12px;
+  text-align: left; cursor: pointer;
+}
+.lang-select-btn:hover { border-color: var(--accent); color: var(--accent); }
+.lang-select-btn[aria-pressed="true"] {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(255, 154, 60, 0.18);
   font-weight: 600;
-  letter-spacing: 0.5px;
 }
 .row.pair-select select.sel {
   width: 100%;

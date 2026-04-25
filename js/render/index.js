@@ -148,7 +148,7 @@ export class Renderer {
       name: 'sun-month-markers',
     });
     this.moonMonthMarkers = new MonthMarkers({
-      color: '#c0c0d8', size: 0.011, clippingPlanes: clipPlanes,
+      color: '#ffffff', size: 0.013, clippingPlanes: clipPlanes,
       markersKey: 'MoonMonthMarkers',
       worldSpaceKey: 'MoonMonthMarkersWorldSpace',
       name: 'moon-month-markers',
@@ -268,7 +268,7 @@ export class Renderer {
     this.sunAnalemma  = new AnalemmaLine(0xffd060, 0.95);
     this.moonAnalemma = new AnalemmaLine(0xc0c0d8, 0.85);
     this.sunVaultArc  = new AnalemmaLine(0xffe680, 0.85);
-    this.moonVaultArc = new AnalemmaLine(0xc0c0d8, 0.85);
+    this.moonVaultArc = new AnalemmaLine(0xffffff, 0.9);
     this.sm.world.add(this.sunAnalemma.group);
     this.sm.world.add(this.moonAnalemma.group);
     this.sm.world.add(this.sunVaultArc.group);

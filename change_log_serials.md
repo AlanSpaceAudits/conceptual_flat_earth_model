@@ -3740,3 +3740,18 @@ Format:
 - **Revert:** `git checkout v-s000423 -- js/core/app.js
   js/render/worldObjects.js js/render/index.js
   js/demos/definitions.js`.
+
+## S425 — Brighter moon notches + arc
+
+- **Date:** 2026-04-25
+- **Files changed:** `js/render/index.js`.
+- **Change:**
+  - Moon `MonthMarkers` colour switched from `#c0c0d8` to
+    `#ffffff` and sprite size from `0.011` to `0.013` so the
+    moon notches stand out against the dark sky instead of
+    blending into it.
+  - `moonVaultArc` (the `AnalemmaLine` instance bound to
+    `MoonVaultArcPoints` / `MoonVaultArcOn`) bumped from
+    `0xc0c0d8` / `0.85` to `0xffffff` / `0.9` for the same
+    reason. Sun side unchanged.
+- **Revert:** `git checkout v-s000424 -- js/render/index.js`.

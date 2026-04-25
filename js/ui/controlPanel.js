@@ -1278,6 +1278,22 @@ function buildRow(model, row) {
 // `popupGroups` is a shared Set of all {header, body} pairs in the
 // same popup — expanding one collapses the others so only one group
 // is open at a time.
+const GROUP_KEY = {
+  'Observer': 'grp_observer', 'Camera': 'grp_camera',
+  'Vault of the Heavens': 'grp_vault_of_heavens',
+  'Optical Vault': 'grp_optical_vault',
+  'Body Vaults': 'grp_body_vaults', 'Rays': 'grp_rays',
+  'Cosmology': 'grp_cosmology', 'Map Projection': 'grp_map_projection',
+  'Misc': 'grp_misc', 'Ephemeris': 'grp_ephemeris',
+  'Starfield': 'grp_starfield', 'Tracker Options': 'grp_tracker_options',
+  'Celestial Bodies': 'grp_celestial_bodies', 'Cel Nav': 'grp_cel_nav',
+  'Constellations': 'grp_constellations', 'Black Holes': 'grp_black_holes',
+  'Quasars': 'grp_quasars', 'Galaxies': 'grp_galaxies',
+  'Satellites': 'grp_satellites',
+  'Bright Star Catalog': 'grp_bright_star_catalog',
+  'Calendar': 'grp_calendar', 'Autoplay': 'grp_autoplay',
+};
+
 function buildGroup(model, title, rows, popupGroups) {
   const el = document.createElement('div');
   el.className = 'group';
@@ -1285,7 +1301,13 @@ function buildGroup(model, title, rows, popupGroups) {
   const header = document.createElement('button');
   header.type = 'button';
   header.className = 'group-header collapsed';
-  header.innerHTML = `<span class="group-arrow">▸</span><span>${title}</span>`;
+  const titleKey = GROUP_KEY[title];
+  const initialTitle = titleKey ? t(titleKey) : title;
+  header.innerHTML = `<span class="group-arrow">▸</span><span class="group-title">${initialTitle}</span>`;
+  if (titleKey) {
+    const titleSpan = header.querySelector('.group-title');
+    onLangChange(() => { titleSpan.textContent = t(titleKey); });
+  }
   const body = document.createElement('div');
   body.className = 'group-body';
   body.hidden = true;

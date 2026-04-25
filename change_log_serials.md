@@ -532,6 +532,24 @@ Format:
   js/render/index.js js/ui/controlPanel.js js/ui/urlState.js`;
   delete `js/core/satellites.js`.
 
+## S394 — Translate group titles (Observer, Camera, Vault of the Heavens, …)
+
+- **Date:** 2026-04-25
+- **Files changed:** `js/ui/i18n.js`,
+  `js/ui/controlPanel.js`,
+  `change_log_serials.md`.
+- **Change:**
+  - `i18n.js` STRINGS dict gains `grp_*` keys for all
+    FIELD_GROUPS group titles plus the Time-tab specials
+    (`Calendar`, `Autoplay`). Translations supplied for
+    `cs` and `es`.
+  - `buildGroup` looks up `GROUP_KEY[title]` to find the
+    translation key, renders the initial title via `t()`,
+    and registers an `onLangChange` callback that
+    rewrites the title `<span>` when the language flips.
+- **Revert:** `git checkout v-s000393 -- js/ui/i18n.js
+  js/ui/controlPanel.js`.
+
 ## S393 — Language select clickable through info-bar's pointer-events shield
 
 - **Date:** 2026-04-25

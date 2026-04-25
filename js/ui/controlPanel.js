@@ -902,19 +902,17 @@ const FIELD_GROUPS = [
         { key: 'GPOverrideBsc', label: 'GP Override', bool: true },
         { label: '', buttonLabel: 'Enable All',
           onClick: (m) => m.setState({
-            TrackerTargets: [
+            BscTargets: [
               ...new Set([
-                ...(Array.isArray(m.state.TrackerTargets) ? m.state.TrackerTargets : []),
-                ...BRIGHT_STAR_CATALOG.map((x) => x.kind === 'planet' ? x.id : `star:${x.id}`),
+                ...(Array.isArray(m.state.BscTargets) ? m.state.BscTargets : []),
+                ...BRIGHT_STAR_CATALOG
+                  .filter((x) => x.kind !== 'planet')
+                  .map((x) => `star:${x.id}`),
               ]),
             ],
           }) },
         { label: '', buttonLabel: 'Disable All',
-          onClick: (m) => {
-            const ids = new Set(BRIGHT_STAR_CATALOG.map((x) => x.kind === 'planet' ? x.id : `star:${x.id}`));
-            const cur = Array.isArray(m.state.TrackerTargets) ? m.state.TrackerTargets : [];
-            m.setState({ TrackerTargets: cur.filter((t) => !ids.has(t)) });
-          } },
+          onClick: (m) => m.setState({ BscTargets: [] }) },
         { label: '', buttonLabel: 'Disable Satellites',
           onClick: (m) => {
             const ids = new Set(
@@ -922,14 +920,15 @@ const FIELD_GROUPS = [
                 .filter((x) => x.cat === 'satellite')
                 .map((x) => `star:${x.id}`),
             );
-            const cur = Array.isArray(m.state.TrackerTargets) ? m.state.TrackerTargets : [];
-            m.setState({ TrackerTargets: cur.filter((t) => !ids.has(t)) });
+            const cur = Array.isArray(m.state.BscTargets) ? m.state.BscTargets : [];
+            m.setState({ BscTargets: cur.filter((t) => !ids.has(t)) });
           } },
-        { key: 'TrackerTargets', label: '', buttonGrid:
+        { key: 'BscTargets', label: '', buttonGrid:
           [...BRIGHT_STAR_CATALOG]
+            .filter((x) => x.kind !== 'planet')
             .sort((a, b) => a.name.localeCompare(b.name))
             .map((x) => ({
-              value: x.kind === 'planet' ? x.id : `star:${x.id}`,
+              value: `star:${x.id}`,
               label: x.name,
               color: '#' + (x.color != null ? x.color : 0xfff5d8).toString(16).padStart(6, '0'),
             })),

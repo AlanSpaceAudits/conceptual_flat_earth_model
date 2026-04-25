@@ -4218,6 +4218,11 @@ export class CatalogPointStars {
     // color attribute. Used by the union catalog so a quasar entry
     // paints cyan, a galaxy pink, etc., in the same layer.
     perVertexColors = false,
+    // State field that holds the array of tracked target ids this
+    // layer reads from. Defaults to the global `TrackerTargets`; the
+    // Bright Star Catalog layer overrides with its own key so its
+    // selections are isolated from the native sub-menus.
+    trackerKey = 'TrackerTargets',
   } = {}) {
     this.sourceKey  = sourceKey;
     this.idPrefix   = idPrefix;
@@ -4225,6 +4230,7 @@ export class CatalogPointStars {
     this._requireMembership = requireMembership;
     this._showKey   = showKey;
     this._perVertexColors = perVertexColors;
+    this._trackerKey = trackerKey;
 
     this.group = new THREE.Group();
     this.group.name = `catalog-${sourceKey.toLowerCase()}`;
@@ -4305,7 +4311,7 @@ export class CatalogPointStars {
     // TrackerTargets membership decides entries. STM narrows the set
     // further — when on, only FollowTarget survives (focus mode).
     const stm = !!s.SpecifiedTrackerMode;
-    const targetArr = Array.isArray(s.TrackerTargets) ? s.TrackerTargets : [];
+    const targetArr = Array.isArray(s[this._trackerKey]) ? s[this._trackerKey] : [];
     const trackerSet = stm
       ? new Set(s.FollowTarget ? [s.FollowTarget] : [])
       : new Set(targetArr);

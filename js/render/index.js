@@ -116,6 +116,7 @@ export class Renderer {
       clippingPlanes: clipPlanes,
       showKey: 'ShowBsc',
       perVertexColors: true,
+      trackerKey: 'BscTargets',
     });
     this.sm.world.add(this.bscStars.group);
 

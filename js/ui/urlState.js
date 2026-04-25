@@ -30,7 +30,7 @@ const PERSISTED_KEYS = [
   'Cosmology',
   'MapProjection',
   'StarfieldType',
-  'BodySource', 'PermanentNight', 'TrackerTargets',
+  'BodySource', 'PermanentNight', 'TrackerTargets', 'BscTargets',
   'ShowEphemerisReadings', 'SpecifiedTrackerMode', 'TrackerGPOverride',
   'GPOverridePlanets', 'GPOverrideCelNav', 'GPOverrideConstellations',
   'GPOverrideBlackHoles', 'GPOverrideQuasars', 'GPOverrideGalaxies',
@@ -45,7 +45,7 @@ const STRING_KEYS = new Set([
 ]);
 
 // Comma-joined in the URL hash.
-const ARRAY_KEYS = new Set(['TrackerTargets']);
+const ARRAY_KEYS = new Set(['TrackerTargets', 'BscTargets']);
 
 function stateToParams(state) {
   const p = new URLSearchParams();

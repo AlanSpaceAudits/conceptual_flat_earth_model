@@ -129,6 +129,7 @@ function defaultState() {
     ShowQuasars:             true,
     ShowGalaxies:            true,
     ShowBsc:                 false,
+    BscTargets:              [],
     GPOverridePlanets:         false,
     GPOverrideCelNav:          false,
     GPOverrideConstellations:  false,
@@ -574,7 +575,11 @@ export class FeModel extends EventTarget {
     c.Quasars         = QUASARS.map(projectStar);
     c.Galaxies        = GALAXIES.map(projectStar);
     c.BscStars        = s.ShowBsc
-      ? BRIGHT_STAR_CATALOG.filter((e) => !e.nativeRendered).map(projectStar)
+      ? BRIGHT_STAR_CATALOG
+          .filter((e) => e.kind !== 'planet'
+                      && Number.isFinite(e.raH)
+                      && Number.isFinite(e.decD))
+          .map(projectStar)
       : [];
 
     // Satellites: sub-point (lat, lon) computed per-frame from

@@ -532,6 +532,37 @@ Format:
   js/render/index.js js/ui/controlPanel.js js/ui/urlState.js`;
   delete `js/core/satellites.js`.
 
+## S390 — BSC isolated to its own BscTargets list, ShowBsc is the single render gate
+
+- **Date:** 2026-04-25
+- **Files changed:** `js/core/app.js`,
+  `js/render/worldObjects.js`,
+  `js/render/index.js`,
+  `js/ui/controlPanel.js`,
+  `js/ui/urlState.js`,
+  `change_log_serials.md`.
+- **Change:**
+  - New state field `BscTargets` (array, default `[]`).
+    Persisted in URL hash via `PERSISTED_KEYS` and the
+    comma-joined `ARRAY_KEYS` set.
+  - `CatalogPointStars` constructor accepts a `trackerKey`
+    option (defaults `'TrackerTargets'`). The BSC layer
+    instantiates with `trackerKey: 'BscTargets'` so its
+    membership check reads `state.BscTargets`. Other
+    catalog layers stay on `TrackerTargets`.
+  - `app.js` builds `c.BscStars` from BSC entries that have
+    a usable `raH` / `decD` and are not `kind: 'planet'`.
+    `ShowBsc` is the single render gate.
+  - BSC sub-menu's Enable All / Disable All / Disable
+    Satellites and the button grid now read and write
+    `BscTargets`. Planet entries (`kind: 'planet'`) are
+    omitted from the grid since the BSC layer cannot render
+    their dynamic positions; they remain available via the
+    Celestial Bodies sub-menu.
+- **Revert:** `git checkout v-s000389 -- js/core/app.js
+  js/render/worldObjects.js js/render/index.js
+  js/ui/controlPanel.js js/ui/urlState.js`.
+
 ## S389 — Tag native-rendered BSC entries; new "Disable Satellites" button
 
 - **Date:** 2026-04-25

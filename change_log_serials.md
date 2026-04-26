@@ -4586,3 +4586,29 @@ Format:
     point-blank range and depth-buffer occlusion
     continues to work.
 - **Revert:** `git checkout v-s000457 -- .`
+
+## S459 — Map Projection split: FE vs GE preserved separately
+
+- **Date:** 2026-04-26
+- **Files changed:** `js/core/app.js`, `js/ui/urlState.js`,
+  `js/ui/controlPanel.js`, `js/render/index.js`.
+- **Change:**
+  - New state field `MapProjectionGe` (default
+    `'hq_ortho'`). Persisted in URL state.
+  - `pairSelectRow` now honours optional `leftKey` /
+    `rightKey` row config so each side of the dropdown
+    pair drives its own state field. When both omitted
+    the row falls back to `row.key` (legacy behaviour).
+  - Show / Map Projection row reconfigured: left
+    dropdown drives `MapProjection` (FE), right drives
+    `MapProjectionGe` (GE). Each side lists every
+    projection (Generated + HQ) so any can be assigned
+    to either world model.
+  - `frame()` and `loadLand()` resolve the active
+    projection by world model — `MapProjectionGe` in
+    GE, `MapProjection` in FE — so the dropdowns
+    preserve their selections across mode toggles.
+    LatitudeLines + DiscGrid still read `MapProjection`
+    directly (they're FE-only and hidden in GE).
+  - P1 / P2 presets set both keys.
+- **Revert:** `git checkout v-s000458 -- .`

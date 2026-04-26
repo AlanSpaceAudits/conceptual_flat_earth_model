@@ -28,7 +28,7 @@ const PERSISTED_KEYS = [
   'UranusVaultHeight', 'NeptuneVaultHeight',
   'ObserverFigure',
   'Cosmology',
-  'MapProjection',
+  'MapProjection', 'MapProjectionGe',
   'StarfieldType',
   'BodySource', 'PermanentNight', 'TrackerTargets', 'BscTargets',
   'Language',
@@ -41,7 +41,7 @@ const PERSISTED_KEYS = [
 ];
 
 const STRING_KEYS = new Set([
-  'ObserverFigure', 'Cosmology', 'MapProjection', 'StarfieldType',
+  'ObserverFigure', 'Cosmology', 'MapProjection', 'MapProjectionGe', 'StarfieldType',
   'BodySource', 'Language',
 ]);
 

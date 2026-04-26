@@ -235,6 +235,7 @@ function defaultState() {
     // 'ae' | 'hellerick' | 'blank'. Affects only the map art; physics
     // always runs in the AE frame.
     MapProjection: 'ae',
+    MapProjectionGe: 'hq_ortho',
 
     // 'random' | 'chart-dark' | 'chart-light' | 'celnav'
     StarfieldType: 'celnav',

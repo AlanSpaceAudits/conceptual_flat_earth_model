@@ -633,9 +633,17 @@ const FIELD_GROUPS = [
           select: ['none', 'yggdrasil', 'meru', 'vortex', 'vortex2', 'discworld'] },
       ]},
       { title: 'Map Projection', rows: [
-        { key: 'MapProjection', pairSelect: true,
-          left:  { label: 'HQ Map Art', select: listHqMaps() },
-          right: { label: 'Generated',  select: listGeneratedProjections() },
+        { pairSelect: true,
+          leftKey:  'MapProjection',
+          rightKey: 'MapProjectionGe',
+          left:  { label: 'FE Map', select: [
+            ...listGeneratedProjections(),
+            ...listHqMaps(),
+          ]},
+          right: { label: 'GE Map', select: [
+            ...listHqMaps(),
+            ...listGeneratedProjections(),
+          ]},
         },
       ]},
       { title: 'Misc', rows: [
@@ -1279,16 +1287,22 @@ function pairSelectRow(model, row) {
   const selR = el.querySelector('.pair-right');
   const leftValues  = new Set(row.left.select.map((o) => typeof o === 'string' ? o : o.value));
   const rightValues = new Set(row.right.select.map((o) => typeof o === 'string' ? o : o.value));
+  // When `leftKey` / `rightKey` are set, each side drives its own
+  // state field (e.g., FE map vs GE map). When omitted, both sides
+  // share `row.key` (legacy single-state behaviour).
+  const leftKey  = row.leftKey  || row.key;
+  const rightKey = row.rightKey || row.key;
   function refresh() {
-    const cur = String(model.state[row.key]);
-    selL.value = leftValues.has(cur)  ? cur : '';
-    selR.value = rightValues.has(cur) ? cur : '';
+    const curL = String(model.state[leftKey]  || '');
+    const curR = String(model.state[rightKey] || '');
+    selL.value = leftValues.has(curL)  ? curL : '';
+    selR.value = rightValues.has(curR) ? curR : '';
   }
   selL.addEventListener('change', () => {
-    if (selL.value) model.setState({ [row.key]: selL.value });
+    if (selL.value) model.setState({ [leftKey]: selL.value });
   });
   selR.addEventListener('change', () => {
-    if (selR.value) model.setState({ [row.key]: selR.value });
+    if (selR.value) model.setState({ [rightKey]: selR.value });
   });
   model.addEventListener('update', refresh);
   refresh();
@@ -1584,7 +1598,8 @@ export function buildControlPanel(host, model, demos) {
       ShowVaultRays: false, ShowOpticalVaultRays: false,
       ShowProjectionRays: false, ShowManyRays: false,
       Cosmology: 'none',
-      MapProjection: 'ae', GeneratedMap: 'blank', MapArt: 'none',
+      MapProjection: 'ae', MapProjectionGe: 'hq_ortho',
+      GeneratedMap: 'blank', MapArt: 'none',
       ShowPlanets: false, DarkBackground: true, ShowLogo: false,
       ShowCelestialBodies: false,
       ShowCelNav: false, ShowConstellations: false, ShowConstellationLines: false,
@@ -1635,7 +1650,8 @@ export function buildControlPanel(host, model, demos) {
       ShowVaultRays: false, ShowOpticalVaultRays: false,
       ShowProjectionRays: false, ShowManyRays: false,
       Cosmology: 'none',
-      MapProjection: 'ae', GeneratedMap: 'default', MapArt: 'none',
+      MapProjection: 'ae', MapProjectionGe: 'hq_ortho',
+      GeneratedMap: 'default', MapArt: 'none',
       ShowPlanets: true, DarkBackground: true, ShowLogo: true,
       BodySource: 'astropixels',
       StarApplyPrecession: false, StarApplyNutation: false,

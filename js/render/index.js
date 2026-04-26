@@ -315,7 +315,11 @@ export class Renderer {
 
   async loadLand() {
     this._landGeo = await loadLandGeo();
-    this._rebuildLand(this.model.state.MapProjection || 'ae');
+    const s = this.model.state;
+    const projId = (s.WorldModel === 'ge')
+      ? (s.MapProjectionGe || 'hq_ortho')
+      : (s.MapProjection || 'ae');
+    this._rebuildLand(projId);
     this.frame();
   }
 
@@ -378,7 +382,12 @@ export class Renderer {
   frame() {
     const m = this.model;
     const c = m.computed, s = m.state;
-    const projId = s.MapProjection || 'ae';
+    // Per-world-model map projection: FE uses `MapProjection`, GE
+    // uses `MapProjectionGe`. Each preserves its own dropdown
+    // selection so toggling FE/GE doesn't clobber the other map.
+    const projId = (s.WorldModel === 'ge')
+      ? (s.MapProjectionGe || 'hq_ortho')
+      : (s.MapProjection || 'ae');
     if (projId !== this._landProjection) {
       this._rebuildLand(projId);
     }

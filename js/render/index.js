@@ -612,6 +612,38 @@ export class Renderer {
       this.observer.group.visible = true;
       this.rayGroup.visible = true;
     }
+
+    // FE-only optical-vault overlays — opticalVaultProject + the FE
+    // Local→Global transform place these around `ObserverFeCoord`,
+    // which doesn't follow the GE observer. Run last so each class's
+    // own `update()` doesn't undo the gate.
+    if (ge) {
+      this.celestialPoles.group.visible     = false;
+      this.decCircles.group.visible         = false;
+      this.sunMonthMarkers.group.visible    = false;
+      this.sunMonthMarkersOpp.group.visible = false;
+      this.moonMonthMarkers.group.visible   = false;
+      this.eclipseMapSolar.group.visible    = false;
+      this.eclipseMapLunar.group.visible    = false;
+      this.sunNine.group.visible            = false;
+      this.moonNine.group.visible           = false;
+      // Optical-vault sky line uses opticalVaultCoord (FE-projected);
+      // hide so it doesn't trail behind the GE observer.
+      if (this.gpTracer) this.gpTracer.skyGroup.visible = false;
+      // Star "spherePoints" land on the cap via the FE local→global
+      // transform; hide on GE until they're re-projected.
+      if (this.stars)            this.stars.spherePoints.visible            = false;
+      if (this.celNavStars)      this.celNavStars.spherePoints.visible      = false;
+      if (this.blackHoleStars)   this.blackHoleStars.spherePoints.visible   = false;
+      if (this.quasarStars)      this.quasarStars.spherePoints.visible      = false;
+      if (this.galaxyStars)      this.galaxyStars.spherePoints.visible      = false;
+      if (this.bscStars)         this.bscStars.spherePoints.visible         = false;
+      if (this.satelliteStars)   this.satelliteStars.spherePoints.visible   = false;
+      if (this.constellations) {
+        this.constellations.sphereStars.visible = false;
+        this.constellations.sphereLines.visible = false;
+      }
+    }
   }
 
   _updateTracks() {

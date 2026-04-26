@@ -4136,3 +4136,22 @@ Format:
     suppresses the vault→GP drop-line in GE (the FE
     vertical-line geometry doesn't apply on a sphere).
 - **Revert:** `git checkout v-s000435 -- .`
+
+## S437 — GE mode: hide FE-only optical-vault overlays
+
+- **Date:** 2026-04-26
+- **Files changed:** `js/render/index.js`.
+- **Change:**
+  - Added a post-update GE-hide block at the end of
+    `RenderSet.update`: forces `.visible = false` for the
+    optical-vault overlays whose math is FE-only
+    (`celestialPoles`, `decCircles`, `sunMonthMarkers` /
+    `sunMonthMarkersOpp` / `moonMonthMarkers`,
+    `eclipseMapSolar` / `eclipseMapLunar`, `sunNine` /
+    `moonNine`, `gpTracer.skyGroup`).
+  - Star/constellation "spherePoints" / `sphereStars` /
+    `sphereLines` (optical-vault-projected stars) hidden
+    in GE — their world positions go through the FE
+    Local→Global transform and don't track the GE
+    observer.
+- **Revert:** `git checkout v-s000436 -- .`

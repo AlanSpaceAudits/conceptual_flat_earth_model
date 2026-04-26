@@ -537,28 +537,31 @@ export class Renderer {
     const bodyCategoryOn = s.ShowCelestialBodies !== false;
     const showSun   = bodyCategoryOn && trackerSet.has('sun');
     const showMoon  = bodyCategoryOn && trackerSet.has('moon');
+    const sunOptVis  = _ge ? (c.SunGlobeOpticalVaultCoord  || c.SunOpticalVaultCoord)  : c.SunOpticalVaultCoord;
+    const moonOptVis = _ge ? (c.MoonGlobeOpticalVaultCoord || c.MoonOpticalVaultCoord) : c.MoonOpticalVaultCoord;
+
     this.sunMarker.group.visible  = showSun;
     this.moonMarker.group.visible = showMoon;
     if (showSun) {
       this.sunMarker.update(
-        sunVaultVis, c.SunOpticalVaultCoord, showTrueVault, s.ShowOpticalVault,
+        sunVaultVis, sunOptVis, showTrueVault, s.ShowOpticalVault,
         c.SunAnglesGlobe.elevation,
       );
     }
     if (showMoon) {
       this.moonMarker.update(
-        moonVaultVis, c.MoonOpticalVaultCoord, showTrueVault, s.ShowOpticalVault,
+        moonVaultVis, moonOptVis, showTrueVault, s.ShowOpticalVault,
         c.MoonAnglesGlobe.elevation,
       );
     }
 
     const nineOn = !!s.ShowSunMoonNine;
     this.sunNine.update(
-      sunVaultVis, c.SunOpticalVaultCoord, 0.10, 0.025,
+      sunVaultVis, sunOptVis, 0.10, 0.025,
       nineOn && showSun,
     );
     this.moonNine.update(
-      moonVaultVis, c.MoonOpticalVaultCoord, 0.08, 0.020,
+      moonVaultVis, moonOptVis, 0.08, 0.020,
       nineOn && showMoon,
     );
 
@@ -578,7 +581,8 @@ export class Renderer {
       }
       mk.group.visible = true;
       const planetVaultVis = _ge ? (p.globeVaultCoord || p.vaultCoord) : p.vaultCoord;
-      mk.update(planetVaultVis, p.opticalVaultCoord,
+      const planetOptVis   = _ge ? (p.globeOpticalVaultCoord || p.opticalVaultCoord) : p.opticalVaultCoord;
+      mk.update(planetVaultVis, planetOptVis,
                 showTrueVault, s.ShowOpticalVault,
                 p.anglesGlobe.elevation, c.NightFactor);
     }
@@ -630,33 +634,9 @@ export class Renderer {
       this.eclipseMapLunar.group.visible    = false;
       this.sunNine.group.visible            = false;
       this.moonNine.group.visible           = false;
-      // Optical-vault sky line uses opticalVaultCoord (FE-projected);
-      // hide so it doesn't trail behind the GE observer.
+      // GP-tracer sky line still uses the FE-projected
+      // opticalVaultCoord; until that's re-projected for GE, hide.
       if (this.gpTracer) this.gpTracer.skyGroup.visible = false;
-      // Star "spherePoints" land on the cap via the FE local→global
-      // transform; hide on GE until they're re-projected.
-      if (this.stars)            this.stars.spherePoints.visible            = false;
-      if (this.celNavStars)      this.celNavStars.spherePoints.visible      = false;
-      if (this.blackHoleStars)   this.blackHoleStars.spherePoints.visible   = false;
-      if (this.quasarStars)      this.quasarStars.spherePoints.visible      = false;
-      if (this.galaxyStars)      this.galaxyStars.spherePoints.visible      = false;
-      if (this.bscStars)         this.bscStars.spherePoints.visible         = false;
-      if (this.satelliteStars)   this.satelliteStars.spherePoints.visible   = false;
-      if (this.constellations) {
-        this.constellations.sphereStars.visible = false;
-        this.constellations.sphereLines.visible = false;
-      }
-      // Sun / Moon / Planet sphereDot + sphereHalo land via the FE
-      // Local→Global transform; hide their optical-vault projections
-      // in GE.
-      const hideOpticalMarker = (mk) => {
-        if (!mk) return;
-        if (mk.sphereDot)  mk.sphereDot.visible  = false;
-        if (mk.sphereHalo) mk.sphereHalo.visible = false;
-      };
-      hideOpticalMarker(this.sunMarker);
-      hideOpticalMarker(this.moonMarker);
-      for (const mk of Object.values(this.planetMarkers || {})) hideOpticalMarker(mk);
     }
   }
 

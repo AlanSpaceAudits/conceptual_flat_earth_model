@@ -241,8 +241,20 @@ export class Constellations {
         this._sphStarPos[i * 3 + 2] = -1000;
       } else {
         aboveHorizon[i] = true;
-        const feLocal = [-localGlobe[2] * opticalR, localGlobe[1] * opticalR, localGlobe[0] * opticalH];
-        const gs = M.Trans(c.TransMatLocalFeToGlobalFe, feLocal);
+        let gs;
+        if (ge && c.GlobeObserverFrame && c.GlobeObserverCoord) {
+          const f = c.GlobeObserverFrame;
+          const obsG = c.GlobeObserverCoord;
+          const ax = localGlobe[2], ay = localGlobe[1], az = localGlobe[0];
+          gs = [
+            obsG[0] + opticalR * (ax * f.northX + ay * f.eastX + az * f.upX),
+            obsG[1] + opticalR * (ax * f.northY + ay * f.eastY + az * f.upY),
+            obsG[2] + opticalR * (ax * f.northZ + ay * f.eastZ + az * f.upZ),
+          ];
+        } else {
+          const feLocal = [-localGlobe[2] * opticalR, localGlobe[1] * opticalR, localGlobe[0] * opticalH];
+          gs = M.Trans(c.TransMatLocalFeToGlobalFe, feLocal);
+        }
         sphPos[i] = gs;
         if (skipPoint) {
           this._sphStarPos[i * 3]     = 0;

@@ -469,6 +469,30 @@ export class FeModel extends EventTarget {
     };
     const _wrapLon180 = (x) => ((x + 180) % 360 + 360) % 360 - 180;
 
+    // GE optical-vault projection. Takes a `localGlobe` vector
+    // (components: zenith, east, north) and returns the body's
+    // world position on the GE optical cap. The cap is a hemisphere
+    // of radius FE_RADIUS tangent at the observer; a body at unit
+    // direction (zenith, east, north) lands at
+    // `observer + zenith·up + east·east + north·north`. Sub-horizon
+    // bodies (zenith ≤ 0) are parked far below the observer so the
+    // disc-clip plane (or the rim itself) hides them.
+    const _globeOpticalProject = (localGlobe) => {
+      const f = c.GlobeObserverFrame;
+      const obs = c.GlobeObserverCoord;
+      if (!f || !obs) return [0, 0, -1000];
+      if (localGlobe[0] <= 0) return [0, 0, -1000];
+      const R = FE_RADIUS;
+      const ax = localGlobe[2];   // north
+      const ay = localGlobe[1];   // east
+      const az = localGlobe[0];   // zenith
+      return [
+        obs[0] + R * (ax * f.northX + ay * f.eastX + az * f.upX),
+        obs[1] + R * (ax * f.northY + ay * f.eastY + az * f.upY),
+        obs[2] + R * (ax * f.northZ + ay * f.eastZ + az * f.upZ),
+      ];
+    };
+
     // --- sun ---
     c.SunRA = sunEq.ra; c.SunDec = sunEq.dec;
     c.SunCelestCoord   = equatorialToCelestCoord(sunEq);
@@ -506,6 +530,7 @@ export class FeModel extends EventTarget {
       opticalVaultProject(c.SunLocalGlobeCoord, c.OpticalVaultRadius, c.OpticalVaultHeightEffective),
       c.TransMatLocalFeToGlobalFe,
     );
+    c.SunGlobeOpticalVaultCoord = _globeOpticalProject(c.SunLocalGlobeCoord);
 
     // --- moon ---
     c.MoonRA = moonEq.ra; c.MoonDec = moonEq.dec;
@@ -540,6 +565,7 @@ export class FeModel extends EventTarget {
       opticalVaultProject(c.MoonLocalGlobeCoord, c.OpticalVaultRadius, c.OpticalVaultHeightEffective),
       c.TransMatLocalFeToGlobalFe,
     );
+    c.MoonGlobeOpticalVaultCoord = _globeOpticalProject(c.MoonLocalGlobeCoord);
 
     // --- analemma accumulators ---
     // One vault-coord point per integer day-of-year while the
@@ -761,10 +787,11 @@ export class FeModel extends EventTarget {
         opticalVaultProject(localGlobe, c.OpticalVaultRadius, c.OpticalVaultHeightEffective),
         c.TransMatLocalFeToGlobalFe,
       );
+      const globeOpticalVaultCoord = _globeOpticalProject(localGlobe);
       c.Planets[name] = {
         ra: eq.ra, dec: eq.dec,
         celestCoord, celestLatLong: ll,
-        vaultCoord, globeVaultCoord, opticalVaultCoord,
+        vaultCoord, globeVaultCoord, opticalVaultCoord, globeOpticalVaultCoord,
         anglesGlobe,
       };
     }
@@ -801,13 +828,14 @@ export class FeModel extends EventTarget {
         opticalVaultProject(localGlobe, c.OpticalVaultRadius, c.OpticalVaultHeightEffective),
         c.TransMatLocalFeToGlobalFe,
       );
+      const globeOpticalVaultCoord = _globeOpticalProject(localGlobe);
       return {
         id:   star.id,
         name: star.name,
         mag:  star.mag,
         ra, dec,
         celestCoord, celestLatLong,
-        vaultCoord, globeVaultCoord, opticalVaultCoord,
+        vaultCoord, globeVaultCoord, opticalVaultCoord, globeOpticalVaultCoord,
         anglesGlobe,
       };
     };
@@ -854,11 +882,12 @@ export class FeModel extends EventTarget {
           opticalVaultProject(localGlobe, c.OpticalVaultRadius, c.OpticalVaultHeightEffective),
           c.TransMatLocalFeToGlobalFe,
         );
+        const globeOpticalVaultCoord = _globeOpticalProject(localGlobe);
         return {
           id: sat.id, name: sat.name,
           ra: raRad, dec: decRad,
           celestCoord, celestLatLong, globeVaultCoord,
-          vaultCoord, opticalVaultCoord,
+          vaultCoord, opticalVaultCoord, globeOpticalVaultCoord,
           anglesGlobe,
         };
       };

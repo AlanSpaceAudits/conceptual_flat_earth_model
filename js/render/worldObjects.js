@@ -3748,15 +3748,27 @@ export class Stars {
         sphPos[i * 3 + 2] = -1000;
         continue;
       }
-      // Ellipsoidal optical vault: x/y scaled by horizontal radius
-      // (opticalR), z by vertical height (opticalH). Same flattened cap
-      // the sun / moon / planet markers project onto.
-      // swap (x-zenith, y-east, z-north) -> (x-out, y-east, z-up): [-z, y, x]
-      const feLocal = [-localGlobe[2] * opticalR, localGlobe[1] * opticalR, localGlobe[0] * opticalH];
-      const gs = M.Trans(c.TransMatLocalFeToGlobalFe, feLocal);
-      sphPos[i * 3]     = gs[0];
-      sphPos[i * 3 + 1] = gs[1];
-      sphPos[i * 3 + 2] = gs[2];
+      if (ge && c.GlobeObserverFrame && c.GlobeObserverCoord) {
+        // GE optical-vault projection: hemisphere of FE_RADIUS tangent
+        // at the observer. World position = obs + R · (north·local[2]
+        // + east·local[1] + up·local[0]).
+        const f = c.GlobeObserverFrame;
+        const obsG = c.GlobeObserverCoord;
+        const ax = localGlobe[2], ay = localGlobe[1], az = localGlobe[0];
+        sphPos[i * 3]     = obsG[0] + opticalR * (ax * f.northX + ay * f.eastX + az * f.upX);
+        sphPos[i * 3 + 1] = obsG[1] + opticalR * (ax * f.northY + ay * f.eastY + az * f.upY);
+        sphPos[i * 3 + 2] = obsG[2] + opticalR * (ax * f.northZ + ay * f.eastZ + az * f.upZ);
+      } else {
+        // FE: ellipsoidal optical vault: x/y scaled by horizontal
+        // radius (opticalR), z by vertical height (opticalH). Same
+        // flattened cap the sun / moon / planet markers project onto.
+        // swap (x-zenith, y-east, z-north) -> (x-out, y-east, z-up): [-z, y, x]
+        const feLocal = [-localGlobe[2] * opticalR, localGlobe[1] * opticalR, localGlobe[0] * opticalH];
+        const gs = M.Trans(c.TransMatLocalFeToGlobalFe, feLocal);
+        sphPos[i * 3]     = gs[0];
+        sphPos[i * 3 + 1] = gs[1];
+        sphPos[i * 3 + 2] = gs[2];
+      }
     }
     // BufferAttributes need an explicit flag to re-upload to the GPU each
     // frame. Without this the stars stay pinned at their initial zeros and
@@ -4776,9 +4788,10 @@ export class CelNavStars {
         sp[i * 3 + 1] = 0;
         sp[i * 3 + 2] = -1000;
       } else {
-        sp[i * 3    ] = star.opticalVaultCoord[0];
-        sp[i * 3 + 1] = star.opticalVaultCoord[1];
-        sp[i * 3 + 2] = star.opticalVaultCoord[2];
+        const opt = (ge && star.globeOpticalVaultCoord) ? star.globeOpticalVaultCoord : star.opticalVaultCoord;
+        sp[i * 3    ] = opt[0];
+        sp[i * 3 + 1] = opt[1];
+        sp[i * 3 + 2] = opt[2];
       }
     }
 
@@ -4941,9 +4954,10 @@ export class CatalogPointStars {
         sp[i * 3 + 1] = 0;
         sp[i * 3 + 2] = -1000;
       } else {
-        sp[i * 3    ] = star.opticalVaultCoord[0];
-        sp[i * 3 + 1] = star.opticalVaultCoord[1];
-        sp[i * 3 + 2] = star.opticalVaultCoord[2];
+        const opt = (ge && star.globeOpticalVaultCoord) ? star.globeOpticalVaultCoord : star.opticalVaultCoord;
+        sp[i * 3    ] = opt[0];
+        sp[i * 3 + 1] = opt[1];
+        sp[i * 3 + 2] = opt[2];
       }
       if (this._perVertexColors && star.color != null) {
         const r = ((star.color >> 16) & 0xff) / 255;

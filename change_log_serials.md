@@ -4346,3 +4346,36 @@ Format:
     they're computed via `_globeVaultAt(...)` against
     the same `c.GlobeVaultRadius`.
 - **Revert:** `git checkout v-s000445 -- .`
+
+## S447 — GE optical-vault projection: starfield + bodies on the GE cap
+
+- **Date:** 2026-04-26
+- **Files changed:** `js/core/app.js`,
+  `js/render/worldObjects.js`,
+  `js/render/constellations.js`, `js/render/index.js`.
+- **Change:**
+  - New `_globeOpticalProject(localGlobe)` helper in
+    `app.update()`: returns the body's world position on
+    the GE optical cap (hemisphere of `FE_RADIUS` tangent
+    at the observer). Sub-horizon bodies returned at the
+    far-below sentinel `[0, 0, -1000]` so the disc clip
+    plane / rim hide them.
+  - `globeOpticalVaultCoord` field added to sun, moon,
+    each planet, every cataloged star (cel-nav,
+    constellation, black holes, quasars, galaxies, BSC),
+    and every satellite via `projectStar` and
+    `projectSatellite`.
+  - `index.js` sun/moon/planet markers + sun/moon "9"
+    glyphs now consume the GE optical coord in GE.
+  - `Stars.update`, `CelNavStars.update`,
+    `CatalogPointStars.update`,
+    `Constellations.update`: optical-vault buffer reads
+    `globeOpticalVaultCoord` in GE, falls back to the FE
+    `opticalVaultCoord` when not in GE.
+  - GE post-update hide-block trimmed: removed the gates
+    on `sphereDot` / `sphereHalo` for sun/moon/planets,
+    `spherePoints` for the eight star catalogs, and
+    `sphereStars` / `sphereLines` for constellations.
+    The GP-tracer sky line stays gated until that path
+    is re-projected.
+- **Revert:** `git checkout v-s000446 -- .`

@@ -4402,3 +4402,19 @@ Format:
     so its `(elevation + 3) / 5` fade stays at full
     opacity for sub-horizon bodies.
 - **Revert:** `git checkout v-s000447 -- .`
+
+## S449 — Heavenly Vault toggle moved to Tracker Options; gates GE shell
+
+- **Date:** 2026-04-26
+- **Files changed:** `js/ui/controlPanel.js`,
+  `js/render/worldObjects.js`.
+- **Change:**
+  - `ShowVault` row moved out of the Show / Heavenly
+    Vault group into Tracker Options (between
+    `ShowCelestialBodies` and `ShowOpticalVault`).
+  - `GlobeHeavenlyVault.update` gates `group.visible` on
+    `ShowVault` in addition to `WorldModel === 'ge'` —
+    unchecking the toggle hides the GE celestial sphere
+    + graticule, mirroring how it hides the FE flat
+    dome.
+- **Revert:** `git checkout v-s000448 -- .`

@@ -613,7 +613,6 @@ const FIELD_GROUPS = [
   {
     tab: 'Show', groups: [
       { title: 'Heavenly Vault', rows: [
-        { key: 'ShowVault',           label: 'Heavenly Vault',     bool: true },
         { key: 'ShowVaultGrid',       label: 'Vault Grid',         bool: true },
       ]},
       { title: 'Ground / Disc', rows: [
@@ -711,6 +710,7 @@ const FIELD_GROUPS = [
         ]},
         { key: 'ShowStars',            label: 'Stars (master)',           bool: true },
         { key: 'ShowCelestialBodies',  label: 'Celestial Bodies (master)', bool: true },
+        { key: 'ShowVault',            label: 'Heavenly Vault',           bool: true },
         { key: 'ShowOpticalVault',     label: 'Optical Vault',            bool: true },
         { key: 'ShowTruePositions',    label: 'True Positions',           bool: true },
         { key: 'ShowShadow',           label: 'Shadow',                   bool: true },

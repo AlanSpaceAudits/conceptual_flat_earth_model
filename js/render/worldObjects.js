@@ -559,8 +559,12 @@ export class GlobeHeavenlyVault {
   }
 
   update(model) {
-    const ge = model.state.WorldModel === 'ge';
-    this.group.visible = ge;
+    const s = model.state;
+    const ge = s.WorldModel === 'ge';
+    // `ShowVault` is the master heavenly-vault toggle in both modes;
+    // unchecked, the GE celestial sphere shell + graticule disappear
+    // exactly like the FE dome does.
+    this.group.visible = ge && (s.ShowVault !== false);
     if (!ge) return;
     const r = model.computed.GlobeVaultRadius || 1;
     this.group.scale.set(r, r, r);

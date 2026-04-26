@@ -450,7 +450,11 @@ export class FeModel extends EventTarget {
         eastX:  -so,      eastY:   co,      eastZ:   0,
         upX:     cl * co, upY:     cl * so, upZ:     sl,
       };
-      c.GlobeVaultRadius = GLOBE_RADIUS * 1.6;
+      // Celestial sphere expanded to 2·GLOBE_RADIUS so its surface
+      // grazes the apex of the observer's optical dome (the dome
+      // sits tangent at the observer with radius FE_RADIUS, so its
+      // apex is at 2·FE_RADIUS from the world origin).
+      c.GlobeVaultRadius = GLOBE_RADIUS * 2;
     }
     // helper: place a celestial point on the globe heavenly-vault
     // shell at (declination, GP longitude). GP longitude folds GMST

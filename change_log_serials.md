@@ -4331,3 +4331,18 @@ Format:
     `OpticalVaultHeight` sliders remain ignored in GE —
     the size is fixed.
 - **Revert:** `git checkout v-s000444 -- .`
+
+## S446 — GE celestial sphere expanded to 2·FE_RADIUS
+
+- **Date:** 2026-04-26
+- **Files changed:** `js/core/app.js`.
+- **Change:**
+  - `c.GlobeVaultRadius` set to `2 · GLOBE_RADIUS` (was
+    `1.6`). With the GE optical vault tangent at the
+    observer with radius `FE_RADIUS`, its apex sits at
+    `2 · FE_RADIUS` from the world origin; the celestial
+    sphere now grazes that apex. Stars/planets/sun/moon
+    on `globeVaultCoord` follow automatically since
+    they're computed via `_globeVaultAt(...)` against
+    the same `c.GlobeVaultRadius`.
+- **Revert:** `git checkout v-s000445 -- .`

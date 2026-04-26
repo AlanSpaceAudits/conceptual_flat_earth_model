@@ -696,7 +696,10 @@ const FIELD_GROUPS = [
       { title: 'Tracker Options', rows: [
         { actions: [
           { buttonLabel: 'Clear All',
-            onClick: (m) => m.setState({ TrackerTargets: [] }) },
+            onClick: (m) => m.setState({
+              TrackerTargets: [],
+              ShowConstellationLines: false,
+            }) },
           { buttonLabel: 'Track All',
             onClick: (m) => m.setState({
               TrackerTargets: [

@@ -4845,3 +4845,17 @@ Format:
     the year so users know how many full circuits
     they're seeing.
 - **Revert:** `git checkout v-s000468 -- .`
+
+## S470 — Tracker Clear All also turns off constellation lines
+
+- **Date:** 2026-04-26
+- **Files changed:** `js/ui/controlPanel.js`.
+- **Change:**
+  - Tracker Options "Clear All" now sets
+    `ShowConstellationLines: false` alongside emptying
+    `TrackerTargets`. The constellation outline layer
+    is independent of any tracker membership, so it
+    stayed visible after clearing the per-body
+    selections; this row makes "Clear All" actually
+    blank the sky overlay too.
+- **Revert:** `git checkout v-s000469 -- .`

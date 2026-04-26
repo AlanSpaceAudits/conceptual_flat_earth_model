@@ -4007,3 +4007,33 @@ Format:
     match bear; `'none'` figure marker dot + crosshair
     always hidden.
 - **Revert:** `git checkout v-s000430 -- .`
+
+## S432 — GP Tracer split + sky-line below-horizon + clear button
+
+- **Date:** 2026-04-26
+- **Files changed:** `js/core/app.js`,
+  `js/render/worldObjects.js`, `js/ui/controlPanel.js`.
+- **Change:**
+  - GP Tracer split into two independent toggles in
+    Tracker Options: `ShowGPTracer` ("Trace GP", disc/ground
+    line) and `ShowOpticalVaultTrace` ("Trace Optical
+    Vault", optical-vault sky line). `discGroup.visible`
+    gates on `ShowGPTracer`; `skyGroup.visible` gates on
+    `ShowOpticalVaultTrace`.
+  - GP Tracer extended to handle all `star:` ids
+    (Cel-Nav / Constellation / Black Holes / Quasars /
+    Galaxies / Satellites / BSC) in addition to
+    sun / moon / planets. Targets iterate
+    `TrackerTargets ∪ BscTargets`; per-catalog colour
+    matches the renderer.
+  - New `ShowTraceUnder` toggle (placed under "Trace
+    Optical Vault"): when on, sky-line materials drop the
+    `clipBelowDisc` plane so the optical-vault trace
+    continues below the observer's horizon.
+  - New "Clear Trace" action button in Tracker Options
+    bumps `ClearTraceCount`; `GPTracer.update` resets all
+    accumulated buffers when the count changes.
+  - P1 / P2 presets updated for the new flags
+    (`ShowOpticalVaultTrace: false` in both, `ShowGPTracer:
+    true` in P2 unchanged).
+- **Revert:** `git checkout v-s000431 -- .`

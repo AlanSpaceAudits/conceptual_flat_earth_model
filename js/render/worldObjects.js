@@ -4962,6 +4962,7 @@ export class GPTracer {
     this._lines = new Map();
     this._wasOn = false;
     this._lastTargetsKey = '';
+    this._lastClearN = 0;
   }
 
   _ensureRec(key, color) {
@@ -5033,16 +5034,33 @@ export class GPTracer {
   update(model) {
     const s = model.state;
     const c = model.computed;
-    const on = !!s.ShowGPTracer;
+    const traceGP      = !!s.ShowGPTracer;
+    const traceOptical = !!s.ShowOpticalVaultTrace;
+    const on = traceGP || traceOptical;
     this.group.visible = on;
-    this.discGroup.visible = on && !s.InsideVault;
-    this.skyGroup.visible  = on && (s.ShowOpticalVault !== false);
+    this.discGroup.visible = traceGP && !s.InsideVault;
+    this.skyGroup.visible  = traceOptical && (s.ShowOpticalVault !== false);
+
+    const skyClip = s.ShowTraceUnder ? [] : this._clippingPlanes;
+    for (const rec of this._lines.values()) {
+      if (rec.sky.line.material.clippingPlanes !== skyClip) {
+        rec.sky.line.material.clippingPlanes = skyClip;
+        rec.sky.line.material.needsUpdate = true;
+      }
+    }
 
     if (on && !this._wasOn) this._resetAll();
     this._wasOn = on;
+    const clearN = s.ClearTraceCount | 0;
+    if (clearN !== this._lastClearN) {
+      this._resetAll();
+      this._lastClearN = clearN;
+    }
     if (!on) return;
 
-    const targets = Array.isArray(s.TrackerTargets) ? s.TrackerTargets : [];
+    const trackerArr = Array.isArray(s.TrackerTargets) ? s.TrackerTargets : [];
+    const bscArr     = Array.isArray(s.BscTargets) ? s.BscTargets : [];
+    const targets    = [...new Set([...trackerArr, ...bscArr])];
     const key = targets.slice().sort().join(',');
     if (key !== this._lastTargetsKey) {
       const want = new Set(targets);
@@ -5057,24 +5075,51 @@ export class GPTracer {
 
     const skyRot = c.SkyRotAngle || 0;
     for (const name of targets) {
-      let lat, lon, optical;
+      let lat, lon, optical, color;
       if (name === 'sun') {
         lat = c.SunCelestLatLong.lat;
         lon = _wrapLon(c.SunRA * 180 / Math.PI - skyRot);
         optical = c.SunOpticalVaultCoord;
+        color = GP_TRACER_COLORS.sun;
       } else if (name === 'moon') {
         lat = c.MoonCelestLatLong.lat;
         lon = _wrapLon(c.MoonRA * 180 / Math.PI - skyRot);
         optical = c.MoonOpticalVaultCoord;
+        color = GP_TRACER_COLORS.moon;
       } else if (c.Planets && c.Planets[name]) {
         const p = c.Planets[name];
         lat = p.celestLatLong.lat;
         lon = _wrapLon(p.ra * 180 / Math.PI - skyRot);
         optical = p.opticalVaultCoord;
+        color = GP_TRACER_COLORS[name] || 0xffffff;
+      } else if (name.startsWith('star:')) {
+        const starId = name.slice(5);
+        let entry = null;
+        let starColor = 0xffffff;
+        if (c.CelNavStars && (entry = c.CelNavStars.find((x) => x.id === starId))) {
+          starColor = 0xffe8a0;
+        } else if (c.CataloguedStars && (entry = c.CataloguedStars.find((x) => x.id === starId))) {
+          starColor = 0xffffff;
+        } else if (c.BlackHoles && (entry = c.BlackHoles.find((x) => x.id === starId))) {
+          starColor = 0x9966ff;
+        } else if (c.Quasars && (entry = c.Quasars.find((x) => x.id === starId))) {
+          starColor = 0x40e0d0;
+        } else if (c.Galaxies && (entry = c.Galaxies.find((x) => x.id === starId))) {
+          starColor = 0xff80c0;
+        } else if (c.Satellites && (entry = c.Satellites.find((x) => x.id === starId))) {
+          starColor = 0x66ff88;
+        } else if (c.BscStars && (entry = c.BscStars.find((x) => x.id === starId))) {
+          starColor = entry.color != null ? entry.color : 0xfff5d8;
+        }
+        if (!entry) continue;
+        lat = entry.celestLatLong.lat;
+        lon = _wrapLon(entry.ra * 180 / Math.PI - skyRot);
+        optical = entry.opticalVaultCoord;
+        color = starColor;
       } else {
         continue;
       }
-      const rec = this._ensureRec(name, GP_TRACER_COLORS[name] || 0xffffff);
+      const rec = this._ensureRec(name, color);
 
       const [dx, dy] = canonicalLatLongToDisc(lat, lon, FE_RADIUS);
       this._appendPoint(rec.disc, dx, dy, 0.003);

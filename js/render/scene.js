@@ -100,7 +100,9 @@ export class SceneManager {
 
   updateCamera() {
     const s = this.model.state;
-    const obs = this.model.computed.ObserverFeCoord;
+    const c = this.model.computed;
+    const ge = s.WorldModel === 'ge';
+    const obs = ge ? (c.GlobeObserverCoord || c.ObserverFeCoord) : c.ObserverFeCoord;
     // expose the current camera aspect on model.computed so
     // worldObjects code can compute horizontal FOV (for placing the
     // right-side elevation scale at the correct angular offset)
@@ -133,26 +135,29 @@ export class SceneManager {
       const elev = Math.max(0, Math.min(0.5, s.ObserverElevation || 0));
       this.camera.position.set(obs[0], obs[1], obs[2] + eyeH + elev);
 
-      // Local north (toward disc centre) for an observer at (ox, oy). At
-      // the pole obsLen → 0 and the radial direction is undefined; use
-      // ObserverLong to pick the meridian that "south" runs along, so the
-      // observer can still pan a full 360° around the zenith. Convention:
-      // facing south along longitude L means facing the global FE direction
-      // (cos L, sin L) — i.e. north is (-cos L, -sin L) at the pole.
-      const ox = obs[0], oy = obs[1];
-      const obsLen = Math.hypot(ox, oy);
-      let northX, northY;
-      if (obsLen > 1e-6) {
-        northX = -ox / obsLen;
-        northY = -oy / obsLen;
+      // Local north / east. In GE, take them from GlobeObserverFrame
+      // (great-circle tangents on the sphere). In FE, north is toward
+      // the disc centre; at the pole the radial is undefined so fall
+      // back to the meridian picked by ObserverLong.
+      let northX, northY, eastX, eastY;
+      if (ge && c.GlobeObserverFrame) {
+        const f = c.GlobeObserverFrame;
+        northX = f.northX; northY = f.northY;
+        eastX  = f.eastX;  eastY  = f.eastY;
       } else {
-        const longR = ToRad(s.ObserverLong || 0);
-        northX = -Math.cos(longR);
-        northY = -Math.sin(longR);
+        const ox = obs[0], oy = obs[1];
+        const obsLen = Math.hypot(ox, oy);
+        if (obsLen > 1e-6) {
+          northX = -ox / obsLen;
+          northY = -oy / obsLen;
+        } else {
+          const longR = ToRad(s.ObserverLong || 0);
+          northX = -Math.cos(longR);
+          northY = -Math.sin(longR);
+        }
+        eastX  =  northY;
+        eastY  = -northX;
       }
-      // East is 90° clockwise from north viewed from above: (ny, -nx).
-      const eastX  =  northY;
-      const eastY  = -northX;
       const h = ToRad(s.ObserverHeading || 0);
       const fx = Math.cos(h) * northX + Math.sin(h) * eastX;
       const fy = Math.cos(h) * northY + Math.sin(h) * eastY;

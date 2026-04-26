@@ -609,8 +609,9 @@ export class Renderer {
       // Most groups have their own update() that re-derives visibility
       // each frame from state — vaultOfHeavens.update() doesn't touch
       // group.visible, so it has to be restored here or the dome stays
-      // hidden after exiting first-person mode.
-      this.vaultOfHeavens.group.visible = true;
+      // hidden after exiting first-person mode. Keep the FE-only dome
+      // off in GE mode (it represents the flat-disc heavenly vault).
+      this.vaultOfHeavens.group.visible = !(s.WorldModel === 'ge');
       this.observer.group.visible = true;
       this.rayGroup.visible = true;
     }

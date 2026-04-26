@@ -1920,10 +1920,11 @@ export class ObserversOpticalVault {
       );
     }
 
-    // Orient axes to the observer's local globe frame via its lat/long swap.
-    // Axes x=north, y=east, z=up are already aligned in fe-local frame; we
-    // rotate by the observer longitude about z to match global-fe frame.
-    this.group.rotation.set(0, 0, ToRad(s.ObserverLong));
+    if (!ge) {
+      // FE: rotate by observer longitude so local +x = north, +y = east
+      // line up with the global-fe frame.
+      this.group.rotation.set(0, 0, ToRad(s.ObserverLong));
+    }
 
     this.group.visible = s.ShowOpticalVault;
   }
@@ -2812,6 +2813,31 @@ export class Observer {
     this.figureGroup.name = 'observer-figure';
     this.group.add(this.figureGroup);
     this._currentFigure = null;
+
+    // Diagnostic XYZ axes: +x = north (green), +y = east (blue),
+    // +z = up / zenith (red). Live on observer.group so they pick up
+    // the GlobeObserverFrame rotation in GE; in FE they stay
+    // world-aligned (the FE local frame is identity at the disc).
+    const axisLen = 0.05;
+    const axisVerts = [
+      0, 0, 0, axisLen, 0, 0,
+      0, 0, 0, 0, axisLen, 0,
+      0, 0, 0, 0, 0, axisLen,
+    ];
+    const axisCols = [
+      0, 0.6, 0, 0, 0.6, 0,
+      0, 0, 1, 0, 0, 1,
+      1, 0, 0, 1, 0, 0,
+    ];
+    const axisGeom = new THREE.BufferGeometry();
+    axisGeom.setAttribute('position', new THREE.Float32BufferAttribute(axisVerts, 3));
+    axisGeom.setAttribute('color', new THREE.Float32BufferAttribute(axisCols, 3));
+    this.axes = new THREE.LineSegments(
+      axisGeom,
+      new THREE.LineBasicMaterial({ vertexColors: true, depthTest: false }),
+    );
+    this.axes.renderOrder = 60;
+    this.group.add(this.axes);
   }
 
   _buildFigure(kind) {

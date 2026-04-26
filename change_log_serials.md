@@ -4071,3 +4071,32 @@ Format:
   - `grids-stack` second row wrapped in a flex `world-row`
     so `FE` + `⌫` sit side-by-side; `▦` stays alone on top.
 - **Revert:** `git checkout v-s000433 -- .`
+
+## S435 — GE mode: observer axes, optical-vault orientation, FE-vault gate, camera coord
+
+- **Date:** 2026-04-26
+- **Files changed:** `js/render/worldObjects.js`,
+  `js/render/scene.js`, `js/render/index.js`.
+- **Change:**
+  - `Observer` constructor adds a small XYZ axis triad on
+    `observer.group` (green +x = north, blue +y = east,
+    red +z = up). In GE the triad picks up
+    `GlobeObserverFrame` via the existing observer
+    rotation; in FE it stays world-aligned at the disc.
+  - `ObserversOpticalVault.update`: removed the
+    unconditional `this.group.rotation.set(0, 0, lon)`
+    that was clobbering the GE rotation matrix set
+    earlier in the same call. Longitude rotation is now
+    applied only when `WorldModel !== 'ge'`. Optical-vault
+    cap now actually follows `GlobeObserverFrame` as the
+    observer moves across the sphere.
+  - `scene.updateCamera`: `obs` resolves to
+    `GlobeObserverCoord` in GE so InsideVault and
+    FreeCameraMode position on the sphere instead of the
+    FE disc. InsideVault local north/east now read from
+    `GlobeObserverFrame` in GE; FE branch unchanged.
+  - `index.js` post-`InsideVault` else-branch:
+    `vaultOfHeavens.group.visible` no longer force-true in
+    GE — gated on `!(WorldModel === 'ge')` so the FE
+    flat-disc heavenly vault stops leaking into GE mode.
+- **Revert:** `git checkout v-s000434 -- .`

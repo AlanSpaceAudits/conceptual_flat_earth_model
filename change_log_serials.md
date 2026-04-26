@@ -4314,3 +4314,20 @@ Format:
     branch unchanged — the cap remains tangent at the
     observer's disc position.
 - **Revert:** `git checkout v-s000443 -- .`
+
+## S445 — GE optical vault: keep FE_RADIUS size, anchor tangent at observer
+
+- **Date:** 2026-04-26
+- **Files changed:** `js/render/worldObjects.js`.
+- **Change:**
+  - `ObserversOpticalVault.update`: anchor the group at
+    the observer's world position in both modes (was the
+    world origin in GE per S444). Combined with
+    `c.OpticalVaultRadius = c.OpticalVaultHeight =
+    FE_RADIUS` in GE, the cap is a hemisphere of radius
+    `FE_RADIUS` whose flat rim is the observer's tangent
+    plane and whose apex extends `FE_RADIUS` outward
+    along the local zenith. `OpticalVaultSize` and
+    `OpticalVaultHeight` sliders remain ignored in GE —
+    the size is fixed.
+- **Revert:** `git checkout v-s000444 -- .`

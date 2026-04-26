@@ -3930,9 +3930,12 @@ export class Stars {
 
     // Starfield opacity. With DynamicStars on (default) the cloud fades
     // with the sun's elevation so it behaves like a real sky. With it off,
-    // stars stay at full brightness regardless of day / night.
-    const nightAlpha = s.DynamicStars ? c.NightFactor : 1.0;
-    const visibilityGate = s.DynamicStars ? nightAlpha > 0.01 : true;
+    // stars stay at full brightness regardless of day / night. GE mode
+    // simulates real spherical astronomy, so the day-fade is always on
+    // there regardless of the flag.
+    const dynamic = s.DynamicStars || s.WorldModel === 'ge';
+    const nightAlpha = dynamic ? (c.NightFactor || 0) : 1.0;
+    const visibilityGate = dynamic ? nightAlpha > 0.01 : true;
     const showStars = s.ShowStars && visibilityGate;
     // Dome starfield is a true-source mimic — gate it on ShowTruePositions
     // so toggling "True Positions" off also hides the heavenly starfield.
@@ -4979,9 +4982,11 @@ export class CelNavStars {
                 && (c.CelNavStars != null)
                 && (s.ShowCelNav !== false);
     // Same fade rules as Stars: dynamic fade by NightFactor unless the
-    // disables `DynamicStars`, hard-gated on `ShowStars`.
-    const nightAlpha = s.DynamicStars ? (c.NightFactor || 0) : 1.0;
-    const visibilityGate = s.DynamicStars ? nightAlpha > 0.01 : true;
+    // disables `DynamicStars`, hard-gated on `ShowStars`. GE forces
+    // dynamic fade so the daytime sky doesn't show stars on the globe.
+    const dynamic = s.DynamicStars || s.WorldModel === 'ge';
+    const nightAlpha = dynamic ? (c.NightFactor || 0) : 1.0;
+    const visibilityGate = dynamic ? nightAlpha > 0.01 : true;
     const showStars = active && s.ShowStars && visibilityGate;
 
     // hide the heavenly-vault star dots in Optical mode so
@@ -5161,8 +5166,9 @@ export class CatalogPointStars {
     const c = model.computed;
     const entries = c[this.sourceKey];
 
-    const nightAlpha = s.DynamicStars ? (c.NightFactor || 0) : 1.0;
-    const visibilityGate = s.DynamicStars ? nightAlpha > 0.01 : true;
+    const dynamic = s.DynamicStars || s.WorldModel === 'ge';
+    const nightAlpha = dynamic ? (c.NightFactor || 0) : 1.0;
+    const visibilityGate = dynamic ? nightAlpha > 0.01 : true;
     const categoryShown = !this._showKey || !!s[this._showKey];
     const showStars = !!entries && s.ShowStars && visibilityGate && categoryShown;
 

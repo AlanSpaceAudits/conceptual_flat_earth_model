@@ -136,9 +136,10 @@ export class Constellations {
 
     // Honour the same DynamicStars / day-night fade the random starfield
     // uses so the constellations emerge smoothly at twilight instead of
-    // popping on.
-    const nightAlpha = s.DynamicStars ? c.NightFactor : 1.0;
-    const canShow = s.DynamicStars ? nightAlpha > 0.01 : true;
+    // popping on. GE forces dynamic fade on regardless of the flag.
+    const dynamic = s.DynamicStars || s.WorldModel === 'ge';
+    const nightAlpha = dynamic ? (c.NightFactor || 0) : 1.0;
+    const canShow = dynamic ? nightAlpha > 0.01 : true;
     // heavenly-vault constellation dots hide in Optical so
     // the same star isn't painted both on the dome (visible through
     // the transparent cap) and on the cap surface projection.

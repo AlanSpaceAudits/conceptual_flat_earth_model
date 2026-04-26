@@ -245,7 +245,8 @@ export class StarfieldChart {
     this.localMat.uniforms.uTexRepeat.value.set(chart.cropX, 1);
     this.localMat.uniforms.uTexOffset.value.set(chart.offX, 0);
 
-    const nightAlpha = s.DynamicStars ? c.NightFactor : 1.0;
+    const dynamic = s.DynamicStars || s.WorldModel === 'ge';
+    const nightAlpha = dynamic ? (c.NightFactor || 0) : 1.0;
     this.domeMat.opacity = nightAlpha;
     this.localMat.uniforms.uOpacity.value = nightAlpha;
 

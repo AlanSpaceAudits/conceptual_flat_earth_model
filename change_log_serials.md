@@ -5299,3 +5299,21 @@ Format:
     its `0..90` ground-up range; only the orbit
     drag and the per-frame clamp were touched.
 - **Revert:** `git checkout v-s000486 -- .`
+
+## S488 — GE forces dynamic starfield day-fade
+
+- **Date:** 2026-04-26
+- **Files changed:** `js/render/worldObjects.js`,
+  `js/render/constellations.js`,
+  `js/render/starfieldChart.js`.
+- **Change:**
+  - Five star-renderer fade sites (random
+    starfield, CelNavStars, generic catalog points,
+    constellation lines, starfieldChart) updated to
+    treat GE as `dynamic = true` regardless of the
+    `s.DynamicStars` flag. FE behaviour unchanged —
+    flag still controls the FE day-fade. GE always
+    applies `nightAlpha = NightFactor` so stars on
+    the optical-vault hemisphere disappear during
+    daylight in line with real spherical astronomy.
+- **Revert:** `git checkout v-s000487 -- .`

@@ -336,6 +336,7 @@ export const PROJECTIONS = {
     imageAsset: 'assets/map_hq_equirect_day.jpg',
     imageNativeWidth: 2048, imageNativeHeight: 1024,
     imageInscribedRadius: 0.5,
+    wrapsSphere: true,
     notes: 'NASA Blue Marble equirectangular daymap.',
     project: projectEquirect,
   },
@@ -346,6 +347,7 @@ export const PROJECTIONS = {
     imageAsset: 'assets/map_hq_equirect_night.jpg',
     imageNativeWidth: 2048, imageNativeHeight: 1024,
     imageInscribedRadius: 0.5,
+    wrapsSphere: true,
     notes: 'NASA Black Marble equirectangular nightmap.',
     project: projectEquirect,
   },
@@ -396,7 +398,64 @@ export const PROJECTIONS = {
     imageAsset: 'assets/map_hq_world_shaded.jpg',
     imageNativeWidth: 7998, imageNativeHeight: 3999,
     imageInscribedRadius: 0.5,
+    wrapsSphere: true,
     notes: 'High-resolution equirectangular shaded relief (~43 k px wide source).',
+    project: projectEquirect,
+  },
+
+  // -- GE art (procedural equirect canvas) ---------------------------
+  // Drawn at runtime from Natural Earth land GeoJSON onto a 2:1
+  // canvas. WorldGlobe samples the canvas like any equirect raster.
+  // FE rendering still uses the equirect math projection so toggling
+  // these on the FE map gives the unwrapped equirect grid without
+  // the canvas — kept off the FE dropdown by design (GE-only category).
+  ge_art_line: {
+    id: 'ge_art_line', name: 'GE Art — Line Art',
+    category: 'ge_art',
+    generatedGeTexture: 'ge_line_art',
+    imageAsset: null, imageInscribedRadius: 0.5,
+    wrapsSphere: true,
+    notes: 'White-on-black line art continents drawn from Natural Earth.',
+    project: projectEquirect,
+  },
+
+  ge_art_blueprint: {
+    id: 'ge_art_blueprint', name: 'GE Art — Blueprint',
+    category: 'ge_art',
+    generatedGeTexture: 'ge_blueprint',
+    imageAsset: null, imageInscribedRadius: 0.5,
+    wrapsSphere: true,
+    notes: 'Cyan continents over navy with a 30°/15° graticule.',
+    project: projectEquirect,
+  },
+
+  ge_art_topo: {
+    id: 'ge_art_topo', name: 'GE Art — Topo',
+    category: 'ge_art',
+    generatedGeTexture: 'ge_topo',
+    imageAsset: null, imageInscribedRadius: 0.5,
+    wrapsSphere: true,
+    notes: 'Filled green continents on pale-blue ocean, dark-green coastlines.',
+    project: projectEquirect,
+  },
+
+  ge_art_sepia: {
+    id: 'ge_art_sepia', name: 'GE Art — Sepia',
+    category: 'ge_art',
+    generatedGeTexture: 'ge_sepia',
+    imageAsset: null, imageInscribedRadius: 0.5,
+    wrapsSphere: true,
+    notes: 'Old-atlas sepia tones with a 30° graticule.',
+    project: projectEquirect,
+  },
+
+  ge_art_neon: {
+    id: 'ge_art_neon', name: 'GE Art — Neon',
+    category: 'ge_art',
+    generatedGeTexture: 'ge_neon',
+    imageAsset: null, imageInscribedRadius: 0.5,
+    wrapsSphere: true,
+    notes: 'Magenta + cyan glow coastlines on near-black ocean.',
     project: projectEquirect,
   },
 
@@ -428,5 +487,16 @@ export function listGeneratedProjections() {
 export function listHqMaps() {
   return Object.values(PROJECTIONS)
     .filter((p) => p.category === 'hq')
+    .map((p) => ({ value: p.id, label: p.name }));
+}
+
+// GE-friendly entries — only projections that wrap cleanly onto a
+// sphere via equirect UVs (existing HQ equirect rasters + the new
+// procedural ge_art canvases). Excludes AE / polar / Gleason /
+// orthographic disc projections that would tile incorrectly on a
+// sphere.
+export function listGeMaps() {
+  return Object.values(PROJECTIONS)
+    .filter((p) => p.wrapsSphere === true)
     .map((p) => ({ value: p.id, label: p.name }));
 }

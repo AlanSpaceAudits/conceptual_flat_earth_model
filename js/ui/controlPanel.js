@@ -18,7 +18,7 @@ import { GALAXIES_EXTRA2 }    from '../core/galaxiesExtra2.js';
 import { QUASARS_EXTRA }      from '../core/quasarsExtra.js';
 import { QUASARS_EXTRA2 }     from '../core/quasarsExtra2.js';
 import { SATELLITES_EXTRA }   from '../core/satellitesExtra.js';
-import { listProjections, listGeneratedProjections, listHqMaps, PROJECTIONS } from '../core/projections.js';
+import { listProjections, listGeneratedProjections, listHqMaps, listGeMaps, PROJECTIONS } from '../core/projections.js';
 import { Autoplay } from './autoplay.js';
 import { t, setLang, onLangChange, LANGUAGES } from './i18n.js';
 
@@ -640,10 +640,7 @@ const FIELD_GROUPS = [
             ...listGeneratedProjections(),
             ...listHqMaps(),
           ]},
-          right: { label: 'GE Map', select: [
-            ...listHqMaps(),
-            ...listGeneratedProjections(),
-          ]},
+          right: { label: 'GE Map', select: listGeMaps() },
         },
       ]},
       { title: 'Misc', rows: [

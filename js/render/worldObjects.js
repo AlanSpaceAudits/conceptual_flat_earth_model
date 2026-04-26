@@ -11,6 +11,7 @@ import {
 } from '../core/feGeometry.js';
 import { canonicalLatLongToDisc } from '../core/canonical.js';
 import { STELLARIUM_TRACES } from '../data/stellariumTraces.js';
+import { generateGeArtTexture } from './geArt.js';
 import {
   latLongToCoord, coordToLatLong, vaultCoordToGlobalFeCoord,
 } from '../core/transforms.js';
@@ -655,6 +656,11 @@ export class WorldGlobe {
     // Texture cache keyed by image asset URL so toggling between
     // map projections doesn't refetch the same file.
     this._textureCache = new Map();
+    // Separate cache for procedural ge_art canvases keyed by
+    // projection id; entries depend on `_landGeo` so they're
+    // invalidated when GeoJSON arrives.
+    this._geArtCache = new Map();
+    this._landGeo = null;
     this._activeProjId = null;
 
     // Center-of-sphere marker — a small bright dot at the origin.
@@ -738,9 +744,20 @@ export class WorldGlobe {
     this._activeProjId = projId;
     const proj = getProjection ? getProjection(projId) : null;
     const asset = proj && proj.imageAsset;
-    const isEquirect = !!asset && /equirect/i.test(projId);
+    const generatedStyle = proj && proj.generatedGeTexture;
+    const isEquirect = !!asset && /equirect|world_shaded/i.test(projId);
     const u = this.sphere.material.uniforms;
-    if (isEquirect) {
+    if (generatedStyle) {
+      let tex = this._geArtCache.get(projId);
+      if (!tex) {
+        tex = generateGeArtTexture(generatedStyle, this._landGeo);
+        if (this._landGeo) this._geArtCache.set(projId, tex);
+      }
+      u.uMap.value = tex;
+      u.uHasMap.value = 1.0;
+      u.uMapOffset.value.set(tex.offset.x, tex.offset.y);
+      u.uColor.value.setHex(0xffffff);
+    } else if (isEquirect) {
       let tex = this._textureCache.get(asset);
       if (!tex) {
         tex = new THREE.TextureLoader().load(asset);
@@ -762,6 +779,17 @@ export class WorldGlobe {
       u.uHasMap.value = 0.0;
       u.uColor.value.setHex(0x1a3a5e);
     }
+  }
+
+  // Hand the land GeoJSON to the globe once the renderer has loaded
+  // it. Wipes the procedural ge_art cache so any active art texture
+  // regenerates with real continent paths on the next applyMapTexture
+  // call (forced by clearing _activeProjId).
+  setLandGeo(geoJson) {
+    this._landGeo = geoJson || null;
+    for (const tex of this._geArtCache.values()) tex.dispose();
+    this._geArtCache.clear();
+    this._activeProjId = null;
   }
 }
 

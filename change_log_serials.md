@@ -5222,3 +5222,62 @@ Format:
     for visual consistency between the two world
     models.
 - **Revert:** `git checkout v-s000484 -- .`
+
+## S486 — GE art projections + sphere-only GE dropdown
+
+- **Date:** 2026-04-26
+- **Files changed:** `js/render/geArt.js` (new),
+  `js/render/worldObjects.js`,
+  `js/render/index.js`,
+  `js/core/projections.js`,
+  `js/ui/controlPanel.js`.
+- **Change:**
+  - New `js/render/geArt.js` draws the Natural Earth
+    land GeoJSON onto a 2:1 equirectangular canvas in
+    one of five styles: `ge_line_art`,
+    `ge_blueprint`, `ge_topo`, `ge_sepia`, `ge_neon`.
+    Returns a `THREE.CanvasTexture` with the same
+    `offset.x = 0.5` prime-meridian shift the HQ
+    raster path uses, so it slots into the existing
+    sphere shader without changes. Antimeridian
+    splitter prevents long horizontal strokes when a
+    polygon wraps the date line.
+  - Five new `category: 'ge_art'` projection entries
+    in `projections.js` (`ge_art_line`,
+    `ge_art_blueprint`, `ge_art_topo`,
+    `ge_art_sepia`, `ge_art_neon`). Each carries
+    `generatedGeTexture: '<style id>'` and
+    `wrapsSphere: true`. FE rendering of these
+    entries falls through to `projectEquirect` (no
+    canvas), so they only manifest visually in GE.
+  - `wrapsSphere: true` flag added to the existing
+    sphere-friendly HQ equirect rasters
+    (`hq_equirect_day`, `hq_equirect_night`,
+    `hq_world_shaded`). Non-equirect HQ entries
+    (`hq_ae_dual`, `hq_ae_polar_*`, `hq_gleasons`,
+    `hq_ortho`, `hq_blank`) remain unflagged.
+  - New `listGeMaps()` helper in `projections.js`
+    filters the registry by `wrapsSphere === true`.
+  - `WorldGlobe` gained a procedural-texture cache
+    (`_geArtCache`) and a `setLandGeo(geoJson)`
+    method. `applyMapTexture` now branches on
+    `proj.generatedGeTexture` and calls
+    `generateGeArtTexture(style, this._landGeo)`,
+    caching only after GeoJSON is available so the
+    placeholder canvas regenerates correctly.
+  - Renderer's `loadLand` calls
+    `worldGlobe.setLandGeo(this._landGeo)` after the
+    fetch resolves, then a follow-up
+    `applyMapTexture` rebuilds any active art
+    texture with real continents.
+  - Renderer's per-frame `applyMapTexture` call site
+    coerces stale URL state — any `MapProjectionGe`
+    whose entry isn't `wrapsSphere: true` falls back
+    to `hq_equirect_night`.
+  - Control panel GE dropdown swapped from
+    `[...listHqMaps(), ...listGeneratedProjections()]`
+    to `listGeMaps()`. AE, polar, Gleason,
+    orthographic disc projections no longer appear
+    in the GE selector; only the equirect HQ rasters
+    and the new ge_art entries.
+- **Revert:** `git checkout v-s000485 -- .`

@@ -318,6 +318,9 @@ export class Renderer {
 
   async loadLand() {
     this._landGeo = await loadLandGeo();
+    if (this.worldGlobe && typeof this.worldGlobe.setLandGeo === 'function') {
+      this.worldGlobe.setLandGeo(this._landGeo);
+    }
     const s = this.model.state;
     const projId = (s.WorldModel === 'ge')
       ? (s.MapProjectionGe || 'hq_equirect_night')
@@ -417,7 +420,15 @@ export class Renderer {
     if (this.land) this.land.visible = !ge;
     this.worldGlobe.update(m);
     if (this.worldGlobe && typeof this.worldGlobe.applyMapTexture === 'function') {
-      this.worldGlobe.applyMapTexture(s.MapProjectionGe || 'hq_equirect_night', getProjection);
+      // Stale URL state may carry a non-sphere projection id (e.g.
+      // hq_ortho, hq_gleasons). Coerce back to the equirect night
+      // default so the sphere always has a sensible texture.
+      let geProjId = s.MapProjectionGe || 'hq_equirect_night';
+      const geProjEntry = getProjection(geProjId);
+      if (!geProjEntry || geProjEntry.wrapsSphere !== true) {
+        geProjId = 'hq_equirect_night';
+      }
+      this.worldGlobe.applyMapTexture(geProjId, getProjection);
     }
     this.globeHeavenlyVault.update(m);
     this.domeCaustic.update(m);

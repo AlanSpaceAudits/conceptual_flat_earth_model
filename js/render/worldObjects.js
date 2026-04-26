@@ -10,6 +10,7 @@ import {
   pointOnFE, celestLatLongToVaultCoord, feLatLongToGlobalFeCoord,
 } from '../core/feGeometry.js';
 import { canonicalLatLongToDisc } from '../core/canonical.js';
+import { STELLARIUM_TRACES } from '../data/stellariumTraces.js';
 import {
   latLongToCoord, coordToLatLong, vaultCoordToGlobalFeCoord,
 } from '../core/transforms.js';
@@ -5122,6 +5123,59 @@ const GP_TRACER_COLORS = {
   jupiter: 0xffa060, saturn: 0xe4c888,
   uranus: 0xa8d8e0, neptune: 0x7fa6e8,
 };
+
+// External-data overlay: Stellarium-exported (RA, Dec) traces.
+// Read from `js/data/stellariumTraces.js`. Per-body line built once
+// at construction; visibility gates on `state.ShowStellariumOverlay`.
+// The renderer projects each (RA, Dec) row through the same
+// `canonicalLatLongToDisc` AE math the FE-model GP tracer uses, so
+// the overlay sits in the same coordinate frame as the rest of the
+// disc geometry.
+export class StellariumTraceOverlay {
+  constructor() {
+    this.group = new THREE.Group();
+    this.group.name = 'stellarium-traces';
+    this.group.visible = false;
+    this._lines = [];
+    for (const [body, rows] of Object.entries(STELLARIUM_TRACES || {})) {
+      if (!Array.isArray(rows) || rows.length === 0) continue;
+      const positions = [];
+      let lastRa = null;
+      for (const row of rows) {
+        const ra = +row.ra;
+        const dec = +row.dec;
+        if (!Number.isFinite(ra) || !Number.isFinite(dec)) continue;
+        // Pen-up across the 0/360 RA wrap so the polyline doesn't
+        // stitch a chord across the disc when consecutive samples
+        // sit on opposite sides of the prime meridian.
+        if (lastRa != null && Math.abs(ra - lastRa) > 180) {
+          positions.push(NaN, NaN, NaN);
+        }
+        const p = canonicalLatLongToDisc(dec, ra, FE_RADIUS);
+        positions.push(p[0], p[1], 0.004);
+        lastRa = ra;
+      }
+      if (positions.length === 0) continue;
+      const geom = new THREE.BufferGeometry();
+      geom.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+      const mat = new THREE.LineBasicMaterial({
+        color: GP_TRACER_COLORS[body] || 0xffffff,
+        transparent: true, opacity: 0.85,
+        depthTest: false, depthWrite: false,
+      });
+      const line = new THREE.Line(geom, mat);
+      line.renderOrder = 44;
+      line.frustumCulled = false;
+      this._lines.push(line);
+      this.group.add(line);
+    }
+  }
+
+  update(model) {
+    this.group.visible = !!model.state.ShowStellariumOverlay && !model.state.InsideVault;
+  }
+}
+
 const GP_TRACER_MAX_PTS = 8192;
 const _wrapLon = (x) => ((x + 180) % 360 + 360) % 360 - 180;
 

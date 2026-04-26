@@ -740,6 +740,7 @@ const FIELD_GROUPS = [
         { key: 'ShowDecCircles',       label: 'Declination Circles',      bool: true },
         { key: 'ShowGPPath',           label: 'GP Path',                  bool: true },
         { key: 'GPPathDays',           label: 'GP Path Span (days)', unit: '', min: 1, max: 1095, step: 1 },
+        { key: 'ShowStellariumOverlay', label: 'Stellarium Overlay',      bool: true },
         { key: 'ShowSunMoonNine',      label: 'Sun / Moon "9" Glyph',     bool: true },
         { key: 'ShowDomeCaustic',      label: 'Dome Caustic',             bool: true },
       ]},

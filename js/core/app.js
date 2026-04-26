@@ -171,6 +171,7 @@ function defaultState() {
     ShowSatellites:          true,
     ShowGPPath:              false,
     GPPathDays:              1,
+    ShowStellariumOverlay:   false,
     ShowSunMoonNine:         false,
     ShowGPTracer:            false,
     ShowOpticalVaultTrace:   false,

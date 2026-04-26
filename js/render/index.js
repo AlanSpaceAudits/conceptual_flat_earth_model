@@ -8,7 +8,7 @@ import {
   CelestialMarker, Observer, Stars, LatitudeLines, GroundPoint,
   CelestialPoles, DeclinationCircles, Yggdrasil, MtMeru, ToroidalVortex,
   LongitudeRing, CelNavStars, TrackedGroundPoints, CatalogPointStars,
-  GPPathOverlay, GPTracer, Discworld, AnalemmaLine, SunMoonGlyph,
+  GPPathOverlay, GPTracer, StellariumTraceOverlay, Discworld, AnalemmaLine, SunMoonGlyph,
   MonthMarkers, WorldGlobe, GlobeHeavenlyVault, DomeCausticOverlay,
 } from './worldObjects.js';
 import { loadLandGeo, buildGeoJsonLand, buildImageMap, buildBlankMap } from './earthMap.js';
@@ -146,6 +146,9 @@ export class Renderer {
     // array is simply empty when the user hasn't enabled them).
     this.gpPathOverlay = new GPPathOverlay();
     this.sm.world.add(this.gpPathOverlay.group);
+
+    this.stellariumTraces = new StellariumTraceOverlay();
+    this.sm.world.add(this.stellariumTraces.group);
 
     this.gpTracer = new GPTracer(clipPlanes);
     this.sm.world.add(this.gpTracer.group);
@@ -497,6 +500,7 @@ export class Renderer {
     this.bscStars.update(m);
     this.satelliteStars.update(m);
     this.gpPathOverlay.update(m);
+    this.stellariumTraces.update(m);
     this.gpTracer.update(m);
     this.sunMonthMarkers.update(m);
     this.sunMonthMarkersOpp.update(m);

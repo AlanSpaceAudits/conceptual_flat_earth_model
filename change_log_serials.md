@@ -4885,3 +4885,30 @@ Format:
     next demo / post-demo exploration runs in the
     Earth-fixed default.
 - **Revert:** `git checkout v-s000470 -- .`
+
+## S472 — Stellarium-trace overlay scaffolding
+
+- **Date:** 2026-04-26
+- **Files changed:** `js/data/stellariumTraces.js`
+  (new), `js/render/worldObjects.js`,
+  `js/render/index.js`, `js/core/app.js`,
+  `js/ui/controlPanel.js`.
+- **Change:**
+  - New `js/data/stellariumTraces.js` exporting
+    `STELLARIUM_TRACES = { sun, moon, mercury, venus,
+    mars, jupiter, saturn, uranus, neptune }` —
+    each body's array takes
+    `{ ra, dec [, jd] }` rows (degrees). Header
+    explains the Stellarium AstroCalc / Ephemeris
+    paste workflow.
+  - New `StellariumTraceOverlay` class. At construction
+    each body's row array is projected through
+    `canonicalLatLongToDisc` (the same AE math the GP
+    tracer uses) and laid down as a single coloured
+    polyline at `z = 0.004` on the disc. Pen-up across
+    the 0/360 RA wrap so the line doesn't stitch a
+    chord across the disc. `update` gates visibility
+    on `state.ShowStellariumOverlay && !InsideVault`.
+  - State key `ShowStellariumOverlay` (default false)
+    + new "Stellarium Overlay" row in Tracker Options.
+- **Revert:** `git checkout v-s000471 -- .`

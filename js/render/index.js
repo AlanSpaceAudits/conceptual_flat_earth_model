@@ -643,6 +643,17 @@ export class Renderer {
         this.constellations.sphereStars.visible = false;
         this.constellations.sphereLines.visible = false;
       }
+      // Sun / Moon / Planet sphereDot + sphereHalo land via the FE
+      // Local→Global transform; hide their optical-vault projections
+      // in GE.
+      const hideOpticalMarker = (mk) => {
+        if (!mk) return;
+        if (mk.sphereDot)  mk.sphereDot.visible  = false;
+        if (mk.sphereHalo) mk.sphereHalo.visible = false;
+      };
+      hideOpticalMarker(this.sunMarker);
+      hideOpticalMarker(this.moonMarker);
+      for (const mk of Object.values(this.planetMarkers || {})) hideOpticalMarker(mk);
     }
   }
 

@@ -126,24 +126,17 @@ export class SceneManager {
         this.camera.fov = fov;
         this.camera.updateProjectionMatrix();
       }
-      // `ObserverElevation` lifts the camera (and only the
-      // camera) above the disc. `ObserverFeCoord` is still at z = 0
-      // so all downstream geometry (arrow, line, cardinals, labels)
-      // keeps its ground-anchored math unchanged; the just
-      // looks down from a higher vantage.
-      const eyeH = 0.012;
-      const elev = Math.max(0, Math.min(0.5, s.ObserverElevation || 0));
-      this.camera.position.set(obs[0], obs[1], obs[2] + eyeH + elev);
-
-      // Local north / east. In GE, take them from GlobeObserverFrame
-      // (great-circle tangents on the sphere). In FE, north is toward
-      // the disc centre; at the pole the radial is undefined so fall
-      // back to the meridian picked by ObserverLong.
-      let northX, northY, eastX, eastY;
+      // Local north / east / up. In GE, take them from
+      // GlobeObserverFrame (great-circle tangents + radial-outward up).
+      // In FE, "up" is world +z and "north" points toward the disc
+      // centre; at the pole the radial is undefined so fall back to
+      // the meridian picked by ObserverLong.
+      let northX, northY, northZ, eastX, eastY, eastZ, upX, upY, upZ;
       if (ge && c.GlobeObserverFrame) {
         const f = c.GlobeObserverFrame;
-        northX = f.northX; northY = f.northY;
-        eastX  = f.eastX;  eastY  = f.eastY;
+        northX = f.northX; northY = f.northY; northZ = f.northZ;
+        eastX  = f.eastX;  eastY  = f.eastY;  eastZ  = f.eastZ;
+        upX    = f.upX;    upY    = f.upY;    upZ    = f.upZ;
       } else {
         const ox = obs[0], oy = obs[1];
         const obsLen = Math.hypot(ox, oy);
@@ -155,18 +148,35 @@ export class SceneManager {
           northX = -Math.cos(longR);
           northY = -Math.sin(longR);
         }
+        northZ = 0;
         eastX  =  northY;
         eastY  = -northX;
+        eastZ  = 0;
+        upX = 0; upY = 0; upZ = 1;
       }
+
+      // `ObserverElevation` lifts the camera along the local-up
+      // direction. `eyeH` adds the standing-eye-height offset.
+      const eyeH = 0.012;
+      const elev = Math.max(0, Math.min(0.5, s.ObserverElevation || 0));
+      const lift = eyeH + elev;
+      this.camera.position.set(
+        obs[0] + lift * upX,
+        obs[1] + lift * upY,
+        obs[2] + lift * upZ,
+      );
+
       const h = ToRad(s.ObserverHeading || 0);
       const fx = Math.cos(h) * northX + Math.sin(h) * eastX;
       const fy = Math.cos(h) * northY + Math.sin(h) * eastY;
-      // First-person pitch: 0° = horizon, 90° = straight up at zenith.
+      const fz = Math.cos(h) * northZ + Math.sin(h) * eastZ;
       const pitch = ToRad(Math.max(0, Math.min(90, s.CameraHeight || 0)));
+      const cP = Math.cos(pitch), sP = Math.sin(pitch);
       const pd = 2;
-      const tx = obs[0] + fx * Math.cos(pitch) * pd;
-      const ty = obs[1] + fy * Math.cos(pitch) * pd;
-      const tz = obs[2] + eyeH + Math.sin(pitch) * pd;
+      const tx = obs[0] + eyeH * upX + (cP * fx + sP * upX) * pd;
+      const ty = obs[1] + eyeH * upY + (cP * fy + sP * upY) * pd;
+      const tz = obs[2] + eyeH * upZ + (cP * fz + sP * upZ) * pd;
+      this.camera.up.set(upX, upY, upZ);
       this.camera.lookAt(tx, ty, tz);
       return;
     }
@@ -175,6 +185,10 @@ export class SceneManager {
       this.camera.fov = 35;
       this.camera.updateProjectionMatrix();
     }
+    // Reset camera up for orbit mode so re-entry from InsideVault GE
+    // (which set up to GlobeObserverFrame radial-outward) doesn't
+    // leave the orbit view tilted.
+    this.camera.up.set(0, 0, 1);
 
     const dir = ToRad(s.CameraDirection);
     const hgt = ToRad(s.CameraHeight);

@@ -4155,3 +4155,27 @@ Format:
     Local→Global transform and don't track the GE
     observer.
 - **Revert:** `git checkout v-s000436 -- .`
+
+## S438 — GE mode: hide CelestialMarker optical dots; InsideVault camera up-vector
+
+- **Date:** 2026-04-26
+- **Files changed:** `js/render/index.js`,
+  `js/render/scene.js`.
+- **Change:**
+  - GE post-update block now also hides
+    `sphereDot` / `sphereHalo` on `sunMarker`,
+    `moonMarker`, and every entry in `planetMarkers`.
+    Their world positions come from
+    `localGlobeCoordToGlobalFeCoord(opticalVaultProject(...))`,
+    which doesn't follow the GE observer.
+  - InsideVault camera (`scene.updateCamera`) now uses
+    full 3D `(north, east, up)` from `GlobeObserverFrame`
+    in GE: camera position lifts along local up; pitched
+    look target combines `forward` and `up`; `camera.up`
+    set to the local radial-outward direction. FE branch
+    keeps its 2D math.
+  - Orbit camera resets `camera.up` to world `(0, 0, 1)`
+    so re-entry from InsideVault GE (which set up to a
+    radial-outward direction) doesn't tilt the
+    Heavenly-mode view.
+- **Revert:** `git checkout v-s000437 -- .`

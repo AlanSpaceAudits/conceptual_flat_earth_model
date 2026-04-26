@@ -714,6 +714,11 @@ const YEAR_CYCLE_DEMOS = ANNUAL_CYCLE_BODIES.map((body) => ({
       ShowGPPath: false,
       ShowGPTracer: true,
       ShowOpticalVaultTrace: true,
+      // Plot in the celestial (sidereal) frame so the body's
+      // apparent orbital motion writes its rosette / spirograph
+      // pattern across the disc instead of collapsing into
+      // daily-rotation circles.
+      TraceCelestialFrame: true,
       ClearTraceCount: (s.ClearTraceCount | 0) + 1,
       ShowTruePositions: true,
       ShowOpticalVault: true,
@@ -762,6 +767,11 @@ const ANNUAL_CYCLE_DEMOS = ANNUAL_CYCLE_BODIES.map((body) => ({
       ShowGPPath: false,
       ShowGPTracer: true,
       ShowOpticalVaultTrace: true,
+      // Plot in the celestial (sidereal) frame so the body's
+      // apparent orbital motion writes its rosette / spirograph
+      // pattern across the disc instead of collapsing into
+      // daily-rotation circles.
+      TraceCelestialFrame: true,
       ClearTraceCount: (s.ClearTraceCount | 0) + 1,
       ShowTruePositions: true,
       ShowOpticalVault: true,

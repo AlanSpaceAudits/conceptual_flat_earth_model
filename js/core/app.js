@@ -175,6 +175,7 @@ function defaultState() {
     ShowGPTracer:            false,
     ShowOpticalVaultTrace:   false,
     ShowTraceUnder:          false,
+    TraceCelestialFrame:     false,
     ClearTraceCount:         0,
     GPTracerTargets:         [],
     SunMonthMarkers:         [],

@@ -62,6 +62,7 @@ export class Demos {
       ShowSunTrack:  false,
       ShowMoonTrack: false,
       ShowGPPath:    false,
+      TraceCelestialFrame: false,
     });
   }
 

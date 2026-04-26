@@ -4859,3 +4859,29 @@ Format:
     selections; this row makes "Clear All" actually
     blank the sky overlay too.
 - **Revert:** `git checkout v-s000469 -- .`
+
+## S471 — Celestial-frame trace mode for Annual Cycle demos
+
+- **Date:** 2026-04-26
+- **Files changed:** `js/core/app.js`,
+  `js/render/worldObjects.js`,
+  `js/demos/definitions.js`, `js/demos/index.js`.
+- **Change:**
+  - New `TraceCelestialFrame` state (default `false`).
+  - `GPTracer.update`: when `TraceCelestialFrame` is
+    on, the per-target longitude no longer subtracts
+    `SkyRotAngle` (GMST) — the trace plots the body's
+    apparent celestial position over time rather than
+    its rotating Earth-fixed ground point.
+  - `ANNUAL_CYCLE_DEMOS` (per-period) and
+    `YEAR_CYCLE_DEMOS` (1-calendar-year) intros now
+    set `TraceCelestialFrame: true`. Each planet's
+    rosette / spirograph signature emerges in
+    sidereal coordinates: Mercury's nested retrograde
+    loops, Venus's 1.6-orbit petal, Mars's broad
+    swing, Jupiter / Saturn / Uranus / Neptune
+    progressively smaller arcs.
+  - Demo end-reset clears `TraceCelestialFrame` so the
+    next demo / post-demo exploration runs in the
+    Earth-fixed default.
+- **Revert:** `git checkout v-s000470 -- .`

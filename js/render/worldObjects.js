@@ -5257,7 +5257,12 @@ export class GPTracer {
       : (c.ObserverFeCoord    || [0, 0, 0]);
     this.skyGroup.position.set(obs[0], obs[1], obs[2]);
 
-    const skyRot = c.SkyRotAngle || 0;
+    // Earth-fixed (default): subtract GMST so the trace is the
+    // body's GP on the rotating Earth. Celestial-frame trace skips
+    // the subtraction, so over a year the planet traces its
+    // apparent ecliptic motion (Mercury's 4 retrograde loops, etc.)
+    // instead of 365 nested daily circles.
+    const skyRot = (s.TraceCelestialFrame === true) ? 0 : (c.SkyRotAngle || 0);
     for (const name of targets) {
       let lat, lon, optical, color;
       if (name === 'sun') {

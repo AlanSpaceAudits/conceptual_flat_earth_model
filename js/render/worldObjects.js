@@ -3561,7 +3561,7 @@ export class Observer {
       // and skirt, dark legs, white shoes. Head, hair, torso,
       // arms, legs and shoes laid out as discrete voxel blocks.
       const vox = 0.0025;
-      const skinM   = new THREE.MeshBasicMaterial({ color: 0xe6b689 });
+      const skinM   = new THREE.MeshBasicMaterial({ color: 0x4a2c1a });
       const hairM   = new THREE.MeshBasicMaterial({ color: 0x2a1a14 });
       const eyeM    = new THREE.MeshBasicMaterial({ color: 0x121212 });
       const lipM    = new THREE.MeshBasicMaterial({ color: 0xc04060 });

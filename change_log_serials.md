@@ -5154,3 +5154,15 @@ Format:
   - P1 / P2 presets updated to set
     `MapProjectionGe: 'hq_equirect_night'`.
 - **Revert:** `git checkout v-s000481 -- .`
+
+## S483 — Voxel "Nikki" skin tone correction
+
+- **Date:** 2026-04-26
+- **Files changed:** `js/render/worldObjects.js`.
+- **Change:**
+  - `kind === 'nikki'` voxel branch: `skinM` colour
+    swapped from `0xe6b689` to `0x4a2c1a`. Single
+    material instance feeds head and arm voxels, so
+    one colour edit covers both surfaces. No geometry
+    or layout changes.
+- **Revert:** `git checkout v-s000482 -- .`

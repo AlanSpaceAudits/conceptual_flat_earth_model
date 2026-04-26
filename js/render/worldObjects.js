@@ -3513,6 +3513,7 @@ export class Observer {
     this.marker.visible = false;
     this.cross.visible  = false;
 
+    const headingRad = ToRad(s.ObserverHeading || 0);
     if (ge && c.GlobeObserverFrame) {
       // Stand the figure tangent to the sphere: local +z = radial
       // outward; +x = -north = "outward" from sphere centre on a
@@ -3530,13 +3531,22 @@ export class Observer {
          0,        0,       0,     1,
       );
       this.group.quaternion.setFromRotationMatrix(m);
-      this.figureGroup.rotation.set(0, 0, 0);
+      // Spin the figure about local +z (zenith) so its +x face points
+      // along the compass-heading direction (heading 0 = north,
+      // heading 90 = east, …). Derivation: local +x → -north under
+      // the GE basis; we want the post-rotation direction to equal
+      // (cos H · north + sin H · east), so figureGroup rotates by
+      // (π − H).
+      this.figureGroup.rotation.set(0, 0, Math.PI - headingRad);
     } else {
       this.group.quaternion.identity();
-      // Keep the figure facing "outward" from disc centre so the
-      // observer's body orientation feels stable as lat/long changes.
+      // Keep the figure facing the heading direction. In FE the
+      // local frame is world-aligned, so we add the longitude angle
+      // (atan2(p[1], p[0])) to the (π − H) baseline so heading 0
+      // points the figure toward the disc centre (north) regardless
+      // of where on the disc the observer stands.
       const ang = Math.atan2(p[1], p[0]);
-      this.figureGroup.rotation.set(0, 0, ang);
+      this.figureGroup.rotation.set(0, 0, ang + Math.PI - headingRad);
     }
 
     // Zenith-through-centre line — drawn in world space (visible

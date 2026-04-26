@@ -4275,3 +4275,22 @@ Format:
     (added back in this revision after the cleanup
     above).
 - **Revert:** `git checkout v-s000441 -- .`
+
+## S443 — Avatar follows ObserverHeading; GE optical-vault sized to surface
+
+- **Date:** 2026-04-26
+- **Files changed:** `js/core/app.js`,
+  `js/render/worldObjects.js`.
+- **Change:**
+  - `Observer.update`: `figureGroup.rotation` now derives
+    from `ObserverHeading`. GE uses `(π − H)`; FE uses
+    `(atan2(p[1], p[0]) + π − H)`. Heading 0 → figure
+    faces north, 90 → east, 180 → south, 270 → west, in
+    both world models.
+  - `c.OpticalVaultRadius` capped at `0.10 · FE_RADIUS`
+    in GE so the cap visually sits on the terrestrial
+    sphere (was the FE default `0.5 · FE_RADIUS`, which
+    occupies a quarter of the sphere). `OpticalVaultHeight`
+    matches the radius in GE so the cap is a strict
+    hemisphere.
+- **Revert:** `git checkout v-s000442 -- .`

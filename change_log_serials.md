@@ -4493,3 +4493,18 @@ Format:
     matching the rule that sub-horizon optical
     projections remain visible.
 - **Revert:** `git checkout v-s000452 -- .`
+
+## S454 — GE occlusion: extend to optical-vault layers too
+
+- **Date:** 2026-04-26
+- **Files changed:** `js/render/index.js`.
+- **Change:**
+  - Reinstated the depth-test toggle on every sphere-
+    projected optical-vault layer (`spherePoints` for
+    each star catalog, constellation `sphereStars` /
+    `sphereLines`, sun / moon / planet `sphereDot` /
+    `sphereHalo`). Combined with the existing
+    `WorldGlobe.sphere` opaque + `depthWrite: true`
+    flip, the terrestrial sphere now occludes any
+    optical-vault projection geometrically behind it.
+- **Revert:** `git checkout v-s000453 -- .`

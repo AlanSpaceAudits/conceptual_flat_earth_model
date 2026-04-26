@@ -173,7 +173,7 @@ function elevCadenceForFov(fovDeg) {
 // meridians (longitude arcs from horizon to pole). No diagonal triangle
 // edges — used for the optical-vault wireframe so it reads as a clean sky
 // grid instead of a triangulated mesh.
-function buildLatLongHemisphereGeom(radius = 1, latRings = 6, lonRays = 24, ringRes = 64) {
+function buildLatLongHemisphereGeom(radius = 1, latRings = 6, lonRays = 24, ringRes = 64, overshootRad = 0) {
   const positions = [];
   // Parallels — skip the pole (i=0) and the horizon ring (i=latRings); the
   // horizon will sit at the disc clip plane already.
@@ -190,17 +190,21 @@ function buildLatLongHemisphereGeom(radius = 1, latRings = 6, lonRays = 24, ring
       );
     }
   }
-  // Meridians — half-arcs from horizon up to the pole.
+  // Meridians — half-arcs from horizon up to the pole. `overshootRad`
+  // extends each meridian past the rim into negative z so the cap
+  // visually meets the terrestrial sphere surface in GE (depth-test
+  // culls the part that ends up inside the sphere).
   const arcRes = Math.max(8, Math.floor(ringRes / 2));
+  const polarMax = Math.PI / 2 + Math.max(0, overshootRad);
   for (let j = 0; j < lonRays; j++) {
     const az = (j / lonRays) * 2 * Math.PI;
     const cosAz = Math.cos(az), sinAz = Math.sin(az);
     for (let k = 0; k < arcRes; k++) {
-      const p1 = (k / arcRes) * (Math.PI / 2);
-      const p2 = ((k + 1) / arcRes) * (Math.PI / 2);
+      const p1 = (k / arcRes) * polarMax;
+      const p2 = ((k + 1) / arcRes) * polarMax;
       positions.push(
-        Math.sin(p1) * cosAz, Math.sin(p1) * sinAz, Math.cos(p1) * radius,
-        Math.sin(p2) * cosAz, Math.sin(p2) * sinAz, Math.cos(p2) * radius,
+        Math.sin(p1) * cosAz * radius, Math.sin(p1) * sinAz * radius, Math.cos(p1) * radius,
+        Math.sin(p2) * cosAz * radius, Math.sin(p2) * sinAz * radius, Math.cos(p2) * radius,
       );
     }
   }
@@ -1317,7 +1321,14 @@ export class ObserversOpticalVault {
     this.group.name = 'inner-sphere';
 
     // Upper hemisphere with pole rotated onto +z (scene is z-up).
-    const meshGeom = new THREE.SphereGeometry(1, 32, 24, 0, Math.PI * 2, 0, Math.PI / 2);
+    // The polar range overshoots π/2 by ~6° so the cap edge dips
+    // below the tangent plane; in GE, depth-testing against the
+    // opaque terrestrial sphere clips the interior portion and the
+    // visible rim meets the sphere surface (no black gap between
+    // cap rim and horizon). In FE the disc clip plane discards
+    // the same negative-z geometry.
+    const _OVERSHOOT_RAD = Math.PI / 30;   // ~6°
+    const meshGeom = new THREE.SphereGeometry(1, 32, 24, 0, Math.PI * 2, 0, Math.PI / 2 + _OVERSHOOT_RAD);
     meshGeom.rotateX(Math.PI / 2);
     this.mesh = new THREE.Mesh(
       meshGeom,
@@ -1335,7 +1346,7 @@ export class ObserversOpticalVault {
     // (first-person) or outside (orbit) — azimuth and altitude cells
     // therefore read identically in both modes.
     this.wire = new THREE.LineSegments(
-      buildLatLongHemisphereGeom(1, 6, 24),
+      buildLatLongHemisphereGeom(1, 6, 24, 64, _OVERSHOOT_RAD),
       new THREE.LineBasicMaterial({
         color: 0x7a8499, transparent: true, opacity: 0.55,
         clippingPlanes,

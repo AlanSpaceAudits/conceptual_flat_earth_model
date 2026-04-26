@@ -4508,3 +4508,25 @@ Format:
     flip, the terrestrial sphere now occludes any
     optical-vault projection geometrically behind it.
 - **Revert:** `git checkout v-s000453 -- .`
+
+## S455 — Optical-vault cap dips past horizon to meet the terrestrial sphere
+
+- **Date:** 2026-04-26
+- **Files changed:** `js/render/worldObjects.js`.
+- **Change:**
+  - `ObserversOpticalVault` mesh `SphereGeometry` polar
+    range extended from `π/2` to `π/2 + π/30` (~6° of
+    overshoot) so the cap mesh dips below the tangent
+    plane.
+  - `buildLatLongHemisphereGeom` gains an `overshootRad`
+    parameter applied to the meridian polar max; the
+    optical-vault wireframe is built with the same
+    overshoot so its meridian arcs match the mesh.
+  - In GE, depth-testing against the opaque terrestrial
+    sphere (S452/S454) clips the interior portion of
+    the overshoot, leaving a clean rim where the cap
+    meets the visible sphere surface — no black gap.
+    In FE the disc clip plane discards the same
+    negative-z geometry, so existing FE rendering is
+    unchanged.
+- **Revert:** `git checkout v-s000454 -- .`

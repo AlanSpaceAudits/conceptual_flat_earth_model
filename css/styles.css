@@ -172,7 +172,9 @@ header .info-popup.legend-popup a { color: var(--accent); }
   min-width: 380px;
   max-width: 460px;
   z-index: 12;
-  zoom: var(--ui-zoom);
+  /* `zoom` was breaking drag math (clientX in viewport pixels vs.
+     offsetLeft in unzoomed CSS pixels). Panel sizes are already
+     explicit, so the viewport-zoom scaling isn't needed here. */
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
   user-select: none;
 }

@@ -5029,3 +5029,27 @@ Format:
     `right: auto` so the explicit `left/top` take
     over from the default upper-left anchor.
 - **Revert:** `git checkout v-s000476 -- .`
+
+## S478 — Tracking-info pop-up: fix drag (window listeners + drop zoom)
+
+- **Date:** 2026-04-26
+- **Files changed:** `js/ui/trackingInfoPopup.js`,
+  `css/styles.css`.
+- **Change:**
+  - Drag rewritten: listeners moved from `elHeader`
+    to `window` for `pointermove` /
+    `pointerup` / `pointercancel`. Pointer capture
+    dropped — the previous setup captured to
+    `panelEl` while listeners lived on `elHeader`,
+    so move events never fired. Drag also snapshots
+    `panelEl.offsetLeft` / `offsetTop` at mousedown
+    rather than using `getBoundingClientRect`, so
+    intermediate state can't desync.
+  - Removed `zoom: var(--ui-zoom)` from
+    `#tracking-info-popup`. The `zoom` property
+    scaled the visible panel but `offsetLeft` /
+    `clientX` measure in different unit systems,
+    making the drag math jittery. Panel sizes are
+    already explicit so the viewport-zoom scaling
+    isn't needed here.
+- **Revert:** `git checkout v-s000477 -- .`

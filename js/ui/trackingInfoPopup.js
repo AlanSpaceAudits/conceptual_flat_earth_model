@@ -294,16 +294,23 @@ export function buildTrackingInfoPopup(panelEl, model) {
   applyMinimized();
 
   // --- drag ---------------------------------------------------------
+  // Snapshot panel position + pointer position at mousedown. While
+  // dragging, position = startLeft + (clientX - startX); listeners
+  // live on the window so the move/up always reach us even when the
+  // pointer leaves the header. No pointer capture used (capture
+  // routes events to the capturing element, but our listeners were
+  // on the header — the original bug).
   let drag = null;
   function onPointerDown(e) {
-    if (e.target === elMini) return;            // mini-button has its own click
+    if (e.target === elMini) return;
     if (e.button !== 0 && e.pointerType !== 'touch') return;
     drag = {
       pointerId: e.pointerId,
-      dx: e.clientX - panelEl.getBoundingClientRect().left,
-      dy: e.clientY - panelEl.getBoundingClientRect().top,
+      startX: e.clientX,
+      startY: e.clientY,
+      startLeft: panelEl.offsetLeft,
+      startTop:  panelEl.offsetTop,
     };
-    panelEl.setPointerCapture(e.pointerId);
     e.preventDefault();
   }
   function onPointerMove(e) {
@@ -313,20 +320,21 @@ export function buildTrackingInfoPopup(panelEl, model) {
     const h = panelEl.offsetHeight;
     const maxLeft = window.innerWidth  - w - margin;
     const maxTop  = window.innerHeight - h - margin;
-    uiState.left = Math.max(margin, Math.min(maxLeft, e.clientX - drag.dx));
-    uiState.top  = Math.max(margin, Math.min(maxTop,  e.clientY - drag.dy));
+    const dx = e.clientX - drag.startX;
+    const dy = e.clientY - drag.startY;
+    uiState.left = Math.max(margin, Math.min(maxLeft, drag.startLeft + dx));
+    uiState.top  = Math.max(margin, Math.min(maxTop,  drag.startTop  + dy));
     applyPosition();
   }
   function onPointerUp(e) {
     if (!drag || e.pointerId !== drag.pointerId) return;
-    panelEl.releasePointerCapture(e.pointerId);
     drag = null;
     saveUi();
   }
   elHeader.addEventListener('pointerdown', onPointerDown);
-  elHeader.addEventListener('pointermove', onPointerMove);
-  elHeader.addEventListener('pointerup',   onPointerUp);
-  elHeader.addEventListener('pointercancel', onPointerUp);
+  window.addEventListener('pointermove', onPointerMove);
+  window.addEventListener('pointerup', onPointerUp);
+  window.addEventListener('pointercancel', onPointerUp);
 
   // --- minimize -----------------------------------------------------
   elMini.addEventListener('click', (e) => {

@@ -170,6 +170,7 @@ function defaultState() {
     MoonPhaseExpanded:       false,
     ShowSatellites:          true,
     ShowGPPath:              false,
+    GPPathDays:              1,
     ShowSunMoonNine:         false,
     ShowGPTracer:            false,
     ShowOpticalVaultTrace:   false,
@@ -911,11 +912,19 @@ export class FeModel extends EventTarget {
       return g;
     };
     const dayMs  = utcDate.getTime();
-    const N_GP   = 48;
+    // GP path span. Default 1 day = the body's diurnal rotation.
+    // When the user bumps `GPPathDays` up to e.g. 365, the trace
+    // covers a full year so planets / sun / moon's declination
+    // drift is visible as a band, not just a circle. Sample count
+    // scales with span so the trace stays smooth for both short
+    // and long horizons.
+    const _gpDays   = Math.max(0.0417, Math.min(3650, +s.GPPathDays || 1));
+    const _gpSpanMs = _gpDays * 86400000;
+    const N_GP = Math.max(48, Math.min(2048, Math.round(48 * Math.sqrt(_gpDays))));
     const sampleFrom = (getRaDec) => {
       const pts = [];
       for (let i = 0; i <= N_GP; i++) {
-        const d = new Date(dayMs + (i / N_GP) * 86400000);
+        const d = new Date(dayMs + (i / N_GP) * _gpSpanMs);
         const eq = getRaDec(d);
         if (!eq || !Number.isFinite(eq.ra) || !Number.isFinite(eq.dec)) return null;
         const gpLat = eq.dec * 180 / Math.PI;
@@ -929,7 +938,7 @@ export class FeModel extends EventTarget {
     const sampleFromSubPointFn = (subFn) => {
       const pts = [];
       for (let i = 0; i <= N_GP; i++) {
-        const d = new Date(dayMs + (i / N_GP) * 86400000);
+        const d = new Date(dayMs + (i / N_GP) * _gpSpanMs);
         const sub = subFn(d);
         pts.push(canonicalLatLongToDisc(sub.lat, sub.lon, FE_RADIUS));
       }
@@ -964,8 +973,16 @@ export class FeModel extends EventTarget {
         if (pts) c.GPPaths[`p:${body}`] = { pts, color };
       }
 
+      // Stars: use `apparentStarPosition` with full apparent-of-date
+      // corrections so precession + nutation + aberration produce a
+      // visible declination drift across a year (~50″/yr precession,
+      // 9″ nutation oscillation, 20″ aberration ellipse). Without
+      // these the star's GP collapses to a single circle of constant
+      // latitude regardless of how long the path span is.
       const sampleFixedStar = (raRad, decRad) =>
-        sampleFrom(() => ({ ra: raRad, dec: decRad }));
+        sampleFrom((d) => apparentStarPosition(raRad, decRad, d, {
+          precession: true, nutation: true, aberration: true,
+        }));
       const starCategories = [
         [CEL_NAV_STARS,    0xffe8a0, 'cn'],
         [CATALOGUED_STARS, 0xffffff, 'cat'],

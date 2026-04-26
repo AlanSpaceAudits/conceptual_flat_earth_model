@@ -4705,3 +4705,28 @@ Format:
     top automatically (`100vw` already accounts for
     user-zoom).
 - **Revert:** `git checkout v-s000462 -- .`
+
+## S464 — GP Path span scales; star band drift via apparent corrections
+
+- **Date:** 2026-04-26
+- **Files changed:** `js/core/app.js`,
+  `js/ui/controlPanel.js`, `js/ui/urlState.js`.
+- **Change:**
+  - New `GPPathDays` state (default 1, range 1–1095).
+    `sampleFrom` / `sampleFromSubPointFn` use `_gpDays
+    × 86_400_000 ms` for the trace span; sample count
+    scales as `48 × √(_gpDays)` clamped to `[48, 2048]`
+    so resolution stays smooth across 1-day to 3-year
+    horizons.
+  - `sampleFixedStar` now drives `apparentStarPosition`
+    with `precession + nutation + aberration` enabled
+    every sample so the star's GP picks up the slow
+    declination drift instead of collapsing to a
+    single constant-latitude circle. Planets / sun /
+    moon already vary because they go through the
+    ephemeris pipeline.
+  - "GP Path (24 h)" row in Tracker Options renamed to
+    "GP Path"; new "GP Path Span (days)" numeric row
+    drives `GPPathDays`. Both keys persisted in URL
+    state.
+- **Revert:** `git checkout v-s000463 -- .`

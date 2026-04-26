@@ -1944,9 +1944,54 @@ export function buildControlPanel(host, model, demos) {
   worldRow.className = 'world-row';
   worldRow.append(btnWorld, btnClearTrace);
 
+  // Screenshot — copies the WebGL canvas to the system clipboard as
+  // a PNG. Falls back to a Save As download if the Clipboard API
+  // isn't available (older browsers / non-secure contexts).
+  const btnScreenshot = document.createElement('button');
+  btnScreenshot.className = 'time-btn screenshot-btn';
+  btnScreenshot.type = 'button';
+  btnScreenshot.textContent = '📷';
+  btnScreenshot.title = 'Copy screenshot to clipboard';
+  btnScreenshot.addEventListener('click', async () => {
+    const canvas = document.querySelector('canvas');
+    if (!canvas) return;
+    try {
+      // Force a fresh draw before reading pixels — three.js clears the
+      // back buffer right after its render, so capture in a one-off
+      // toBlob right after a tick.
+      requestAnimationFrame(async () => {
+        canvas.toBlob(async (blob) => {
+          if (!blob) return;
+          if (navigator.clipboard && window.ClipboardItem) {
+            try {
+              await navigator.clipboard.write([
+                new ClipboardItem({ 'image/png': blob }),
+              ]);
+              btnScreenshot.textContent = '✓';
+              setTimeout(() => { btnScreenshot.textContent = '📷'; }, 1000);
+              return;
+            } catch (_e) {
+              // fall through to download
+            }
+          }
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = 'fe_model_screenshot.png';
+          a.click();
+          URL.revokeObjectURL(url);
+          btnScreenshot.textContent = '⬇';
+          setTimeout(() => { btnScreenshot.textContent = '📷'; }, 1000);
+        }, 'image/png');
+      });
+    } catch (_e) {
+      // ignore
+    }
+  });
+
   const gridsStack = document.createElement('div');
   gridsStack.className = 'grids-stack';
-  gridsStack.append(btnGrids, worldRow);
+  gridsStack.append(btnGrids, worldRow, btnScreenshot);
   compassControls.appendChild(gridsStack);
 
 

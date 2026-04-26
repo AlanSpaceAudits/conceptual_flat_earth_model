@@ -4197,3 +4197,31 @@ Format:
     feet straight through the centre of the terrestrial
     sphere. Line is gated on GE in `Observer.update`.
 - **Revert:** `git checkout v-s000438 -- .`
+
+## S440 — Centre line in world space + screenshot button + preserveDrawingBuffer
+
+- **Date:** 2026-04-26
+- **Files changed:** `js/render/worldObjects.js`,
+  `js/render/index.js`, `js/render/scene.js`,
+  `js/ui/controlPanel.js`.
+- **Change:**
+  - `Observer.zenithToCenter` line moved out of
+    `observer.group` and added directly to `sm.world`.
+    Endpoints rewritten each frame in `Observer.update`
+    (GE only): from observer's world position to
+    `(0, 0, 0)`. Removes any dependence on the
+    quaternion that builds the observer-local frame —
+    the line is guaranteed to terminate at the centre
+    dot.
+  - Bar-left adds a `📷` Screenshot button below the
+    grids stack. Clicking copies the WebGL canvas to
+    the clipboard as PNG (via `navigator.clipboard.write`
+    + `ClipboardItem`); falls back to a download when
+    the Clipboard API isn't available. Briefly shows
+    `✓` / `⬇` for feedback.
+  - `WebGLRenderer` constructed with
+    `preserveDrawingBuffer: true` so `canvas.toBlob`
+    returns the rendered frame instead of an empty
+    buffer. Minor performance hit; required for
+    canvas-side screenshotting.
+- **Revert:** `git checkout v-s000439 -- .`

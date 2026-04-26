@@ -282,6 +282,9 @@ export class Renderer {
 
     this.observer = new Observer();
     this.sm.world.add(this.observer.group);
+    if (this.observer.zenithToCenter) {
+      this.sm.world.add(this.observer.zenithToCenter);
+    }
 
     // Rays as Line objects managed via this.rebuildRays() each frame.
     this.rayGroup = new THREE.Group();

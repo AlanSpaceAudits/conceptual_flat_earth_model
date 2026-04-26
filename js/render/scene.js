@@ -68,7 +68,10 @@ export class SceneManager {
     this.camera = new THREE.PerspectiveCamera(35, 16 / 9, 0.01, 1000);
     this.camera.up.set(0, 0, 1);
 
-    this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
+    this.renderer = new THREE.WebGLRenderer({
+      canvas, antialias: true, alpha: false,
+      preserveDrawingBuffer: true,
+    });
     this.renderer.setPixelRatio(window.devicePixelRatio || 1);
 
     // Clip everything below the disc (z = 0). Anything "below the horizon"

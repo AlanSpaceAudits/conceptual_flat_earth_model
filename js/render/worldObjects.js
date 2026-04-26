@@ -2867,24 +2867,24 @@ export class Observer {
     this.axes.renderOrder = 60;
     this.group.add(this.axes);
 
-    // Zenith-through-center reference line: extends from the observer's
-    // feet straight down along local -z (inward radial) by FE_RADIUS,
-    // so on the GE sphere this line passes through the centre of the
-    // terrestrial sphere. In FE the same line drops straight down into
-    // the disc plane.
+    // Zenith-through-centre reference line: world-space line from the
+    // observer's surface point to the centre of the terrestrial
+    // sphere (origin). Lives outside `this.group` so the local
+    // rotation can't displace it — endpoints are rewritten each
+    // frame in `update()`.
     const zcGeom = new THREE.BufferGeometry();
     zcGeom.setAttribute('position', new THREE.Float32BufferAttribute(
-      [0, 0, 0, 0, 0, -FE_RADIUS], 3,
+      [0, 0, 0, 0, 0, 0], 3,
     ));
     this.zenithToCenter = new THREE.Line(
       zcGeom,
       new THREE.LineBasicMaterial({
-        color: 0xff8040, transparent: true, opacity: 0.7,
+        color: 0xff8040, transparent: true, opacity: 0.85,
         depthTest: false, depthWrite: false,
       }),
     );
     this.zenithToCenter.renderOrder = 60;
-    this.group.add(this.zenithToCenter);
+    this.zenithToCenter.frustumCulled = false;
   }
 
   _buildFigure(kind) {
@@ -3556,9 +3556,20 @@ export class Observer {
       const ang = Math.atan2(p[1], p[0]);
       this.figureGroup.rotation.set(0, 0, ang);
     }
-    // Zenith-through-centre helper line is GE-only; in FE the line
-    // would just disappear into the disc.
-    if (this.zenithToCenter) this.zenithToCenter.visible = ge;
+    // Zenith-through-centre helper line — drawn in world space from
+    // the observer's surface point to the origin. Lives in `sm.world`
+    // (added by the renderer), not under `this.group`, so the
+    // observer-frame rotation can't bend its direction. Visible in
+    // GE only; in FE the line would dive into the disc.
+    if (this.zenithToCenter) {
+      this.zenithToCenter.visible = ge;
+      if (ge) {
+        const arr = this.zenithToCenter.geometry.attributes.position.array;
+        arr[0] = p[0]; arr[1] = p[1]; arr[2] = p[2];
+        arr[3] = 0;    arr[4] = 0;    arr[5] = 0;
+        this.zenithToCenter.geometry.attributes.position.needsUpdate = true;
+      }
+    }
   }
 }
 

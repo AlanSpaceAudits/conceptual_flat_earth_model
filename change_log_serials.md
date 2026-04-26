@@ -5108,3 +5108,30 @@ Format:
   - `buildTrackerHud`: removed the `Helio :` line
     from each block (template + render path).
 - **Revert:** `git checkout v-s000479 -- .`
+
+## S481 — Voxel bear and voxel "Nikki" replace sprite avatars
+
+- **Date:** 2026-04-26
+- **Files changed:** `js/render/worldObjects.js`.
+- **Change:**
+  - `kind === 'bear'`: PNG sprite removed.
+    Replaced with a voxel bear built from
+    `2.5e-3`-unit `BoxGeometry` cubes. Body block,
+    extruded head with snout + black nose, pair of
+    eyes, ears, four legs with white claws, short
+    tail. Palette: rich brown / shadow brown / tan /
+    black / cream.
+  - `kind === 'nikki'`: PNG sprite removed.
+    Replaced with a voxel humanoid: dark shoes, dark
+    legs, hot-pink top, flared pink skirt at the hip,
+    skin-tone arms hanging at sides, square skin
+    head, long dark hair flowing behind + draping
+    over shoulders, two black eyes and a magenta
+    lip. Same `2.5e-3` voxel scale; feet anchor at
+    `z = 0`.
+  - Both figures stay parented under `figureGroup`,
+    so the existing `Observer.update`
+    quaternion / heading rotation logic
+    transports them across the disc / sphere
+    untouched.
+- **Revert:** `git checkout v-s000480 -- .`

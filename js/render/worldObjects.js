@@ -3045,27 +3045,54 @@ export class Observer {
       const tail = new THREE.Mesh(horzCyl(0.0013, 0.004, 'x'), hide);
       add(tail, -0.013, 0, 0.009);
     } else if (kind === 'bear') {
-      // Sprite sized so the bear's feet (image y = 839 / 1080) land
-      // on the disc at z = 0 and its horizontal centre (image x = 968
-      // / 1920) sits over the observer GP.
-      const tex = new THREE.TextureLoader().load('assets/observer_bear.png');
-      tex.colorSpace = THREE.SRGBColorSpace;
-      const mat = new THREE.SpriteMaterial({
-        map: tex, transparent: true, depthTest: true, depthWrite: false,
-      });
-      const sprite = new THREE.Sprite(mat);
-      const h = 0.10;
-      const W = 1920, H = 1080;
-      const FEET_PY = 839, CENTER_PX = 968;
-      const aspect = W / H;
-      sprite.scale.set(h * aspect, h, 1);
-      sprite.position.set(
-        -((CENTER_PX / W) - 0.5) * h * aspect,
-        0,
-        (FEET_PY / H - 0.5) * h,
-      );
-      sprite.renderOrder = 110;
-      this.figureGroup.add(sprite);
+      // Voxel bear — a small Minecraft-style figure built from
+      // unit cubes. Each cube is `vox` wide; the figure stands so
+      // its feet anchor at `z = 0`. Palette: dark-brown shadow
+      // pass, rich brown body, light-tan snout, black eyes /
+      // nose, white claws.
+      const vox = 0.0025;
+      const bodyM   = new THREE.MeshBasicMaterial({ color: 0x6b3a1c });
+      const shadowM = new THREE.MeshBasicMaterial({ color: 0x4a2810 });
+      const snoutM  = new THREE.MeshBasicMaterial({ color: 0xc89870 });
+      const eyeM    = new THREE.MeshBasicMaterial({ color: 0x121212 });
+      const clawM   = new THREE.MeshBasicMaterial({ color: 0xf0e8d0 });
+      const cubeGeom = new THREE.BoxGeometry(vox, vox, vox);
+      const placeCube = (mat, ix, iy, iz) => {
+        const m = new THREE.Mesh(cubeGeom, mat);
+        m.position.set(ix * vox, iy * vox, iz * vox + vox / 2);
+        this.figureGroup.add(m);
+      };
+      // legs (z = 0..2)
+      for (const [ix, iy] of [[-1, -2], [-1, 2], [2, -2], [2, 2]]) {
+        for (let iz = 0; iz < 2; iz++) placeCube(bodyM, ix, iy, iz);
+        placeCube(clawM, ix, iy, 0);
+      }
+      // belly underside shadow
+      for (let ix = -1; ix <= 2; ix++) for (let iy = -2; iy <= 2; iy++) placeCube(shadowM, ix, iy, 2);
+      // body block (z = 3..6)
+      for (let ix = -1; ix <= 2; ix++) {
+        for (let iy = -2; iy <= 2; iy++) {
+          for (let iz = 3; iz <= 6; iz++) placeCube(bodyM, ix, iy, iz);
+        }
+      }
+      // head (z = 6..9, slightly raised at front)
+      for (let ix = 1; ix <= 4; ix++) {
+        for (let iy = -2; iy <= 2; iy++) {
+          for (let iz = 7; iz <= 10; iz++) placeCube(bodyM, ix, iy, iz);
+        }
+      }
+      // snout
+      for (let iy = -1; iy <= 1; iy++) {
+        for (let iz = 7; iz <= 8; iz++) placeCube(snoutM, 5, iy, iz);
+      }
+      placeCube(eyeM, 5, 0, 7);            // nose
+      placeCube(eyeM, 4, -2, 9);           // left eye
+      placeCube(eyeM, 4,  2, 9);           // right eye
+      // ears
+      placeCube(bodyM, 2, -3, 10);
+      placeCube(bodyM, 2,  3, 10);
+      // tail
+      placeCube(bodyM, -2, 0, 5);
     } else if (kind === 'llama') {
       // Llamazing — white llama. Long-legged body, long curving neck,
       // small head with tall ears, tiny dark eyes and nose.
@@ -3528,19 +3555,64 @@ export class Observer {
       tail.rotation.y = 0.25;
       add(tail, -0.018, 0, 0.008);
     } else if (kind === 'nikki') {
-      const tex = new THREE.TextureLoader().load('assets/observer_nikki.png');
-      tex.colorSpace = THREE.SRGBColorSpace;
-      const mat = new THREE.SpriteMaterial({
-        map: tex, transparent: true, depthTest: true, depthWrite: false,
-      });
-      const sprite = new THREE.Sprite(mat);
-      const h = 0.10;
-      const aspect = 1920 / 1080;
-      sprite.scale.set(h * aspect, h, 1);
-      // Match the bear's vertical anchor — feet just above z = 0.
-      sprite.position.set(0, 0, 0.028);
-      sprite.renderOrder = 110;
-      this.figureGroup.add(sprite);
+      // Voxel "Nikki" — small humanoid built from unit cubes.
+      // Stands at the disc with feet anchored at z = 0 to match
+      // the other figures. Palette: skin, dark hair, hot-pink top
+      // and skirt, dark legs, white shoes. Head, hair, torso,
+      // arms, legs and shoes laid out as discrete voxel blocks.
+      const vox = 0.0025;
+      const skinM   = new THREE.MeshBasicMaterial({ color: 0xe6b689 });
+      const hairM   = new THREE.MeshBasicMaterial({ color: 0x2a1a14 });
+      const eyeM    = new THREE.MeshBasicMaterial({ color: 0x121212 });
+      const lipM    = new THREE.MeshBasicMaterial({ color: 0xc04060 });
+      const topM    = new THREE.MeshBasicMaterial({ color: 0xe04080 });
+      const skirtM  = new THREE.MeshBasicMaterial({ color: 0xb02060 });
+      const legM    = new THREE.MeshBasicMaterial({ color: 0x40384a });
+      const shoeM   = new THREE.MeshBasicMaterial({ color: 0xf0e8e0 });
+      const cubeGeom = new THREE.BoxGeometry(vox, vox, vox);
+      const placeCube = (mat, ix, iy, iz) => {
+        const m = new THREE.Mesh(cubeGeom, mat);
+        m.position.set(ix * vox, iy * vox, iz * vox + vox / 2);
+        this.figureGroup.add(m);
+      };
+      // shoes (z = 0)
+      for (const ix of [-1, 0]) for (const iy of [-1, 0]) placeCube(shoeM, ix, iy, 0);
+      // legs (z = 1..5)
+      for (let iz = 1; iz <= 5; iz++) {
+        placeCube(legM, -1, -1, iz);
+        placeCube(legM, -1,  0, iz);
+        placeCube(legM,  0, -1, iz);
+        placeCube(legM,  0,  0, iz);
+      }
+      // skirt flare (z = 6, wider than torso)
+      for (let ix = -2; ix <= 1; ix++) for (let iy = -2; iy <= 1; iy++) placeCube(skirtM, ix, iy, 6);
+      for (let ix = -1; ix <= 0; ix++) for (let iy = -1; iy <= 0; iy++) placeCube(skirtM, ix, iy, 5);
+      // torso (z = 7..10) — pink top
+      for (let ix = -1; ix <= 0; ix++) {
+        for (let iy = -1; iy <= 0; iy++) {
+          for (let iz = 7; iz <= 10; iz++) placeCube(topM, ix, iy, iz);
+        }
+      }
+      // arms hanging at sides (z = 7..9)
+      for (let iz = 7; iz <= 9; iz++) {
+        placeCube(skinM, -1, -2, iz);
+        placeCube(skinM,  0,  1, iz);
+      }
+      // head (z = 11..13)
+      for (let ix = -1; ix <= 0; ix++) {
+        for (let iy = -1; iy <= 0; iy++) {
+          for (let iz = 11; iz <= 13; iz++) placeCube(skinM, ix, iy, iz);
+        }
+      }
+      // long hair behind head + flowing past shoulders
+      for (let iy = -2; iy <= 1; iy++) {
+        for (let iz = 8; iz <= 14; iz++) placeCube(hairM, -2, iy, iz);
+      }
+      for (let ix = -1; ix <= 0; ix++) for (let iy = -1; iy <= 0; iy++) placeCube(hairM, ix, iy, 14);
+      // facial features (face = +iy direction)
+      placeCube(eyeM, -1,  0, 12);
+      placeCube(eyeM,  0,  0, 12);
+      placeCube(lipM, -1,  0, 11);
     }
 
     // Paint the figure after the celestial markers (sun/moon/planet dots

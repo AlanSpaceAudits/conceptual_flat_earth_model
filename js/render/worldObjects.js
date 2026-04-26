@@ -1887,12 +1887,14 @@ export class ObserversOpticalVault {
     this.mesh.scale.set(r, r, h);
     this.wire.scale.set(r, r, h);
     this.axes.scale.set(r, r, h);
-    // Day/night sky cap colour + opacity. Drives a lerp between
-    // sky-blue (day) and dim grey (night) keyed off NightFactor
-    // so the dome visually masks heavenly-vault objects when the
-    // sun is up, then drops away at night. Honours optional
+    // Day/night sky cap colour + opacity. GE-only: lerps between
+    // sky-blue (day) and dim grey (night) keyed off NightFactor so
+    // the dome visually masks heavenly-vault objects when the sun
+    // is up, then drops away at night. FE keeps the original
+    // static dim grey at 0.10 opacity so daytime stars on the FE
+    // optical vault remain visible. Honours optional
     // ShowDayNightSky flag (undefined = on).
-    const skyOn = s.ShowDayNightSky !== false;
+    const skyOn = ge && s.ShowDayNightSky !== false;
     if (skyOn) {
       const nf = Math.max(0, Math.min(1, c.NightFactor || 0));
       const day = 1 - nf;

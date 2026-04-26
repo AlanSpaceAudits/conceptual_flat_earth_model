@@ -5317,3 +5317,17 @@ Format:
     the optical-vault hemisphere disappear during
     daylight in line with real spherical astronomy.
 - **Revert:** `git checkout v-s000487 -- .`
+
+## S489 — FE keeps static cap, GE-only day/night sky
+
+- **Date:** 2026-04-26
+- **Files changed:** `js/render/worldObjects.js`.
+- **Change:**
+  - `ObserversOpticalVault.update` day/night
+    sky-cap branch now gated on `ge`. FE reverts to
+    the original static `0x4a4a4a / 0.10` cap so
+    daytime stars on the FE optical vault stay
+    visible (S485 had unintentionally extended the
+    blue-sky lerp into FE, blocking them). GE keeps
+    the sky-blue ↔ dim-grey lerp via `NightFactor`.
+- **Revert:** `git checkout v-s000488 -- .`

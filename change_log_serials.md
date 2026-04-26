@@ -4775,3 +4775,25 @@ Format:
     sub-points have always traced their full
     ephemeris-driven AE positions on the disc.
 - **Revert:** `git checkout v-s000465 -- .`
+
+## S467 — Annual Cycle: per-body period; live tracer instead of GP path
+
+- **Date:** 2026-04-26
+- **Files changed:** `js/demos/definitions.js`.
+- **Change:**
+  - `PERIOD_DAYS` table added (sun 365.25, moon 27.32,
+    Mercury 87.97, Venus 224.70, Mars 686.97, Jupiter
+    4332.59, Saturn 10759.22, Uranus 30688.5, Neptune
+    60182). Demo's `Tval` now advances `DateTime` by
+    the tracked body's full period in 4 s instead of
+    fixed 365 days/30 s.
+  - Intro switched from pre-plotting via
+    `ShowGPPath` + `GPPathDays` to live tracing via
+    `ShowGPTracer` + `ShowOpticalVaultTrace`. The orbit
+    pattern emerges as `DateTime` advances, so each
+    body's unique AE-projected signature (Mercury's
+    nested retrograde loops, Mars's broad swing, etc.)
+    is visible being drawn out rather than appearing
+    all at once. `ClearTraceCount` bumped on intro to
+    wipe previous trace segments.
+- **Revert:** `git checkout v-s000466 -- .`

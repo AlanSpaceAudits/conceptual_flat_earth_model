@@ -664,14 +664,29 @@ const SUN_24H_DEMOS = [
 ];
 
 // Annual-cycle demo. Runs from the observer's current lat / long
-// and traces the GP of the single tracked body over a full year.
-// Refuses to load when zero or multiple bodies are in the tracker —
-// the path's only useful when there's a single subject. The intro
-// returns `null` to signal that refusal; `_playSingle` bails on a
-// falsy intro and the message in `Description` surfaces in the
-// description footer.
+// and traces the GP of the single tracked body over its sidereal
+// period (collapsed to 4 s playback). Each body therefore writes
+// out its own AE-projected orbit signature — Mercury's tight
+// retrograde loops, Mars's broad swing, Jupiter's slow arc — at the
+// same playback duration. Refuses to load when zero or multiple
+// bodies are in the tracker.
+//
+// `_playSingle` bails on a falsy intro return value, so an
+// intro can refuse a precondition by returning `null`.
+const PERIOD_DAYS = {
+  sun:     365.25,
+  moon:    27.32,    // sidereal lunar period
+  mercury: 87.97,
+  venus:   224.70,
+  mars:    686.97,
+  jupiter: 4332.59,
+  saturn:  10759.22,
+  uranus:  30688.5,
+  neptune: 60182.0,
+};
+
 const ANNUAL_CYCLE_DEMO = {
-  name: 'Annual Cycle (single tracker, observer lat/long)',
+  name: 'Annual Cycle (single tracker · 4 s per orbital period)',
   group: 'annual-cycle',
   intro: (model) => {
     const s = model.state;
@@ -684,23 +699,35 @@ const ANNUAL_CYCLE_DEMO = {
       });
       return null;
     }
-    // Preserve observer's lat/long, BodySource, world model, etc.
-    // Just enable the year-long GP trace and the true-position
-    // markers so the observer can watch the body wander its band.
+    // Use the LIVE tracer (`ShowGPTracer`) so the AE-projected path
+    // is drawn out as `DateTime` advances — Mercury's tight
+    // retrograde loops, Mars's broad swing, Jupiter's slow arc each
+    // appear progressively. Pre-plotted `ShowGPPath` is disabled so
+    // the pattern emerges with the playback rather than appearing
+    // all at once. `ClearTraceCount` bump wipes leftover trace
+    // segments from any prior demo or interaction.
     return {
-      ShowGPPath: true,
-      GPPathDays: 365,
+      ShowGPPath: false,
+      ShowGPTracer: true,
+      ShowOpticalVaultTrace: true,
+      ClearTraceCount: (s.ClearTraceCount | 0) + 1,
       ShowTruePositions: true,
       ShowOpticalVault: true,
       ShowStars: true,
     };
   },
   tasks: (m) => {
-    const start = m.state.DateTime;
+    const s = m.state;
+    const targets = Array.isArray(s.TrackerTargets) ? s.TrackerTargets : [];
+    const set = new Set(targets);
+    if (s.FollowTarget) set.add(s.FollowTarget);
+    const target = set.size === 1 ? [...set][0] : 'sun';
+    const period = PERIOD_DAYS[target] != null ? PERIOD_DAYS[target] : 365.25;
+    const start = s.DateTime;
     return [
-      Ttxt('Annual cycle · observer at current lat/long · GP traces one year. Watch the band drift.'),
-      Tval('DateTime', start + 365, 30 * 1000, T1, 'linear'),
-      Ttxt('Year complete.'),
+      Ttxt(`Annual cycle · ${target} · ${period.toFixed(0)} days traced live in 4 s · observer at current lat/long`),
+      Tval('DateTime', start + period, 4 * 1000, T1, 'linear'),
+      Ttxt('Period complete — full orbital signature traced.'),
       Thold(),
     ];
   },

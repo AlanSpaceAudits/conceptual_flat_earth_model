@@ -4037,3 +4037,23 @@ Format:
     (`ShowOpticalVaultTrace: false` in both, `ShowGPTracer:
     true` in P2 unchanged).
 - **Revert:** `git checkout v-s000431 -- .`
+
+## S433 — Tracker action buttons in 1x3 row
+
+- **Date:** 2026-04-26
+- **Files changed:** `css/styles.css`,
+  `js/ui/controlPanel.js`.
+- **Change:**
+  - New row type `actions: [{ buttonLabel, onClick }, ...]`
+    rendered by `clickGroupRow` as a flex row of compact
+    buttons (`.row.action-group-row` / `.action-btn`).
+    Each button takes `flex: 1` so the row evenly
+    distributes space.
+  - `Clear All`, `Track All`, `Clear Trace` consolidated
+    into a single 1x3 row at the top of Tracker Options.
+    Standalone `Clear Trace` row removed from below the
+    trace toggles.
+  - 2-column Tracker Options column-span rule extended to
+    include `.action-group-row` so the new row spans both
+    columns.
+- **Revert:** `git checkout v-s000432 -- .`

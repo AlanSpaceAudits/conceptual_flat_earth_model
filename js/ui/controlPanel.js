@@ -686,25 +686,29 @@ const FIELD_GROUPS = [
         { key: 'PermanentNight', label: 'Permanent night', bool: true },
       ]},
       { title: 'Tracker Options', rows: [
-        { label: '', buttonLabel: 'Clear All',
-          onClick: (m) => m.setState({ TrackerTargets: [] }) },
-        { label: '', buttonLabel: 'Track All',
-          onClick: (m) => m.setState({
-            TrackerTargets: [
-              'sun', 'moon',
-              'mercury', 'venus', 'mars', 'jupiter',
-              'saturn', 'uranus', 'neptune',
-              ...CEL_NAV_STARS.map((x) => `star:${x.id}`),
-              ...CATALOGUED_STARS.map((x) => `star:${x.id}`),
-              ...BLACK_HOLES.map((x) => `star:${x.id}`),
-              ...QUASARS.map((x) => `star:${x.id}`),
-              ...GALAXIES.map((x) => `star:${x.id}`),
-              ...SATELLITES.map((x) => `star:${x.id}`),
-            ],
-            ShowCelNav: true, ShowBlackHoles: true,
-            ShowQuasars: true, ShowGalaxies: true,
-            ShowSatellites: true,
-          }) },
+        { actions: [
+          { buttonLabel: 'Clear All',
+            onClick: (m) => m.setState({ TrackerTargets: [] }) },
+          { buttonLabel: 'Track All',
+            onClick: (m) => m.setState({
+              TrackerTargets: [
+                'sun', 'moon',
+                'mercury', 'venus', 'mars', 'jupiter',
+                'saturn', 'uranus', 'neptune',
+                ...CEL_NAV_STARS.map((x) => `star:${x.id}`),
+                ...CATALOGUED_STARS.map((x) => `star:${x.id}`),
+                ...BLACK_HOLES.map((x) => `star:${x.id}`),
+                ...QUASARS.map((x) => `star:${x.id}`),
+                ...GALAXIES.map((x) => `star:${x.id}`),
+                ...SATELLITES.map((x) => `star:${x.id}`),
+              ],
+              ShowCelNav: true, ShowBlackHoles: true,
+              ShowQuasars: true, ShowGalaxies: true,
+              ShowSatellites: true,
+            }) },
+          { buttonLabel: 'Clear Trace',
+            onClick: (m) => m.setState({ ClearTraceCount: (m.state.ClearTraceCount | 0) + 1 }) },
+        ]},
         { key: 'ShowStars',            label: 'Stars (master)',           bool: true },
         { key: 'ShowCelestialBodies',  label: 'Celestial Bodies (master)', bool: true },
         { key: 'ShowOpticalVault',     label: 'Optical Vault',            bool: true },
@@ -713,8 +717,6 @@ const FIELD_GROUPS = [
         { key: 'ShowGPTracer',         label: 'Trace GP',                 bool: true },
         { key: 'ShowOpticalVaultTrace', label: 'Trace Optical Vault',     bool: true },
         { key: 'ShowTraceUnder',       label: 'Show Under',               bool: true },
-        { label: '', buttonLabel: 'Clear Trace',
-          onClick: (m) => m.setState({ ClearTraceCount: (m.state.ClearTraceCount | 0) + 1 }) },
         { key: 'SpecifiedTrackerMode', label: 'Specified Tracker Mode',   bool: true },
         { key: 'TrackerGPOverride',    label: 'GP Override',              bool: true },
         { key: 'ShowSunTrack',         label: 'Sun Track',                bool: true },
@@ -1135,6 +1137,20 @@ function clickRow(model, row) {
   return el;
 }
 
+function clickGroupRow(model, row) {
+  const el = document.createElement('div');
+  el.className = 'row action-group-row';
+  for (const a of row.actions) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'action-btn';
+    btn.textContent = a.buttonLabel ?? 'Action';
+    btn.addEventListener('click', () => a.onClick(model));
+    el.appendChild(btn);
+  }
+  return el;
+}
+
 function actionRow(model, row) {
   const el = document.createElement('div');
   el.className = 'row bool action-row';
@@ -1367,6 +1383,7 @@ function buildRow(model, row) {
   else if (row.select)     el = selectRow(model, row);
   else if (row.buttonGrid) el = buttonGridRow(model, row);
   else if (row.cardinal)   el = cardinalRow(model, row);
+  else if (row.actions)    el = clickGroupRow(model, row);
   else if (row.onClick)    el = clickRow(model, row);
   else if (row.action)     el = actionRow(model, row);
   else if (row.nudge)      el = nudgeRow(model, row);

@@ -370,6 +370,7 @@ header .info-popup.legend-popup a { color: var(--accent); }
   break-inside: avoid;
 }
 .group[data-group-title="Tracker Options"] .group-body > .row.action-row,
+.group[data-group-title="Tracker Options"] .group-body > .row.action-group-row,
 .group[data-group-title="Tracker Options"] .group-body > .row.button-grid-row {
   column-span: all;
 }
@@ -749,6 +750,17 @@ footer#desc .desc-dynamic { color: var(--fg); }
   padding: 5px 10px; font: inherit; cursor: pointer; width: 100%;
 }
 .row.action-row .action-btn:hover { border-color: var(--accent); color: var(--accent); }
+.row.action-group-row {
+  display: flex; gap: 4px; padding: 0;
+}
+.row.action-group-row .action-btn {
+  flex: 1; min-width: 0;
+  background: var(--row); color: var(--fg);
+  border: 1px solid var(--border); border-radius: 3px;
+  padding: 5px 6px; font: inherit; cursor: pointer;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.row.action-group-row .action-btn:hover { border-color: var(--accent); color: var(--accent); }
 .row.action-row .action-btn.active {
   background: #ff8c1a; color: #1a1a1a; border-color: #ff8c1a; font-weight: bold;
 }

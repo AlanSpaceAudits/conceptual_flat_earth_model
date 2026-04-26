@@ -378,6 +378,122 @@ export class LongitudeRing {
 
 // --- FE disc + grid --------------------------------------------------------
 
+// Dome-caustic peak overlay: reads c.DomeCausticPeaks (the ray
+// tracer's binned local-maxima list) and renders each as a sphere
+// sized + brightened by its relative intensity. The brightest peak on
+// the side of the disc opposite the sun's GP — the candidate
+// antipodal "ghost sun" — gets a halo highlight.
+export class DomeCausticOverlay {
+  constructor() {
+    this.group = new THREE.Group();
+    this.group.name = 'dome-caustic';
+    this.group.visible = false;
+    this._meshes = [];
+
+    // One reserved highlight marker for the antipodal peak.
+    this.highlight = new THREE.Mesh(
+      new THREE.RingGeometry(0.018, 0.028, 48),
+      new THREE.MeshBasicMaterial({
+        color: 0xffe060, transparent: true, opacity: 0.85,
+        depthTest: false, depthWrite: false,
+      }),
+    );
+    this.highlight.renderOrder = 122;
+    this.highlight.visible = false;
+    this.group.add(this.highlight);
+
+    // Orange "ghost sun" spheres rendered ON the observer's optical
+    // vault when a caustic peak projects above the local horizon.
+    // Distinct colour from the real sun so the two read separately.
+    this._opticalMeshes = [];
+  }
+
+  _ensure(i) {
+    while (this._meshes.length <= i) {
+      const m = new THREE.Mesh(
+        new THREE.CircleGeometry(1, 24),
+        new THREE.MeshBasicMaterial({
+          color: 0xffe060, transparent: true,
+          depthTest: false, depthWrite: false,
+        }),
+      );
+      m.renderOrder = 121;
+      this.group.add(m);
+      this._meshes.push(m);
+    }
+    return this._meshes[i];
+  }
+
+  _ensureOptical(i) {
+    while (this._opticalMeshes.length <= i) {
+      const m = new THREE.Mesh(
+        new THREE.SphereGeometry(1, 16, 12),
+        new THREE.MeshBasicMaterial({
+          color: 0xff8a00, transparent: true,
+          depthTest: false, depthWrite: false,
+        }),
+      );
+      m.renderOrder = 124;
+      this.group.add(m);
+      this._opticalMeshes.push(m);
+    }
+    return this._opticalMeshes[i];
+  }
+
+  update(model) {
+    const s = model.state;
+    const c = model.computed;
+    const on = !!s.ShowDomeCaustic;
+    this.group.visible = on && s.WorldModel !== 'ge';
+    if (!this.group.visible) {
+      this.highlight.visible = false;
+      for (const m of this._meshes) m.visible = false;
+      return;
+    }
+    const peaks = Array.isArray(c.DomeCausticPeaks) ? c.DomeCausticPeaks : [];
+    for (let i = 0; i < peaks.length; i++) {
+      const p = peaks[i];
+      const m = this._ensure(i);
+      const r = 0.006 + 0.020 * p.intensity;
+      m.scale.set(r, r, 1);
+      m.position.set(p.x, p.y, 0.003);
+      m.material.opacity = 0.4 + 0.55 * p.intensity;
+      m.visible = true;
+    }
+    for (let i = peaks.length; i < this._meshes.length; i++) {
+      this._meshes[i].visible = false;
+    }
+
+    const sunPeak = c.DomeCausticPeakSun;
+    if (sunPeak) {
+      this.highlight.visible = true;
+      this.highlight.position.set(sunPeak.x, sunPeak.y, 0.0035);
+      const r = 0.024 + 0.030 * sunPeak.intensity;
+      this.highlight.scale.set(r, r, 1);
+    } else {
+      this.highlight.visible = false;
+    }
+
+    // Optical-vault ghost suns: only when ShowOpticalVault is on and
+    // the observer can plausibly see them.
+    const opticalShow = on && (s.ShowOpticalVault !== false)
+                        && Array.isArray(c.DomeCausticOpticalPeaks);
+    const opticals = opticalShow ? c.DomeCausticOpticalPeaks : [];
+    for (let i = 0; i < opticals.length; i++) {
+      const op = opticals[i];
+      const m = this._ensureOptical(i);
+      m.position.set(op.x, op.y, op.z);
+      const r = 0.0025 + 0.006 * op.intensity;
+      m.scale.set(r, r, r);
+      m.material.opacity = 0.55 + 0.40 * op.intensity;
+      m.visible = true;
+    }
+    for (let i = opticals.length; i < this._opticalMeshes.length; i++) {
+      this._opticalMeshes[i].visible = false;
+    }
+  }
+}
+
 // Globe heavenly vault: a translucent shell concentric with the
 // terrestrial globe at `c.GlobeVaultRadius`. Visible only in GE
 // mode. True positions of celestial bodies (sun/moon/planets) live
@@ -1138,13 +1254,17 @@ export class VaultOfHeavens {
     }
     const g = makeLineSegments(segs, 0x6088c0, { opacity: 0.6 });
     this.grid.add(g);
+    this._lastSize = domeSize;
+    this._lastHeight = domeHeight;
   }
 
   update(model) {
     const s = model.state;
     const domeRadius = s.VaultSize * FE_RADIUS;
     this.shell.scale.set(domeRadius, domeRadius, s.VaultHeight);
-    this._rebuildGrid(s.VaultSize, s.VaultHeight);
+    if (this._lastSize !== s.VaultSize || this._lastHeight !== s.VaultHeight) {
+      this._rebuildGrid(s.VaultSize, s.VaultHeight);
+    }
     this.shell.visible = s.ShowVault !== false;
     this.grid.visible = s.ShowVaultGrid && (s.ShowVault !== false);
   }

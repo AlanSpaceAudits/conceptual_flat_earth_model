@@ -9,7 +9,7 @@ import {
   CelestialPoles, DeclinationCircles, Yggdrasil, MtMeru, ToroidalVortex,
   LongitudeRing, CelNavStars, TrackedGroundPoints, CatalogPointStars,
   GPPathOverlay, GPTracer, Discworld, AnalemmaLine, SunMoonGlyph,
-  MonthMarkers, WorldGlobe, GlobeHeavenlyVault,
+  MonthMarkers, WorldGlobe, GlobeHeavenlyVault, DomeCausticOverlay,
 } from './worldObjects.js';
 import { loadLandGeo, buildGeoJsonLand, buildImageMap, buildBlankMap } from './earthMap.js';
 import { Constellations } from './constellations.js';
@@ -40,6 +40,9 @@ export class Renderer {
 
     this.globeHeavenlyVault = new GlobeHeavenlyVault();
     this.sm.world.add(this.globeHeavenlyVault.group);
+
+    this.domeCaustic = new DomeCausticOverlay();
+    this.sm.world.add(this.domeCaustic.group);
 
     this.longitudeRing = new LongitudeRing(FE_RADIUS);
     this.sm.world.add(this.longitudeRing.group);
@@ -288,12 +291,12 @@ export class Renderer {
 
     // Track curves (sun/moon arc lines). Also clipped at disc.
     this.sunTrack  = this._blankLine(0xffa000, 0.75, clipPlanes);
-    this.moonTrack = this._blankLine(0xaaaaff, 0.7, clipPlanes);
+    this.moonTrack = this._blankLine(0xffffff, 0.7, clipPlanes);
     this.sm.world.add(this.sunTrack);
     this.sm.world.add(this.moonTrack);
 
     this.sunAnalemma  = new AnalemmaLine(0xffd060, 0.95);
-    this.moonAnalemma = new AnalemmaLine(0xc0c0d8, 0.85);
+    this.moonAnalemma = new AnalemmaLine(0xffffff, 0.85);
     this.sunVaultArc  = new AnalemmaLine(0xffe680, 0.85);
     this.moonVaultArc = new AnalemmaLine(0xffffff, 0.9);
     this.sm.world.add(this.sunAnalemma.group);
@@ -403,6 +406,7 @@ export class Renderer {
     if (this.land) this.land.visible = !ge;
     this.worldGlobe.update(m);
     this.globeHeavenlyVault.update(m);
+    this.domeCaustic.update(m);
     this.discGrid.update(m);
     this.shadow.update(m);
     // eclipse shadow + observer darkening feature-flagged off
@@ -733,13 +737,13 @@ export class Renderer {
     // stay drawn regardless of horizon: the physical source is still there.
     if (s.ShowVaultRays) {
       if (sunOn)  addRay(c.SunVaultCoord,  0xff8800, 0.9, sunElev);
-      if (moonOn) addRay(c.MoonVaultCoord, 0x88aacc, 0.9, moonElev);
+      if (moonOn) addRay(c.MoonVaultCoord, 0xffffff, 0.9, moonElev);
     }
     // Optical-vault rays represent what the observer sees, so they fade
     // smoothly with the body's elevation.
     if (s.ShowOpticalVaultRays) {
       if (sunOn  && sunFade  > 0) addRay(c.SunOpticalVaultCoord,  0xcc6600, 0.7 * sunFade,  sunElev);
-      if (moonOn && moonFade > 0) addRay(c.MoonOpticalVaultCoord, 0x6688aa, 0.7 * moonFade, moonElev);
+      if (moonOn && moonFade > 0) addRay(c.MoonOpticalVaultCoord, 0xcccccc, 0.7 * moonFade, moonElev);
     }
 
     // projection rays: straight segments from a body's true

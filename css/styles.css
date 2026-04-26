@@ -751,6 +751,9 @@ footer#desc .desc-dynamic { color: var(--fg); }
 .demo-list { display: flex; flex-direction: column; gap: 2px; margin-top: 6px; max-height: 240px; overflow: auto; }
 .demo-list button { text-align: left; padding: 4px 6px; background: var(--row); color: var(--fg); border: 1px solid var(--border); cursor: pointer; font: inherit; }
 .demo-list button[aria-current="true"] { color: var(--accent); border-color: var(--accent); }
+.demo-list .demo-row { display: flex; gap: 2px; align-items: stretch; }
+.demo-list .demo-row .demo-play { flex: 1 1 auto; }
+.demo-list .demo-row .demo-jump { flex: 0 0 auto; min-width: 28px; text-align: center; padding: 4px 6px; }
 
 /* S200 — Meeus warning banner. Pinned to the bottom of the #view
    pane. Red text on a translucent dark background, pointer-events

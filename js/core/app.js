@@ -5,6 +5,7 @@
 // and then emits an 'update' event for the renderer / panel to react.
 
 import { Clamp, Limit01, Limit1, ToRad } from '../math/utils.js';
+import { traceDomeCaustic } from '../render/domeCaustic.js';
 import { V } from '../math/vect3.js';
 import { M } from '../math/mat3.js';
 import { CELESTIAL, GEOMETRY, FE_RADIUS, initTimeOrigin } from './constants.js';
@@ -61,6 +62,52 @@ function heavenlyVaultCeiling(latDeg, domeSize, domeHeight, feRadius) {
 }
 
 // Default state. Distances in FE_RADIUS units.
+// Golden-section search over VaultHeight that lands the antipodal
+// caustic peak at the same observer-local elevation as the real sun.
+// Returns the best dome height in [0.05, 0.7] or NaN if no peak is
+// ever above the horizon.
+function _fitDomeVaultHeight(sunPos, domeR, obs, targetElDeg) {
+  const elevForH = (domeH) => {
+    const r = traceDomeCaustic({
+      sunPos, domeR, domeH,
+      discClipR: FE_RADIUS * 1.4,
+      nTheta: 240, nPhi: 120,
+    });
+    let bestEl = null;
+    let bestScore = -Infinity;
+    for (const p of (r.peaks || [])) {
+      const r2 = (p.x * p.x + p.y * p.y) / (domeR * domeR);
+      const peakZ = r2 < 1 ? domeH * Math.sqrt(1 - r2) : 0;
+      const dx = p.x - obs[0];
+      const dy = p.y - obs[1];
+      const dz = peakZ - obs[2];
+      const dlen = Math.sqrt(dx * dx + dy * dy + dz * dz);
+      if (dlen < 1e-9 || dz <= 0) continue;
+      // Prefer the strongest above-horizon peak.
+      const el = Math.asin(dz / dlen) * 180 / Math.PI;
+      const score = p.intensity;
+      if (score > bestScore) { bestScore = score; bestEl = el; }
+    }
+    return bestEl;
+  };
+  const loss = (h) => {
+    const e = elevForH(h);
+    return e == null ? Infinity : Math.abs(e - targetElDeg);
+  };
+  let lo = 0.05, hi = 0.7;
+  const phi = (Math.sqrt(5) - 1) / 2;
+  let h1 = hi - phi * (hi - lo);
+  let h2 = lo + phi * (hi - lo);
+  let l1 = loss(h1), l2 = loss(h2);
+  for (let i = 0; i < 20; i++) {
+    if (l1 < l2) { hi = h2; h2 = h1; l2 = l1; h1 = hi - phi * (hi - lo); l1 = loss(h1); }
+    else         { lo = h1; h1 = h2; l1 = l2; h2 = lo + phi * (hi - lo); l2 = loss(h2); }
+    if (Math.abs(hi - lo) < 0.005) break;
+  }
+  const best = (l1 < l2) ? h1 : h2;
+  return isFinite(loss(best)) ? best : NaN;
+}
+
 function defaultState() {
   return {
     ObserverLat:  32.0,
@@ -132,6 +179,8 @@ function defaultState() {
     EclipseMapSolar:         [],
     EclipseMapLunar:         [],
     WorldModel:              'fe',
+    ShowDomeCaustic:         false,
+    DomeCausticDensity:      120,
     MoonMonthMarkers:        [],
     MoonVaultArcOn:          false,
     MoonMonthMarkersWorldSpace: false,
@@ -542,6 +591,75 @@ export class FeModel extends EventTarget {
     stepVaultArc(this._moonVaultArc, s.MoonVaultArcOn, c.MoonVaultCoord);
     c.SunVaultArcPoints  = this._sunVaultArc.points;
     c.MoonVaultArcPoints = this._moonVaultArc.points;
+
+    // Dome caustic: optional. When ShowDomeCaustic is on, ray-trace
+    // the heavenly-vault interior reflection of the sun and bin the
+    // hits into a density grid; renderer reads the local-max peaks.
+    if (s.ShowDomeCaustic) {
+      const domeR = s.VaultSize * FE_RADIUS;
+      const domeH = s.VaultHeight;
+
+      // Cache key — re-trace only when sun position, dome shape, or
+      // observer placement actually changed. Each setState triggers a
+      // full update(), so without the cache the 28k-ray trace would
+      // run every time a UI toggle flips, dragging the Heavenly ↔
+      // Optical swap into multi-frame stalls.
+      const sv = c.SunVaultCoord;
+      const ob = c.ObserverFeCoord || [0, 0, 0];
+      const key = `${sv[0].toFixed(5)}|${sv[1].toFixed(5)}|${sv[2].toFixed(5)}|`
+                + `${domeR.toFixed(4)}|${domeH.toFixed(4)}|`
+                + `${ob[0].toFixed(5)}|${ob[1].toFixed(5)}|${ob[2].toFixed(5)}`;
+      let result;
+      if (this._domeCausticKey === key && this._domeCausticResult) {
+        result = this._domeCausticResult;
+      } else {
+        result = traceDomeCaustic({
+          sunPos:  sv,
+          domeR, domeH,
+          discClipR: FE_RADIUS * 1.4,
+          nTheta: 240, nPhi: 120,
+          observerCoord: ob,
+        });
+        this._domeCausticKey = key;
+        this._domeCausticResult = result;
+      }
+      c.DomeCausticPeaks    = result.peaks;
+      c.DomeCausticPeakMax  = result.peakMax;
+      c.DomeCausticPeakSun  = result.peakSun;
+
+      // Optical-vault orange ghost sun — mirror of the apparent sun
+      // through the observer's zenith axis. Light from the real sun
+      // reaches the observer along two paths: the direct line (the
+      // apparent sun) and a wrap-around path through the dome that,
+      // by symmetry, converges at the same elevation but the
+      // antipodal azimuth. As the apparent sun (yellow) traces its
+      // arc, the orange traces an exactly mirrored arc on the
+      // opposite side at the same elevation.
+      const opticals = [];
+      const obs = c.ObserverFeCoord || [0, 0, 0];
+      const sopt = c.SunOpticalVaultCoord;
+      if (sopt) {
+        const lx = sopt[0] - obs[0];
+        const ly = sopt[1] - obs[1];
+        const lz = sopt[2] - obs[2];
+        if (lz > 0) {
+          opticals.push({
+            x: obs[0] - lx,
+            y: obs[1] - ly,
+            z: obs[2] + lz,
+            intensity: 1,
+          });
+        }
+      }
+      c.DomeCausticOpticalPeaks = opticals;
+    } else {
+      c.DomeCausticPeaks         = null;
+      c.DomeCausticPeakMax       = 0;
+      c.DomeCausticPeakSun       = null;
+      c.DomeCausticOpticalPeaks  = null;
+      this._domeCausticKey = null;
+      this._domeCausticResult = null;
+    }
 
     // Moon phase (sun-at-infinity: moon→sun ≈ SunCelestCoord).
     const moonToGlobe = V.Norm(V.Scale(c.MoonCelestCoord, -1));

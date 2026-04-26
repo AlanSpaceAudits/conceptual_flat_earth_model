@@ -3886,3 +3886,64 @@ Format:
     stacked in a `.grids-stack` flex column directly under
     the existing grids (▦) toggle at the right edge of the
     compass cluster. Cycle-row CSS reverts to 2 rows.
+
+## S430 — Dome caustic feature + Antarctic sun samples + UI tweaks
+
+- **Date:** 2026-04-26
+- **Files changed:** `js/core/app.js`,
+  `js/render/worldObjects.js`, `js/render/index.js`,
+  `js/render/domeCaustic.js` (new),
+  `js/ui/controlPanel.js`, `js/demos/index.js`,
+  `css/styles.css`, `js/data/antarcticSunSamples.js` (new),
+  `scripts/build_antarctic_sun_samples.mjs` (new),
+  `scripts/run_dome_caustic_search.mjs` (new),
+  `change_log_serials.md`.
+- **Change:**
+  - **Dome caustic ray tracer** (`js/render/domeCaustic.js`):
+    pure-function `traceDomeCaustic` that fans rays from the
+    sun's heavenly-vault position into the upper hemisphere,
+    intersects each with the ellipsoidal-cap dome interior,
+    reflects specularly, intersects the reflected ray with
+    the disc plane, bins hits into a 96² density grid, and
+    returns local-maxima peaks plus the antipodal candidate.
+  - State `ShowDomeCaustic` (default `false`).
+    Per-frame compute caches the ray-trace by `(sun, dome,
+    observer)` so view-mode toggles don't re-run the trace.
+    Disc-side peaks rendered by new `DomeCausticOverlay`
+    (yellow rings + ring highlight on antipodal peak).
+    Optical-vault orange ghost sun computed as the apparent
+    sun's reflection through the observer's vertical axis
+    (same elevation, antipodal azimuth); rendered as an
+    orange sphere.
+  - `MonthMarkers` extended with `worldSpace` and `noLoop`
+    constructor options so `eclipseMapSolar` /
+    `eclipseMapLunar` work without the closed-loop polyline.
+  - Tracker tab UI: `Tracker Options` ends at the bool
+    toggles; `Sun / Moon / Mercury / … / Neptune` button
+    grid moved to a new collapsible **Solar System** group;
+    `Dome Caustic` toggle moved up between
+    `Sun / Moon "9" Glyph` and `GP Tracer`.
+  - Demo list: every demo entry now has a small `↪` button
+    next to its play button that snaps lat / lon / time to
+    the demo's intro state without playing the animation.
+    `DemoController.jumpTo(index)` added.
+  - Moon colour: track / analemma / vault ray / optical
+    vault ray switched from blue (`0x88aacc`, `0x6688aa`,
+    `0xc0c0d8`, `0xaaaaff`) to white. Neptune retains its
+    blue.
+  - Optical-vault axis colours rotated so red = +z (zenith /
+    perpendicular to ground), green = +x (north tangent),
+    blue = +y (east tangent).
+  - `VaultOfHeavens.update` now caches its graticule and
+    only rebuilds when `VaultSize` or `VaultHeight`
+    actually change; previously rebuilt every frame.
+  - Antarctic sun samples: `scripts/build_antarctic_sun_samples.mjs`
+    computes 864 sun azimuth/elevation samples (6 stations ×
+    6 dates × 24 hours) using the project's existing
+    Astropixels (DE405) ephemeris and standard alt/az from
+    RA/Dec/LST. Output: `js/data/antarcticSunSamples.js`.
+  - `scripts/run_dome_caustic_search.mjs`: offline runner
+    that exercises the caustic tracer across a parameter
+    grid for diagnostic use.
+- **Revert:** `git checkout v-s000429 -- .` then delete the
+  three new script / data files.

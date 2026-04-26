@@ -718,7 +718,10 @@ const FIELD_GROUPS = [
         { key: 'ShowTruePositions',    label: 'True Positions',           bool: true },
         { key: 'ShowGPPath',           label: 'GP Path (24 h)',           bool: true },
         { key: 'ShowSunMoonNine',      label: 'Sun / Moon "9" Glyph',     bool: true },
+        { key: 'ShowDomeCaustic',      label: 'Dome Caustic',             bool: true },
         { key: 'ShowGPTracer',         label: 'GP Tracer',                bool: true },
+      ]},
+      { title: 'Solar System', rows: [
         { label: '', buttonLabel: 'Clear Tracer',
           onClick: (m) => m.setState({ GPTracerTargets: [] }) },
         { key: 'GPTracerTargets', label: '', buttonGrid: [

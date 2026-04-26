@@ -124,6 +124,23 @@ export class Demos {
 
   prev() { this._playSingle(Math.max(this.currentIndex - 1, 0), false); }
 
+  // Apply a demo's intro state without running its task queue. Useful
+  // when the user wants the lat / lon / time / view setup of a demo
+  // but no animation.
+  jumpTo(index) {
+    const d = this.list[index];
+    if (!d) return;
+    this.animator.stop();
+    this.model.setState({
+      EclipseActive: false, EclipseKind: null,
+      EclipseEventUTMS: null, EclipsePipeline: null,
+      EclipseMinSepDeg: null, EclipseMagnitude: null, EclipseEventType: null,
+    });
+    const introState = typeof d.intro === 'function' ? d.intro(this.model) : d.intro;
+    this.model.setState(introState);
+    this._refreshPanel();
+  }
+
   renderInto(panel) {
     this._panelHost = panel;
     panel.replaceChildren();
@@ -203,10 +220,22 @@ export class Demos {
       if (collapsed) return;
 
       indices.forEach(i => {
+        const row = document.createElement('div');
+        row.className = 'demo-row';
         const b = document.createElement('button');
+        b.className = 'demo-play';
         b.textContent = this.list[i].name;
         b.addEventListener('click', () => this.play(i));
-        this._listEl.appendChild(b);
+        const jump = document.createElement('button');
+        jump.className = 'demo-jump';
+        jump.textContent = '↪';
+        jump.title = 'Jump to this demo\'s lat / lon / time without playing the animation';
+        jump.addEventListener('click', (e) => {
+          e.stopPropagation();
+          this.jumpTo(i);
+        });
+        row.append(b, jump);
+        this._listEl.appendChild(row);
         this._buttons[i] = b;
       });
     });

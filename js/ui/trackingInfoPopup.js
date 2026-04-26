@@ -237,21 +237,104 @@ export function buildTrackingInfoPopup(panelEl, model) {
   if (!panelEl) return;
   panelEl.classList.add('tracking-info-panel');
   panelEl.innerHTML = `
-    <div class="ti-art-row">
-      <canvas class="ti-art" width="${W}" height="${W}"></canvas>
-      <div class="ti-titles">
-        <div class="ti-name">—</div>
-        <div class="ti-cat">—</div>
-      </div>
+    <div class="ti-header">
+      <span class="ti-grip" title="Drag to move">⋮⋮</span>
+      <span class="ti-header-name">Tracking</span>
+      <button type="button" class="ti-mini" title="Minimize" aria-label="Minimize">—</button>
     </div>
-    <div class="ti-readout"></div>
+    <div class="ti-content">
+      <div class="ti-art-row">
+        <canvas class="ti-art" width="${W}" height="${W}"></canvas>
+        <div class="ti-titles">
+          <div class="ti-name">—</div>
+          <div class="ti-cat">—</div>
+        </div>
+      </div>
+      <div class="ti-readout"></div>
+    </div>
   `;
-  const canvas  = panelEl.querySelector('.ti-art');
-  const ctx     = canvas.getContext('2d');
+  const canvas      = panelEl.querySelector('.ti-art');
+  const ctx         = canvas.getContext('2d');
   ctx.imageSmoothingEnabled = false;
-  const elName  = panelEl.querySelector('.ti-name');
-  const elCat   = panelEl.querySelector('.ti-cat');
-  const elBody  = panelEl.querySelector('.ti-readout');
+  const elName      = panelEl.querySelector('.ti-name');
+  const elCat       = panelEl.querySelector('.ti-cat');
+  const elBody      = panelEl.querySelector('.ti-readout');
+  const elHeader    = panelEl.querySelector('.ti-header');
+  const elHeaderName= panelEl.querySelector('.ti-header-name');
+  const elMini      = panelEl.querySelector('.ti-mini');
+  const elContent   = panelEl.querySelector('.ti-content');
+
+  // Persisted UI state: drag position + minimized toggle. Stored in
+  // localStorage so the user's placement / collapse choice survives
+  // a refresh.
+  const STORAGE_KEY = 'tracking-info-popup:ui';
+  let uiState = { left: null, top: null, minimized: false };
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) Object.assign(uiState, JSON.parse(raw));
+  } catch (_e) { /* localStorage unavailable */ }
+  const saveUi = () => {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(uiState)); }
+    catch (_e) { /* ignore */ }
+  };
+
+  function applyPosition() {
+    if (Number.isFinite(uiState.left) && Number.isFinite(uiState.top)) {
+      panelEl.style.left  = uiState.left + 'px';
+      panelEl.style.top   = uiState.top  + 'px';
+      panelEl.style.right = 'auto';
+    }
+  }
+  function applyMinimized() {
+    panelEl.classList.toggle('minimized', !!uiState.minimized);
+    elMini.textContent = uiState.minimized ? '+' : '—';
+    elMini.title = uiState.minimized ? 'Expand' : 'Minimize';
+  }
+  applyPosition();
+  applyMinimized();
+
+  // --- drag ---------------------------------------------------------
+  let drag = null;
+  function onPointerDown(e) {
+    if (e.target === elMini) return;            // mini-button has its own click
+    if (e.button !== 0 && e.pointerType !== 'touch') return;
+    drag = {
+      pointerId: e.pointerId,
+      dx: e.clientX - panelEl.getBoundingClientRect().left,
+      dy: e.clientY - panelEl.getBoundingClientRect().top,
+    };
+    panelEl.setPointerCapture(e.pointerId);
+    e.preventDefault();
+  }
+  function onPointerMove(e) {
+    if (!drag || e.pointerId !== drag.pointerId) return;
+    const margin = 8;
+    const w = panelEl.offsetWidth;
+    const h = panelEl.offsetHeight;
+    const maxLeft = window.innerWidth  - w - margin;
+    const maxTop  = window.innerHeight - h - margin;
+    uiState.left = Math.max(margin, Math.min(maxLeft, e.clientX - drag.dx));
+    uiState.top  = Math.max(margin, Math.min(maxTop,  e.clientY - drag.dy));
+    applyPosition();
+  }
+  function onPointerUp(e) {
+    if (!drag || e.pointerId !== drag.pointerId) return;
+    panelEl.releasePointerCapture(e.pointerId);
+    drag = null;
+    saveUi();
+  }
+  elHeader.addEventListener('pointerdown', onPointerDown);
+  elHeader.addEventListener('pointermove', onPointerMove);
+  elHeader.addEventListener('pointerup',   onPointerUp);
+  elHeader.addEventListener('pointercancel', onPointerUp);
+
+  // --- minimize -----------------------------------------------------
+  elMini.addEventListener('click', (e) => {
+    e.stopPropagation();
+    uiState.minimized = !uiState.minimized;
+    applyMinimized();
+    saveUi();
+  });
 
   const fmtDeg = (rad) => {
     if (!Number.isFinite(rad)) return '—';
@@ -341,6 +424,7 @@ export function buildTrackingInfoPopup(panelEl, model) {
     panelEl.hidden = false;
     elName.textContent = info.name || info.target;
     elCat.textContent  = categoryLabel(info);
+    elHeaderName.textContent = `Tracking · ${info.name || info.target}`;
     paint(info, c);
 
     const az = fmtAz(info.azimuth);

@@ -5007,3 +5007,25 @@ Format:
     overlays the existing left-edge HUDs when a body
     is selected.
 - **Revert:** `git checkout v-s000475 -- .`
+
+## S477 — Tracking-info pop-up: drag handle + minimize, state persisted
+
+- **Date:** 2026-04-26
+- **Files changed:** `js/ui/trackingInfoPopup.js`,
+  `css/styles.css`.
+- **Change:**
+  - New `.ti-header` bar with grip handle, body
+    name, and minimize button. Pointer-events on the
+    header drag the panel; viewport-edge clamping
+    keeps it on-screen with an 8 px margin. Clicking
+    the `—` / `+` button toggles the
+    `minimized` class — `.ti-content` collapses,
+    leaving just the header bar.
+  - UI state (`{ left, top, minimized }`) is
+    persisted in `localStorage` under
+    `tracking-info-popup:ui` so position + collapse
+    state survive a refresh.
+  - When dragging the panel sets
+    `right: auto` so the explicit `left/top` take
+    over from the default upper-left anchor.
+- **Revert:** `git checkout v-s000476 -- .`

@@ -155,10 +155,11 @@ header .info-popup.legend-popup a { color: var(--accent); }
 }
 
 /* Tracking-info pop-up: pixel-art portrait + readout for the
-   selected body. Pinned to the left edge of the viewport. The
-   panel lifts above #hud / #tracker-hud (z-index 12 > their
-   default), so it can overlay the existing HUDs when a body is
-   selected without forcing a layout reshuffle. */
+   selected body. Default position is upper-left, but the header
+   bar is a drag handle so the user can reposition; minimize button
+   collapses to just the header. State is persisted in
+   localStorage. The panel lifts above the existing HUDs (z-index
+   12) so it overlays without forcing layout. */
 #tracking-info-popup {
   position: absolute; top: 12px; left: 12px;
   pointer-events: auto;
@@ -167,14 +168,46 @@ header .info-popup.legend-popup a { color: var(--accent); }
   background: rgba(10, 14, 22, 0.94);
   border: 1px solid rgba(120, 150, 200, 0.45);
   border-radius: 8px;
-  padding: 14px 16px;
+  padding: 0;
   min-width: 380px;
   max-width: 460px;
   z-index: 12;
   zoom: var(--ui-zoom);
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+  user-select: none;
 }
 #tracking-info-popup[hidden] { display: none; }
+#tracking-info-popup .ti-header {
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 10px;
+  background: rgba(255, 154, 60, 0.08);
+  border-bottom: 1px solid rgba(120, 150, 200, 0.25);
+  border-radius: 8px 8px 0 0;
+  cursor: grab;
+  touch-action: none;
+}
+#tracking-info-popup .ti-header:active { cursor: grabbing; }
+#tracking-info-popup .ti-grip {
+  color: var(--muted); font-size: 14px; letter-spacing: -2px;
+  flex: 0 0 auto;
+}
+#tracking-info-popup .ti-header-name {
+  flex: 1 1 auto; color: var(--accent); font-size: 13px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+#tracking-info-popup .ti-mini {
+  flex: 0 0 auto;
+  width: 24px; height: 22px;
+  background: var(--row); color: var(--fg);
+  border: 1px solid var(--border); border-radius: 4px;
+  font: inherit; font-size: 14px; line-height: 18px;
+  cursor: pointer;
+  padding: 0;
+}
+#tracking-info-popup .ti-mini:hover { border-color: var(--accent); color: var(--accent); }
+#tracking-info-popup .ti-content { padding: 14px 16px; }
+#tracking-info-popup.minimized .ti-content { display: none; }
+#tracking-info-popup.minimized { min-width: 240px; }
 #tracking-info-popup .ti-art-row {
   display: flex; gap: 16px; align-items: center;
   border-bottom: 1px solid rgba(120, 150, 200, 0.22);

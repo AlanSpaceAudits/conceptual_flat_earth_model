@@ -4797,3 +4797,33 @@ Format:
     all at once. `ClearTraceCount` bumped on intro to
     wipe previous trace segments.
 - **Revert:** `git checkout v-s000466 -- .`
+
+## S468 — Annual Cycle: per-body demos, observer at AE pole
+
+- **Date:** 2026-04-26
+- **Files changed:** `js/demos/definitions.js`.
+- **Change:**
+  - Replaced the single tracker-gated `ANNUAL_CYCLE_DEMO`
+    with `ANNUAL_CYCLE_DEMOS`: one per body
+    (sun, moon, mercury, venus, mars, jupiter, saturn,
+    uranus, neptune). Each demo's intro:
+    - Parks the observer at the AE-projection pole
+      (`ObserverLat: 90`, `ObserverLong: 0`,
+      `ObserverElevation: 0`, `WorldModel: 'fe'`,
+      `InsideVault: false`).
+    - Sets the orbital camera to look straight down on
+      the disc (`CameraHeight: 89.9`, `CameraDistance: 10`,
+      `Zoom: 1.5`).
+    - Replaces `TrackerTargets` with `[body]` and
+      clears `FollowTarget` so the renderer paints
+      only the demo's body trace.
+    - Enables `ShowGPTracer` + `ShowOpticalVaultTrace`,
+      bumps `ClearTraceCount` so prior segments wipe
+      out, leaves `ShowGPPath` off — the AE signature
+      is drawn live as `DateTime` advances.
+  - Tasks: 4 s linear ramp through the body's full
+    sidereal period (`PERIOD_DAYS` table from S467).
+  - Demo group `annual-cycle` now contains nine demos
+    instead of one; the previous "1 tracker required"
+    precondition is removed.
+- **Revert:** `git checkout v-s000467 -- .`

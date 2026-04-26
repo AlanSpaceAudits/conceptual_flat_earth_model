@@ -663,16 +663,14 @@ const SUN_24H_DEMOS = [
   },
 ];
 
-// Annual-cycle demo. Runs from the observer's current lat / long
-// and traces the GP of the single tracked body over its sidereal
-// period (collapsed to 4 s playback). Each body therefore writes
-// out its own AE-projected orbit signature — Mercury's tight
-// retrograde loops, Mars's broad swing, Jupiter's slow arc — at the
-// same playback duration. Refuses to load when zero or multiple
-// bodies are in the tracker.
-//
-// `_playSingle` bails on a falsy intro return value, so an
-// intro can refuse a precondition by returning `null`.
+// Annual-cycle demos — one per body. Each parks the observer at
+// the disc centre (lat 90° N, the AE projection's pole) so the
+// camera looks straight down on the full disc, makes the chosen
+// body the sole tracked target, and traces its GP live as
+// `DateTime` advances by exactly one sidereal period in 4 s.
+// Mercury's tight retrograde loops, Mars's broad swing, Jupiter's
+// slow arc — each writes its unique AE signature at the same
+// playback duration.
 const PERIOD_DAYS = {
   sun:     365.25,
   moon:    27.32,    // sidereal lunar period
@@ -685,28 +683,35 @@ const PERIOD_DAYS = {
   neptune: 60182.0,
 };
 
-const ANNUAL_CYCLE_DEMO = {
-  name: 'Annual Cycle (single tracker · 4 s per orbital period)',
+const ANNUAL_CYCLE_BODIES = [
+  'sun', 'moon', 'mercury', 'venus', 'mars',
+  'jupiter', 'saturn', 'uranus', 'neptune',
+];
+
+const ANNUAL_CYCLE_DEMOS = ANNUAL_CYCLE_BODIES.map((body) => ({
+  name: `Annual Cycle · ${body[0].toUpperCase()}${body.slice(1)} (1 period · 4 s)`,
   group: 'annual-cycle',
   intro: (model) => {
     const s = model.state;
-    const targets = Array.isArray(s.TrackerTargets) ? s.TrackerTargets : [];
-    const set = new Set(targets);
-    if (s.FollowTarget) set.add(s.FollowTarget);
-    if (set.size !== 1) {
-      model.setState({
-        Description: `Annual Cycle demo expects exactly one tracked body. Currently tracking ${set.size}. Clear the tracker and add a single body, then try again.`,
-      });
-      return null;
-    }
-    // Use the LIVE tracer (`ShowGPTracer`) so the AE-projected path
-    // is drawn out as `DateTime` advances — Mercury's tight
-    // retrograde loops, Mars's broad swing, Jupiter's slow arc each
-    // appear progressively. Pre-plotted `ShowGPPath` is disabled so
-    // the pattern emerges with the playback rather than appearing
-    // all at once. `ClearTraceCount` bump wipes leftover trace
-    // segments from any prior demo or interaction.
     return {
+      ObserverLat: 90, ObserverLong: 0, ObserverElevation: 0,
+      ObserverHeading: 0,
+      InsideVault: false,
+      WorldModel: 'fe',
+      // Orbital view looking straight down on the disc from the
+      // pole — the AE projection then reads as a flat circle with
+      // the body's GP carving its retrograde / declination pattern.
+      CameraDirection: 0, CameraHeight: 89.9, CameraDistance: 10,
+      Zoom: 1.5,
+      VaultSize: 1, VaultHeight: 0.45,
+      // Tracker locked to this body alone so the renderer + tracer
+      // only paint its trace.
+      TrackerTargets: [body],
+      FollowTarget: null,
+      SpecifiedTrackerMode: false,
+      // Live tracer (disc + sky); pre-plotted `ShowGPPath` off so
+      // the signature emerges with playback. `ClearTraceCount`
+      // bumps wipe leftover trace from prior runs.
       ShowGPPath: false,
       ShowGPTracer: true,
       ShowOpticalVaultTrace: true,
@@ -714,24 +719,21 @@ const ANNUAL_CYCLE_DEMO = {
       ShowTruePositions: true,
       ShowOpticalVault: true,
       ShowStars: true,
+      ShowFeGrid: true,
+      ShowCelestialBodies: true,
     };
   },
   tasks: (m) => {
-    const s = m.state;
-    const targets = Array.isArray(s.TrackerTargets) ? s.TrackerTargets : [];
-    const set = new Set(targets);
-    if (s.FollowTarget) set.add(s.FollowTarget);
-    const target = set.size === 1 ? [...set][0] : 'sun';
-    const period = PERIOD_DAYS[target] != null ? PERIOD_DAYS[target] : 365.25;
-    const start = s.DateTime;
+    const period = PERIOD_DAYS[body];
+    const start = m.state.DateTime;
     return [
-      Ttxt(`Annual cycle · ${target} · ${period.toFixed(0)} days traced live in 4 s · observer at current lat/long`),
+      Ttxt(`${body} · ${period.toFixed(1)} days traced live in 4 s · observer at the disc pole`),
       Tval('DateTime', start + period, 4 * 1000, T1, 'linear'),
       Ttxt('Period complete — full orbital signature traced.'),
       Thold(),
     ];
   },
-};
+}));
 
 // The final exported list, in section order: general → solar eclipses
 // → lunar eclipses → FE prediction track. Each entry carries a
@@ -739,7 +741,7 @@ const ANNUAL_CYCLE_DEMO = {
 export const DEMOS = [
   ...SUN_24H_DEMOS,
   ...GENERAL_DEMOS,
-  ANNUAL_CYCLE_DEMO,
+  ...ANNUAL_CYCLE_DEMOS,
   ...ANALEMMA_DEMOS,
   ...MOON_SYNODIC_DEMOS,
   ...SUN_PAIRED_DEMOS,

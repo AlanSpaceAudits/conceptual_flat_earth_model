@@ -4057,3 +4057,17 @@ Format:
     include `.action-group-row` so the new row spans both
     columns.
 - **Revert:** `git checkout v-s000432 -- .`
+
+## S434 — Clear-trace button next to FE/GE toggle
+
+- **Date:** 2026-04-26
+- **Files changed:** `css/styles.css`,
+  `js/ui/controlPanel.js`.
+- **Change:**
+  - New `⌫` clear-trace button placed to the right of the
+    `FE`/`GE` world-model toggle in the bar-left grids
+    stack. Clicking bumps `ClearTraceCount` (same handler
+    as the Tracker Options "Clear Trace" entry).
+  - `grids-stack` second row wrapped in a flex `world-row`
+    so `FE` + `⌫` sit side-by-side; `▦` stays alone on top.
+- **Revert:** `git checkout v-s000433 -- .`

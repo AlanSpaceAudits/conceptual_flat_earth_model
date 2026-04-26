@@ -420,6 +420,10 @@ header .info-popup.legend-popup a { color: var(--accent); }
   line-height: 18px;
   margin: 0;
 }
+#bottom-bar .grids-stack .world-row {
+  display: flex;
+  gap: 2px;
+}
 #bottom-bar .mode-grid .time-btn,
 #bottom-bar .cycle-row .time-btn,
 #bottom-bar .cardinal-grid .time-btn {

@@ -1931,9 +1931,22 @@ export function buildControlPanel(host, model, demos) {
   // Stack the world-model toggle (FE / GE) directly under the grids
   // button so the two related "what am I looking at" toggles share a
   // column at the right edge of the compass cluster.
+  const btnClearTrace = document.createElement('button');
+  btnClearTrace.className = 'time-btn clear-trace-btn';
+  btnClearTrace.type = 'button';
+  btnClearTrace.textContent = '⌫';
+  btnClearTrace.title = 'Clear Trace';
+  btnClearTrace.addEventListener('click', () => {
+    model.setState({ ClearTraceCount: (model.state.ClearTraceCount | 0) + 1 });
+  });
+
+  const worldRow = document.createElement('div');
+  worldRow.className = 'world-row';
+  worldRow.append(btnWorld, btnClearTrace);
+
   const gridsStack = document.createElement('div');
   gridsStack.className = 'grids-stack';
-  gridsStack.append(btnGrids, btnWorld);
+  gridsStack.append(btnGrids, worldRow);
   compassControls.appendChild(gridsStack);
 
 

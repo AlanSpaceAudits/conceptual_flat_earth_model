@@ -4827,3 +4827,21 @@ Format:
     instead of one; the previous "1 tracker required"
     precondition is removed.
 - **Revert:** `git checkout v-s000467 -- .`
+
+## S469 — Annual Cycle: 1-calendar-year demos per body
+
+- **Date:** 2026-04-26
+- **Files changed:** `js/demos/definitions.js`.
+- **Change:**
+  - New `YEAR_CYCLE_DEMOS`: nine demos parallel to the
+    per-period set, but each spans exactly 365.25 days
+    in 8 s. Same observer + camera setup (AE pole,
+    looking straight down). The trace shows the
+    year-bounded interaction between Earth's daily
+    rotation and the body's orbital drift — Mercury
+    completes ~4 orbits, Venus ~1.6, Mars ~0.53,
+    Jupiter ~0.08, etc.
+  - Demo descriptive text reports the orbit count for
+    the year so users know how many full circuits
+    they're seeing.
+- **Revert:** `git checkout v-s000468 -- .`

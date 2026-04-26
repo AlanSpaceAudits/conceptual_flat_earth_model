@@ -688,6 +688,53 @@ const ANNUAL_CYCLE_BODIES = [
   'jupiter', 'saturn', 'uranus', 'neptune',
 ];
 
+// 1-year cycle demos: 365.25 days for every body, played in 8 s.
+// Mercury and Venus complete multiple orbits inside the year; Mars
+// sketches roughly half its orbit; Jupiter, Saturn, Uranus, Neptune
+// trace the small slice of their orbits the year subtends. Earth's
+// daily rotation overlays the slow drift, producing the rosette /
+// spirograph signatures characteristic of each body's
+// year-bounded path on the AE disc.
+const YEAR_CYCLE_DEMOS = ANNUAL_CYCLE_BODIES.map((body) => ({
+  name: `Annual Cycle · ${body[0].toUpperCase()}${body.slice(1)} (1 calendar year · 8 s)`,
+  group: 'annual-cycle',
+  intro: (model) => {
+    const s = model.state;
+    return {
+      ObserverLat: 90, ObserverLong: 0, ObserverElevation: 0,
+      ObserverHeading: 0,
+      InsideVault: false,
+      WorldModel: 'fe',
+      CameraDirection: 0, CameraHeight: 89.9, CameraDistance: 10,
+      Zoom: 1.5,
+      VaultSize: 1, VaultHeight: 0.45,
+      TrackerTargets: [body],
+      FollowTarget: null,
+      SpecifiedTrackerMode: false,
+      ShowGPPath: false,
+      ShowGPTracer: true,
+      ShowOpticalVaultTrace: true,
+      ClearTraceCount: (s.ClearTraceCount | 0) + 1,
+      ShowTruePositions: true,
+      ShowOpticalVault: true,
+      ShowStars: true,
+      ShowFeGrid: true,
+      ShowCelestialBodies: true,
+    };
+  },
+  tasks: (m) => {
+    const start = m.state.DateTime;
+    const period = PERIOD_DAYS[body];
+    const orbits = (365.25 / period).toFixed(2);
+    return [
+      Ttxt(`${body} · 365.25 days traced live in 8 s · ~${orbits} sidereal orbit(s) inside the year · observer at the disc pole`),
+      Tval('DateTime', start + 365.25, 8 * 1000, T1, 'linear'),
+      Ttxt('Year complete — the AE-disc signature reads as the year-bounded interaction of daily rotation and the body\'s orbital drift.'),
+      Thold(),
+    ];
+  },
+}));
+
 const ANNUAL_CYCLE_DEMOS = ANNUAL_CYCLE_BODIES.map((body) => ({
   name: `Annual Cycle · ${body[0].toUpperCase()}${body.slice(1)} (1 period · 4 s)`,
   group: 'annual-cycle',
@@ -742,6 +789,7 @@ export const DEMOS = [
   ...SUN_24H_DEMOS,
   ...GENERAL_DEMOS,
   ...ANNUAL_CYCLE_DEMOS,
+  ...YEAR_CYCLE_DEMOS,
   ...ANALEMMA_DEMOS,
   ...MOON_SYNODIC_DEMOS,
   ...SUN_PAIRED_DEMOS,

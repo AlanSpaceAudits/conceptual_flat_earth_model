@@ -4248,3 +4248,30 @@ Format:
     the night `🌙` button. Mode grid widened to 4
     columns; bottom row holds `🎛 📍 🎥`.
 - **Revert:** `git checkout v-s000440 -- .`
+
+## S442 — GE: right-handed observer/optical-vault rotation matrix
+
+- **Date:** 2026-04-26
+- **Files changed:** `js/render/worldObjects.js`,
+  `js/render/index.js`.
+- **Change:**
+  - Removed the diagnostic XYZ axis triad added in S441
+    on `observer.group`. The observer's zenith axis is
+    represented by the existing optical-vault red axis;
+    an extra triad on the observer figure is redundant.
+  - Both `Observer` and `ObserversOpticalVault` rotation
+    matrices switched from columns `[north, east, up]`
+    (left-handed, det = -1) to `[-north, east, up]`
+    (right-handed, det = +1).
+    `Quaternion.setFromRotationMatrix` only handles
+    proper rotations; the left-handed basis was
+    silently producing a wrong quaternion, which is why
+    the optical-vault axes never aligned with the
+    radial direction. Local `+x = -north` (outward
+    along surface tangent) matches the FE convention
+    where the figure faces "outward from disc centre"
+    via `figureGroup.rotation = atan2(p[1], p[0])`.
+  - Zenith-through-centre line restored on `Observer`
+    (added back in this revision after the cleanup
+    above).
+- **Revert:** `git checkout v-s000441 -- .`

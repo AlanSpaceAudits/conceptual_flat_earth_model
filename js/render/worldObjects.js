@@ -1705,13 +1705,17 @@ export class ObserversOpticalVault {
     // disc expects). The local +x = north and +y = east axes follow
     // the GlobeObserverFrame computed in app.js.
     if (ge && c.GlobeObserverFrame) {
+      // Right-handed columns [-north, east, up]: local +x = "outward"
+      // along the surface tangent (matches FE), +y = east, +z = up.
+      // Plain `[north, east, up]` is left-handed (det -1) and
+      // confuses `setFromRotationMatrix`.
       const f = c.GlobeObserverFrame;
       const m = new THREE.Matrix4();
       m.set(
-        f.northX, f.eastX, f.upX, 0,
-        f.northY, f.eastY, f.upY, 0,
-        f.northZ, f.eastZ, f.upZ, 0,
-        0,        0,       0,     1,
+        -f.northX, f.eastX, f.upX, 0,
+        -f.northY, f.eastY, f.upY, 0,
+        -f.northZ, f.eastZ, f.upZ, 0,
+         0,        0,       0,     1,
       );
       this.group.quaternion.setFromRotationMatrix(m);
     } else {
@@ -2842,33 +2846,11 @@ export class Observer {
     this.group.add(this.figureGroup);
     this._currentFigure = null;
 
-    // Diagnostic XYZ axes drawn in world space so they're guaranteed
-    // collinear with the zenith-to-centre line. Six vertices (three
-    // segments) overwritten each frame from `(observer, north, east,
-    // up)` in `update()`.
-    //   +x = north (green), +y = east (blue), +z = up / zenith (red)
-    const axisVerts = new Float32Array(18);
-    const axisCols = [
-      0, 0.6, 0, 0, 0.6, 0,
-      0, 0, 1, 0, 0, 1,
-      1, 0, 0, 1, 0, 0,
-    ];
-    const axisGeom = new THREE.BufferGeometry();
-    axisGeom.setAttribute('position', new THREE.BufferAttribute(axisVerts, 3));
-    axisGeom.setAttribute('color', new THREE.Float32BufferAttribute(axisCols, 3));
-    this.axes = new THREE.LineSegments(
-      axisGeom,
-      new THREE.LineBasicMaterial({ vertexColors: true, depthTest: false }),
-    );
-    this.axes.renderOrder = 60;
-    this.axes.frustumCulled = false;
-    this._axisVerts = axisVerts;
-
-    // Zenith-through-centre reference line: world-space line from the
-    // observer's surface point to the centre of the terrestrial
-    // sphere (origin). Lives outside `this.group` so the local
-    // rotation can't displace it — endpoints are rewritten each
-    // frame in `update()`.
+    // Zenith-through-centre reference line — drawn in world space
+    // from the observer's surface point to the origin (centre of
+    // the terrestrial sphere). Lives on its own so the observer-frame
+    // rotation can't bend its direction. Endpoints rewritten each
+    // frame in `update()`. GE-only.
     const zcGeom = new THREE.BufferGeometry();
     zcGeom.setAttribute('position', new THREE.Float32BufferAttribute(
       [0, 0, 0, 0, 0, 0], 3,
@@ -3533,16 +3515,19 @@ export class Observer {
 
     if (ge && c.GlobeObserverFrame) {
       // Stand the figure tangent to the sphere: local +z = radial
-      // outward; +x = north (so the body faces toward the pole, the
-      // sphere analogue of "facing outward from disc centre"); +y =
-      // east. Build the rotation from the GlobeObserverFrame columns.
+      // outward; +x = -north = "outward" from sphere centre on a
+      // tangent (matches the FE convention where local +x is
+      // outward from the disc centre); +y = east. Columns of the
+      // matrix are [-north, east, up], which is right-handed
+      // (det = +1) so `setFromRotationMatrix` extracts a valid
+      // quaternion.
       const f = c.GlobeObserverFrame;
       const m = new THREE.Matrix4();
       m.set(
-        f.northX, f.eastX, f.upX, 0,
-        f.northY, f.eastY, f.upY, 0,
-        f.northZ, f.eastZ, f.upZ, 0,
-        0,        0,       0,     1,
+        -f.northX, f.eastX, f.upX, 0,
+        -f.northY, f.eastY, f.upY, 0,
+        -f.northZ, f.eastZ, f.upZ, 0,
+         0,        0,       0,     1,
       );
       this.group.quaternion.setFromRotationMatrix(m);
       this.figureGroup.rotation.set(0, 0, 0);
@@ -3553,11 +3538,9 @@ export class Observer {
       const ang = Math.atan2(p[1], p[0]);
       this.figureGroup.rotation.set(0, 0, ang);
     }
-    // Zenith-through-centre helper line — drawn in world space from
-    // the observer's surface point to the origin. Lives in `sm.world`
-    // (added by the renderer), not under `this.group`, so the
-    // observer-frame rotation can't bend its direction. Visible in
-    // GE only; in FE the line would dive into the disc.
+
+    // Zenith-through-centre line — drawn in world space (visible
+    // GE only). Endpoints: observer position → origin.
     if (this.zenithToCenter) {
       this.zenithToCenter.visible = ge;
       if (ge) {
@@ -3566,43 +3549,6 @@ export class Observer {
         arr[3] = 0;    arr[4] = 0;    arr[5] = 0;
         this.zenithToCenter.geometry.attributes.position.needsUpdate = true;
       }
-    }
-
-    if (this.axes && this._axisVerts) {
-      const aLen = 0.08;
-      let nX = 0, nY = 0, nZ = 0;
-      let eX = 0, eY = 0, eZ = 0;
-      let uX = 0, uY = 0, uZ = 0;
-      if (ge && c.GlobeObserverFrame) {
-        const f = c.GlobeObserverFrame;
-        nX = f.northX; nY = f.northY; nZ = f.northZ;
-        eX = f.eastX;  eY = f.eastY;  eZ = f.eastZ;
-        uX = f.upX;    uY = f.upY;    uZ = f.upZ;
-      } else {
-        // FE: the figure's facing comes from `atan2(p[1], p[0])` —
-        // local +x points radially outward from the disc origin, so
-        // use that direction as the "north equivalent" for the axis
-        // triad. East = +90° clockwise about z; up = world +z.
-        const r = Math.hypot(p[0], p[1]);
-        if (r > 1e-6) {
-          nX = p[0] / r; nY = p[1] / r;
-        } else {
-          nX = 1;
-        }
-        eX =  nY; eY = -nX;
-        uZ = 1;
-      }
-      const v = this._axisVerts;
-      // +x = north (green)
-      v[0] = p[0];           v[1] = p[1];           v[2] = p[2];
-      v[3] = p[0] + aLen*nX; v[4] = p[1] + aLen*nY; v[5] = p[2] + aLen*nZ;
-      // +y = east (blue)
-      v[6] = p[0];           v[7] = p[1];           v[8] = p[2];
-      v[9] = p[0] + aLen*eX; v[10] = p[1] + aLen*eY; v[11] = p[2] + aLen*eZ;
-      // +z = up (red) — same direction as the zenith-to-centre line, opposite sense
-      v[12] = p[0];            v[13] = p[1];            v[14] = p[2];
-      v[15] = p[0] + aLen*uX;  v[16] = p[1] + aLen*uY;  v[17] = p[2] + aLen*uZ;
-      this.axes.geometry.attributes.position.needsUpdate = true;
     }
   }
 }

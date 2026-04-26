@@ -6,6 +6,11 @@
   --accent: #ff9a3c;
   --border: #272c36;
   --row: #1a1f2a;
+  /* UI zoom factor: 1.0 at a 1920-px-wide viewport, scales linearly
+     with viewport width and clamps at narrow / wide extremes so the
+     bottom bar + popup panels stay legible on every monitor. The
+     browser's zoom level multiplies on top automatically. */
+  --ui-zoom: clamp(0.65, calc(100vw / 1920), 1.5);
 }
 
 * { box-sizing: border-box; }
@@ -106,6 +111,7 @@ header .info-popup.legend-popup a { color: var(--accent); }
   border-radius: 6px;
   padding: 6px 9px;
   max-width: 440px;
+  zoom: var(--ui-zoom);
 }
 #hud .line { white-space: pre; }
 #hud .moon-phase-wrapper { margin-bottom: 4px; pointer-events: auto; }
@@ -145,6 +151,7 @@ header .info-popup.legend-popup a { color: var(--accent); }
   align-content: flex-start;
   max-height: calc(100vh - 260px);
   column-gap: 6px;
+  zoom: var(--ui-zoom);
 }
 #tracker-hud .line { white-space: pre; }
 #tracker-hud .tracker-title { color: #f4a640; font-weight: 600; margin-bottom: 2px; }
@@ -262,6 +269,9 @@ header .info-popup.legend-popup a { color: var(--accent); }
   border-top: 1px solid var(--border);
   z-index: 30;
   pointer-events: auto;
+  /* Scale the entire bottom bar with the viewport so panels stay
+     readable on every monitor + browser-zoom level. */
+  zoom: var(--ui-zoom);
 }
 #bottom-bar .bar-left { flex: 1 1 0; min-width: 0; display: flex; align-items: center; }
 
@@ -575,6 +585,9 @@ header .info-popup.legend-popup a { color: var(--accent); }
   overflow-y: auto;
   box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.4);
   animation: popup-slide 0.15s ease-out;
+  /* Mirror the bottom bar's viewport-driven zoom so popup contents
+     scale with the rest of the chrome. */
+  zoom: var(--ui-zoom);
 }
 @keyframes popup-slide {
   from { transform: translateY(16px); opacity: 0; }

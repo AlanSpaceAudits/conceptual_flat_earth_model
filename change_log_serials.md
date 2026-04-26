@@ -4686,3 +4686,22 @@ Format:
     the fade now hides markers as they drop below
     `0°` in both modes.
 - **Revert:** `git checkout v-s000461 -- .`
+
+## S463 — UI scales with viewport via CSS zoom
+
+- **Date:** 2026-04-26
+- **Files changed:** `css/styles.css`.
+- **Change:**
+  - New CSS custom property
+    `--ui-zoom: clamp(0.65, calc(100vw / 1920), 1.5)`
+    on `:root`. Linear scale anchored to 1.0 at a
+    1920-px viewport, capped at 0.65× / 1.5× for
+    extreme widths.
+  - `zoom: var(--ui-zoom)` applied to `#bottom-bar`,
+    `.tab-popup`, `#hud`, and `#tracker-hud`. The
+    bottom bar, the popup tab panels, the corner HUD,
+    and the tracker HUD all now scale proportionally
+    with viewport width. Browser-zoom multiplies on
+    top automatically (`100vw` already accounts for
+    user-zoom).
+- **Revert:** `git checkout v-s000462 -- .`

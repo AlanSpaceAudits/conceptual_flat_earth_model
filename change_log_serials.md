@@ -4753,3 +4753,25 @@ Format:
     crashing on `setState(null)`), so demos can refuse
     a precondition without breaking playback state.
 - **Revert:** `git checkout v-s000464 -- .`
+
+## S466 — Planet vault height: drop sun-DecRange clamp
+
+- **Date:** 2026-04-26
+- **Files changed:** `js/core/app.js`.
+- **Change:**
+  - Removed the `±1` clamp on each planet's `decNorm`
+    in `app.update`. Previously
+    `0.5 + 0.5 · clamp(planetDec / 23.44°, -1, 1)`
+    flattened response above ±23.44° (sun's max
+    declination); planets that occasionally exceeded
+    that range (Mercury at ~28°) had their vault Z
+    saturated, reading as "locked at the equator".
+    `decNorm` now follows actual ephemeris declination
+    proportionally; the existing `heavenlyVaultCeiling`
+    clamp on `planetZ` still prevents the height from
+    breaking the dome envelope.
+  - Horizontal AE projection (`vaultCoordAt(ll.lat,
+    ll.lng, …)`) was already unclamped — planets'
+    sub-points have always traced their full
+    ephemeris-driven AE positions on the disc.
+- **Revert:** `git checkout v-s000465 -- .`

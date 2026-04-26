@@ -767,8 +767,15 @@ export class FeModel extends EventTarget {
       if (!Number.isFinite(eq.ra) || !Number.isFinite(eq.dec)) continue;
       const celestCoord = equatorialToCelestCoord(eq);
       const ll = coordToLatLong(celestCoord);
-      const decNorm = 0.5 + 0.5 * Math.max(-1, Math.min(1,
-        eq.dec / Math.PI * 180 / SUN_DEC_DEG));
+      // `decNorm` was clamped to ±1 at sun's max declination
+      // (`SUN_DEC_DEG = 23.44°`). Mercury and a few other bodies
+      // occasionally swing past that, so the cap was flattening
+      // their vault-height response — visually as if the body
+      // were stuck near the equator. Drop the clamp so the
+      // height follows actual ephemeris dec; the heavenly-vault
+      // ceiling clamp below still keeps extreme values inside
+      // the dome.
+      const decNorm = 0.5 + 0.5 * (eq.dec / Math.PI * 180 / SUN_DEC_DEG);
       const desired = s.StarfieldVaultHeight + HEADROOM
                     + PLANET_BASELINE[name]
                     + decNorm * PLANET_DEC_RANGE;

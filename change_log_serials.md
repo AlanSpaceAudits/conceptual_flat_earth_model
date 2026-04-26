@@ -4949,3 +4949,22 @@ Format:
     so it scales with viewport like the rest of the
     chrome.
 - **Revert:** `git checkout v-s000472 -- .`
+
+## S474 — Tracking-info pop-up: bigger panel, right side
+
+- **Date:** 2026-04-26
+- **Files changed:** `css/styles.css`.
+- **Change:**
+  - `#tracking-info-popup` resized: `min-width
+    240 → 380` px, `max-width 460` px, padding +
+    border-radius bumped, drop shadow added.
+  - Pixel-art canvas sized to `160 × 160` (was 96 × 96)
+    and given a subtle border-radius — the underlying
+    canvas resolution stays `384 × 384` so the
+    pixel-art still reads chunky-but-clean.
+  - Title font 13 → 18 px, category 11 → 13 px,
+    readout rows 12 → 14 px with tabular-nums for
+    alignment.
+  - Position remains upper-right (`top: 12 / right:
+    12`); breathing room around the panel edge.
+- **Revert:** `git checkout v-s000473 -- .`

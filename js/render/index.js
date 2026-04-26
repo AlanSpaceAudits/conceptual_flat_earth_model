@@ -551,10 +551,10 @@ export class Renderer {
     const showMoon  = bodyCategoryOn && trackerSet.has('moon');
     const sunOptVis  = _ge ? (c.SunGlobeOpticalVaultCoord  || c.SunOpticalVaultCoord)  : c.SunOpticalVaultCoord;
     const moonOptVis = _ge ? (c.MoonGlobeOpticalVaultCoord || c.MoonOpticalVaultCoord) : c.MoonOpticalVaultCoord;
-    // GE: keep sub-horizon bodies visible on the cap (no horizon
-    // fade). Pass an above-horizon stand-in for the fade math.
-    const sunElevForFade  = _ge ? 90 : c.SunAnglesGlobe.elevation;
-    const moonElevForFade = _ge ? 90 : c.MoonAnglesGlobe.elevation;
+    // Marker fade follows actual elevation in both modes — bodies
+    // disappear from the optical cap as they cross the horizon.
+    const sunElevForFade  = c.SunAnglesGlobe.elevation;
+    const moonElevForFade = c.MoonAnglesGlobe.elevation;
 
     this.sunMarker.group.visible  = showSun;
     this.moonMarker.group.visible = showMoon;
@@ -598,7 +598,7 @@ export class Renderer {
       mk.group.visible = true;
       const planetVaultVis = _ge ? (p.globeVaultCoord || p.vaultCoord) : p.vaultCoord;
       const planetOptVis   = _ge ? (p.globeOpticalVaultCoord || p.opticalVaultCoord) : p.opticalVaultCoord;
-      const planetElevForFade = _ge ? 90 : p.anglesGlobe.elevation;
+      const planetElevForFade = p.anglesGlobe.elevation;
       mk.update(planetVaultVis, planetOptVis,
                 showTrueVault, s.ShowOpticalVault,
                 planetElevForFade, c.NightFactor);

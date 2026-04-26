@@ -4664,3 +4664,25 @@ Format:
     Moved `applyMapTexture` to be a method on the class
     itself.
 - **Revert:** `git checkout v-s000460 -- .`
+
+## S462 — GE: stars occlude when crossing below horizon
+
+- **Date:** 2026-04-26
+- **Files changed:** `js/core/app.js`,
+  `js/render/worldObjects.js`,
+  `js/render/constellations.js`, `js/render/index.js`.
+- **Change:**
+  - `_globeOpticalProject` parks `localGlobe[0] ≤ 0`
+    bodies at `[0, 0, -1000]` again (S448's no-clip
+    behaviour reversed). Sub-horizon stars / sun /
+    moon / planets vanish as their elevation crosses
+    `0°` instead of projecting onto the lower half of
+    the cap.
+  - Same horizon-park added to `Stars.update` and
+    `Constellations.update` GE branches.
+  - Sun / moon / planet `CelestialMarker.update` calls
+    pass actual elevation again (S448 was overriding
+    to `90` in GE to keep them visible sub-horizon);
+    the fade now hides markers as they drop below
+    `0°` in both modes.
+- **Revert:** `git checkout v-s000461 -- .`

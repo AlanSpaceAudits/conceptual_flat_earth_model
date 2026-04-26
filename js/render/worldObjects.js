@@ -3797,10 +3797,14 @@ export class Stars {
       const localGlobe = M.Trans(c.TransMatCelestToGlobe, celestV);
       if (ge && c.GlobeObserverFrame && c.GlobeObserverCoord) {
         // GE optical-vault projection: hemisphere of FE_RADIUS tangent
-        // at the observer. World position = obs + R · (north·local[2]
-        // + east·local[1] + up·local[0]). No horizon clip — sub-
-        // horizon stars project to the lower geometric half of the
-        // cap.
+        // at the observer. Sub-horizon stars (zenith ≤ 0) park below
+        // the sphere so they disappear as elevation crosses 0°.
+        if (localGlobe[0] <= 0) {
+          sphPos[i * 3]     = 0;
+          sphPos[i * 3 + 1] = 0;
+          sphPos[i * 3 + 2] = -1000;
+          continue;
+        }
         const f = c.GlobeObserverFrame;
         const obsG = c.GlobeObserverCoord;
         const ax = localGlobe[2], ay = localGlobe[1], az = localGlobe[0];

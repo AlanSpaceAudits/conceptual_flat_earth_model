@@ -231,11 +231,19 @@ export class Constellations {
         this._domeStarPos[i * 3 + 2] = gd[2];
       }
 
-      // Optical vault. GE keeps sub-horizon stars on the lower half
-      // of the cap (no clip); FE parks them below the disc so the
-      // clip plane hides them.
+      // Optical vault. Sub-horizon stars (zenith ≤ 0) park below
+      // the sphere in both modes so they vanish as elevation
+      // crosses 0°.
       const localGlobe = M.Trans(c.TransMatCelestToGlobe, vect);
       if (ge && c.GlobeObserverFrame && c.GlobeObserverCoord) {
+        if (localGlobe[0] <= 0) {
+          aboveHorizon[i] = false;
+          sphPos[i] = [0, 0, -1000];
+          this._sphStarPos[i * 3]     = 0;
+          this._sphStarPos[i * 3 + 1] = 0;
+          this._sphStarPos[i * 3 + 2] = -1000;
+          continue;
+        }
         aboveHorizon[i] = true;
         const f = c.GlobeObserverFrame;
         const obsG = c.GlobeObserverCoord;

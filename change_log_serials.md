@@ -4912,3 +4912,40 @@ Format:
   - State key `ShowStellariumOverlay` (default false)
     + new "Stellarium Overlay" row in Tracker Options.
 - **Revert:** `git checkout v-s000471 -- .`
+
+## S473 — Tracking-info pop-up: pixel-art portrait + readout per body type
+
+- **Date:** 2026-04-26
+- **Files changed:** `index.html`, `js/main.js`,
+  `js/ui/trackingInfoPopup.js` (new),
+  `css/styles.css`.
+- **Change:**
+  - New `#tracking-info-popup` panel rendered by
+    `buildTrackingInfoPopup`. Visible whenever the user
+    has a single body actively selected — priority
+    is `state.FollowTarget`, falling back to a
+    one-element `state.TrackerTargets`. Otherwise
+    hidden.
+  - Pixel-art canvas (96×96 grid, 4× zoom) painted per
+    body class:
+    - `sun` — corona disc + 8-direction rays
+    - `moon` — phase-aware grey disc with maria
+    - planets — palette per body, banded jupiter /
+      saturn, saturn ring, mars polar caps
+    - `celnav` — bright 4-point star with halo
+    - `catalogued` — pinpoint star + connecting line
+      stub to suggest constellation membership
+    - `blackhole` — accretion ring + photon ring +
+      event horizon
+    - `quasar` — bright dot with bipolar jets
+    - `galaxy` — spiral arms + bulge
+    - `satellite` — body, solar panels, antenna
+    - `bsc` — small ivory star
+  - Readout below the art shows the body's azimuth,
+    elevation, RA, declination, GP lat / lon, and
+    magnitude — pulled from `c.TrackerInfos`.
+  - CSS pinning: panel sits in upper-right of the
+    viewport (top + right `8px`), `zoom: var(--ui-zoom)`
+    so it scales with viewport like the rest of the
+    chrome.
+- **Revert:** `git checkout v-s000472 -- .`

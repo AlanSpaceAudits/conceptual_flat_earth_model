@@ -5,6 +5,7 @@ import { Renderer } from './render/index.js';
 import { attachMouseHandler } from './ui/mouseHandler.js';
 import { attachKeyboardHandler } from './ui/keyboardHandler.js';
 import { buildControlPanel, buildHud, buildTrackerHud } from './ui/controlPanel.js';
+import { buildTrackingInfoPopup } from './ui/trackingInfoPopup.js';
 import { Demos } from './demos/index.js';
 import { attachUrlState } from './ui/urlState.js';
 import { setActiveProjection } from './core/canonical.js';
@@ -21,6 +22,8 @@ const hudEl = document.getElementById('hud');
 buildHud(hudEl, model);
 const trackerHudEl = document.getElementById('tracker-hud');
 if (trackerHudEl) buildTrackerHud(trackerHudEl, model);
+const trackingInfoEl = document.getElementById('tracking-info-popup');
+if (trackingInfoEl) buildTrackingInfoPopup(trackingInfoEl, model);
 
 // First load only: pick a language from navigator.languages so the
 // page boots in the visitor's browser locale when they have no

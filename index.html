@@ -38,6 +38,10 @@
     <!-- S009 — Tracker HUD panel, sits below #hud. Hidden unless the
          user picks a TrackerTarget in the Tracker tab. -->
     <div id="tracker-hud"></div>
+    <!-- Tracking-info pop-up. Shows pixel-art for the selected body
+         + its readout panel. Populated by `buildTrackingInfoPopup`
+         in `js/ui/trackingInfoPopup.js`. -->
+    <div id="tracking-info-popup" hidden></div>
     <!-- S200 — Meeus warning banner. Visible only when the active
          BodySource uses Meeus-based luminaries (HelioC, GeoC, VSOP87
          which delegates moon to Meeus). The Meeus moon is ~2.5° off

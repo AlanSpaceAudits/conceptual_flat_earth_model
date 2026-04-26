@@ -165,8 +165,13 @@ export class SceneManager {
       }
 
       // `ObserverElevation` lifts the camera along the local-up
-      // direction. `eyeH` adds the standing-eye-height offset.
-      const eyeH = 0.012;
+      // direction. `eyeH` adds the standing-eye-height offset. In GE
+      // we drop the FE-tuned 0.012 down to a hair so the camera
+      // sits effectively on the surface — the visible horizon of
+      // the terrestrial sphere then coincides with the cap rim
+      // (90° from zenith), which is where curvature-occluded
+      // bodies actually drop below the horizon.
+      const eyeH = ge ? 1e-4 : 0.012;
       const elev = Math.max(0, Math.min(0.5, s.ObserverElevation || 0));
       const lift = eyeH + elev;
       this.camera.position.set(

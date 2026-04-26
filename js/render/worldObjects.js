@@ -1321,14 +1321,12 @@ export class ObserversOpticalVault {
     this.group.name = 'inner-sphere';
 
     // Upper hemisphere with pole rotated onto +z (scene is z-up).
-    // The polar range overshoots π/2 by ~6° so the cap edge dips
-    // below the tangent plane; in GE, depth-testing against the
-    // opaque terrestrial sphere clips the interior portion and the
-    // visible rim meets the sphere surface (no black gap between
-    // cap rim and horizon). In FE the disc clip plane discards
-    // the same negative-z geometry.
-    const _OVERSHOOT_RAD = Math.PI / 30;   // ~6°
-    const meshGeom = new THREE.SphereGeometry(1, 32, 24, 0, Math.PI * 2, 0, Math.PI / 2 + _OVERSHOOT_RAD);
+    // The rim sits exactly in the tangent plane at the observer:
+    // 90° from the optical-vault's pole (zenith) lines up with the
+    // local horizon, which is where the terrestrial sphere's
+    // curvature begins to occlude bodies (Polaris drops below this
+    // line for southern-hemisphere observers).
+    const meshGeom = new THREE.SphereGeometry(1, 32, 24, 0, Math.PI * 2, 0, Math.PI / 2);
     meshGeom.rotateX(Math.PI / 2);
     this.mesh = new THREE.Mesh(
       meshGeom,
@@ -1346,7 +1344,7 @@ export class ObserversOpticalVault {
     // (first-person) or outside (orbit) — azimuth and altitude cells
     // therefore read identically in both modes.
     this.wire = new THREE.LineSegments(
-      buildLatLongHemisphereGeom(1, 6, 24, 64, _OVERSHOOT_RAD),
+      buildLatLongHemisphereGeom(1, 6, 24),
       new THREE.LineBasicMaterial({
         color: 0x7a8499, transparent: true, opacity: 0.55,
         clippingPlanes,

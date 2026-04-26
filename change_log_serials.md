@@ -4530,3 +4530,25 @@ Format:
     negative-z geometry, so existing FE rendering is
     unchanged.
 - **Revert:** `git checkout v-s000454 -- .`
+
+## S456 — GE: revert cap overshoot; lower InsideVault camera to surface
+
+- **Date:** 2026-04-26
+- **Files changed:** `js/render/worldObjects.js`,
+  `js/render/scene.js`.
+- **Change:**
+  - Reverted S455's polar-overshoot extension on the
+    `ObserversOpticalVault` mesh + wireframe. The cap
+    rim is back to a strict π/2 (the tangent plane).
+    `buildLatLongHemisphereGeom`'s `overshootRad`
+    parameter is retained as an optional argument
+    (default 0) but is no longer used by the optical
+    vault.
+  - `scene.updateCamera` lowers `eyeH` from `0.012` to
+    `1e-4` when `WorldModel === 'ge'` so the InsideVault
+    camera sits effectively on the sphere surface. The
+    visible curvature edge of the terrestrial sphere
+    then coincides with the cap rim (90° from zenith) —
+    Polaris hitting the rim is exactly where curvature
+    starts to occlude it for sub-equatorial observers.
+- **Revert:** `git checkout v-s000455 -- .`

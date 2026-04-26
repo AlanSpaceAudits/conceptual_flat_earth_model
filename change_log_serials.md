@@ -5281,3 +5281,21 @@ Format:
     in the GE selector; only the equirect HQ rasters
     and the new ge_art entries.
 - **Revert:** `git checkout v-s000485 -- .`
+
+## S487 — GE orbit camera below-horizon range
+
+- **Date:** 2026-04-26
+- **Files changed:** `js/ui/mouseHandler.js`,
+  `js/core/app.js`.
+- **Change:**
+  - Orbit-drag pitch floor in `mouseHandler.js`
+    (line ~476) gated on `WorldModel`. GE mode uses
+    `-89.9°` so the camera can swing under the
+    globe; FE keeps `0°` (disc has no underside).
+  - Per-frame `CameraHeight` clamp in `app.js`
+    (line ~388) widens to `-89.9° .. 89.9°` in GE
+    mode and stays at `-30° .. 89.9°` in FE.
+  - InsideVault first-person look (line ~468) keeps
+    its `0..90` ground-up range; only the orbit
+    drag and the per-frame clamp were touched.
+- **Revert:** `git checkout v-s000486 -- .`

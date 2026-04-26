@@ -385,7 +385,7 @@ export class FeModel extends EventTarget {
     s.ObserverLat  = Clamp(s.ObserverLat, -90, 90);
     s.ObserverElevation = Clamp(s.ObserverElevation, 0, 0.5);
     s.ObserverLong = ((s.ObserverLong + 180) % 360 + 360) % 360 - 180;
-    s.CameraHeight = Clamp(s.CameraHeight, -30, 89.9);
+    s.CameraHeight = Clamp(s.CameraHeight, s.WorldModel === 'ge' ? -89.9 : -30, 89.9);
     s.CameraDirection = ((s.CameraDirection + 180) % 360 + 360) % 360 - 180;
     s.ObserverHeading = ((s.ObserverHeading % 360) + 360) % 360;
     s.Zoom         = Clamp(s.Zoom, 0.1, 10);

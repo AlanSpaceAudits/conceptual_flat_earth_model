@@ -471,9 +471,13 @@ export function attachMouseHandler(canvas, model) {
       return;
     }
 
+    // GE mode lets the orbit camera dip below the horizon plane so
+    // the underside of the globe is reachable; FE keeps its 0°
+    // floor since the disc has no underside to inspect.
+    const minPitch = model.state.WorldModel === 'ge' ? -89.9 : 0;
     model.setState({
       CameraDirection: model.state.CameraDirection - (dx / w) * ROT_INCR,
-      CameraHeight: Math.max(0, Math.min(89.9,
+      CameraHeight: Math.max(minPitch, Math.min(89.9,
         model.state.CameraHeight + (dy / h) * ROT_INCR)),
     });
   });

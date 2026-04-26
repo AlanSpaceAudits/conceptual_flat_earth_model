@@ -2744,7 +2744,20 @@ export function buildTrackerHud(trackerEl, model) {
     refreshTabPressed();
     positionTrackerBelowHud();
     const allInfos = model.computed.TrackerInfos || [];
-    const infos = allInfos.filter((i) => !i._followOnly);
+    // When the tracker holds many stars (e.g. a full catalog), the
+    // HUD's per-target block list balloons. Stars carry only a
+    // single (RA, Dec) anyway, so collapse the star list down to
+    // just the one being actively followed (and any non-star
+    // entries — sun / moon / planets / satellites — pass through
+    // untouched). If no follow-target is set the star block is
+    // simply hidden.
+    const _followId = model.state.FollowTarget;
+    const _allowedStarTarget = _followId && _followId.startsWith('star:') ? _followId : null;
+    const infos = allInfos.filter((i) => {
+      if (i._followOnly) return false;
+      if (i.category === 'star') return i.target === _allowedStarTarget;
+      return true;
+    });
     const showHud = !!model.state.ShowLiveEphemeris && infos.length > 0;
     if (!showHud) {
       trackerEl.style.display = 'none';

@@ -1139,16 +1139,20 @@ export class FeModel extends EventTarget {
             satellite:  0x66ff88,  // lime green
             bsc:        0xfff5d8,  // pale ivory
           };
+          // Stars carry a single catalog RA / Dec — no five-pipeline
+          // ephemeris comparison applies. Drop the redundant
+          // `*Reading` copies; the tracker HUD already gates the
+          // comparison block on `info.category !== 'star'`, and the
+          // tracking-info popup reads `info.ra` / `info.dec` for
+          // stars (with fallbacks for sun / moon / planets that do
+          // populate the per-pipeline readings).
           info = {
             target, name: def.name, category: 'star', subCategory: cat, mag: def.mag,
             gpColor: gpColorByCat[cat] || 0xffffff,
             azimuth: entry.anglesGlobe.azimuth,
             elevation: entry.anglesGlobe.elevation,
-            helioReading:      { ra: entry.ra, dec: entry.dec },
-            geoReading:        { ra: entry.ra, dec: entry.dec },
-            ptolemyReading:    { ra: entry.ra, dec: entry.dec },
-            astropixelsReading:{ ra: entry.ra, dec: entry.dec },
-            vsop87Reading:     { ra: entry.ra, dec: entry.dec },
+            ra:  entry.ra,
+            dec: entry.dec,
             gpLat: entry.celestLatLong.lat,
             gpLon: wrapLon(entry.ra * 180 / Math.PI - c.SkyRotAngle),
             vaultCoord: entry.vaultCoord,

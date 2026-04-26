@@ -4968,3 +4968,29 @@ Format:
   - Position remains upper-right (`top: 12 / right:
     12`); breathing room around the panel edge.
 - **Revert:** `git checkout v-s000473 -- .`
+
+## S475 — Stars dropped from ephem comparison; HUD limited to followed star
+
+- **Date:** 2026-04-26
+- **Files changed:** `js/core/app.js`,
+  `js/ui/controlPanel.js`,
+  `js/ui/trackingInfoPopup.js`.
+- **Change:**
+  - `app.update`: tracker info for stars no longer
+    populates the five `helioReading` /
+    `geoReading` / `ptolemyReading` /
+    `astropixelsReading` / `vsop87Reading` copies —
+    they were all identical (catalog RA / Dec). Stars
+    now carry plain `info.ra` and `info.dec`.
+  - `buildTrackerHud`: the HUD's per-target block
+    list filters star entries down to just the
+    `state.FollowTarget` (when it points at a star).
+    No follow-target means the star block list is
+    empty. Sun / moon / planet / satellite entries
+    pass through untouched. Prevents a 50-row HUD
+    when the user has a full constellation catalog
+    in the tracker.
+  - Tracking-info popup falls back to `info.ra` /
+    `info.dec` when none of the `*Reading` fields
+    exist (the path stars now take).
+- **Revert:** `git checkout v-s000474 -- .`

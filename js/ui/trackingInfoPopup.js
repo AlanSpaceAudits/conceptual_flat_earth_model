@@ -347,8 +347,13 @@ export function buildTrackingInfoPopup(panelEl, model) {
     const el = fmtSignedDeg(info.elevation);
     const gpLat = fmtSignedDeg(info.gpLat);
     const gpLon = fmtSignedDeg(info.gpLon);
+    // Stars carry a single catalog `(ra, dec)` directly on `info`;
+    // sun / moon / planets carry per-pipeline `*Reading` copies.
     const r = info.astropixelsReading || info.geoReading || info.helioReading
-      || info.vsop87Reading || info.ptolemyReading;
+      || info.vsop87Reading || info.ptolemyReading
+      || (Number.isFinite(info.ra) && Number.isFinite(info.dec)
+            ? { ra: info.ra, dec: info.dec }
+            : null);
     const ra  = r ? fmtH(r.ra)  : '—';
     const dec = r ? fmtSignedDeg(r.dec * 180 / Math.PI) : '—';
     const mag = (info.mag != null && Number.isFinite(info.mag))

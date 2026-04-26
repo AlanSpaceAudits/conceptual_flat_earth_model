@@ -575,39 +575,6 @@ export class GlobeHeavenlyVault {
   }
 }
 
-// (defined after WorldGlobe so it sees the constructor)
-WorldGlobe.prototype.applyMapTexture = function(projId, getProjection) {
-  if (this._activeProjId === projId) return;
-  this._activeProjId = projId;
-  const proj = getProjection ? getProjection(projId) : null;
-  const asset = proj && proj.imageAsset;
-  // Equirectangular projections wrap cleanly onto the sphere via
-  // SphereGeometry's default UV. Other HQ projections (orthographic,
-  // gleason's, AE-polar, etc.) draw a flat-disc image — sticking
-  // them onto a sphere wraps them oddly, so they fall back to the
-  // plain-colour shading.
-  const isEquirect = !!asset && /equirect/i.test(projId);
-  const mat = this.sphere.material;
-  if (isEquirect) {
-    let tex = this._textureCache.get(asset);
-    if (!tex) {
-      tex = new THREE.TextureLoader().load(asset);
-      tex.colorSpace = THREE.SRGBColorSpace;
-      tex.wrapS = THREE.RepeatWrapping;
-      // Shift longitude origin to `+x` so map's prime meridian
-      // lines up with the world +x axis.
-      tex.offset.set(0.5, 0);
-      this._textureCache.set(asset, tex);
-    }
-    mat.map = tex;
-    mat.color.setHex(0xffffff);
-  } else {
-    mat.map = null;
-    mat.color.setHex(0x1a3a5e);
-  }
-  mat.needsUpdate = true;
-};
-
 // Globe-Earth: a unit sphere of radius `radius` (matching FE_RADIUS so
 // the orbital camera scale is consistent across world models). Visible
 // only when state.WorldModel === 'ge'. Adds a faint lat/lon graticule
@@ -695,6 +662,38 @@ export class WorldGlobe {
 
   update(model) {
     this.group.visible = model.state.WorldModel === 'ge';
+  }
+
+  // Apply a map texture to the terrestrial sphere when the active
+  // GE projection is a raster equirectangular map. Other projection
+  // styles (orthographic, gleason's, AE-polar, etc.) draw a
+  // flat-disc image; sticking those onto a sphere wraps oddly so
+  // they fall back to plain shading.
+  applyMapTexture(projId, getProjection) {
+    if (this._activeProjId === projId) return;
+    this._activeProjId = projId;
+    const proj = getProjection ? getProjection(projId) : null;
+    const asset = proj && proj.imageAsset;
+    const isEquirect = !!asset && /equirect/i.test(projId);
+    const mat = this.sphere.material;
+    if (isEquirect) {
+      let tex = this._textureCache.get(asset);
+      if (!tex) {
+        tex = new THREE.TextureLoader().load(asset);
+        tex.colorSpace = THREE.SRGBColorSpace;
+        tex.wrapS = THREE.RepeatWrapping;
+        // Shift longitude origin so the prime meridian of the map
+        // lines up with world `+x`.
+        tex.offset.set(0.5, 0);
+        this._textureCache.set(asset, tex);
+      }
+      mat.map = tex;
+      mat.color.setHex(0xffffff);
+    } else {
+      mat.map = null;
+      mat.color.setHex(0x1a3a5e);
+    }
+    mat.needsUpdate = true;
   }
 }
 

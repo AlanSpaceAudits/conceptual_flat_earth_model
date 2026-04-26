@@ -4648,3 +4648,19 @@ Format:
     `index.js` calls the helper each frame from the
     state's `MapProjectionGe`.
 - **Revert:** `git checkout v-s000459 -- .`
+
+## S461 — Fix S460 module-load crash; move applyMapTexture inside class
+
+- **Date:** 2026-04-26
+- **Files changed:** `js/render/worldObjects.js`.
+- **Change:**
+  - S460 placed `WorldGlobe.prototype.applyMapTexture =
+    ...` BEFORE the `export class WorldGlobe`
+    declaration. ES2015 classes are not hoisted (TDZ),
+    so the prototype assignment threw a
+    `ReferenceError` at module load — every script
+    downstream stopped executing and the page rendered
+    as a black canvas with only the header bar.
+    Moved `applyMapTexture` to be a method on the class
+    itself.
+- **Revert:** `git checkout v-s000460 -- .`

@@ -699,7 +699,16 @@ export class FeModel extends EventTarget {
       this._domeCausticResult = null;
     }
 
-    // Moon phase (sun-at-infinity: moon→sun ≈ SunCelestCoord).
+    // Moon phase. Both `SunCelestCoord` and `MoonCelestCoord` are
+    // unit direction vectors from `equatorialToCelestCoord` of the
+    // body's geocentric apparent RA / Dec — distance / AU are not
+    // involved. The "sun-at-infinity" approximation
+    // (moon→sun ≈ SunCelestCoord) introduces ~0.5° error worst-case
+    // (sin(parallax) ≈ moon-AU / sun-AU ≈ 0.0026).
+    // `MoonPhase` is in [0, π]: 0 = full (sun and moon on opposite
+    // celestial directions, terminator at 1.0 illumination),
+    // π = new. `MoonPhaseFraction` = 0.5·(1 + cos MoonPhase) maps
+    // back to a [0..1] illuminated fraction.
     const moonToGlobe = V.Norm(V.Scale(c.MoonCelestCoord, -1));
     const moonToSun   = V.Norm(V.Sub(c.SunCelestCoord, V.Scale(c.MoonCelestCoord, 0)));
     const shadowUp    = V.Norm(V.Mult(moonToSun, moonToGlobe));

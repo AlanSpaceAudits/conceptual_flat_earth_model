@@ -5053,3 +5053,31 @@ Format:
     already explicit so the viewport-zoom scaling
     isn't needed here.
 - **Revert:** `git checkout v-s000477 -- .`
+
+## S479 — Tracking-info default position; moon-phase comment audit
+
+- **Date:** 2026-04-26
+- **Files changed:** `css/styles.css`,
+  `js/core/app.js`.
+- **Change:**
+  - `#tracking-info-popup` default position moved from
+    `top: 12 / left: 12` to `top: 220 / left: 12` so
+    it lands underneath the existing
+    `Live Moon Phases` / `Live Ephemeris Data` HUD on
+    first paint instead of overlapping it. User-set
+    drag position from `localStorage` still wins on
+    subsequent loads.
+  - Moon-phase audit: calc is geocentric apparent
+    direction-only — `SunCelestCoord` and
+    `MoonCelestCoord` are unit vectors from
+    `equatorialToCelestCoord(geocentric_apparent_RA_Dec)`,
+    no AU / heliocentric distance involved. Even
+    when `BodySource = 'heliocentric'` the moon is
+    routed through `helio.bodyGeocentric` which
+    returns geocentric. Sun-at-infinity approximation
+    introduces ~0.5° error max (parallax sin(0.0026)).
+    Comment at `app.js:706` had the
+    "0=new, π=full" labels inverted — the math
+    actually gives `0=full, π=new`. Comment
+    rewritten to match.
+- **Revert:** `git checkout v-s000478 -- .`

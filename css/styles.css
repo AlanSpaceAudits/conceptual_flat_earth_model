@@ -161,7 +161,7 @@ header .info-popup.legend-popup a { color: var(--accent); }
    localStorage. The panel lifts above the existing HUDs (z-index
    12) so it overlays without forcing layout. */
 #tracking-info-popup {
-  position: absolute; top: 12px; left: 12px;
+  position: absolute; top: 220px; left: 12px;
   pointer-events: auto;
   font: 14px/1.45 ui-monospace, Menlo, monospace;
   color: #f4f6fa;

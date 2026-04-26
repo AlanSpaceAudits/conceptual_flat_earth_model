@@ -4994,3 +4994,16 @@ Format:
     `info.dec` when none of the `*Reading` fields
     exist (the path stars now take).
 - **Revert:** `git checkout v-s000474 -- .`
+
+## S476 — Tracking-info pop-up moved to left
+
+- **Date:** 2026-04-26
+- **Files changed:** `css/styles.css`.
+- **Change:**
+  - `#tracking-info-popup` repositioned from
+    `top: 12px / right: 12px` to
+    `top: 12px / left: 12px`. `z-index: 12` already
+    lifts it above `#hud` and `#tracker-hud`, so it
+    overlays the existing left-edge HUDs when a body
+    is selected.
+- **Revert:** `git checkout v-s000475 -- .`

@@ -155,10 +155,12 @@ header .info-popup.legend-popup a { color: var(--accent); }
 }
 
 /* Tracking-info pop-up: pixel-art portrait + readout for the
-   selected body. Pinned to the right edge of the viewport;
-   roomy enough that the readout numbers don't squeeze. */
+   selected body. Pinned to the left edge of the viewport. The
+   panel lifts above #hud / #tracker-hud (z-index 12 > their
+   default), so it can overlay the existing HUDs when a body is
+   selected without forcing a layout reshuffle. */
 #tracking-info-popup {
-  position: absolute; top: 12px; right: 12px;
+  position: absolute; top: 12px; left: 12px;
   pointer-events: auto;
   font: 14px/1.45 ui-monospace, Menlo, monospace;
   color: #f4f6fa;

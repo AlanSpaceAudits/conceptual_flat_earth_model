@@ -405,7 +405,7 @@ header .info-popup.legend-popup a { color: var(--accent); }
   grid-auto-rows: 1fr;
   gap: 2px;
 }
-#bottom-bar .mode-grid { grid-template-columns: repeat(3, auto); grid-template-rows: repeat(2, 1fr); }
+#bottom-bar .mode-grid { grid-template-columns: repeat(4, auto); grid-template-rows: repeat(2, 1fr); }
 #bottom-bar .cycle-row { grid-template-columns: repeat(2, auto); grid-template-rows: repeat(2, 1fr); }
 #bottom-bar .grids-stack {
   display: flex;

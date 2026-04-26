@@ -4225,3 +4225,26 @@ Format:
     buffer. Minor performance hit; required for
     canvas-side screenshotting.
 - **Revert:** `git checkout v-s000439 -- .`
+
+## S441 — Observer XYZ axes in world space + screenshot button moved
+
+- **Date:** 2026-04-26
+- **Files changed:** `js/render/worldObjects.js`,
+  `js/render/index.js`, `js/ui/controlPanel.js`,
+  `css/styles.css`.
+- **Change:**
+  - Observer XYZ axis triad moved out of `observer.group`
+    and added directly to `sm.world`. Endpoints
+    rewritten each frame in `Observer.update`: in GE,
+    each axis is one segment from the observer's world
+    position along `GlobeObserverFrame`'s
+    `north / east / up`; in FE, north = radial-out from
+    disc origin, east = +90° clockwise about z, up = +z.
+    Bypasses the rotation-matrix path so the red zenith
+    axis is guaranteed collinear with the
+    zenith-to-centre line.
+  - Screenshot button (`📷`) moved from the bar-left
+    grids stack into the mode-grid, immediately after
+    the night `🌙` button. Mode grid widened to 4
+    columns; bottom row holds `🎛 📍 🎥`.
+- **Revert:** `git checkout v-s000440 -- .`

@@ -112,6 +112,15 @@ export class SceneManager {
     // the optical cap, and the back side of the celestial sphere
     // all need to render.
     this.renderer.localClippingEnabled = !ge;
+    // GE InsideVault sits the camera ~`1e-4` above the sphere
+    // surface; the FE-tuned near plane (0.01) would clip the
+    // sphere and the cap rim. Lower the near-plane in GE so the
+    // sphere is rendered at point-blank range, restore for FE.
+    const nearTarget = (ge && s.InsideVault) ? 1e-5 : 0.01;
+    if (Math.abs(this.camera.near - nearTarget) > 1e-9) {
+      this.camera.near = nearTarget;
+      this.camera.updateProjectionMatrix();
+    }
     // expose the current camera aspect on model.computed so
     // worldObjects code can compute horizontal FOV (for placing the
     // right-side elevation scale at the correct angular offset)

@@ -4552,3 +4552,20 @@ Format:
     Polaris hitting the rim is exactly where curvature
     starts to occlude it for sub-equatorial observers.
 - **Revert:** `git checkout v-s000455 -- .`
+
+## S457 — GE InsideVault: drop camera near-plane so sphere renders at point-blank
+
+- **Date:** 2026-04-26
+- **Files changed:** `js/render/scene.js`.
+- **Change:**
+  - Camera `near` plane lowered from `0.01` to `1e-5`
+    when `WorldModel === 'ge' && InsideVault`. With
+    S456's `eyeH = 1e-4`, the camera was sitting inside
+    the FE-tuned `near = 0.01` clip distance, so the
+    terrestrial sphere was being clipped against the
+    near-plane and disappeared from the GE InsideVault
+    view (looked transparent + sub-horizon bodies
+    rendered behind it because depth-write never wrote
+    a fragment for the sphere). Restoring near-plane
+    to `0.01` in every other case (FE, GE Heavenly).
+- **Revert:** `git checkout v-s000456 -- .`

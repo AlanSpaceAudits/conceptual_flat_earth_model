@@ -5081,3 +5081,30 @@ Format:
     actually gives `0=full, π=new`. Comment
     rewritten to match.
 - **Revert:** `git checkout v-s000478 -- .`
+
+## S480 — Remove HelioC BodySource option
+
+- **Date:** 2026-04-26
+- **Files changed:** `js/ui/controlPanel.js`,
+  `js/core/app.js`.
+- **Change:**
+  - `BodySource` dropdown: `heliocentric` row removed.
+    `EPHEM_NAMES` table drops the entry. The
+    `'HelioC'` label was misleading anyway —
+    `bodyRADec` already routed
+    `helio.bodyGeocentric` and returned geocentric
+    apparent positions.
+  - `app.update`:
+    - Stops computing `helioReading` for sun, moon,
+      and planets in `c.TrackerInfos`. Saves five
+      `bodyGeocentric` calls per frame across the
+      Helio (Schlyter Kepler) pipeline.
+    - `activeEph` dispatch trims the
+      `bodySource === 'heliocentric'` branch.
+    - `bodySource` resolution adds a legacy migration
+      so any persisted `'heliocentric'` value silently
+      maps to `'geocentric'` on load.
+    - `ephHelio` import dropped.
+  - `buildTrackerHud`: removed the `Helio :` line
+    from each block (template + render path).
+- **Revert:** `git checkout v-s000479 -- .`

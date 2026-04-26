@@ -13,7 +13,7 @@ import { dateTimeToDate } from './time.js';
 import {
   sunEquatorial, moonEquatorial, greenwichSiderealDeg, equatorialToCelestCoord,
   planetEquatorial, PLANET_NAMES, bodyRADec, BODY_NAMES,
-  bodyGeocentric, helio as ephHelio, geo as ephGeo, ptol as ephPtol,
+  bodyGeocentric, geo as ephGeo, ptol as ephPtol,
   apix as ephApix, vsop as ephVsop,
 } from './ephemeris.js';
 import { apparentStarPosition } from './ephemerisCommon.js';
@@ -414,7 +414,12 @@ export class FeModel extends EventTarget {
     this._timeLast = s.Time;
 
     const utcDate = dateTimeToDate(s.DateTime);
-    const bodySource = s.BodySource || 'geocentric';
+    // Legacy 'heliocentric' BodySource (removed) maps to 'geocentric'
+    // — the underlying pipeline always returned geocentric apparent
+    // anyway, so no behaviour shift for users with old URL state.
+    const bodySource = (s.BodySource === 'heliocentric')
+      ? 'geocentric'
+      : (s.BodySource || 'geocentric');
     const sunEq  = bodyRADec('sun',  utcDate, bodySource);
     const moonEq = bodyRADec('moon', utcDate, bodySource);
     const gmstDeg = greenwichSiderealDeg(utcDate);
@@ -968,8 +973,7 @@ export class FeModel extends EventTarget {
     // (plus FollowTarget), so the disc doesn't fill with every star
     // circle when the user just wants to see a handful of paths.
     if (s.ShowGPPath) {
-      const activeEph = bodySource === 'heliocentric' ? ephHelio
-                      : bodySource === 'geocentric'   ? ephGeo
+      const activeEph = bodySource === 'geocentric'   ? ephGeo
                       : bodySource === 'ptolemy'      ? ephPtol
                       : bodySource === 'vsop87'       ? ephVsop
                       :                                 ephApix;
@@ -1040,7 +1044,6 @@ export class FeModel extends EventTarget {
 
       if (target === 'sun') {
         const rGeo   = ephGeo.bodyGeocentric('sun', utcDate);
-        const rHelio = ephHelio.bodyGeocentric('sun', utcDate);
         const rPtol  = ephPtol.bodyGeocentric('sun', utcDate);
         const rApix  = ephApix.bodyGeocentric('sun', utcDate);
         const rVsop  = ephVsop.bodyGeocentric('sun', utcDate);
@@ -1048,7 +1051,6 @@ export class FeModel extends EventTarget {
           target, name: 'Sun', category: 'luminary',
           azimuth: c.SunAnglesGlobe.azimuth,
           elevation: c.SunAnglesGlobe.elevation,
-          helioReading:      { ra: rHelio.ra, dec: rHelio.dec },
           geoReading:        { ra: rGeo.ra,   dec: rGeo.dec   },
           ptolemyReading:    { ra: rPtol.ra,  dec: rPtol.dec  },
           astropixelsReading:{ ra: rApix.ra,  dec: rApix.dec  },
@@ -1059,7 +1061,6 @@ export class FeModel extends EventTarget {
         };
       } else if (target === 'moon') {
         const rGeo   = ephGeo.bodyGeocentric('moon', utcDate);
-        const rHelio = ephHelio.bodyGeocentric('moon', utcDate);
         const rPtol  = ephPtol.bodyGeocentric('moon', utcDate);
         const rApix  = ephApix.bodyGeocentric('moon', utcDate);
         const rVsop  = ephVsop.bodyGeocentric('moon', utcDate);
@@ -1067,7 +1068,6 @@ export class FeModel extends EventTarget {
           target, name: 'Moon', category: 'luminary',
           azimuth: c.MoonAnglesGlobe.azimuth,
           elevation: c.MoonAnglesGlobe.elevation,
-          helioReading:      { ra: rHelio.ra, dec: rHelio.dec },
           geoReading:        { ra: rGeo.ra,   dec: rGeo.dec   },
           ptolemyReading:    { ra: rPtol.ra,  dec: rPtol.dec  },
           astropixelsReading:{ ra: rApix.ra,  dec: rApix.dec  },
@@ -1080,7 +1080,6 @@ export class FeModel extends EventTarget {
         const p = c.Planets[target];
         if (p) {
           const rGeo   = ephGeo.bodyGeocentric(target, utcDate);
-          const rHelio = ephHelio.bodyGeocentric(target, utcDate);
           const rPtol  = ephPtol.bodyGeocentric(target, utcDate);
           const rApix  = ephApix.bodyGeocentric(target, utcDate);
           const rVsop  = ephVsop.bodyGeocentric(target, utcDate);
@@ -1092,7 +1091,6 @@ export class FeModel extends EventTarget {
             gpColor,
             azimuth: p.anglesGlobe.azimuth,
             elevation: p.anglesGlobe.elevation,
-            helioReading:      { ra: rHelio.ra, dec: rHelio.dec },
             geoReading:        { ra: rGeo.ra,   dec: rGeo.dec   },
             ptolemyReading:    { ra: rPtol.ra,  dec: rPtol.dec  },
             astropixelsReading:{ ra: rApix.ra,  dec: rApix.dec  },

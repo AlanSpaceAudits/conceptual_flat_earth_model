@@ -666,7 +666,6 @@ const FIELD_GROUPS = [
     tab: 'Tracker', groups: [
       { title: 'Ephemeris', rows: [
         { key: 'BodySource', label: 'Source', select: [
-          { value: 'heliocentric', label: 'HelioC   (Schlyter Kepler + Sun-geo)' },
           { value: 'geocentric',   label: 'GeoC     (Earth-focus Kepler)' },
           { value: 'ptolemy',      label: 'Ptolemy  (deferent + epicycle)' },
           { value: 'astropixels',  label: 'DE405    (Espenak AstroPixels)' },
@@ -1551,7 +1550,6 @@ export function buildControlPanel(host, model, demos) {
   const fmtLon = (v) => `Lon ${v >= 0 ? '+' : ''}${v.toFixed(4)}°`;
   const fmtSignedDeg = (v) => `${v >= 0 ? '+' : ''}${v.toFixed(2)}°`;
   const EPHEM_NAMES = {
-    heliocentric: 'HelioC',
     geocentric:   'GeoC',
     ptolemy:      'Ptolemy',
     astropixels:  'DE405',
@@ -2719,9 +2717,6 @@ export function buildTrackerHud(trackerEl, model) {
     const azel = document.createElement('div');
     azel.className = 'line';
     block.appendChild(azel);
-    const helio = document.createElement('div');
-    helio.className = 'line source-line';
-    block.appendChild(helio);
     const geo = document.createElement('div');
     geo.className = 'line source-line';
     block.appendChild(geo);
@@ -2737,7 +2732,7 @@ export function buildTrackerHud(trackerEl, model) {
     const foot = document.createElement('div');
     foot.className = 'line tracker-foot';
     block.appendChild(foot);
-    return { block, title, azel, helio, geo, ptolemy, astropixels, vsop87, foot };
+    return { block, title, azel, geo, ptolemy, astropixels, vsop87, foot };
   }
 
   const refresh = () => {
@@ -2806,14 +2801,11 @@ export function buildTrackerHud(trackerEl, model) {
       // tracker HUD compact by default.
       const showReadings = info.category !== 'star'
         && model.state.ShowEphemerisReadings === true;
-      rec.helio.hidden = !showReadings;
       rec.geo.hidden = !showReadings;
       rec.ptolemy.hidden = !showReadings;
       rec.astropixels.hidden = !showReadings;
       rec.vsop87.hidden = !showReadings;
       if (showReadings) {
-        rec.helio.textContent =
-          `Helio : RA ${fmtHours(info.helioReading.ra)}   Dec ${fmtDms(info.helioReading.dec)}`;
         rec.geo.textContent =
           `GeoC  : RA ${fmtHours(info.geoReading.ra)}   Dec ${fmtDms(info.geoReading.dec)}`;
         rec.ptolemy.textContent =

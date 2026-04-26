@@ -521,6 +521,11 @@ header .info-popup.legend-popup a { color: var(--accent); }
   color: var(--accent);
   background: rgba(255, 154, 60, 0.10);
 }
+#bottom-bar .world-btn[aria-pressed="true"] {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(255, 154, 60, 0.10);
+}
 #bottom-bar .end-tracking-btn { color: var(--accent); border-color: var(--accent); background: rgba(255, 154, 60, 0.12); }
 #bottom-bar .end-tracking-btn:hover { background: rgba(255, 154, 60, 0.22); }
 

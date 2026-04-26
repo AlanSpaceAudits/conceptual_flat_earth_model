@@ -1915,6 +1915,10 @@ export function buildControlPanel(host, model, demos) {
   const btnWorld = document.createElement('button');
   btnWorld.className = 'time-btn world-btn';
   btnWorld.type = 'button';
+  // One world model is always active, so the button stays in the
+  // pressed state — the face text alone tells the user which mode
+  // they're in.
+  btnWorld.setAttribute('aria-pressed', 'true');
   const refreshWorldBtn = () => {
     btnWorld.textContent = (model.state.WorldModel === 'ge') ? 'GE' : 'FE';
   };

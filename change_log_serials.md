@@ -4434,3 +4434,18 @@ Format:
     to render — disabling the clip for the GE frame
     accomplishes that without touching the FE pipeline.
 - **Revert:** `git checkout v-s000449 -- .`
+
+## S451 — FE/GE button stays in pressed state
+
+- **Date:** 2026-04-26
+- **Files changed:** `js/ui/controlPanel.js`,
+  `css/styles.css`.
+- **Change:**
+  - `btnWorld` (`FE` / `GE` toggle) gets a permanent
+    `aria-pressed="true"` since one world model is
+    always active. The button face alone tells the user
+    which mode they're in.
+  - New `#bottom-bar .world-btn[aria-pressed="true"]`
+    rule mirrors the freecam / grids pressed style
+    (accent border + colour, faint accent background).
+- **Revert:** `git checkout v-s000450 -- .`

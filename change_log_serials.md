@@ -4294,3 +4294,23 @@ Format:
     matches the radius in GE so the cap is a strict
     hemisphere.
 - **Revert:** `git checkout v-s000442 -- .`
+
+## S444 — GE optical vault wraps the visible hemisphere of the terrestrial sphere
+
+- **Date:** 2026-04-26
+- **Files changed:** `js/core/app.js`,
+  `js/render/worldObjects.js`.
+- **Change:**
+  - `c.OpticalVaultRadius` and `c.OpticalVaultHeight` set
+    to `FE_RADIUS` in GE (was `0.10 · FE_RADIUS` from
+    S443).
+  - `ObserversOpticalVault.update`: in GE the group is
+    anchored at the world origin (was the observer
+    position). With the unit-hemisphere mesh scaled by
+    `FE_RADIUS` and rotated by `GlobeObserverFrame`, the
+    cap apex sits at the observer and the rim follows
+    the great circle 90° from the observer's zenith
+    (the equator when the observer is at a pole). FE
+    branch unchanged — the cap remains tangent at the
+    observer's disc position.
+- **Revert:** `git checkout v-s000443 -- .`

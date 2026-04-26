@@ -1698,7 +1698,16 @@ export class ObserversOpticalVault {
     const ge = s.WorldModel === 'ge';
     const obs = ge ? c.GlobeObserverCoord : c.ObserverFeCoord;
 
-    this.group.position.set(obs[0], obs[1], obs[2]);
+    // GE wraps the cap to the terrestrial sphere: anchor at the
+    // world origin so a unit hemisphere scaled by FE_RADIUS apex-up
+    // along the observer's local zenith covers the visible half of
+    // the sphere (apex at observer, rim on the 90°-from-zenith great
+    // circle). FE keeps the cap tangent at the observer.
+    if (ge) {
+      this.group.position.set(0, 0, 0);
+    } else {
+      this.group.position.set(obs[0], obs[1], obs[2]);
+    }
     // Globe-Earth mode: rotate the vault group so its local +z axis
     // aligns with the radial-outward direction at the observer's
     // surface point (instead of world +z, which is what the FE flat

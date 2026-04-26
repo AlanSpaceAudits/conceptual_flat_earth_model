@@ -690,12 +690,15 @@ export class FeModel extends EventTarget {
     // Optical vault dimensions. Cap height clamped under VaultHeight.
     // Inside Optical mode H := R (strict hemisphere, 1:1 elevation).
     // In Heavenly H := OpticalVaultHeight (flattened cap depiction).
-    // In GE the FE-default 0.5·FE_RADIUS hemisphere dominates the
-    // terrestrial sphere visually; shrink to a cap that "wraps" the
-    // surface near the observer.
+    // In GE the cap geometry "wraps" the upper hemisphere of the
+    // terrestrial sphere — apex at the observer, rim on the great
+    // circle 90° from the observer's zenith. Radius and height both
+    // = FE_RADIUS so the unit hemisphere mesh, after the renderer
+    // anchors it at the world origin, exactly covers the visible
+    // half of the terrestrial sphere.
     if (s.WorldModel === 'ge') {
-      c.OpticalVaultRadius = Math.min(s.OpticalVaultSize, 0.10 * FE_RADIUS);
-      c.OpticalVaultHeight = c.OpticalVaultRadius;
+      c.OpticalVaultRadius = FE_RADIUS;
+      c.OpticalVaultHeight = FE_RADIUS;
     } else {
       c.OpticalVaultRadius = s.OpticalVaultSize;
       c.OpticalVaultHeight = Math.min(s.OpticalVaultHeight, s.VaultHeight);

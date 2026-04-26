@@ -643,6 +643,53 @@ export class Renderer {
       // opticalVaultCoord; until that's re-projected for GE, hide.
       if (this.gpTracer) this.gpTracer.skyGroup.visible = false;
     }
+
+    // Terrestrial-sphere occlusion. In GE the WorldGlobe's mesh
+    // becomes opaque + depth-writing so anything geometrically
+    // behind it (lower half of the optical cap, far-side of the
+    // celestial sphere) gets depth-culled. The sphere-projected
+    // body markers and star points flip `depthTest` on so the
+    // depth buffer actually clips them. FE keeps depthTest off
+    // (its disc clip plane handles below-horizon hiding).
+    this._applyDepthState(ge);
+  }
+
+  _applyDepthState(ge) {
+    if (this.worldGlobe && this.worldGlobe.sphere) {
+      const m = this.worldGlobe.sphere.material;
+      m.transparent = !ge;
+      m.opacity = ge ? 1.0 : 0.85;
+      m.depthWrite = true;
+      m.needsUpdate = true;
+    }
+    const setDT = (obj) => {
+      if (!obj || !obj.material) return;
+      if (obj.material.depthTest !== ge) {
+        obj.material.depthTest = ge;
+        obj.material.needsUpdate = true;
+      }
+    };
+    const layers = [
+      this.stars && this.stars.spherePoints,
+      this.celNavStars && this.celNavStars.spherePoints,
+      this.blackHoleStars && this.blackHoleStars.spherePoints,
+      this.quasarStars && this.quasarStars.spherePoints,
+      this.galaxyStars && this.galaxyStars.spherePoints,
+      this.bscStars && this.bscStars.spherePoints,
+      this.satelliteStars && this.satelliteStars.spherePoints,
+      this.constellations && this.constellations.sphereStars,
+      this.constellations && this.constellations.sphereLines,
+      this.sunMarker && this.sunMarker.sphereDot,
+      this.sunMarker && this.sunMarker.sphereHalo,
+      this.moonMarker && this.moonMarker.sphereDot,
+      this.moonMarker && this.moonMarker.sphereHalo,
+    ];
+    for (const obj of layers) setDT(obj);
+    for (const mk of Object.values(this.planetMarkers || {})) {
+      if (!mk) continue;
+      setDT(mk.sphereDot);
+      setDT(mk.sphereHalo);
+    }
   }
 
   _updateTracks() {

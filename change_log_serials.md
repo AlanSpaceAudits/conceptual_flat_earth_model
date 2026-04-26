@@ -4449,3 +4449,24 @@ Format:
     rule mirrors the freecam / grids pressed style
     (accent border + colour, faint accent background).
 - **Revert:** `git checkout v-s000450 -- .`
+
+## S452 — GE: terrestrial sphere occludes optical-vault projections
+
+- **Date:** 2026-04-26
+- **Files changed:** `js/render/index.js`.
+- **Change:**
+  - New `_applyDepthState(ge)` runs each frame at the
+    end of `update`. In GE: the `WorldGlobe.sphere`
+    material flips to opaque (`transparent: false`,
+    `opacity: 1`, `depthWrite: true`) so it occludes
+    anything behind it; the sphere-projected layers
+    (star spherePoints for all catalogs, constellation
+    sphereStars/sphereLines, sun/moon/planet sphereDot
+    + sphereHalo) all switch `depthTest` to `true`. In
+    FE the same materials revert to `depthTest = false`
+    and the WorldGlobe stays at its earlier translucent
+    presentation (it isn't visible in FE anyway). The
+    earlier S450 clip-plane disable still applies
+    globally — depth-buffer culling is what actually
+    hides obstructed bodies.
+- **Revert:** `git checkout v-s000451 -- .`

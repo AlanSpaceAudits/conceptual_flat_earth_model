@@ -776,6 +776,10 @@ export class FeModel extends EventTarget {
         vaultCoordAt(celestLatLong.lat, celestLatLong.lng, STAR_VAULT_HEIGHT, FE_RADIUS),
         c.TransMatVaultToFe,
       );
+      const globeVaultCoord = _globeVaultAt(
+        celestLatLong.lat,
+        _wrapLon180(ra * 180 / Math.PI - c.SkyRotAngle),
+      );
       const localGlobe  = celestCoordToLocalGlobeCoord(celestCoord, c.TransMatCelestToGlobe);
       const anglesGlobe = localGlobeCoordToAngles(localGlobe);
       const opticalVaultCoord = localGlobeCoordToGlobalFeCoord(
@@ -788,7 +792,7 @@ export class FeModel extends EventTarget {
         mag:  star.mag,
         ra, dec,
         celestCoord, celestLatLong,
-        vaultCoord, opticalVaultCoord,
+        vaultCoord, globeVaultCoord, opticalVaultCoord,
         anglesGlobe,
       };
     };
@@ -828,6 +832,7 @@ export class FeModel extends EventTarget {
           vaultCoordAt(celestLatLong.lat, celestLatLong.lng, SAT_VAULT_HEIGHT, FE_RADIUS),
           c.TransMatVaultToFe,
         );
+        const globeVaultCoord = _globeVaultAt(celestLatLong.lat, sub.lon);
         const localGlobe  = celestCoordToLocalGlobeCoord(celestCoord, c.TransMatCelestToGlobe);
         const anglesGlobe = localGlobeCoordToAngles(localGlobe);
         const opticalVaultCoord = localGlobeCoordToGlobalFeCoord(
@@ -837,7 +842,7 @@ export class FeModel extends EventTarget {
         return {
           id: sat.id, name: sat.name,
           ra: raRad, dec: decRad,
-          celestCoord, celestLatLong,
+          celestCoord, celestLatLong, globeVaultCoord,
           vaultCoord, opticalVaultCoord,
           anglesGlobe,
         };

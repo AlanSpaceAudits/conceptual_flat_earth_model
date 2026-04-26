@@ -393,9 +393,6 @@ export class Renderer {
     this.eclipseShadow.group.visible = !ge;
     this.vaultOfHeavens.group.visible = !ge;
     this.starfieldChart.group.visible = !ge;
-    this.sunGP.group.visible         = !ge;
-    this.moonGP.group.visible        = !ge;
-    this.trackedGPs.group.visible    = !ge;
     this.gpPathOverlay.group.visible = !ge;
     this.yggdrasil.group.visible     = !ge && this.yggdrasil.group.visible;
     this.mtMeru.group.visible        = !ge && this.mtMeru.group.visible;
@@ -433,8 +430,8 @@ export class Renderer {
     const sunLon  = wrapLon(c.SunRA * 180 / Math.PI - c.SkyRotAngle);
     const moonLat = c.MoonDec * 180 / Math.PI;
     const moonLon = wrapLon(c.MoonRA * 180 / Math.PI - c.SkyRotAngle);
-    this.sunGP.updateAt(sunLat,  sunLon,  FE_RADIUS, s.ShowGroundPoints);
-    this.moonGP.updateAt(moonLat, moonLon, FE_RADIUS, s.ShowGroundPoints);
+    this.sunGP.updateAt(sunLat,  sunLon,  FE_RADIUS, s.ShowGroundPoints, ge);
+    this.moonGP.updateAt(moonLat, moonLon, FE_RADIUS, s.ShowGroundPoints, ge);
     // in Specified Tracker Mode the built-in sun/moon GPs
     // defer to the TrackedGroundPoints layer: those only paint the
     // tracked-body GPs, which is exactly the the spec. Hide

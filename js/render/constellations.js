@@ -188,6 +188,9 @@ export class Constellations {
       ? new Set(s.FollowTarget ? [s.FollowTarget] : [])
       : new Set(targetArr);
     if (!stm && s.FollowTarget) trackerSet.add(s.FollowTarget);
+    const ge = s.WorldModel === 'ge';
+    const Rgv = c.GlobeVaultRadius || 0;
+    const skyRotDeg = c.SkyRotAngle || 0;
 
     for (let i = 0; i < this._nStars; i++) {
       const [lat, lon] = this._stars[i];
@@ -201,11 +204,22 @@ export class Constellations {
       const untracked = !starId || !trackerSet.has(`star:${starId}`);
       const skipPoint = this._celnavDup[i] || untracked;
 
-      // Heavenly-vault (AE disk).
-      const discR = FE_RADIUS * (90 - lat) / 180;
-      const lo = lon * Math.PI / 180;
-      const diskLocal = [discR * Math.cos(lo), discR * Math.sin(lo), s.StarfieldVaultHeight];
-      const gd = vaultCoordToGlobalFeCoord(diskLocal, c.TransMatVaultToFe);
+      // Heavenly-vault projection. GE places the star on the celestial
+      // sphere at radius GlobeVaultRadius (longitude folded by
+      // SkyRotAngle so the sphere co-rotates with Earth); FE keeps the
+      // flat-disc AE projection.
+      let gd;
+      if (ge) {
+        const phi = lat * Math.PI / 180;
+        const lam = (lon - skyRotDeg) * Math.PI / 180;
+        const cp = Math.cos(phi);
+        gd = [Rgv * cp * Math.cos(lam), Rgv * cp * Math.sin(lam), Rgv * Math.sin(phi)];
+      } else {
+        const discR = FE_RADIUS * (90 - lat) / 180;
+        const lo = lon * Math.PI / 180;
+        const diskLocal = [discR * Math.cos(lo), discR * Math.sin(lo), s.StarfieldVaultHeight];
+        gd = vaultCoordToGlobalFeCoord(diskLocal, c.TransMatVaultToFe);
+      }
       domePos[i] = gd;
       if (skipPoint) {
         this._domeStarPos[i * 3]     = 0;

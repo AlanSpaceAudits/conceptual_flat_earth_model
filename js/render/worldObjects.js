@@ -749,13 +749,27 @@ export class GroundPoint {
     this.dot.renderOrder = 40;
     this.group.add(this.dot);
   }
-  updateAt(latDeg, lonDeg, feRadius = FE_RADIUS, visible = true) {
+  updateAt(latDeg, lonDeg, feRadius = FE_RADIUS, visible = true, ge = false) {
     this.group.visible = visible;
     if (!visible) return;
-    // Canonical shell — sub-solar / sub-lunar dot lands at the
-    // geographic lat/long in AE disc coords regardless of the map art.
-    const p = canonicalLatLongToDisc(latDeg, lonDeg, feRadius);
-    this.dot.position.set(p[0], p[1], 1e-3);
+    if (ge) {
+      // Globe-Earth: project onto sphere surface at (lat, lon).
+      // Tiny outward lift avoids z-fight with the terrestrial mesh.
+      const phi = latDeg * Math.PI / 180;
+      const lam = lonDeg * Math.PI / 180;
+      const cp = Math.cos(phi);
+      const r = feRadius * 1.001;
+      this.dot.position.set(r * cp * Math.cos(lam), r * cp * Math.sin(lam), r * Math.sin(phi));
+      // Orient the disc so its face points radially outward.
+      this.dot.lookAt(0, 0, 0);
+      this.dot.rotateY(Math.PI);
+    } else {
+      // Flat disc — sub-solar / sub-lunar dot lands at the geographic
+      // lat/long via AE disc coords regardless of the map art.
+      const p = canonicalLatLongToDisc(latDeg, lonDeg, feRadius);
+      this.dot.position.set(p[0], p[1], 1e-3);
+      this.dot.rotation.set(0, 0, 0);
+    }
   }
 }
 
@@ -3653,25 +3667,36 @@ export class Stars {
     const sphPos = this._spherePositions;
     const opticalR = c.OpticalVaultRadius;
     const opticalH = c.OpticalVaultHeightEffective;
+    const ge = s.WorldModel === 'ge';
+    const Rgv = c.GlobeVaultRadius || (FE_RADIUS * 1.6);
+    const skyRotDeg = c.SkyRotAngle || 0;
 
     for (let i = 0; i < this._celest.length; i++) {
       const [lat, lon] = this._celest[i];
       const celestV = this._celestVect[i];
 
-      // --- Flat starfield disk ---------------------------------------
-      // Stars sit at a single constant altitude (StarfieldVaultHeight),
-      // projected across the disc via the same azimuthal-equidistant
-      // formula the earth uses. Circumpolar (high-Dec) stars cluster at
-      // the centre, equatorial stars form a mid-disc ring, and southern-
-      // Dec stars fall near the rim. The whole disk spins about +z as the
-      // sky rotates (TransMatVaultToFe handles that).
-      const discR = FE_RADIUS * (90 - lat) / 180;
-      const lo = lon * Math.PI / 180;
-      const diskLocal = [discR * Math.cos(lo), discR * Math.sin(lo), s.StarfieldVaultHeight];
-      const gd = vaultCoordToGlobalFeCoord(diskLocal, c.TransMatVaultToFe);
-      domePos[i * 3]     = gd[0];
-      domePos[i * 3 + 1] = gd[1];
-      domePos[i * 3 + 2] = gd[2];
+      if (ge) {
+        // Globe heavenly-vault projection: place each star on the
+        // celestial sphere at radius GlobeVaultRadius, with longitude
+        // folded by SkyRotAngle so the sphere co-rotates with Earth.
+        const phi = lat * Math.PI / 180;
+        const lam = (lon - skyRotDeg) * Math.PI / 180;
+        const cp = Math.cos(phi);
+        domePos[i * 3]     = Rgv * cp * Math.cos(lam);
+        domePos[i * 3 + 1] = Rgv * cp * Math.sin(lam);
+        domePos[i * 3 + 2] = Rgv * Math.sin(phi);
+      } else {
+        // FE flat starfield disk: stars sit at a single constant altitude
+        // (StarfieldVaultHeight), projected via the AE formula so high-Dec
+        // clusters near the centre and southern-Dec sits near the rim.
+        const discR = FE_RADIUS * (90 - lat) / 180;
+        const lo = lon * Math.PI / 180;
+        const diskLocal = [discR * Math.cos(lo), discR * Math.sin(lo), s.StarfieldVaultHeight];
+        const gd = vaultCoordToGlobalFeCoord(diskLocal, c.TransMatVaultToFe);
+        domePos[i * 3]     = gd[0];
+        domePos[i * 3 + 1] = gd[1];
+        domePos[i * 3 + 2] = gd[2];
+      }
 
       // --- Inner-sphere projection -----------------------------------
       // celest unit dir -> observer's local-globe -> fe-local (axis swap)
@@ -4552,15 +4577,14 @@ export class TrackedGroundPoints {
       const color = (info.gpColor != null)
         ? info.gpColor
         : (TRACKED_GP_COLORS[key] || 0xffffff);
+      const ge = s.WorldModel === 'ge';
       slot.dot.material.color.setHex(color);
-      slot.updateAt(info.gpLat, info.gpLon, FE_RADIUS, true);
+      slot.updateAt(info.gpLat, info.gpLon, FE_RADIUS, true, ge);
 
-      // Dashed line from vaultCoord straight down to z ≈ 0 on the
-      // disc GP. Only drawn when the model gave us a vault coord and
-      // when ShowTruePositions is on — the line would dangle
-      // pointing at nothing otherwise. Hidden in first-person too,
-      // via `showAll` above.
-      if (info.vaultCoord && s.ShowTruePositions !== false) {
+      // Dashed line from vaultCoord straight down to the GP dot.
+      // FE: vertical drop to disc plane; GE: drop along the radial
+      // direction from the celestial sphere down to the surface point.
+      if (info.vaultCoord && s.ShowTruePositions !== false && !ge) {
         line.material.color.setHex(color);
         const top = info.vaultCoord;
         const pts = [top[0], top[1], top[2], top[0], top[1], 0.0015];
@@ -4686,6 +4710,7 @@ export class CelNavStars {
       ? new Set(s.FollowTarget ? [s.FollowTarget] : [])
       : new Set(targetArr);
     if (!stm && s.FollowTarget) trackerSet.add(s.FollowTarget);
+    const ge = s.WorldModel === 'ge';
 
     for (let i = 0; i < n; i++) {
       const star = stars[i];
@@ -4699,10 +4724,13 @@ export class CelNavStars {
         sp[i * 3 + 2] = -1000;
         continue;
       }
-      // Heavenly vault position (precomputed by app.js).
-      dp[i * 3    ] = star.vaultCoord[0];
-      dp[i * 3 + 1] = star.vaultCoord[1];
-      dp[i * 3 + 2] = star.vaultCoord[2];
+      // Heavenly vault position. GE mode reads the globe-sphere
+      // projection (`globeVaultCoord`); FE reads the flat-dome AE
+      // projection (`vaultCoord`).
+      const dome = (ge && star.globeVaultCoord) ? star.globeVaultCoord : star.vaultCoord;
+      dp[i * 3    ] = dome[0];
+      dp[i * 3 + 1] = dome[1];
+      dp[i * 3 + 2] = dome[2];
       // Optical vault: below-horizon stars parked far below the disc so
       // the disc clip plane hides them (matches Stars class convention).
       const localGlobe = M.Trans(c.TransMatCelestToGlobe, star.celestCoord);
@@ -4853,6 +4881,7 @@ export class CatalogPointStars {
 
     const dc = this._domeColors;
     const sc = this._sphereColors;
+    const ge = s.WorldModel === 'ge';
     for (let i = 0; i < n; i++) {
       const star = entries[i];
       const isTracked = trackerSet.has(`${this.idPrefix}:${star.id}`);
@@ -4865,9 +4894,10 @@ export class CatalogPointStars {
         sp[i * 3 + 2] = -1000;
         continue;
       }
-      dp[i * 3    ] = star.vaultCoord[0];
-      dp[i * 3 + 1] = star.vaultCoord[1];
-      dp[i * 3 + 2] = star.vaultCoord[2];
+      const dome = (ge && star.globeVaultCoord) ? star.globeVaultCoord : star.vaultCoord;
+      dp[i * 3    ] = dome[0];
+      dp[i * 3 + 1] = dome[1];
+      dp[i * 3 + 2] = dome[2];
       const localGlobe = M.Trans(c.TransMatCelestToGlobe, star.celestCoord);
       if (localGlobe[0] <= 0) {
         sp[i * 3    ] = 0;

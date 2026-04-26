@@ -4100,3 +4100,39 @@ Format:
     GE — gated on `!(WorldModel === 'ge')` so the FE
     flat-disc heavenly vault stops leaking into GE mode.
 - **Revert:** `git checkout v-s000434 -- .`
+
+## S436 — GE mode: starfield on celestial sphere + GPs on globe surface
+
+- **Date:** 2026-04-26
+- **Files changed:** `js/core/app.js`,
+  `js/render/worldObjects.js`,
+  `js/render/constellations.js`, `js/render/index.js`.
+- **Change:**
+  - `projectStar` and `projectSatellite` now also emit
+    `globeVaultCoord` — the entry's position on the GE
+    celestial sphere at radius `GlobeVaultRadius`,
+    longitude folded by `SkyRotAngle` so the sphere
+    co-rotates with Earth (matches sun/moon/planet
+    convention already used by `_globeVaultAt`).
+  - `Stars.update`: GE branch projects each random star
+    onto the celestial sphere; FE branch unchanged
+    (AE-disc projection).
+  - `CelNavStars.update` and `CatalogPointStars.update`:
+    dome buffer reads `star.globeVaultCoord` in GE,
+    `star.vaultCoord` in FE.
+  - `Constellations.update`: GE branch positions stars on
+    the celestial sphere; line builder reuses the same
+    per-star `domePos` array, so constellation outlines
+    follow.
+  - `GroundPoint.updateAt` accepts a `ge` flag. GE
+    projects the dot onto the globe surface at
+    `(lat, lon)` with a tiny outward lift; the disc face
+    is rotated to point radially outward.
+  - `index.js`: removed `!ge` gate on `sunGP`, `moonGP`,
+    `trackedGPs.group`. Sun/moon `updateAt` calls now
+    pass the `ge` flag. `gpPathOverlay` stays gated FE-only
+    (still uses disc-AE coords).
+  - `TrackedGroundPoints.update` passes `ge` through and
+    suppresses the vault→GP drop-line in GE (the FE
+    vertical-line geometry doesn't apply on a sphere).
+- **Revert:** `git checkout v-s000435 -- .`

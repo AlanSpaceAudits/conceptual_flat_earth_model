@@ -4569,3 +4569,20 @@ Format:
     a fragment for the sphere). Restoring near-plane
     to `0.01` in every other case (FE, GE Heavenly).
 - **Revert:** `git checkout v-s000456 -- .`
+
+## S458 — GE InsideVault: shrink eyeH + near to close residual horizon-dip
+
+- **Date:** 2026-04-26
+- **Files changed:** `js/render/scene.js`.
+- **Change:**
+  - `eyeH` lowered from `1e-4` to `1e-6` in GE
+    InsideVault. Horizon-dip angle from altitude `h`
+    above radius `R = 1` is `√(2h/R)`; the previous
+    `1e-4` left a `~0.81°` gap, the new `1e-6` reduces
+    it to `~0.08°` — below the visual threshold.
+  - Camera `near` plane lowered from `1e-5` to `1e-7`
+    in GE InsideVault to stay below the smaller `eyeH`,
+    so the terrestrial sphere keeps rendering at
+    point-blank range and depth-buffer occlusion
+    continues to work.
+- **Revert:** `git checkout v-s000457 -- .`

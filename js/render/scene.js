@@ -112,11 +112,13 @@ export class SceneManager {
     // the optical cap, and the back side of the celestial sphere
     // all need to render.
     this.renderer.localClippingEnabled = !ge;
-    // GE InsideVault sits the camera ~`1e-4` above the sphere
-    // surface; the FE-tuned near plane (0.01) would clip the
-    // sphere and the cap rim. Lower the near-plane in GE so the
-    // sphere is rendered at point-blank range, restore for FE.
-    const nearTarget = (ge && s.InsideVault) ? 1e-5 : 0.01;
+    // GE InsideVault sits the camera a hair above the sphere
+    // surface. The horizon-dip angle from a camera at altitude h
+    // above radius R is √(2h/R), so smaller h ⇒ smaller residual
+    // gap between the cap rim and the visible sphere edge. Drop
+    // the near-plane far below the eye-height so the sphere
+    // continues to render at point-blank range.
+    const nearTarget = (ge && s.InsideVault) ? 1e-7 : 0.01;
     if (Math.abs(this.camera.near - nearTarget) > 1e-9) {
       this.camera.near = nearTarget;
       this.camera.updateProjectionMatrix();
@@ -175,12 +177,10 @@ export class SceneManager {
 
       // `ObserverElevation` lifts the camera along the local-up
       // direction. `eyeH` adds the standing-eye-height offset. In GE
-      // we drop the FE-tuned 0.012 down to a hair so the camera
-      // sits effectively on the surface — the visible horizon of
-      // the terrestrial sphere then coincides with the cap rim
-      // (90° from zenith), which is where curvature-occluded
-      // bodies actually drop below the horizon.
-      const eyeH = ge ? 1e-4 : 0.012;
+      // we drop the FE-tuned 0.012 down to ~1e-6 so the camera
+      // effectively sits on the sphere surface; the residual
+      // horizon-dip √(2·eyeH/R) ≈ 0.08° is below visual threshold.
+      const eyeH = ge ? 1e-6 : 0.012;
       const elev = Math.max(0, Math.min(0.5, s.ObserverElevation || 0));
       const lift = eyeH + elev;
       this.camera.position.set(

@@ -4418,3 +4418,19 @@ Format:
     + graticule, mirroring how it hides the FE flat
     dome.
 - **Revert:** `git checkout v-s000448 -- .`
+
+## S450 — GE: disable disc clip plane so sub-horizon bodies render
+
+- **Date:** 2026-04-26
+- **Files changed:** `js/render/scene.js`.
+- **Change:**
+  - `scene.updateCamera` toggles
+    `renderer.localClippingEnabled = !ge`. The
+    `clipBelowDisc` plane is fixed at world `z = 0` and
+    is FE-specific (hides anything beneath the disc).
+    In GE there's no flat ground plane, so the lower
+    half of the optical cap, sub-horizon body markers,
+    and the back side of the celestial sphere all need
+    to render — disabling the clip for the GE frame
+    accomplishes that without touching the FE pipeline.
+- **Revert:** `git checkout v-s000449 -- .`

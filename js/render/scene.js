@@ -106,6 +106,12 @@ export class SceneManager {
     const c = this.model.computed;
     const ge = s.WorldModel === 'ge';
     const obs = ge ? (c.GlobeObserverCoord || c.ObserverFeCoord) : c.ObserverFeCoord;
+    // Disc clip plane is FE-specific (cuts world z < 0 to hide
+    // anything beneath the FE disc). GE has no flat ground plane, so
+    // toggle clipping off — sub-horizon bodies, the lower half of
+    // the optical cap, and the back side of the celestial sphere
+    // all need to render.
+    this.renderer.localClippingEnabled = !ge;
     // expose the current camera aspect on model.computed so
     // worldObjects code can compute horizontal FOV (for placing the
     // right-side elevation scale at the correct angular offset)

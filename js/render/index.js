@@ -314,6 +314,20 @@ export class Renderer {
     // animation loop
     this._raf = this._raf.bind(this);
     requestAnimationFrame(this._raf);
+
+    // Pre-compile every material's shader program right after setup
+    // so the first frame after toggling InsideVault / WorldModel
+    // doesn't block on JIT GLSL compilation. Three.js compiles shader
+    // programs lazily on first render, which is what makes the
+    // Heavenly → Optical transition pause for ~hundreds of ms the
+    // first time. `renderer.compile` walks the scene and links
+    // every program ahead of time. Done after a microtask so any
+    // pending material setup in the constructors has settled.
+    Promise.resolve().then(() => {
+      try {
+        this.sm.renderer.compile(this.sm.scene, this.sm.camera);
+      } catch { /* compile is best-effort; ignore failure */ }
+    });
   }
 
   async loadLand() {
@@ -683,10 +697,20 @@ export class Renderer {
   _applyDepthState(ge) {
     if (this.worldGlobe && this.worldGlobe.sphere) {
       const m = this.worldGlobe.sphere.material;
-      m.transparent = !ge;
-      m.opacity = ge ? 1.0 : 0.85;
-      m.depthWrite = true;
-      m.needsUpdate = true;
+      const wantTransparent = !ge;
+      // Track expected state so we only flag needsUpdate when
+      // something actually changed. Without this guard, the sphere's
+      // ShaderMaterial relinks every frame and the cumulative cost
+      // shows up as a stutter on view-mode flips.
+      let changed = false;
+      if (m.transparent !== wantTransparent) { m.transparent = wantTransparent; changed = true; }
+      const wantOpacity = ge ? 1.0 : 0.85;
+      if (m.opacity !== wantOpacity) {
+        m.opacity = wantOpacity;
+        if (m.uniforms && m.uniforms.uOpacity) m.uniforms.uOpacity.value = wantOpacity;
+      }
+      if (m.depthWrite !== true) { m.depthWrite = true; changed = true; }
+      if (changed) m.needsUpdate = true;
     }
     const setDT = (obj) => {
       if (!obj || !obj.material) return;

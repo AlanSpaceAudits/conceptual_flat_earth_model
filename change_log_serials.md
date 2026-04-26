@@ -5331,3 +5331,29 @@ Format:
     blue-sky lerp into FE, blocking them). GE keeps
     the sky-blue ↔ dim-grey lerp via `NightFactor`.
 - **Revert:** `git checkout v-s000488 -- .`
+
+## S490 — Pre-compile shaders + guard sphere material updates
+
+- **Date:** 2026-04-26
+- **Files changed:** `js/render/index.js`.
+- **Change:**
+  - Renderer constructor now calls
+    `this.sm.renderer.compile(scene, camera)` from
+    a microtask after setup. Three.js compiles
+    GLSL programs lazily on first draw; without
+    this, the first Heavenly → Optical toggle
+    pauses for hundreds of ms while the
+    optical-vault star / cap shaders link. The
+    pre-compile pass walks the scene once at
+    startup so every program is ready before the
+    user toggles modes.
+  - `_applyDepthState` now guards the WorldGlobe
+    sphere material updates: only writes
+    `transparent` / `depthWrite` and bumps
+    `needsUpdate` when one of those actually
+    changed. Opacity goes through the
+    `uOpacity` uniform without flagging a
+    re-link. Removes the per-frame ShaderMaterial
+    re-link that was accumulating cost on the
+    view-mode flips.
+- **Revert:** `git checkout v-s000489 -- .`

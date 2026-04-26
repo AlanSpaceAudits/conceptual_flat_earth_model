@@ -644,13 +644,15 @@ export class Renderer {
       if (this.gpTracer) this.gpTracer.skyGroup.visible = false;
     }
 
-    // Terrestrial-sphere occlusion. In GE the WorldGlobe's mesh
-    // becomes opaque + depth-writing so anything geometrically
-    // behind it (lower half of the optical cap, far-side of the
-    // celestial sphere) gets depth-culled. The sphere-projected
-    // body markers and star points flip `depthTest` on so the
-    // depth buffer actually clips them. FE keeps depthTest off
-    // (its disc clip plane handles below-horizon hiding).
+    // Terrestrial-sphere occlusion. In GE the WorldGlobe mesh
+    // becomes opaque + depth-writing so true-position bodies (the
+    // heavenly-vault `domePoints` / `domeDot`) layered behind the
+    // terrestrial sphere are depth-culled. Optical-vault
+    // projections (`spherePoints` / `sphereDot`) are observer-
+    // anchored and stay free of depth testing — sub-horizon
+    // optical projections continue to render even though they
+    // sit geometrically inside the sphere from the observer's
+    // POV.
     this._applyDepthState(ge);
   }
 
@@ -661,34 +663,6 @@ export class Renderer {
       m.opacity = ge ? 1.0 : 0.85;
       m.depthWrite = true;
       m.needsUpdate = true;
-    }
-    const setDT = (obj) => {
-      if (!obj || !obj.material) return;
-      if (obj.material.depthTest !== ge) {
-        obj.material.depthTest = ge;
-        obj.material.needsUpdate = true;
-      }
-    };
-    const layers = [
-      this.stars && this.stars.spherePoints,
-      this.celNavStars && this.celNavStars.spherePoints,
-      this.blackHoleStars && this.blackHoleStars.spherePoints,
-      this.quasarStars && this.quasarStars.spherePoints,
-      this.galaxyStars && this.galaxyStars.spherePoints,
-      this.bscStars && this.bscStars.spherePoints,
-      this.satelliteStars && this.satelliteStars.spherePoints,
-      this.constellations && this.constellations.sphereStars,
-      this.constellations && this.constellations.sphereLines,
-      this.sunMarker && this.sunMarker.sphereDot,
-      this.sunMarker && this.sunMarker.sphereHalo,
-      this.moonMarker && this.moonMarker.sphereDot,
-      this.moonMarker && this.moonMarker.sphereHalo,
-    ];
-    for (const obj of layers) setDT(obj);
-    for (const mk of Object.values(this.planetMarkers || {})) {
-      if (!mk) continue;
-      setDT(mk.sphereDot);
-      setDT(mk.sphereHalo);
     }
   }
 

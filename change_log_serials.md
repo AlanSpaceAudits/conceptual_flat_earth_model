@@ -4470,3 +4470,26 @@ Format:
     globally — depth-buffer culling is what actually
     hides obstructed bodies.
 - **Revert:** `git checkout v-s000451 -- .`
+
+## S453 — GE occlusion: heavenly-vault layer only, leave optical vault free
+
+- **Date:** 2026-04-26
+- **Files changed:** `js/render/index.js`.
+- **Change:**
+  - `_applyDepthState(ge)` trimmed: only the
+    `WorldGlobe.sphere` material flips
+    (`transparent: false`, `opacity: 1`,
+    `depthWrite: true`) in GE. The depth-test toggles
+    on every optical-vault layer (`spherePoints`,
+    `sphereStars` / `sphereLines`, sun/moon/planet
+    `sphereDot` / `sphereHalo`) added in S452 are
+    removed — they kept their original FE settings
+    (`depthTest: false`).
+  - Result: the GE terrestrial sphere occludes only
+    true-position bodies (the heavenly-vault `domeDot`
+    / `domePoints` layers, which already default to
+    `depthTest: true`). The observer's optical-vault
+    projections continue to render unconditionally,
+    matching the rule that sub-horizon optical
+    projections remain visible.
+- **Revert:** `git checkout v-s000452 -- .`

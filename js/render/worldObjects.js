@@ -1439,10 +1439,19 @@ export class ObserversOpticalVault {
     // line for southern-hemisphere observers).
     const meshGeom = new THREE.SphereGeometry(1, 32, 24, 0, Math.PI * 2, 0, Math.PI / 2);
     meshGeom.rotateX(Math.PI / 2);
+    // Day/night-aware sky cap. Color and opacity lerp between a
+    // bright sky-blue (NightFactor = 0) and a near-invisible dim
+    // grey (NightFactor = 1) so the cap behaves like a blue sky
+    // during the day (visually masking heavenly-vault objects) and
+    // fades out at night so the projected starfield reads cleanly.
+    // Backside-only render so the dome is invisible from orbit;
+    // shows up only when the camera sits inside the hemisphere.
+    this._capDayColor   = new THREE.Color(0x88b8e8);
+    this._capNightColor = new THREE.Color(0x4a4a4a);
     this.mesh = new THREE.Mesh(
       meshGeom,
       new THREE.MeshBasicMaterial({
-        color: 0x4a4a4a, transparent: true, opacity: 0.1,
+        color: this._capDayColor.clone(), transparent: true, opacity: 0.35,
         side: THREE.BackSide, depthWrite: false,
         clippingPlanes,
       }),
@@ -1850,6 +1859,23 @@ export class ObserversOpticalVault {
     this.mesh.scale.set(r, r, h);
     this.wire.scale.set(r, r, h);
     this.axes.scale.set(r, r, h);
+    // Day/night sky cap colour + opacity. Drives a lerp between
+    // sky-blue (day) and dim grey (night) keyed off NightFactor
+    // so the dome visually masks heavenly-vault objects when the
+    // sun is up, then drops away at night. Honours optional
+    // ShowDayNightSky flag (undefined = on).
+    const skyOn = s.ShowDayNightSky !== false;
+    if (skyOn) {
+      const nf = Math.max(0, Math.min(1, c.NightFactor || 0));
+      const day = 1 - nf;
+      this.mesh.material.color
+        .copy(this._capNightColor)
+        .lerp(this._capDayColor, day);
+      this.mesh.material.opacity = 0.05 + 0.30 * day;
+    } else {
+      this.mesh.material.color.copy(this._capNightColor);
+      this.mesh.material.opacity = 0.10;
+    }
     // refined meridian arcs live on the same hemisphere as the
     // static wire, so they share its (r, r, h) scale.
     this.refinedMeridiansGroup.scale.set(r, r, h);

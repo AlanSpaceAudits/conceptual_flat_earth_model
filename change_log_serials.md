@@ -5197,3 +5197,28 @@ Format:
     via the material's uniform table without code
     changes.
 - **Revert:** `git checkout v-s000483 -- .`
+
+## S485 — Day/night sky cap on observer's optical vault
+
+- **Date:** 2026-04-26
+- **Files changed:** `js/render/worldObjects.js`.
+- **Change:**
+  - `ObserversOpticalVault` mesh material now lerps
+    between a sky-blue (`0x88b8e8`) day colour and the
+    existing dim-grey (`0x4a4a4a`) night colour using
+    `c.NightFactor`. Opacity ramps from `0.05` at full
+    night to `0.35` at full day so the cap behaves
+    like a translucent blue sky during the day,
+    visually masking heavenly-vault objects, then
+    drops away at night so the projected starfield
+    reads cleanly. Cap stays back-side rendered so it
+    is invisible from orbit; effect only manifests
+    inside the dome.
+  - Honours optional `state.ShowDayNightSky` flag.
+    Undefined treated as on. When off, cap reverts to
+    static grey at `0.10` opacity.
+  - Applies in both FE and GE modes (same code path),
+    matching the new GE globe day/night terminator
+    for visual consistency between the two world
+    models.
+- **Revert:** `git checkout v-s000484 -- .`

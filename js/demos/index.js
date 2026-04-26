@@ -79,6 +79,14 @@ export class Demos {
       EclipseMinSepDeg: null, EclipseMagnitude: null, EclipseEventType: null,
     });
     const introState = typeof d.intro === 'function' ? d.intro(this.model) : d.intro;
+    // An intro function may return null/false to refuse to load (for
+    // demos that need a specific tracker / state precondition). Bail
+    // without stomping on the current view; the demo's own intro is
+    // expected to have surfaced its own message via `Description`.
+    if (!introState) {
+      this._refreshPanel();
+      return;
+    }
     this.model.setState(introState);
     this.animator.play(d.tasks(this.model));
     if (this._btnPauseResume) this._btnPauseResume.textContent = 'Pause';

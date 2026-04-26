@@ -4730,3 +4730,26 @@ Format:
     drives `GPPathDays`. Both keys persisted in URL
     state.
 - **Revert:** `git checkout v-s000463 -- .`
+
+## S465 — Annual Cycle demo (single-tracker precondition)
+
+- **Date:** 2026-04-26
+- **Files changed:** `js/demos/definitions.js`,
+  `js/demos/index.js`.
+- **Change:**
+  - New `ANNUAL_CYCLE_DEMO` and "Annual Cycle" group.
+    Demo intro is a function that counts the bodies in
+    `TrackerTargets ∪ FollowTarget` and refuses to
+    load (`return null`) when the count isn't exactly
+    1. The refusal message surfaces via `Description`
+    in the footer.
+  - When 1 body is tracked the demo keeps the observer
+    at their current lat/long, enables `ShowGPPath`,
+    sets `GPPathDays = 365`, and animates `DateTime`
+    forward by one year over 30 s so the user watches
+    the body's GP band drift.
+  - `_playSingle` in the demo controller now bails
+    cleanly on a falsy intro return value (rather than
+    crashing on `setState(null)`), so demos can refuse
+    a precondition without breaking playback state.
+- **Revert:** `git checkout v-s000464 -- .`

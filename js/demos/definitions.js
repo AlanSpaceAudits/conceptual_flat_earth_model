@@ -663,12 +663,56 @@ const SUN_24H_DEMOS = [
   },
 ];
 
+// Annual-cycle demo. Runs from the observer's current lat / long
+// and traces the GP of the single tracked body over a full year.
+// Refuses to load when zero or multiple bodies are in the tracker —
+// the path's only useful when there's a single subject. The intro
+// returns `null` to signal that refusal; `_playSingle` bails on a
+// falsy intro and the message in `Description` surfaces in the
+// description footer.
+const ANNUAL_CYCLE_DEMO = {
+  name: 'Annual Cycle (single tracker, observer lat/long)',
+  group: 'annual-cycle',
+  intro: (model) => {
+    const s = model.state;
+    const targets = Array.isArray(s.TrackerTargets) ? s.TrackerTargets : [];
+    const set = new Set(targets);
+    if (s.FollowTarget) set.add(s.FollowTarget);
+    if (set.size !== 1) {
+      model.setState({
+        Description: `Annual Cycle demo expects exactly one tracked body. Currently tracking ${set.size}. Clear the tracker and add a single body, then try again.`,
+      });
+      return null;
+    }
+    // Preserve observer's lat/long, BodySource, world model, etc.
+    // Just enable the year-long GP trace and the true-position
+    // markers so the observer can watch the body wander its band.
+    return {
+      ShowGPPath: true,
+      GPPathDays: 365,
+      ShowTruePositions: true,
+      ShowOpticalVault: true,
+      ShowStars: true,
+    };
+  },
+  tasks: (m) => {
+    const start = m.state.DateTime;
+    return [
+      Ttxt('Annual cycle · observer at current lat/long · GP traces one year. Watch the band drift.'),
+      Tval('DateTime', start + 365, 30 * 1000, T1, 'linear'),
+      Ttxt('Year complete.'),
+      Thold(),
+    ];
+  },
+};
+
 // The final exported list, in section order: general → solar eclipses
 // → lunar eclipses → FE prediction track. Each entry carries a
 // `group` field so the UI can render section headings.
 export const DEMOS = [
   ...SUN_24H_DEMOS,
   ...GENERAL_DEMOS,
+  ANNUAL_CYCLE_DEMO,
   ...ANALEMMA_DEMOS,
   ...MOON_SYNODIC_DEMOS,
   ...SUN_PAIRED_DEMOS,
@@ -682,6 +726,7 @@ export const DEMOS = [
 export const DEMO_GROUPS = [
   { id: '24h-sun',         label: '24 h Sun' },
   { id: 'general',         label: 'General' },
+  { id: 'annual-cycle',    label: 'Annual Cycle' },
   { id: 'sun-analemma',    label: 'Sun Analemma' },
   { id: 'moon-analemma',   label: 'Moon Analemma' },
   { id: 'combo-analemma',  label: 'Sun + Moon Analemma' },

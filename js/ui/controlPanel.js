@@ -649,6 +649,7 @@ const FIELD_GROUPS = [
       { title: 'Misc', rows: [
         { key: 'DarkBackground',  label: 'Dark Background',  bool: true },
         { key: 'ShowLogo',        label: 'Logo',             bool: true },
+        { key: 'ShowTooltips',    label: 'Mouseover Tooltips', bool: true },
       ]},
     ],
   },
@@ -1382,10 +1383,21 @@ function bindTranslatable(textNode, originalText, keyMap) {
   if (key) onLangChange(() => { textNode.textContent = t(key); });
 }
 
+// `ShowTooltips` master gate. When off, every element bound via
+// `bindTip` clears its `title` attribute so hover bubbles vanish.
+const _tipBinds = [];
+let _tooltipsOn = true;
+function setTooltipsEnabled(on) {
+  if (_tooltipsOn === !!on) return;
+  _tooltipsOn = !!on;
+  for (const refresh of _tipBinds) refresh();
+}
 function bindTip(el, key) {
   if (!el || !key) return;
-  el.title = t(key);
-  onLangChange(() => { el.title = t(key); });
+  const refresh = () => { el.title = _tooltipsOn ? t(key) : ''; };
+  _tipBinds.push(refresh);
+  refresh();
+  onLangChange(refresh);
 }
 
 // Dispatch a field-group row definition to the right row-builder.
@@ -1487,6 +1499,14 @@ function buildGroup(model, title, rows, popupGroups) {
 export function buildControlPanel(host, model, demos) {
   const autoplay = new Autoplay(model);
   model._autoplay = autoplay;
+
+  // Mouseover tooltips honour `state.ShowTooltips`. When the user
+  // unchecks the toggle every `bindTip`-managed element clears its
+  // `title` attribute so hover bubbles vanish across the whole UI.
+  setTooltipsEnabled(model.state.ShowTooltips !== false);
+  model.addEventListener('update', () => {
+    setTooltipsEnabled(model.state.ShowTooltips !== false);
+  });
 
   const infoBar = document.createElement('div');
   infoBar.id = 'info-bar';

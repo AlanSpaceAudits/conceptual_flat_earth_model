@@ -4612,3 +4612,39 @@ Format:
     directly (they're FE-only and hidden in GE).
   - P1 / P2 presets set both keys.
 - **Revert:** `git checkout v-s000458 -- .`
+
+## S460 — Tooltip toggle, GE camera lift fix, mode-aware GP tracer, equirect map on globe
+
+- **Date:** 2026-04-26
+- **Files changed:** `js/core/app.js`,
+  `js/ui/controlPanel.js`,
+  `js/render/worldObjects.js`,
+  `js/render/index.js`, `js/render/scene.js`.
+- **Change:**
+  - New `ShowTooltips` state (default true) plus a
+    "Mouseover Tooltips" row in Show / Misc.
+    `bindTip` now keeps a registry of bound elements
+    and clears every `title` attribute when the toggle
+    flips off (and restores them when on).
+  - GE InsideVault camera no longer adds
+    `ObserverElevation` (FE-disc concept) to the lift —
+    the camera stays on the sphere surface
+    (`lift = eyeH ≈ 1e-6`) so sky and ground meet.
+  - GP Tracer becomes mode-aware. In GE the disc trace
+    projects onto the terrestrial sphere surface at
+    each body's GP `(lat, lon)` with a small outward
+    lift; the sky-line consumes the body's
+    `globeOpticalVaultCoord`; observer position pulls
+    from `GlobeObserverCoord`. FE branch unchanged.
+  - `WorldGlobe` gains an `applyMapTexture(projId,
+    getProjection)` helper. For HQ equirectangular
+    projections (`hq_equirect_day` / `hq_equirect_night`)
+    the asset is loaded and applied as the sphere's
+    map; other projections fall back to plain shading
+    (their flat-disc layouts don't wrap a sphere
+    cleanly). UV origin shifted by `0.5` so the map's
+    prime meridian aligns with world +x. Texture cache
+    keyed by asset URL avoids refetching on toggle.
+    `index.js` calls the helper each frame from the
+    state's `MapProjectionGe`.
+- **Revert:** `git checkout v-s000459 -- .`

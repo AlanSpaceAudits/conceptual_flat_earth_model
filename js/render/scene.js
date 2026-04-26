@@ -177,11 +177,12 @@ export class SceneManager {
 
       // `ObserverElevation` lifts the camera along the local-up
       // direction. `eyeH` adds the standing-eye-height offset. In GE
-      // we drop the FE-tuned 0.012 down to ~1e-6 so the camera
-      // effectively sits on the sphere surface; the residual
-      // horizon-dip √(2·eyeH/R) ≈ 0.08° is below visual threshold.
+      // the camera sits on the sphere surface (eyeH ≈ 1e-6) so the
+      // horizon-dip √(2·eyeH/R) is below the visual threshold and
+      // sky meets ground. `ObserverElevation` is a FE-disc concept
+      // (lifts the camera off the disc), so it's ignored in GE.
       const eyeH = ge ? 1e-6 : 0.012;
-      const elev = Math.max(0, Math.min(0.5, s.ObserverElevation || 0));
+      const elev = ge ? 0 : Math.max(0, Math.min(0.5, s.ObserverElevation || 0));
       const lift = eyeH + elev;
       this.camera.position.set(
         obs[0] + lift * upX,

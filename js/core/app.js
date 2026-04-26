@@ -158,6 +158,7 @@ function defaultState() {
     ShowFacingVector:  false,
     ShowDecCircles:    false,
     ShowLogo:          true,
+    ShowTooltips:      true,
     ShowConstellations:      true,
     ShowConstellationLines:  true,
     ShowLongitudeRing:       false,

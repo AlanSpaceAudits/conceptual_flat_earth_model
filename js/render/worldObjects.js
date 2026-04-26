@@ -575,6 +575,39 @@ export class GlobeHeavenlyVault {
   }
 }
 
+// (defined after WorldGlobe so it sees the constructor)
+WorldGlobe.prototype.applyMapTexture = function(projId, getProjection) {
+  if (this._activeProjId === projId) return;
+  this._activeProjId = projId;
+  const proj = getProjection ? getProjection(projId) : null;
+  const asset = proj && proj.imageAsset;
+  // Equirectangular projections wrap cleanly onto the sphere via
+  // SphereGeometry's default UV. Other HQ projections (orthographic,
+  // gleason's, AE-polar, etc.) draw a flat-disc image — sticking
+  // them onto a sphere wraps them oddly, so they fall back to the
+  // plain-colour shading.
+  const isEquirect = !!asset && /equirect/i.test(projId);
+  const mat = this.sphere.material;
+  if (isEquirect) {
+    let tex = this._textureCache.get(asset);
+    if (!tex) {
+      tex = new THREE.TextureLoader().load(asset);
+      tex.colorSpace = THREE.SRGBColorSpace;
+      tex.wrapS = THREE.RepeatWrapping;
+      // Shift longitude origin to `+x` so map's prime meridian
+      // lines up with the world +x axis.
+      tex.offset.set(0.5, 0);
+      this._textureCache.set(asset, tex);
+    }
+    mat.map = tex;
+    mat.color.setHex(0xffffff);
+  } else {
+    mat.map = null;
+    mat.color.setHex(0x1a3a5e);
+  }
+  mat.needsUpdate = true;
+};
+
 // Globe-Earth: a unit sphere of radius `radius` (matching FE_RADIUS so
 // the orbital camera scale is consistent across world models). Visible
 // only when state.WorldModel === 'ge'. Adds a faint lat/lon graticule
@@ -585,14 +618,25 @@ export class WorldGlobe {
     this.group.name = 'world-globe';
     this.group.visible = false;
 
+    // SphereGeometry's default UV maps `(theta, phi)` such that `+x`
+    // is `(u, v) = (0, 0.5)`. Rotate the geometry so its poles
+    // become `±z` (matching celestial-axis convention) AFTER UV
+    // generation; equirectangular textures still map correctly
+    // because the rotation is applied to vertex positions, not UVs.
+    // To put longitude `0°` on the world `+x` axis we additionally
+    // shift the texture origin by `0.5` on `u`.
     const sphereGeom = new THREE.SphereGeometry(radius, 96, 64);
-    sphereGeom.rotateX(Math.PI / 2);     // poles → ±z (celestial axis)
+    sphereGeom.rotateX(Math.PI / 2);
     const sphereMat = new THREE.MeshBasicMaterial({
-      color: 0x1a3a5e, transparent: true, opacity: 0.85,
+      color: 0xffffff, transparent: true, opacity: 0.85,
     });
     this.sphere = new THREE.Mesh(sphereGeom, sphereMat);
     this.group.position.set(0, 0, 0);
     this.group.add(this.sphere);
+    // Texture cache keyed by image asset URL so toggling between
+    // map projections doesn't refetch the same file.
+    this._textureCache = new Map();
+    this._activeProjId = null;
 
     // Center-of-sphere marker — a small bright dot at the origin.
     // Useful as a visual reference when verifying that the observer's
@@ -5204,7 +5248,10 @@ export class GPTracer {
     }
     this._lastTargetsKey = key;
 
-    const obs = c.ObserverFeCoord || [0, 0, 0];
+    const ge = s.WorldModel === 'ge';
+    const obs = ge
+      ? (c.GlobeObserverCoord || [0, 0, 0])
+      : (c.ObserverFeCoord    || [0, 0, 0]);
     this.skyGroup.position.set(obs[0], obs[1], obs[2]);
 
     const skyRot = c.SkyRotAngle || 0;
@@ -5213,18 +5260,18 @@ export class GPTracer {
       if (name === 'sun') {
         lat = c.SunCelestLatLong.lat;
         lon = _wrapLon(c.SunRA * 180 / Math.PI - skyRot);
-        optical = c.SunOpticalVaultCoord;
+        optical = ge ? c.SunGlobeOpticalVaultCoord : c.SunOpticalVaultCoord;
         color = GP_TRACER_COLORS.sun;
       } else if (name === 'moon') {
         lat = c.MoonCelestLatLong.lat;
         lon = _wrapLon(c.MoonRA * 180 / Math.PI - skyRot);
-        optical = c.MoonOpticalVaultCoord;
+        optical = ge ? c.MoonGlobeOpticalVaultCoord : c.MoonOpticalVaultCoord;
         color = GP_TRACER_COLORS.moon;
       } else if (c.Planets && c.Planets[name]) {
         const p = c.Planets[name];
         lat = p.celestLatLong.lat;
         lon = _wrapLon(p.ra * 180 / Math.PI - skyRot);
-        optical = p.opticalVaultCoord;
+        optical = ge ? (p.globeOpticalVaultCoord || p.opticalVaultCoord) : p.opticalVaultCoord;
         color = GP_TRACER_COLORS[name] || 0xffffff;
       } else if (name.startsWith('star:')) {
         const starId = name.slice(5);
@@ -5248,15 +5295,26 @@ export class GPTracer {
         if (!entry) continue;
         lat = entry.celestLatLong.lat;
         lon = _wrapLon(entry.ra * 180 / Math.PI - skyRot);
-        optical = entry.opticalVaultCoord;
+        optical = ge ? (entry.globeOpticalVaultCoord || entry.opticalVaultCoord) : entry.opticalVaultCoord;
         color = starColor;
       } else {
         continue;
       }
       const rec = this._ensureRec(name, color);
 
-      const [dx, dy] = canonicalLatLongToDisc(lat, lon, FE_RADIUS);
-      this._appendPoint(rec.disc, dx, dy, 0.003);
+      // Disc / ground trace. FE projects via AE onto the disc; GE
+      // projects onto the terrestrial sphere surface at the body's
+      // GP `(lat, lon)` with a tiny outward lift to avoid z-fight.
+      if (ge) {
+        const phi = lat * Math.PI / 180;
+        const lam = lon * Math.PI / 180;
+        const cp = Math.cos(phi);
+        const Rg = FE_RADIUS * 1.001;
+        this._appendPoint(rec.disc, Rg * cp * Math.cos(lam), Rg * cp * Math.sin(lam), Rg * Math.sin(phi));
+      } else {
+        const [dx, dy] = canonicalLatLongToDisc(lat, lon, FE_RADIUS);
+        this._appendPoint(rec.disc, dx, dy, 0.003);
+      }
 
       if (optical) {
         const lx = optical[0] - obs[0];

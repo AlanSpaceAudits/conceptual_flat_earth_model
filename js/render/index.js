@@ -413,6 +413,9 @@ export class Renderer {
     this.toroidalVortexDual.group.visible = !ge && this.toroidalVortexDual.group.visible;
     if (this.land) this.land.visible = !ge;
     this.worldGlobe.update(m);
+    if (this.worldGlobe && typeof this.worldGlobe.applyMapTexture === 'function') {
+      this.worldGlobe.applyMapTexture(s.MapProjectionGe || 'hq_ortho', getProjection);
+    }
     this.globeHeavenlyVault.update(m);
     this.domeCaustic.update(m);
     this.discGrid.update(m);

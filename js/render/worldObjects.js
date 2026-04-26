@@ -595,8 +595,59 @@ export class WorldGlobe {
     // shift the texture origin by `0.5` on `u`.
     const sphereGeom = new THREE.SphereGeometry(radius, 96, 64);
     sphereGeom.rotateX(Math.PI / 2);
-    const sphereMat = new THREE.MeshBasicMaterial({
-      color: 0xffffff, transparent: true, opacity: 0.85,
+    // Day/night shader. World-space surface normal is dotted against
+    // the subsolar direction every frame; result is smoothstepped
+    // through a soft terminator and used to mix between the lit
+    // texture/colour and a dimmed night version.
+    const sphereMat = new THREE.ShaderMaterial({
+      uniforms: {
+        uMap:        { value: null },
+        uHasMap:     { value: 0.0 },
+        uColor:      { value: new THREE.Color(0x1a3a5e) },
+        uMapOffset:  { value: new THREE.Vector2(0.5, 0.0) },
+        uSunDir:     { value: new THREE.Vector3(1, 0, 0) },
+        uOpacity:    { value: 0.85 },
+        uTermSoft:   { value: 0.12 },
+        uNightDim:   { value: 0.18 },
+        uDayNightOn: { value: 1.0 },
+      },
+      vertexShader: /* glsl */ `
+        varying vec3 vNormalWorld;
+        varying vec2 vUv;
+        void main() {
+          vUv = uv;
+          vNormalWorld = normalize((modelMatrix * vec4(normal, 0.0)).xyz);
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+      `,
+      fragmentShader: /* glsl */ `
+        uniform sampler2D uMap;
+        uniform float uHasMap;
+        uniform vec3 uColor;
+        uniform vec2 uMapOffset;
+        uniform vec3 uSunDir;
+        uniform float uOpacity;
+        uniform float uTermSoft;
+        uniform float uNightDim;
+        uniform float uDayNightOn;
+        varying vec3 vNormalWorld;
+        varying vec2 vUv;
+        void main() {
+          vec3 base = uColor;
+          if (uHasMap > 0.5) {
+            base = texture2D(uMap, vec2(vUv.x + uMapOffset.x, vUv.y + uMapOffset.y)).rgb;
+          }
+          float lit = 1.0;
+          if (uDayNightOn > 0.5) {
+            float dotL = dot(normalize(vNormalWorld), normalize(uSunDir));
+            lit = smoothstep(-uTermSoft, uTermSoft, dotL);
+          }
+          vec3 night = base * uNightDim + vec3(0.01, 0.01, 0.02);
+          vec3 col = mix(night, base, lit);
+          gl_FragColor = vec4(col, uOpacity);
+        }
+      `,
+      transparent: true,
     });
     this.sphere = new THREE.Mesh(sphereGeom, sphereMat);
     this.group.position.set(0, 0, 0);
@@ -663,6 +714,18 @@ export class WorldGlobe {
 
   update(model) {
     this.group.visible = model.state.WorldModel === 'ge';
+    const c = model && model.computed;
+    const u = this.sphere.material.uniforms;
+    if (c && c.SunCelestLatLong && Number.isFinite(c.SunRA) && Number.isFinite(c.SkyRotAngle)) {
+      const latDeg = c.SunCelestLatLong.lat;
+      const lonDeg = (c.SunRA * 180 / Math.PI) - c.SkyRotAngle;
+      const phi = latDeg * Math.PI / 180;
+      const lam = lonDeg * Math.PI / 180;
+      const cp = Math.cos(phi);
+      u.uSunDir.value.set(cp * Math.cos(lam), cp * Math.sin(lam), Math.sin(phi));
+    }
+    const flag = model && model.state && model.state.ShowDayNightShadow;
+    u.uDayNightOn.value = (flag === false) ? 0.0 : 1.0;
   }
 
   // Apply a map texture to the terrestrial sphere when the active
@@ -676,7 +739,7 @@ export class WorldGlobe {
     const proj = getProjection ? getProjection(projId) : null;
     const asset = proj && proj.imageAsset;
     const isEquirect = !!asset && /equirect/i.test(projId);
-    const mat = this.sphere.material;
+    const u = this.sphere.material.uniforms;
     if (isEquirect) {
       let tex = this._textureCache.get(asset);
       if (!tex) {
@@ -684,17 +747,21 @@ export class WorldGlobe {
         tex.colorSpace = THREE.SRGBColorSpace;
         tex.wrapS = THREE.RepeatWrapping;
         // Shift longitude origin so the prime meridian of the map
-        // lines up with world `+x`.
+        // lines up with world `+x`. Mirrored into the shader as
+        // `uMapOffset` since custom shaders don't auto-apply
+        // `texture.offset`.
         tex.offset.set(0.5, 0);
         this._textureCache.set(asset, tex);
       }
-      mat.map = tex;
-      mat.color.setHex(0xffffff);
+      u.uMap.value = tex;
+      u.uHasMap.value = 1.0;
+      u.uMapOffset.value.set(tex.offset.x, tex.offset.y);
+      u.uColor.value.setHex(0xffffff);
     } else {
-      mat.map = null;
-      mat.color.setHex(0x1a3a5e);
+      u.uMap.value = null;
+      u.uHasMap.value = 0.0;
+      u.uColor.value.setHex(0x1a3a5e);
     }
-    mat.needsUpdate = true;
   }
 }
 

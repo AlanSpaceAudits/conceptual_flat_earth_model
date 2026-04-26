@@ -5166,3 +5166,34 @@ Format:
     one colour edit covers both surfaces. No geometry
     or layout changes.
 - **Revert:** `git checkout v-s000482 -- .`
+
+## S484 — Day/night shadow on GE terrestrial sphere
+
+- **Date:** 2026-04-26
+- **Files changed:** `js/render/worldObjects.js`.
+- **Change:**
+  - `WorldGlobe` sphere material swapped from
+    `MeshBasicMaterial` to a `ShaderMaterial`. Vertex
+    shader passes the world-space surface normal and
+    UV. Fragment shader samples the map texture (with
+    the prime-meridian offset baked into `uMapOffset`
+    since custom shaders skip `texture.offset`),
+    computes `dot(normal, uSunDir)`, and runs that
+    through `smoothstep(-uTermSoft, +uTermSoft)` to
+    mix between the lit base and a dimmed night
+    version.
+  - `WorldGlobe.update(model)` derives the subsolar
+    direction every frame from
+    `c.SunCelestLatLong.lat` (latitude) and
+    `c.SunRA*180/π − c.SkyRotAngle` (GP longitude),
+    converts to world-frame xyz and writes `uSunDir`.
+    Honours optional `state.ShowDayNightShadow` flag;
+    treats undefined as on.
+  - `applyMapTexture` updated to write the new
+    uniforms (`uMap`, `uHasMap`, `uMapOffset`,
+    `uColor`) instead of `mat.map` / `mat.color`.
+  - Tunables (terminator softness, night dim) are
+    uniforms with sensible defaults; can be patched
+    via the material's uniform table without code
+    changes.
+- **Revert:** `git checkout v-s000483 -- .`

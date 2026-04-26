@@ -358,6 +358,37 @@ header .info-popup.legend-popup a { color: var(--accent); }
   background: rgba(255, 154, 60, 0.22);
 }
 
+/* Column-major flow: items fill column 1 top-to-bottom, then spill
+   into column 2. Priority items at the top of the rows[] list end up
+   stacked vertically (left column) so the user can click straight
+   down through them. */
+.group[data-group-title="Tracker Options"] .group-body {
+  column-count: 2;
+  column-gap: 14px;
+}
+.group[data-group-title="Tracker Options"] .group-body > .row {
+  break-inside: avoid;
+}
+.group[data-group-title="Tracker Options"] .group-body > .row.action-row,
+.group[data-group-title="Tracker Options"] .group-body > .row.button-grid-row {
+  column-span: all;
+}
+
+#bottom-bar .bar-left .presets {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  align-items: stretch;
+  margin-right: 12px;
+  margin-top: -18px;
+}
+#bottom-bar .bar-left .presets .preset-btn {
+  min-width: 36px;
+  padding: 2px 8px;
+  font-size: 14px;
+  line-height: 18px;
+  margin: 0;
+}
 #bottom-bar .compass-controls {
   display: flex;
   align-items: flex-start;

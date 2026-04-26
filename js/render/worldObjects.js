@@ -667,11 +667,11 @@ export class LatitudeLines {
     this.group.name = 'latitude-lines';
     this._feRadius = feRadius;
     this._circles = [
-      { lat:  66.5636, color: 0x66ccff, label: 'Arctic Circle' },
-      { lat:  23.4392, color: 0xffc844, label: 'Tropic of Cancer' },
-      { lat:   0.0,    color: 0xff4040, label: 'Equator' },
-      { lat: -23.4392, color: 0xffc844, label: 'Tropic of Capricorn' },
-      { lat: -66.5636, color: 0x66ccff, label: 'Antarctic Circle' },
+      { lat:  66.5636, color: 0x66ccff, label: 'Arctic Circle',     kind: 'polar'  },
+      { lat:  23.4392, color: 0xffc844, label: 'Tropic of Cancer',  kind: 'tropic' },
+      { lat:   0.0,    color: 0xff4040, label: 'Equator',           kind: 'tropic' },
+      { lat: -23.4392, color: 0xffc844, label: 'Tropic of Capricorn', kind: 'tropic' },
+      { lat: -66.5636, color: 0x66ccff, label: 'Antarctic Circle',  kind: 'polar'  },
     ];
     this._lines = [];
     for (const c of this._circles) {
@@ -707,8 +707,15 @@ export class LatitudeLines {
     }
   }
   update(model) {
-    this.group.visible = !!model.state.ShowLatitudeLines;
-    const proj = model.state.MapProjection || 'ae';
+    const s = model.state;
+    const tropics = !!s.ShowTropics;
+    const polar = !!s.ShowPolarCircles;
+    this.group.visible = tropics || polar;
+    for (let i = 0; i < this._circles.length; i++) {
+      const c = this._circles[i];
+      this._lines[i].visible = c.kind === 'tropic' ? tropics : polar;
+    }
+    const proj = s.MapProjection || 'ae';
     if (proj !== this._lastProj) {
       this._rebuild();
       this._lastProj = proj;
@@ -1266,7 +1273,7 @@ export class VaultOfHeavens {
       this._rebuildGrid(s.VaultSize, s.VaultHeight);
     }
     this.shell.visible = s.ShowVault !== false;
-    this.grid.visible = s.ShowVaultGrid && (s.ShowVault !== false);
+    this.grid.visible = !!s.ShowVaultGrid;
   }
 }
 
@@ -1707,15 +1714,14 @@ export class ObserversOpticalVault {
     // are hidden, and the cardinal + azimuth + elevation labels are
     // forced off even if `ShowAzimuthRing` is still on, so the
     // clutter-free cap reads clean.
+    // Each visibility toggle controls only its own object — no
+    // cascading dependencies. Grid, axes, and azimuth ring are all
+    // independent.
     const gridOn = s.ShowOpticalVaultGrid !== false;
     this.wire.visible = gridOn;
     this.axes.visible = gridOn;
     this.refinedMeridiansGroup.visible = gridOn;
-    // Cardinals and the azimuth ring share the ShowAzimuthRing
-    // toggle — they're the canonical heading scale, visible in BOTH
-    // Optical and Heavenly so the reading persists across views.
-    // also gated on `gridOn`: grid off = no labels either.
-    const azOn = gridOn && (s.ShowAzimuthRing !== false);
+    const azOn = s.ShowAzimuthRing !== false;
     this.cardinalsGroup.visible = azOn;
     // refined DMS scale only appears in Optical mode when the
     // has zoomed past the coarse-ring threshold; below that FOV
@@ -2013,7 +2019,7 @@ export class ObserversOpticalVault {
   // of window shape.
   _updateElevScale(s, c) {
     const labels = this._elevLabels;
-    const active = !!s.InsideVault && (s.ShowAzimuthRing !== false) && (s.ShowOpticalVaultGrid !== false);
+    const active = !!s.InsideVault && (s.ShowAzimuthRing !== false);
     if (!active) {
       for (const sp of labels) sp.visible = false;
       return;
@@ -2132,15 +2138,14 @@ export class ObserversOpticalVault {
   }
 
   _updateRefinedScale(s, c) {
-    const active = !!s.InsideVault && (s.ShowAzimuthRing !== false) && (s.ShowOpticalVaultGrid !== false);
+    const active = !!s.InsideVault && (s.ShowAzimuthRing !== false);
     if (!active) {
       this.refinedAzGroup.visible = false;
       this.refinedMeridiansGroup.visible = false;
-      // invalidate the cache on any transition out of the
-      // refined regime so the next re-entry rebuilds ticks, meridian
-      // arcs (including the active-highlight), and labels from scratch
-      // rather than inheriting a stale key from a previous session.
-      if (this._refinedActive) this._refineKey = null;
+      // Keep the geometry cache warm. Cache key already includes FOV
+      // so any change while we're inactive will still miss and rebuild
+      // on re-entry; clearing on transition out forced a rebuild every
+      // Heavenly→Optical toggle even when nothing relevant changed.
       this._refinedActive = false;
       // clear the snapped-azimuth record so the heading-line
       // logic falls back to raw heading when we're not in Optical
@@ -2185,10 +2190,6 @@ export class ObserversOpticalVault {
       this._refinedActive = false;
       return;
     }
-    // same invalidation on the other edge: coarse → refined.
-    // The first refined frame after entering the 5°/1° regimes always
-    // misses the cache so ticks + grid + labels rebuild from scratch.
-    if (!this._refinedActive) this._refineKey = null;
     this._refinedActive = true;
     this.refinedAzGroup.visible = true;
     this.refinedMajorMeridians.visible = true;
@@ -3427,7 +3428,8 @@ export class Observer {
       const h = 0.10;
       const aspect = 1920 / 1080;
       sprite.scale.set(h * aspect, h, 1);
-      sprite.position.set(0, 0, h / 2);
+      // Match the bear's vertical anchor — feet just above z = 0.
+      sprite.position.set(0, 0, 0.028);
       sprite.renderOrder = 110;
       this.figureGroup.add(sprite);
     }
@@ -3453,10 +3455,11 @@ export class Observer {
 
     const kind = s.ObserverFigure || 'male';
     if (kind !== this._currentFigure) this._buildFigure(kind);
-    // Red marker + cross only useful when no figure is drawn — they
-    // read as stray dots / lines next to the figure otherwise.
-    this.marker.visible = kind === 'none';
-    this.cross.visible  = kind === 'none';
+    // Marker dot + crosshair stay hidden in every mode. `none`
+    // therefore reads as a fully invisible observer (the placement
+    // is still real, the on-screen mark just isn't drawn).
+    this.marker.visible = false;
+    this.cross.visible  = false;
 
     if (ge && c.GlobeObserverFrame) {
       // Stand the figure tangent to the sphere: local +z = radial
@@ -5039,7 +5042,7 @@ export class GPTracer {
     this._wasOn = on;
     if (!on) return;
 
-    const targets = Array.isArray(s.GPTracerTargets) ? s.GPTracerTargets : [];
+    const targets = Array.isArray(s.TrackerTargets) ? s.TrackerTargets : [];
     const key = targets.slice().sort().join(',');
     if (key !== this._lastTargetsKey) {
       const want = new Set(targets);

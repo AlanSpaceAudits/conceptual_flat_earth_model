@@ -3947,3 +3947,63 @@ Format:
     grid for diagnostic use.
 - **Revert:** `git checkout v-s000429 -- .` then delete the
   three new script / data files.
+
+## S431 — Tracker UI restructure + presets + satellite gating
+
+- **Date:** 2026-04-26
+- **Files changed:** `css/styles.css`, `js/core/app.js`,
+  `js/main.js`, `js/render/constellations.js`,
+  `js/render/index.js`, `js/render/worldObjects.js`,
+  `js/ui/controlPanel.js`, `js/ui/urlState.js`.
+- **Change:**
+  - Tracker Options panel: 2-column column-major layout.
+    Order: `ShowStars` (master), `ShowCelestialBodies`
+    (master), `ShowOpticalVault`, `ShowTruePositions`,
+    `ShowShadow`, `ShowGPTracer`, then remaining toggles.
+  - Removed per-category Show toggles from sub-menus (Cel
+    Nav, Constellations, Black Holes, Quasars, Galaxies,
+    Satellites, BSC). `Show<Cat>` state retained.
+  - Each sub-panel "Enable All" now also sets its
+    `Show<Cat>` flag true. Master "Track All" sets all of
+    them (`ShowCelNav`, `ShowBlackHoles`, `ShowQuasars`,
+    `ShowGalaxies`, `ShowSatellites`).
+  - Latitude lines split: separate `ShowTropics` and
+    `ShowPolarCircles` state keys. `ShowLatitudeLines`
+    retired from URL persistence; `ShowTropics` /
+    `ShowPolarCircles` added to `PERSISTED_KEYS` and
+    `VERSION_GATED_KEYS`.
+  - Renamed "Longitude ring" UI label to "Heavenly Vault
+    Azi".
+  - Constellations: gates decoupled — `ShowStars` and
+    `ShowConstellationLines` now independent; early return
+    flips to `(!showStars && !showLines) || !canShow`.
+    `js/main.js` auto-disable on starfield-type change
+    removed.
+  - Compass button (🧭) toggles `ShowFeGrid +
+    ShowAzimuthRing + ShowLongitudeRing +
+    ShowOpticalVaultGrid` together. Grids button (▦)
+    toggles `ShowGPTracer`.
+  - WorldModel (FE/GE) and FreeCameraMode (🎥) toggle
+    buttons added in bar-left grids stack.
+  - Presets: P1 (Minimal — everything off, ephemeris only)
+    and P2 (Demo — 45°N / -100°, full catalog) buttons in
+    `bar-left .presets`. P1 sets camera + observer state to
+    app defaults; P2 enables `ShowGPTracer`,
+    `ShowConstellationLines`, full `TrackerTargets`. Fixed
+    incorrect keys in both presets: `ShowDeclinationCircles`
+    → `ShowDecCircles`, `ShowOutlines` →
+    `ShowConstellationLines`.
+  - Per-demo ↪ jump button beside each play button +
+    `DemoController.jumpTo(index)`.
+  - Satellites: `c.Satellites` populates when any
+    `star:sat_*` id is in `TrackerTargets` / `BscTargets` /
+    `FollowTarget`, or when `ShowSatellites` master is on.
+    Removed redundant `showKey: 'ShowSatellites'` from
+    `satelliteStars` (`requireMembership: true` already
+    filters per-entry).
+  - VaultOfHeavens: `update` caches graticule, rebuilds
+    only when `VaultSize` or `VaultHeight` change.
+  - Observer figure: `nikki` z-offset adjusted to 0.028 to
+    match bear; `'none'` figure marker dot + crosshair
+    always hidden.
+- **Revert:** `git checkout v-s000430 -- .`

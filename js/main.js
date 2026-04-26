@@ -185,20 +185,6 @@ model.addEventListener('update', () => {
   cadenceChip.style.display = '';
 });
 
-// When switching to a chart starfield, auto-disable constellation overlays
-// (they fight the chart's built-in art). Only triggers on the transition.
-let _prevStarfieldType = model.state.StarfieldType || 'random';
-model.addEventListener('update', () => {
-  const st = model.state.StarfieldType || 'random';
-  if (st !== _prevStarfieldType) {
-    const movingToChart = _prevStarfieldType === 'random' && st !== 'random';
-    _prevStarfieldType = st;
-    if (movingToChart
-        && (model.state.ShowConstellations || model.state.ShowConstellationLines)) {
-      model.setState({ ShowConstellations: false, ShowConstellationLines: false });
-    }
-  }
-});
 
 const aboutBtn    = document.getElementById('about-btn');
 const aboutPopup  = document.getElementById('about-popup');

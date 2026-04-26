@@ -615,23 +615,13 @@ const FIELD_GROUPS = [
       { title: 'Heavenly Vault', rows: [
         { key: 'ShowVault',           label: 'Heavenly Vault',     bool: true },
         { key: 'ShowVaultGrid',       label: 'Vault Grid',         bool: true },
-        { key: 'ShowSunTrack',        label: 'Sun Track',          bool: true },
-        { key: 'ShowMoonTrack',       label: 'Moon Track',         bool: true },
-      ]},
-      { title: 'Optical Vault', rows: [
-        { key: 'ShowOpticalVault',    label: 'Optical Vault',      bool: true },
-        { key: 'ShowOpticalVaultGrid', label: 'Optical Vault Grid', bool: true },
-        { key: 'ShowAzimuthRing',     label: 'Azimuth ring',       bool: true },
-        { key: 'ShowFacingVector',    label: 'Facing Vector / N-S-E-W', bool: true },
-        { key: 'ShowCelestialPoles',  label: 'Celestial Poles',    bool: true },
-        { key: 'ShowDecCircles',      label: 'Declination Circles',     bool: true },
       ]},
       { title: 'Ground / Disc', rows: [
         { key: 'ShowFeGrid',          label: 'FE Grid',            bool: true },
-        { key: 'ShowLatitudeLines',   label: 'Tropics / Polar',    bool: true },
+        { key: 'ShowTropics',         label: 'Tropics',            bool: true },
+        { key: 'ShowPolarCircles',    label: 'Polar Circles',      bool: true },
         { key: 'ShowGroundPoints',    label: 'Sun / Moon GP',      bool: true },
-        { key: 'ShowLongitudeRing',   label: 'Longitude ring',     bool: true },
-        { key: 'ShowShadow',          label: 'Shadow',             bool: true },
+        { key: 'ShowLongitudeRing',   label: 'Heavenly Vault Azi', bool: true },
       ]},
       { title: 'Rays', rows: [
         { key: 'ShowVaultRays',        label: 'Vault Rays',         bool: true },
@@ -650,7 +640,6 @@ const FIELD_GROUPS = [
         },
       ]},
       { title: 'Misc', rows: [
-        { key: 'ShowPlanets',     label: 'Planets',          bool: true },
         { key: 'DarkBackground',  label: 'Dark Background',  bool: true },
         { key: 'ShowLogo',        label: 'Logo',             bool: true },
       ]},
@@ -712,32 +701,30 @@ const FIELD_GROUPS = [
               ...GALAXIES.map((x) => `star:${x.id}`),
               ...SATELLITES.map((x) => `star:${x.id}`),
             ],
+            ShowCelNav: true, ShowBlackHoles: true,
+            ShowQuasars: true, ShowGalaxies: true,
+            ShowSatellites: true,
           }) },
-        { key: 'SpecifiedTrackerMode', label: 'Specified Tracker Mode', bool: true },
-        { key: 'TrackerGPOverride',    label: 'GP Override',              bool: true },
+        { key: 'ShowStars',            label: 'Stars (master)',           bool: true },
+        { key: 'ShowCelestialBodies',  label: 'Celestial Bodies (master)', bool: true },
+        { key: 'ShowOpticalVault',     label: 'Optical Vault',            bool: true },
         { key: 'ShowTruePositions',    label: 'True Positions',           bool: true },
+        { key: 'ShowShadow',           label: 'Shadow',                   bool: true },
+        { key: 'ShowGPTracer',         label: 'GP Tracer',                bool: true },
+        { key: 'SpecifiedTrackerMode', label: 'Specified Tracker Mode',   bool: true },
+        { key: 'TrackerGPOverride',    label: 'GP Override',              bool: true },
+        { key: 'ShowSunTrack',         label: 'Sun Track',                bool: true },
+        { key: 'ShowMoonTrack',        label: 'Moon Track',               bool: true },
+        { key: 'ShowOpticalVaultGrid', label: 'Optical Vault Grid',       bool: true },
+        { key: 'ShowAzimuthRing',      label: 'Azimuth ring',             bool: true },
+        { key: 'ShowFacingVector',     label: 'Facing Vector / N-S-E-W',  bool: true },
+        { key: 'ShowCelestialPoles',   label: 'Celestial Poles',          bool: true },
+        { key: 'ShowDecCircles',       label: 'Declination Circles',      bool: true },
         { key: 'ShowGPPath',           label: 'GP Path (24 h)',           bool: true },
         { key: 'ShowSunMoonNine',      label: 'Sun / Moon "9" Glyph',     bool: true },
         { key: 'ShowDomeCaustic',      label: 'Dome Caustic',             bool: true },
-        { key: 'ShowGPTracer',         label: 'GP Tracer',                bool: true },
-      ]},
-      { title: 'Solar System', rows: [
-        { label: '', buttonLabel: 'Clear Tracer',
-          onClick: (m) => m.setState({ GPTracerTargets: [] }) },
-        { key: 'GPTracerTargets', label: '', buttonGrid: [
-          { value: 'sun',     label: 'Sun',     color: '#ffc844' },
-          { value: 'moon',    label: 'Moon',    color: '#f4f4f4' },
-          { value: 'mercury', label: 'Mercury', color: '#d0b090' },
-          { value: 'venus',   label: 'Venus',   color: '#fff0c8' },
-          { value: 'mars',    label: 'Mars',    color: '#d05040' },
-          { value: 'jupiter', label: 'Jupiter', color: '#ffa060' },
-          { value: 'saturn',  label: 'Saturn',  color: '#e4c888' },
-          { value: 'uranus',  label: 'Uranus',  color: '#a8d8e0' },
-          { value: 'neptune', label: 'Neptune', color: '#7fa6e8' },
-        ]},
       ]},
       { title: 'Celestial Bodies', rows: [
-        { key: 'ShowCelestialBodies', label: 'Show', bool: true },
         { key: 'GPOverridePlanets', label: 'GP Override', bool: true },
         { label: '', buttonLabel: 'Enable All',
           onClick: (m) => m.setState({
@@ -768,7 +755,6 @@ const FIELD_GROUPS = [
         ]},
       ]},
       { title: 'Cel Nav', rows: [
-        { key: 'ShowCelNav', label: 'Show', bool: true },
         { key: 'GPOverrideCelNav', label: 'GP Override', bool: true },
         { label: '', buttonLabel: 'Enable All',
           onClick: (m) => m.setState({
@@ -778,6 +764,7 @@ const FIELD_GROUPS = [
                 ...CEL_NAV_STARS.map((s) => `star:${s.id}`),
               ]),
             ],
+            ShowCelNav: true,
           }) },
         { label: '', buttonLabel: 'Disable All',
           onClick: (m) => {
@@ -792,7 +779,6 @@ const FIELD_GROUPS = [
         },
       ]},
       { title: 'Constellations', rows: [
-        { key: 'ShowConstellations', label: 'Show', bool: true },
         { key: 'ShowConstellationLines', label: 'Outlines', bool: true },
         { key: 'GPOverrideConstellations', label: 'GP Override', bool: true },
         { label: '', buttonLabel: 'Enable All',
@@ -833,7 +819,6 @@ const FIELD_GROUPS = [
         },
       ]},
       { title: 'Black Holes', rows: [
-        { key: 'ShowBlackHoles', label: 'Show', bool: true },
         { key: 'GPOverrideBlackHoles', label: 'GP Override', bool: true },
         { label: '', buttonLabel: 'Enable All',
           onClick: (m) => m.setState({
@@ -843,6 +828,7 @@ const FIELD_GROUPS = [
                 ...BLACK_HOLES.map((b) => `star:${b.id}`),
               ]),
             ],
+            ShowBlackHoles: true,
           }) },
         { label: '', buttonLabel: 'Disable All',
           onClick: (m) => {
@@ -857,7 +843,6 @@ const FIELD_GROUPS = [
         },
       ]},
       { title: 'Quasars', rows: [
-        { key: 'ShowQuasars', label: 'Show', bool: true },
         { key: 'GPOverrideQuasars', label: 'GP Override', bool: true },
         { label: '', buttonLabel: 'Enable All',
           onClick: (m) => m.setState({
@@ -867,6 +852,7 @@ const FIELD_GROUPS = [
                 ...QUASARS.map((q) => `star:${q.id}`),
               ]),
             ],
+            ShowQuasars: true,
           }) },
         { label: '', buttonLabel: 'Disable All',
           onClick: (m) => {
@@ -881,7 +867,6 @@ const FIELD_GROUPS = [
         },
       ]},
       { title: 'Galaxies', rows: [
-        { key: 'ShowGalaxies', label: 'Show', bool: true },
         { key: 'GPOverrideGalaxies', label: 'GP Override', bool: true },
         { label: '', buttonLabel: 'Enable All',
           onClick: (m) => m.setState({
@@ -891,6 +876,7 @@ const FIELD_GROUPS = [
                 ...GALAXIES.map((g) => `star:${g.id}`),
               ]),
             ],
+            ShowGalaxies: true,
           }) },
         { label: '', buttonLabel: 'Disable All',
           onClick: (m) => {
@@ -905,7 +891,6 @@ const FIELD_GROUPS = [
         },
       ]},
       { title: 'Satellites', rows: [
-        { key: 'ShowSatellites', label: 'Show Satellites', bool: true },
         { key: 'GPOverrideSatellites', label: 'GP Override', bool: true },
         { label: '', buttonLabel: 'Enable All',
           onClick: (m) => m.setState({
@@ -915,6 +900,7 @@ const FIELD_GROUPS = [
                 ...SATELLITES.map((x) => `star:${x.id}`),
               ]),
             ],
+            ShowSatellites: true,
           }) },
         { label: '', buttonLabel: 'Disable All',
           onClick: (m) => {
@@ -929,7 +915,6 @@ const FIELD_GROUPS = [
         },
       ]},
       { title: 'Bright Star Catalog', rows: [
-        { key: 'ShowBsc', label: 'Show', bool: true },
         { key: 'GPOverrideBsc', label: 'GP Override', bool: true },
         { label: '', buttonLabel: 'Enable All',
           onClick: (m) => m.setState({
@@ -941,6 +926,7 @@ const FIELD_GROUPS = [
                   .map((x) => `star:${x.id}`),
               ]),
             ],
+            ShowBsc: true,
           }) },
         { label: '', buttonLabel: 'Disable All',
           onClick: (m) => m.setState({ BscTargets: [] }) },
@@ -1483,8 +1469,7 @@ export function buildControlPanel(host, model, demos) {
       <span class="info-sep">│</span>
       <span class="info-slot" data-k="time">—</span>
       <span class="info-slot" data-k="speed">—</span>
-    </div>
-    <div class="info-row info-row-bot">
+      <span class="info-sep">│</span>
       <span class="info-slot info-track" data-k="track">Tracking: —</span>
     </div>
   `;
@@ -1549,6 +1534,129 @@ export function buildControlPanel(host, model, demos) {
 
   const barLeft = document.createElement('div');
   barLeft.className = 'bar-left';
+
+  const presets = document.createElement('div');
+  presets.className = 'presets';
+
+  const PLANETS = ['sun', 'moon', 'mercury', 'venus', 'mars',
+                   'jupiter', 'saturn', 'uranus', 'neptune'];
+
+  // Preset 1: Minimal — only the ephemeris pipeline runs; everything
+  // visual is off. Observer figure goes invisible. Black backdrop, AE
+  // map, no body / overlay / ray rendering.
+  const applyPreset1 = () => {
+    model.setState({
+      ObserverFigure: 'none',
+      ObserverLat: 32.0, ObserverLong: -100.8387,
+      ObserverHeading: 357.3098, ObserverElevation: 0,
+      CameraDirection: -106.6, CameraHeight: 15.2,
+      CameraDistance: 10.0, Zoom: 4.67,
+      InsideVault: false,
+      ShowVault: false, ShowVaultGrid: false,
+      ShowSunTrack: false, ShowMoonTrack: false,
+      ShowOpticalVault: false, ShowOpticalVaultGrid: false,
+      ShowAzimuthRing: false, ShowFacingVector: false,
+      ShowCelestialPoles: false, ShowDecCircles: false,
+      ShowFeGrid: false, ShowTropics: false, ShowPolarCircles: false,
+      ShowGroundPoints: false, ShowLongitudeRing: false,
+      ShowShadow: false,
+      ShowVaultRays: false, ShowOpticalVaultRays: false,
+      ShowProjectionRays: false, ShowManyRays: false,
+      Cosmology: 'none',
+      MapProjection: 'ae', GeneratedMap: 'blank', MapArt: 'none',
+      ShowPlanets: false, DarkBackground: true, ShowLogo: false,
+      ShowCelestialBodies: false,
+      ShowCelNav: false, ShowConstellations: false, ShowConstellationLines: false,
+      ShowBlackHoles: false, ShowQuasars: false, ShowGalaxies: false,
+      ShowSatellites: false, ShowBsc: false,
+      ShowStars: false,
+      ShowSunAnalemma: false, ShowMoonAnalemma: false,
+      ShowGPPath: false, ShowDomeCaustic: false,
+      ShowGPTracer: false, ShowSunMoonNine: false,
+      ShowTruePositions: false,
+      TrackerTargets: [], BscTargets: [],
+      SpecifiedTrackerMode: false,
+    });
+  };
+
+  const applyPreset2 = () => {
+    const allCelNav        = CEL_NAV_STARS.map(x => `star:${x.id}`);
+    const allConstellation = CATALOGUED_STARS.map(x => `star:${x.id}`);
+    const allBlackHoles    = BLACK_HOLES.map(x => `star:${x.id}`);
+    const allQuasars       = QUASARS.map(x => `star:${x.id}`);
+    const allGalaxies      = GALAXIES.map(x => `star:${x.id}`);
+    const allSatellites    = SATELLITES.map(x => `star:${x.id}`);
+    model.setState({
+      ObserverFigure: 'nikki',
+      ObserverLat: 45.0, ObserverLong: -100.0,
+      ObserverElevation: 19.8, ObserverHeading: 351.8844,
+      CameraDirection: -85.8, CameraHeight: 12.2,
+      CameraDistance: 10.0, Zoom: 3.86,
+      InsideVault: false,
+      VaultSize: 1.00, VaultHeight: 0.400,
+      OpticalVaultSize: 0.50, OpticalVaultHeight: 0.30,
+      StarfieldVaultHeight: 0.300,
+      MoonVaultHeight: 0.317,
+      SunVaultHeight: 0.372,
+      MercuryVaultHeight: 0.371, VenusVaultHeight: 0.370,
+      MarsVaultHeight: 0.371, JupiterVaultHeight: 0.313,
+      SaturnVaultHeight: 0.313, UranusVaultHeight: 0.361,
+      NeptuneVaultHeight: 0.339,
+      RayParameter: 2.00,
+      ShowVault: true, ShowVaultGrid: false,
+      ShowSunTrack: false, ShowMoonTrack: false,
+      ShowOpticalVault: true, ShowOpticalVaultGrid: false,
+      ShowAzimuthRing: false, ShowFacingVector: false,
+      ShowCelestialPoles: false, ShowDecCircles: false,
+      ShowFeGrid: false, ShowTropics: false, ShowPolarCircles: false,
+      ShowGroundPoints: false, ShowLongitudeRing: false,
+      ShowShadow: true,
+      ShowVaultRays: false, ShowOpticalVaultRays: false,
+      ShowProjectionRays: false, ShowManyRays: false,
+      Cosmology: 'none',
+      MapProjection: 'ae', GeneratedMap: 'default', MapArt: 'none',
+      ShowPlanets: true, DarkBackground: true, ShowLogo: true,
+      BodySource: 'astropixels',
+      StarApplyPrecession: false, StarApplyNutation: false,
+      StarApplyAberration: false, StarTrepidation: true,
+      StarfieldType: 'celnav', DynamicStars: true, PermanentNight: false,
+      ShowStars: true,
+      ShowSunMoonNine: false, ShowDomeCaustic: false,
+      ShowGPTracer: true, ShowGPPath: false,
+      ShowSunAnalemma: false, ShowMoonAnalemma: false,
+      ShowTruePositions: false, TrackerGPOverride: false,
+      SpecifiedTrackerMode: false,
+      ShowCelestialBodies: true, GPOverridePlanets: false,
+      ShowCelNav: true, GPOverrideCelNav: false,
+      ShowConstellations: true, ShowConstellationLines: true, GPOverrideConst: false,
+      ShowBlackHoles: true, GPOverrideBlackHoles: false,
+      ShowQuasars: true, GPOverrideQuasars: false,
+      ShowGalaxies: true, GPOverrideGalaxies: false,
+      ShowSatellites: true, GPOverrideSatellites: false,
+      ShowBsc: false, BscTargets: [],
+      TrackerTargets: [
+        ...PLANETS,
+        ...allCelNav, ...allConstellation,
+        ...allBlackHoles, ...allQuasars,
+        ...allGalaxies, ...allSatellites,
+      ],
+    });
+  };
+
+  const btnP1 = document.createElement('button');
+  btnP1.className = 'time-btn preset-btn';
+  btnP1.type = 'button';
+  btnP1.textContent = 'P1';
+  btnP1.title = 'Preset 1 — Minimal (everything off, ephemeris only)';
+  btnP1.addEventListener('click', applyPreset1);
+  const btnP2 = document.createElement('button');
+  btnP2.className = 'time-btn preset-btn';
+  btnP2.type = 'button';
+  btnP2.textContent = 'P2';
+  btnP2.title = 'Preset 2 — Demo (45°N -100°, full body + star catalog, FE disc view)';
+  btnP2.addEventListener('click', applyPreset2);
+  presets.append(btnP1, btnP2);
+  barLeft.appendChild(presets);
 
   const timeControls = document.createElement('div');
   timeControls.className = 'time-controls';
@@ -1707,13 +1815,14 @@ export function buildControlPanel(host, model, demos) {
   bindTip(btnAzRing, 'tip_az_ring');
   btnAzRing.addEventListener('click', () => {
     const on = !!model.state.ShowAzimuthRing;
-    // One-click compass set: the Optical-cap degree labels, the
-    // ground longitude ring, and the Optical-vault grid all turn
-    // on / off together.
+    // One-click compass set: Optical-cap degree labels, the ground
+    // longitude ring, the Optical-vault grid, and the FE disc grid
+    // all turn on / off together.
     model.setState({
       ShowAzimuthRing:      !on,
       ShowLongitudeRing:    !on,
       ShowOpticalVaultGrid: !on,
+      ShowFeGrid:           !on,
     });
   });
 
@@ -1782,33 +1891,19 @@ export function buildControlPanel(host, model, demos) {
   });
   compassControls.appendChild(cardinalGrid);
 
-  // Combined FE-grid + Optical-vault-grid toggle. Sits on the right
-  // edge of the compass cluster so the two graticules can be flipped
-  // on/off as a single unit.
+  // GP Tracer toggle. Was the combined-grids button; the compass (🧭)
+  // already covers the FE grid + optical-vault grid + azimuth ring +
+  // longitude ring, so this slot is repurposed for the GP tracer.
   const btnGrids = document.createElement('button');
   btnGrids.className = 'time-btn grids-btn';
   btnGrids.type = 'button';
   btnGrids.textContent = '▦';
   bindTip(btnGrids, 'tip_grids');
   btnGrids.addEventListener('click', () => {
-    const cur = !!(model.state.ShowFeGrid
-                   && model.state.ShowOpticalVaultGrid
-                   && model.state.ShowAzimuthRing
-                   && model.state.ShowLongitudeRing);
-    const next = !cur;
-    model.setState({
-      ShowFeGrid: next,
-      ShowOpticalVaultGrid: next,
-      ShowAzimuthRing: next,
-      ShowLongitudeRing: next,
-    });
+    model.setState({ ShowGPTracer: !model.state.ShowGPTracer });
   });
   const refreshGrids = () => {
-    const on = !!(model.state.ShowFeGrid
-                  || model.state.ShowOpticalVaultGrid
-                  || model.state.ShowAzimuthRing
-                  || model.state.ShowLongitudeRing);
-    btnGrids.setAttribute('aria-pressed', on ? 'true' : 'false');
+    btnGrids.setAttribute('aria-pressed', model.state.ShowGPTracer ? 'true' : 'false');
   };
   model.addEventListener('update', refreshGrids);
   refreshGrids();

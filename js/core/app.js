@@ -152,7 +152,8 @@ function defaultState() {
     ShowOpticalVaultRays: false,
     ShowManyRays:   false,
     ShowProjectionRays: false,
-    ShowLatitudeLines: false,
+    ShowTropics:       false,
+    ShowPolarCircles:  false,
     ShowGroundPoints:  false,
     ShowFacingVector:  false,
     ShowDecCircles:    false,
@@ -160,7 +161,7 @@ function defaultState() {
     ShowConstellations:      true,
     ShowConstellationLines:  true,
     ShowLongitudeRing:       false,
-    ShowAzimuthRing:         true,
+    ShowAzimuthRing:         false,
     ShowOpticalVaultGrid:    false,
     ShowCelestialPoles:      false,
     DarkBackground:          true,
@@ -191,7 +192,7 @@ function defaultState() {
     ShowBlackHoles:          true,
     ShowQuasars:             true,
     ShowGalaxies:            true,
-    ShowBsc:                 false,
+    ShowBsc:                 true,
     BscTargets:              [],
     Language:                'en',
     GPOverridePlanets:         false,
@@ -223,7 +224,7 @@ function defaultState() {
     ShowPlanets: true,
 
     // When true, starfield fades with sun elevation.
-    DynamicStars: true,
+    DynamicStars: false,
 
     // 'none' | 'yggdrasil' | 'meru' | 'vortex' | 'vortex2' | 'discworld'
     Cosmology: 'none',
@@ -803,11 +804,17 @@ export class FeModel extends EventTarget {
 
     // Satellites: sub-point (lat, lon) computed per-frame from
     // two-body Kepler; projected through the same vault /
-    // local-globe / optical-vault machinery as stars. Only built
-    // when ShowSatellites is on so the 12-entry catalogue isn't
-    // iterated every frame for no reason.
+    // local-globe / optical-vault machinery as stars. Built when
+    // ShowSatellites is on OR when any `star:sat_*` id sits in the
+    // tracker — so per-chip clicks alone are enough to make a
+    // satellite render without also flipping the master.
     const SAT_VAULT_HEIGHT = 0.15;
-    if (s.ShowSatellites) {
+    const _trackerHasSat = (Array.isArray(s.TrackerTargets) ? s.TrackerTargets : [])
+      .some((t) => typeof t === 'string' && t.startsWith('star:sat_'));
+    const _bscHasSat = (Array.isArray(s.BscTargets) ? s.BscTargets : [])
+      .some((t) => typeof t === 'string' && t.startsWith('star:sat_'));
+    const _followIsSat = typeof s.FollowTarget === 'string' && s.FollowTarget.startsWith('star:sat_');
+    if (s.ShowSatellites || _trackerHasSat || _bscHasSat || _followIsSat) {
       const projectSatellite = (sat) => {
         const sub = satelliteSubPoint(sat, utcDate);
         const decRad = sub.lat * Math.PI / 180;

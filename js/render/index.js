@@ -194,7 +194,6 @@ export class Renderer {
       maxCount: 1024,
       clippingPlanes: clipPlanes,
       requireMembership: true,
-      showKey: 'ShowSatellites',
     });
     this.sm.world.add(this.satelliteStars.group);
 
@@ -536,9 +535,6 @@ export class Renderer {
       : new Set(Array.isArray(s.TrackerTargets) ? s.TrackerTargets : []);
     if (!stm && s.FollowTarget) trackerSet.add(s.FollowTarget);
     const bodyCategoryOn = s.ShowCelestialBodies !== false;
-    // Tracker-as-source-of-truth: Show gates the category, membership
-    // always decides which bodies render inside it. STM narrows to
-    // FollowTarget when active.
     const showSun   = bodyCategoryOn && trackerSet.has('sun');
     const showMoon  = bodyCategoryOn && trackerSet.has('moon');
     this.sunMarker.group.visible  = showSun;
@@ -572,7 +568,7 @@ export class Renderer {
     // sky once the sun has dropped far enough for them to be visible.
     for (const [name, mk] of Object.entries(this.planetMarkers)) {
       const p = c.Planets[name];
-      if (!p || !s.ShowPlanets || !bodyCategoryOn) {
+      if (!p || !bodyCategoryOn) {
         mk.group.visible = false;
         continue;
       }

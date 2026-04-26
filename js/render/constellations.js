@@ -126,8 +126,13 @@ export class Constellations {
   update(model) {
     const s = model.state;
     const c = model.computed;
-    const showStars = !!s.ShowConstellations;
-    const showLines = !!s.ShowConstellationLines && showStars;
+    // Constellation star dots follow the global Stars master so the
+    // user doesn't need a separate per-category Show toggle to turn
+    // them on. Lines (outlines) follow their own toggle, independent
+    // of the dots — checking Outlines does not require the dots to be
+    // on.
+    const showStars = !!s.ShowStars;
+    const showLines = !!s.ShowConstellationLines;
 
     // Honour the same DynamicStars / day-night fade the random starfield
     // uses so the constellations emerge smoothly at twilight instead of
@@ -158,7 +163,9 @@ export class Constellations {
     this.domeLines.material.opacity   = nightAlpha * 0.75;
     this.sphereLines.material.opacity = nightAlpha * 0.85;
 
-    if (!showStars || !canShow) return;
+    // Bail only when there's nothing to draw at all — lines need the
+    // per-star positions computed below even when the dot layer is off.
+    if ((!showStars && !showLines) || !canShow) return;
 
     const opticalR = c.OpticalVaultRadius;
     // use the mode-dependent effective height so

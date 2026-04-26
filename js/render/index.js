@@ -320,7 +320,7 @@ export class Renderer {
     this._landGeo = await loadLandGeo();
     const s = this.model.state;
     const projId = (s.WorldModel === 'ge')
-      ? (s.MapProjectionGe || 'hq_ortho')
+      ? (s.MapProjectionGe || 'hq_equirect_night')
       : (s.MapProjection || 'ae');
     this._rebuildLand(projId);
     this.frame();
@@ -389,7 +389,7 @@ export class Renderer {
     // uses `MapProjectionGe`. Each preserves its own dropdown
     // selection so toggling FE/GE doesn't clobber the other map.
     const projId = (s.WorldModel === 'ge')
-      ? (s.MapProjectionGe || 'hq_ortho')
+      ? (s.MapProjectionGe || 'hq_equirect_night')
       : (s.MapProjection || 'ae');
     if (projId !== this._landProjection) {
       this._rebuildLand(projId);
@@ -417,7 +417,7 @@ export class Renderer {
     if (this.land) this.land.visible = !ge;
     this.worldGlobe.update(m);
     if (this.worldGlobe && typeof this.worldGlobe.applyMapTexture === 'function') {
-      this.worldGlobe.applyMapTexture(s.MapProjectionGe || 'hq_ortho', getProjection);
+      this.worldGlobe.applyMapTexture(s.MapProjectionGe || 'hq_equirect_night', getProjection);
     }
     this.globeHeavenlyVault.update(m);
     this.domeCaustic.update(m);

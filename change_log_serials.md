@@ -5135,3 +5135,22 @@ Format:
     transports them across the disc / sphere
     untouched.
 - **Revert:** `git checkout v-s000480 -- .`
+
+## S482 — Default GE map projection: HQ Equirect (night)
+
+- **Date:** 2026-04-26
+- **Files changed:** `js/core/app.js`,
+  `js/render/index.js`, `js/ui/controlPanel.js`.
+- **Change:**
+  - `MapProjectionGe` default switched from
+    `'hq_ortho'` to `'hq_equirect_night'`. The
+    Equirect texture wraps cleanly onto the
+    terrestrial sphere via the existing UV path; the
+    night-side artwork reads as a sensible default
+    (city lights / dark continents). Renderer
+    fallbacks (`frame()`, `loadLand()`,
+    `worldGlobe.applyMapTexture` call site) updated
+    in lock-step with the state default.
+  - P1 / P2 presets updated to set
+    `MapProjectionGe: 'hq_equirect_night'`.
+- **Revert:** `git checkout v-s000481 -- .`

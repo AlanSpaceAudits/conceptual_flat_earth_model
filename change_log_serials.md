@@ -4379,3 +4379,26 @@ Format:
     The GP-tracer sky line stays gated until that path
     is re-projected.
 - **Revert:** `git checkout v-s000446 -- .`
+
+## S448 — GE optical-vault: drop horizon clip + below-horizon fade
+
+- **Date:** 2026-04-26
+- **Files changed:** `js/core/app.js`,
+  `js/render/worldObjects.js`,
+  `js/render/constellations.js`, `js/render/index.js`.
+- **Change:**
+  - `_globeOpticalProject` no longer parks sub-horizon
+    bodies (`localGlobe[0] ≤ 0` no longer returns
+    `[0, 0, -1000]`). Below-horizon bodies project
+    geometrically below the cap rim.
+  - `Stars.update`, `CelNavStars.update`,
+    `CatalogPointStars.update`,
+    `Constellations.update`: GE branches drop the
+    horizon-park; FE keeps it (FE disc-clip plane still
+    needs the sentinel). Below-horizon GE entries land
+    on the lower half of the cap.
+  - `index.js` sun / moon / planet markers pass
+    `elevation = 90` to `CelestialMarker.update` in GE
+    so its `(elevation + 3) / 5` fade stays at full
+    opacity for sub-horizon bodies.
+- **Revert:** `git checkout v-s000447 -- .`

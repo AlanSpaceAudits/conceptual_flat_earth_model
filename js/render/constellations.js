@@ -231,9 +231,31 @@ export class Constellations {
         this._domeStarPos[i * 3 + 2] = gd[2];
       }
 
-      // Optical vault.
+      // Optical vault. GE keeps sub-horizon stars on the lower half
+      // of the cap (no clip); FE parks them below the disc so the
+      // clip plane hides them.
       const localGlobe = M.Trans(c.TransMatCelestToGlobe, vect);
-      if (localGlobe[0] <= 0) {
+      if (ge && c.GlobeObserverFrame && c.GlobeObserverCoord) {
+        aboveHorizon[i] = true;
+        const f = c.GlobeObserverFrame;
+        const obsG = c.GlobeObserverCoord;
+        const ax = localGlobe[2], ay = localGlobe[1], az = localGlobe[0];
+        const gs = [
+          obsG[0] + opticalR * (ax * f.northX + ay * f.eastX + az * f.upX),
+          obsG[1] + opticalR * (ax * f.northY + ay * f.eastY + az * f.upY),
+          obsG[2] + opticalR * (ax * f.northZ + ay * f.eastZ + az * f.upZ),
+        ];
+        sphPos[i] = gs;
+        if (skipPoint) {
+          this._sphStarPos[i * 3]     = 0;
+          this._sphStarPos[i * 3 + 1] = 0;
+          this._sphStarPos[i * 3 + 2] = -1000;
+        } else {
+          this._sphStarPos[i * 3]     = gs[0];
+          this._sphStarPos[i * 3 + 1] = gs[1];
+          this._sphStarPos[i * 3 + 2] = gs[2];
+        }
+      } else if (localGlobe[0] <= 0) {
         aboveHorizon[i] = false;
         sphPos[i] = [0, 0, -1000];
         this._sphStarPos[i * 3]     = 0;
@@ -241,20 +263,8 @@ export class Constellations {
         this._sphStarPos[i * 3 + 2] = -1000;
       } else {
         aboveHorizon[i] = true;
-        let gs;
-        if (ge && c.GlobeObserverFrame && c.GlobeObserverCoord) {
-          const f = c.GlobeObserverFrame;
-          const obsG = c.GlobeObserverCoord;
-          const ax = localGlobe[2], ay = localGlobe[1], az = localGlobe[0];
-          gs = [
-            obsG[0] + opticalR * (ax * f.northX + ay * f.eastX + az * f.upX),
-            obsG[1] + opticalR * (ax * f.northY + ay * f.eastY + az * f.upY),
-            obsG[2] + opticalR * (ax * f.northZ + ay * f.eastZ + az * f.upZ),
-          ];
-        } else {
-          const feLocal = [-localGlobe[2] * opticalR, localGlobe[1] * opticalR, localGlobe[0] * opticalH];
-          gs = M.Trans(c.TransMatLocalFeToGlobalFe, feLocal);
-        }
+        const feLocal = [-localGlobe[2] * opticalR, localGlobe[1] * opticalR, localGlobe[0] * opticalH];
+        const gs = M.Trans(c.TransMatLocalFeToGlobalFe, feLocal);
         sphPos[i] = gs;
         if (skipPoint) {
           this._sphStarPos[i * 3]     = 0;

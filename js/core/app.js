@@ -471,17 +471,19 @@ export class FeModel extends EventTarget {
 
     // GE optical-vault projection. Takes a `localGlobe` vector
     // (components: zenith, east, north) and returns the body's
-    // world position on the GE optical cap. The cap is a hemisphere
-    // of radius FE_RADIUS tangent at the observer; a body at unit
-    // direction (zenith, east, north) lands at
-    // `observer + zenith·up + east·east + north·north`. Sub-horizon
-    // bodies (zenith ≤ 0) are parked far below the observer so the
-    // disc-clip plane (or the rim itself) hides them.
+    // world position on the GE optical cap (hemisphere of radius
+    // FE_RADIUS tangent at the observer). A body at unit direction
+    // `(zenith, east, north)` lands at
+    // `observer + R · (zenith·up + east·east + north·north)`.
+    // Sub-horizon bodies (zenith < 0) are NOT parked — they project
+    // to the lower geometric half of the cap, which in GE sits
+    // inside the terrestrial sphere / behind the observer. Removing
+    // the FE-style horizon clip lets the optical vault keep its
+    // body markers continuous as bodies cross the local horizon.
     const _globeOpticalProject = (localGlobe) => {
       const f = c.GlobeObserverFrame;
       const obs = c.GlobeObserverCoord;
       if (!f || !obs) return [0, 0, -1000];
-      if (localGlobe[0] <= 0) return [0, 0, -1000];
       const R = FE_RADIUS;
       const ax = localGlobe[2];   // north
       const ay = localGlobe[1];   // east

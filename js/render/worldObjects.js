@@ -3739,25 +3739,25 @@ export class Stars {
       // celest unit dir -> observer's local-globe -> fe-local (axis swap)
       // -> global-fe (rotate by observer long, translate to observer).
       const localGlobe = M.Trans(c.TransMatCelestToGlobe, celestV);
-      // Below-horizon stars (zenith component <= 0) get parked far below
-      // the disc; the disc clip plane then hides them. This matches the
-      // elevation gate the planet markers use in CelestialMarker.update.
-      if (localGlobe[0] <= 0) {
-        sphPos[i * 3]     = 0;
-        sphPos[i * 3 + 1] = 0;
-        sphPos[i * 3 + 2] = -1000;
-        continue;
-      }
       if (ge && c.GlobeObserverFrame && c.GlobeObserverCoord) {
         // GE optical-vault projection: hemisphere of FE_RADIUS tangent
         // at the observer. World position = obs + R · (north·local[2]
-        // + east·local[1] + up·local[0]).
+        // + east·local[1] + up·local[0]). No horizon clip — sub-
+        // horizon stars project to the lower geometric half of the
+        // cap.
         const f = c.GlobeObserverFrame;
         const obsG = c.GlobeObserverCoord;
         const ax = localGlobe[2], ay = localGlobe[1], az = localGlobe[0];
         sphPos[i * 3]     = obsG[0] + opticalR * (ax * f.northX + ay * f.eastX + az * f.upX);
         sphPos[i * 3 + 1] = obsG[1] + opticalR * (ax * f.northY + ay * f.eastY + az * f.upY);
         sphPos[i * 3 + 2] = obsG[2] + opticalR * (ax * f.northZ + ay * f.eastZ + az * f.upZ);
+      } else if (localGlobe[0] <= 0) {
+        // FE: below-horizon stars get parked far below the disc; the
+        // disc clip plane then hides them.
+        sphPos[i * 3]     = 0;
+        sphPos[i * 3 + 1] = 0;
+        sphPos[i * 3 + 2] = -1000;
+        continue;
       } else {
         // FE: ellipsoidal optical vault: x/y scaled by horizontal
         // radius (opticalR), z by vertical height (opticalH). Same
@@ -4780,18 +4780,25 @@ export class CelNavStars {
       dp[i * 3    ] = dome[0];
       dp[i * 3 + 1] = dome[1];
       dp[i * 3 + 2] = dome[2];
-      // Optical vault: below-horizon stars parked far below the disc so
-      // the disc clip plane hides them (matches Stars class convention).
-      const localGlobe = M.Trans(c.TransMatCelestToGlobe, star.celestCoord);
-      if (localGlobe[0] <= 0) {
-        sp[i * 3    ] = 0;
-        sp[i * 3 + 1] = 0;
-        sp[i * 3 + 2] = -1000;
+      // Optical vault. GE uses precomputed `globeOpticalVaultCoord`
+      // (no horizon clip — sub-horizon stars project to the lower
+      // half of the cap). FE parks below-horizon entries below the
+      // disc so the clip plane hides them.
+      if (ge && star.globeOpticalVaultCoord) {
+        sp[i * 3    ] = star.globeOpticalVaultCoord[0];
+        sp[i * 3 + 1] = star.globeOpticalVaultCoord[1];
+        sp[i * 3 + 2] = star.globeOpticalVaultCoord[2];
       } else {
-        const opt = (ge && star.globeOpticalVaultCoord) ? star.globeOpticalVaultCoord : star.opticalVaultCoord;
-        sp[i * 3    ] = opt[0];
-        sp[i * 3 + 1] = opt[1];
-        sp[i * 3 + 2] = opt[2];
+        const localGlobe = M.Trans(c.TransMatCelestToGlobe, star.celestCoord);
+        if (localGlobe[0] <= 0) {
+          sp[i * 3    ] = 0;
+          sp[i * 3 + 1] = 0;
+          sp[i * 3 + 2] = -1000;
+        } else {
+          sp[i * 3    ] = star.opticalVaultCoord[0];
+          sp[i * 3 + 1] = star.opticalVaultCoord[1];
+          sp[i * 3 + 2] = star.opticalVaultCoord[2];
+        }
       }
     }
 
@@ -4948,16 +4955,23 @@ export class CatalogPointStars {
       dp[i * 3    ] = dome[0];
       dp[i * 3 + 1] = dome[1];
       dp[i * 3 + 2] = dome[2];
-      const localGlobe = M.Trans(c.TransMatCelestToGlobe, star.celestCoord);
-      if (localGlobe[0] <= 0) {
-        sp[i * 3    ] = 0;
-        sp[i * 3 + 1] = 0;
-        sp[i * 3 + 2] = -1000;
+      if (ge && star.globeOpticalVaultCoord) {
+        // GE: no horizon clip; below-horizon entries land on the
+        // lower half of the cap.
+        sp[i * 3    ] = star.globeOpticalVaultCoord[0];
+        sp[i * 3 + 1] = star.globeOpticalVaultCoord[1];
+        sp[i * 3 + 2] = star.globeOpticalVaultCoord[2];
       } else {
-        const opt = (ge && star.globeOpticalVaultCoord) ? star.globeOpticalVaultCoord : star.opticalVaultCoord;
-        sp[i * 3    ] = opt[0];
-        sp[i * 3 + 1] = opt[1];
-        sp[i * 3 + 2] = opt[2];
+        const localGlobe = M.Trans(c.TransMatCelestToGlobe, star.celestCoord);
+        if (localGlobe[0] <= 0) {
+          sp[i * 3    ] = 0;
+          sp[i * 3 + 1] = 0;
+          sp[i * 3 + 2] = -1000;
+        } else {
+          sp[i * 3    ] = star.opticalVaultCoord[0];
+          sp[i * 3 + 1] = star.opticalVaultCoord[1];
+          sp[i * 3 + 2] = star.opticalVaultCoord[2];
+        }
       }
       if (this._perVertexColors && star.color != null) {
         const r = ((star.color >> 16) & 0xff) / 255;

@@ -586,6 +586,20 @@ export class WorldGlobe {
     this.group.position.set(0, 0, 0);
     this.group.add(this.sphere);
 
+    // Center-of-sphere marker — a small bright dot at the origin.
+    // Useful as a visual reference when verifying that the observer's
+    // local-zenith axis aligns with the line from the observer
+    // through the centre of the terrestrial sphere.
+    this.center = new THREE.Mesh(
+      new THREE.SphereGeometry(radius * 0.012, 12, 10),
+      new THREE.MeshBasicMaterial({
+        color: 0xff8040, transparent: true, opacity: 0.95,
+        depthTest: false, depthWrite: false,
+      }),
+    );
+    this.center.renderOrder = 70;
+    this.group.add(this.center);
+
     const gridMat = new THREE.LineBasicMaterial({
       color: 0x88a4c8, transparent: true, opacity: 0.45,
     });
@@ -2852,6 +2866,25 @@ export class Observer {
     );
     this.axes.renderOrder = 60;
     this.group.add(this.axes);
+
+    // Zenith-through-center reference line: extends from the observer's
+    // feet straight down along local -z (inward radial) by FE_RADIUS,
+    // so on the GE sphere this line passes through the centre of the
+    // terrestrial sphere. In FE the same line drops straight down into
+    // the disc plane.
+    const zcGeom = new THREE.BufferGeometry();
+    zcGeom.setAttribute('position', new THREE.Float32BufferAttribute(
+      [0, 0, 0, 0, 0, -FE_RADIUS], 3,
+    ));
+    this.zenithToCenter = new THREE.Line(
+      zcGeom,
+      new THREE.LineBasicMaterial({
+        color: 0xff8040, transparent: true, opacity: 0.7,
+        depthTest: false, depthWrite: false,
+      }),
+    );
+    this.zenithToCenter.renderOrder = 60;
+    this.group.add(this.zenithToCenter);
   }
 
   _buildFigure(kind) {
@@ -3523,6 +3556,9 @@ export class Observer {
       const ang = Math.atan2(p[1], p[0]);
       this.figureGroup.rotation.set(0, 0, ang);
     }
+    // Zenith-through-centre helper line is GE-only; in FE the line
+    // would just disappear into the disc.
+    if (this.zenithToCenter) this.zenithToCenter.visible = ge;
   }
 }
 

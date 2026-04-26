@@ -4179,3 +4179,21 @@ Format:
     radial-outward direction) doesn't tilt the
     Heavenly-mode view.
 - **Revert:** `git checkout v-s000437 -- .`
+
+## S439 — GE: terrestrial-sphere centre marker + zenith-through-centre line
+
+- **Date:** 2026-04-26
+- **Files changed:** `js/render/worldObjects.js`.
+- **Change:**
+  - `WorldGlobe` adds a small bright dot at the world
+    origin so the centre of the terrestrial sphere is a
+    visible reference. The dot is rendered with
+    `depthTest: false` so it stays visible through the
+    sphere.
+  - `Observer` adds a zenith-through-centre reference
+    line in observer-local frame: from `(0, 0, 0)` along
+    local `-z` by one `FE_RADIUS`. With the GE rotation
+    matrix applied, the line passes from the observer's
+    feet straight through the centre of the terrestrial
+    sphere. Line is gated on GE in `Observer.update`.
+- **Revert:** `git checkout v-s000438 -- .`

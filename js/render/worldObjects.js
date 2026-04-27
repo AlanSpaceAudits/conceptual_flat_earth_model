@@ -851,20 +851,40 @@ export class LatitudeLines {
     this._lastProj = null;
     this._rebuild();
   }
-  _rebuild() {
+  _rebuild(ge = false) {
     const feRadius = this._feRadius;
+    // Slight outward lift on GE so the circles sit just above the
+    // globe shader surface and don't z-fight with it.
+    const Rge = feRadius * 1.0008;
     for (let i = 0; i < this._circles.length; i++) {
       const c = this._circles[i];
       const pts = [];
-      for (let k = 0; k <= 256; k++) {
-        const lon = -180 + k * (360 / 256);
-        const p = canonicalLatLongToDisc(c.lat, lon, feRadius);
-        pts.push(p[0], p[1], 8e-4);
+      if (ge) {
+        const phi = c.lat * Math.PI / 180;
+        const cp = Math.cos(phi), sp = Math.sin(phi);
+        const z = Rge * sp;
+        const r = Rge * cp;
+        for (let k = 0; k <= 256; k++) {
+          const lam = (-180 + k * (360 / 256)) * Math.PI / 180;
+          pts.push(r * Math.cos(lam), r * Math.sin(lam), z);
+        }
+      } else {
+        for (let k = 0; k <= 256; k++) {
+          const lon = -180 + k * (360 / 256);
+          const p = canonicalLatLongToDisc(c.lat, lon, feRadius);
+          pts.push(p[0], p[1], 8e-4);
+        }
       }
       const line = this._lines[i];
       line.geometry.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
       line.geometry.attributes.position.needsUpdate = true;
       line.geometry.computeBoundingSphere();
+      // GE lines need depthTest so they get occluded by the front
+      // half of the globe; FE lines stay always-visible since the
+      // disc has no front-back ambiguity.
+      const m = line.material;
+      const wantDT = ge;
+      if (m.depthTest !== wantDT) { m.depthTest = wantDT; m.needsUpdate = true; }
     }
   }
   update(model) {
@@ -876,10 +896,11 @@ export class LatitudeLines {
       const c = this._circles[i];
       this._lines[i].visible = c.kind === 'tropic' ? tropics : polar;
     }
-    const proj = s.MapProjection || 'ae';
-    if (proj !== this._lastProj) {
-      this._rebuild();
-      this._lastProj = proj;
+    const ge = s.WorldModel === 'ge';
+    const key = ge ? 'ge' : `fe:${s.MapProjection || 'ae'}`;
+    if (key !== this._lastProj) {
+      this._rebuild(ge);
+      this._lastProj = key;
     }
   }
 }

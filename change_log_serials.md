@@ -5542,3 +5542,32 @@ Format:
     of each rebuild so stale picks don't survive
     after the user toggles trackers.
 - **Revert:** `git checkout v-s000495 -- .`
+
+## S497 — Tropics + polar circles in GE mode
+
+- **Date:** 2026-04-26
+- **Files changed:** `js/render/worldObjects.js`.
+- **Change:**
+  - `LatitudeLines._rebuild` now branches on a
+    `ge` flag. FE keeps the
+    `canonicalLatLongToDisc` AE projection at
+    `z = 8e-4`. GE builds each circle as a
+    parallel of latitude on the globe sphere at
+    radius `FE_RADIUS * 1.0008` (tiny outward
+    lift to avoid z-fight with the textured
+    globe shader). Same five circles — Arctic /
+    Tropic of Cancer / Equator / Tropic of
+    Capricorn / Antarctic — share the same
+    colour palette across both modes.
+  - GE lines use `depthTest: true` so the front
+    half of the globe occludes the back half of
+    each circle, giving the correct hemisphere
+    perspective. FE keeps `depthTest: false`
+    since the flat disc has no front-back
+    ambiguity.
+  - `update` now keys the cached projection
+    string on `WorldModel` too, so toggling
+    FE ↔ GE forces a `_rebuild` and the
+    correct geometry is emitted for the active
+    mode.
+- **Revert:** `git checkout v-s000496 -- .`

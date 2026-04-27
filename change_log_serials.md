@@ -6777,3 +6777,22 @@ Format:
     already gated by `_lastProj` keys —
     confirmed during audit, no change needed.
 - **Revert:** `git checkout v-s000540 -- .`
+
+## S542 — Revert S541 optimization caches
+
+- **Date:** 2026-04-27
+- **Files changed:** `js/core/app.js`,
+  `js/render/index.js`,
+  `js/render/worldObjects.js`,
+  `js/render/constellations.js`.
+- **Change:**
+  - `git checkout v-s000540 --` for the four
+    files touched by S541. Restores the pre-
+    optimization state: no projectStar cache
+    in `app.js`, no `_lastProjKey` early
+    returns in `Stars` / `CatalogPointStars` /
+    `Constellations`, no
+    `_lastEffectiveGeProjId` gate on
+    `applyMapTexture`. Per-frame projection
+    work runs unconditionally as before.
+- **Revert:** `git checkout v-s000541 -- .`

@@ -538,10 +538,7 @@ export class Renderer {
         effectiveProjId = (c.NightFactor || 0) < 0.5
           ? 'hq_equirect_day' : 'hq_equirect_night';
       }
-      if (effectiveProjId !== this._lastEffectiveGeProjId) {
-        this.worldGlobe.applyMapTexture(effectiveProjId, getProjection);
-        this._lastEffectiveGeProjId = effectiveProjId;
-      }
+      this.worldGlobe.applyMapTexture(effectiveProjId, getProjection);
     }
     this.globeHeavenlyVault.update(m);
     this.domeCaustic.update(m);

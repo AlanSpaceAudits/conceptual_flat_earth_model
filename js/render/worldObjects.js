@@ -4132,11 +4132,6 @@ export class Stars {
     const Rgv = c.GlobeVaultRadius || (FE_RADIUS * 1.6);
     const skyRotDeg = c.SkyRotAngle || 0;
 
-    // Skip per-star projection + GPU upload when nothing relevant changed.
-    const _key = `${ge}|${skyRotDeg}|${opticalR}|${opticalH}|${Rgv}|${s.StarfieldVaultHeight}|${s.ObserverLat}|${s.ObserverLong}|${s.ObserverElevation}|${s.ObserverHeading}`;
-    if (_key === this._lastProjKey) return;
-    this._lastProjKey = _key;
-
     for (let i = 0; i < this._celest.length; i++) {
       const [lat, lon] = this._celest[i];
       const celestV = this._celestVect[i];
@@ -5648,17 +5643,6 @@ export class CatalogPointStars {
     const dc = this._domeColors;
     const sc = this._sphereColors;
     const ge = s.WorldModel === 'ge';
-    // entries is shared by reference when the projection cache hits in
-    // app.js; combined with tracker membership + ge flag, that's all
-    // this loop's output depends on.
-    const _trackerKey = stm ? `${s.FollowTarget || ''}` : `${(targetArr || []).join(',')}|${s.FollowTarget || ''}`;
-    const _projKey = `${entries}|${ge}|${n}|${_trackerKey}`;
-    if (_projKey === this._lastProjKey) {
-      this.domePoints.geometry.setDrawRange(0, n);
-      this.spherePoints.geometry.setDrawRange(0, n);
-      return;
-    }
-    this._lastProjKey = _projKey;
     for (let i = 0; i < n; i++) {
       const star = entries[i];
       const isTracked = trackerSet.has(`${this.idPrefix}:${star.id}`);

@@ -201,19 +201,6 @@ export class Constellations {
     // positions.
     const celnavLayerActive = s.StarfieldType === 'celnav' && s.ShowCelNav !== false;
 
-    // Skip projection + line rebuild + GPU re-upload when nothing
-    // relevant changed. Projection inputs: world model, sky-rotation
-    // (drives time), observer position / frame, optical-vault size,
-    // tracker membership, celnav layer state, and the toggles that
-    // gate visibility (showLines / showStars / canShow gate the path
-    // taken below; ge changes the projection branch entirely).
-    const _trackerKey = stm
-      ? `${s.FollowTarget || ''}`
-      : `${(targetArr || []).join(',')}|${s.FollowTarget || ''}`;
-    const _projKey = `${ge}|${skyRotDeg}|${opticalR}|${opticalH}|${Rgv}|${s.StarfieldVaultHeight}|${s.ObserverLat}|${s.ObserverLong}|${s.ObserverElevation}|${s.ObserverHeading}|${celnavLayerActive}|${showLines}|${showStars}|${_trackerKey}`;
-    if (_projKey === this._lastProjKey) return;
-    this._lastProjKey = _projKey;
-
     for (let i = 0; i < this._nStars; i++) {
       const [lat, lon] = this._stars[i];
       const vect = this._starVect[i];

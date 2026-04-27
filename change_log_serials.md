@@ -6989,3 +6989,23 @@ Format:
     latitudes) don't drop a marker at the
     sentinel.
 - **Revert:** `git checkout v-s000548 -- .`
+
+## S550 — Revert AnalemmaLine LineSegments conversion
+
+- **Date:** 2026-04-27
+- **Files changed:** `js/render/worldObjects.js`.
+- **Change:**
+  - `AnalemmaLine` reverted to `THREE.Line`
+    (was momentarily switched to
+    `THREE.LineSegments` mid-edit). The
+    accumulator still emits a continuous
+    polyline; with `LineSegments` interpreting
+    those points as pairs, the FE trace
+    rendered as weird zig-zags after a mode
+    swap. Plain `Line` connects sequential
+    points, which is what FE needs.
+  - GE chord-between-arcs still draws a
+    straight line where the sun crosses the
+    horizon between months — left for a
+    separate, fully-tested pass.
+- **Revert:** `git checkout v-s000549 -- .`

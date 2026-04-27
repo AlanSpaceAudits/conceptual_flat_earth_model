@@ -460,15 +460,10 @@ export function buildTrackingInfoPopup(panelEl, model) {
       ? info.mag.toFixed(2)
       : '—';
 
-    // Central angle obs↔GP via the spherical law of cosines on
+    // Central angle obs↔GP via spherical law of cosines on
     // (observer lat/lon, body GP lat/lon). Inscribed = central / 2
-    // (inscribed-angle theorem). `Elev − Inscribed` is the signed
-    // delta — kept around as a numeric helper even though the
-    // standalone Visibility row was retired (the inscribed-angle
-    // comparison isn't a physical horizon for stars or near-Earth
-    // bodies; see chord-tangent vs LoS discussion).
+    // (inscribed-angle theorem).
     let centralStr = '—', inscribedStr = '—';
-    let diffStr = '—';
     if (Number.isFinite(info.gpLat) && Number.isFinite(info.gpLon)
         && Number.isFinite(s.ObserverLat) && Number.isFinite(s.ObserverLong)) {
       const oLat = s.ObserverLat * Math.PI / 180;
@@ -478,12 +473,8 @@ export function buildTrackingInfoPopup(panelEl, model) {
       const cosC = Math.sin(oLat) * Math.sin(gLat)
                  + Math.cos(oLat) * Math.cos(gLat) * Math.cos(oLon - gLon);
       const centralDeg = Math.acos(Math.max(-1, Math.min(1, cosC))) * 180 / Math.PI;
-      const inscribedDeg = centralDeg / 2;
       centralStr = fmtDms(centralDeg);
-      inscribedStr = fmtDms(inscribedDeg);
-      if (Number.isFinite(info.elevation)) {
-        diffStr = fmtSignedDms(info.elevation - inscribedDeg);
-      }
+      inscribedStr = fmtDms(centralDeg / 2);
     }
 
     elBody.innerHTML = `
@@ -495,7 +486,6 @@ export function buildTrackingInfoPopup(panelEl, model) {
       <div class="ti-row"><span>GP lon</span><span>${gpLon}</span></div>
       <div class="ti-row"><span>Central</span><span>${centralStr}</span></div>
       <div class="ti-row"><span>Inscribed</span><span>${inscribedStr}</span></div>
-      <div class="ti-row"><span>Elev − Inscribed</span><span>${diffStr}</span></div>
       <div class="ti-row"><span>Mag</span><span>${mag}</span></div>
     `;
   }

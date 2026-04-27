@@ -7129,3 +7129,15 @@ Format:
     its intro to override (intro overrides
     win because spread comes after).
 - **Revert:** `git checkout v-s000554 -- .`
+
+## S556 — Drop Elev − Inscribed row from tracking-info popup
+
+- **Date:** 2026-04-27
+- **Files changed:** `js/ui/trackingInfoPopup.js`.
+- **Change:**
+  - Removed the `Elev − Inscribed` row and
+    its `diffStr` computation. Central +
+    Inscribed rows still computed and shown;
+    the signed delta was a leftover from
+    when a Visibility row consumed it.
+- **Revert:** `git checkout v-s000555 -- .`

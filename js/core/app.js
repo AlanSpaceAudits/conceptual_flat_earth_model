@@ -128,7 +128,7 @@ function defaultState() {
     Time:        21.07,
 
     VaultSize:   GEOMETRY.VaultSizeDefault,
-    VaultHeight: 0.4,
+    VaultHeight: 0.75,
 
     // H = R → hemispheric Optical projection. Reducing H only affects
     // the Heavenly cap depiction (see OpticalVaultHeightEffective).
@@ -225,16 +225,16 @@ function defaultState() {
 
     // Minutes east of UTC. -360 = CST.
     TimezoneOffsetMinutes: -360,
-    StarfieldVaultHeight: 0.28,
-    MoonVaultHeight:      0.346,
-    SunVaultHeight:       0.346,
-    MercuryVaultHeight:   0.346,
-    VenusVaultHeight:     0.346,
-    MarsVaultHeight:      0.346,
-    JupiterVaultHeight:   0.346,
-    SaturnVaultHeight:    0.346,
-    UranusVaultHeight:    0.346,
-    NeptuneVaultHeight:   0.346,
+    StarfieldVaultHeight: 0.485,
+    MoonVaultHeight:      0.545,
+    SunVaultHeight:       0.545,
+    MercuryVaultHeight:   0.545,
+    VenusVaultHeight:     0.545,
+    MarsVaultHeight:      0.545,
+    JupiterVaultHeight:   0.545,
+    SaturnVaultHeight:    0.545,
+    UranusVaultHeight:    0.545,
+    NeptuneVaultHeight:   0.545,
 
     ShowPlanets: true,
 

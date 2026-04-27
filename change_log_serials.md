@@ -6029,3 +6029,31 @@ Format:
     GE button + search field), preventing visual
     overlap.
 - **Revert:** `git checkout v-s000514 -- .`
+
+## S516 — Body-vault default heights lifted above starfield
+
+- **Date:** 2026-04-27
+- **Files changed:** `js/core/app.js`.
+- **Change:**
+  - `StarfieldVaultHeight` default raised from
+    `0.28` → `0.485` per Alan's adjusted FE-disc
+    layout.
+  - All body-vault defaults
+    (`Sun / Moon / Mercury / Venus / Mars /
+    Jupiter / Saturn / Uranus / Neptune`) bumped
+    from `0.346` to `0.545` so the formula
+    `StarfieldVaultHeight + HEADROOM (0.06) +
+    decNorm · BODY_RANGE (0.20)` keeps every body
+    above the starfield baseline. Per-body
+    runtime adjustments (sun cap by
+    `heavenlyVaultCeiling`, moon scaled by
+    `MOON_DEC_DEG / SUN_DEC_DEG`) still preserve
+    the proportional spacing between bodies.
+  - `VaultHeight` default raised from `0.4` →
+    `0.75` so the dome ceiling accommodates the
+    raised band (`heavenlyVaultCeiling` returns
+    `VaultHeight · √(1 − r²/domeR²)`; with the
+    old `0.4` cap, sun would be capped at
+    `~0.37` and end up below the new starfield
+    baseline at low declinations).
+- **Revert:** `git checkout v-s000515 -- .`

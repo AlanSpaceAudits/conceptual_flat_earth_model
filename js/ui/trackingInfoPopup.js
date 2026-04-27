@@ -476,16 +476,14 @@ export function buildTrackingInfoPopup(panelEl, model) {
       : '—';
 
     // Central angle obs↔GP via the spherical law of cosines on
-    // (observer lat/lon, body GP lat/lon). Inscribed angle =
-    // central / 2 by the inscribed-angle theorem; this is the
-    // angle the LoS-Earth red triangle reads when below the
-    // geometric horizon. `Elev − Inscribed` is then the signed
-    // visibility margin: positive ⇒ the body sits above the
-    // inscribed-angle horizon, negative ⇒ it has dropped under
-    // it and reads as "below inscribed angle".
+    // (observer lat/lon, body GP lat/lon). Inscribed = central / 2
+    // (inscribed-angle theorem). `Elev − Inscribed` is the signed
+    // delta — kept around as a numeric helper even though the
+    // standalone Visibility row was retired (the inscribed-angle
+    // comparison isn't a physical horizon for stars or near-Earth
+    // bodies; see chord-tangent vs LoS discussion).
     let centralStr = '—', inscribedStr = '—';
-    let diffStr = '—', visStr = '—';
-    let visClass = '';
+    let diffStr = '—';
     if (Number.isFinite(info.gpLat) && Number.isFinite(info.gpLon)
         && Number.isFinite(s.ObserverLat) && Number.isFinite(s.ObserverLong)) {
       const oLat = s.ObserverLat * Math.PI / 180;
@@ -499,15 +497,7 @@ export function buildTrackingInfoPopup(panelEl, model) {
       centralStr = fmtDms(centralDeg);
       inscribedStr = fmtDms(inscribedDeg);
       if (Number.isFinite(info.elevation)) {
-        const diff = info.elevation - inscribedDeg;
-        diffStr = fmtSignedDms(diff);
-        if (diff > 0) {
-          visStr = 'Visible';
-          visClass = 'ti-vis-ok';
-        } else {
-          visStr = 'Below inscribed angle';
-          visClass = 'ti-vis-no';
-        }
+        diffStr = fmtSignedDms(info.elevation - inscribedDeg);
       }
     }
 
@@ -521,7 +511,6 @@ export function buildTrackingInfoPopup(panelEl, model) {
       <div class="ti-row"><span>Central</span><span>${centralStr}</span></div>
       <div class="ti-row"><span>Inscribed</span><span>${inscribedStr}</span></div>
       <div class="ti-row"><span>Elev − Inscribed</span><span>${diffStr}</span></div>
-      <div class="ti-row"><span>Visibility</span><span class="${visClass}">${visStr}</span></div>
       <div class="ti-row"><span>Mag</span><span>${mag}</span></div>
     `;
   }

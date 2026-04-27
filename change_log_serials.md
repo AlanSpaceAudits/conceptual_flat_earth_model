@@ -5963,3 +5963,21 @@ Format:
     red (`#ff7b6b`) so the line reads at a
     glance.
 - **Revert:** `git checkout v-s000511 -- .`
+
+## S513 — Drop Visibility row from tracking popup
+
+- **Date:** 2026-04-27
+- **Files changed:** `js/ui/trackingInfoPopup.js`.
+- **Change:**
+  - Removed the standalone `Visibility` row (Visible
+    / Below inscribed angle) from the tracking-info
+    popup. The inscribed-angle comparison isn't a
+    physical horizon for stars or near-Earth bodies
+    (chord obs→GP ≠ LoS to body), so the row was
+    misleading.
+  - Kept Central, Inscribed, and Elev − Inscribed
+    rows alongside the rest of the readout — the
+    delta is still useful as a raw geometry helper
+    and the underlying calc may resurface for
+    future per-body horizon comparisons.
+- **Revert:** `git checkout v-s000512 -- .`

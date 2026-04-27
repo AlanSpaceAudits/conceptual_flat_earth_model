@@ -875,12 +875,20 @@ footer#desc .desc-dynamic { color: var(--fg); }
 .row.action-group-row {
   display: flex; gap: 4px; padding: 0;
 }
+.row.action-group-row.wrap {
+  flex-wrap: wrap;
+}
 .row.action-group-row .action-btn {
   flex: 1; min-width: 0;
   background: var(--row); color: var(--fg);
   border: 1px solid var(--border); border-radius: 3px;
   padding: 5px 6px; font: inherit; cursor: pointer;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.row.action-group-row.wrap .action-btn {
+  flex: 0 1 auto;
+  padding: 4px 8px;
+  font-size: 12px;
 }
 .row.action-group-row .action-btn:hover { border-color: var(--accent); color: var(--accent); }
 .row.action-row .action-btn.active {

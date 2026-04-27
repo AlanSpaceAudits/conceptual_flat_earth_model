@@ -5,7 +5,7 @@ import { dateTimeToString, dateTimeToDate } from '../core/time.js';
 import { TIME_ORIGIN } from '../core/constants.js';
 import { findNextEclipses } from '../core/ephemeris.js';
 import { CEL_NAV_SELECT_OPTIONS, CEL_NAV_STARS } from '../core/celnavStars.js';
-import { CATALOGUED_STARS } from '../core/constellations.js';
+import { CATALOGUED_STARS, CONSTELLATIONS } from '../core/constellations.js';
 import { BLACK_HOLES } from '../core/blackHoles.js';
 import { QUASARS }     from '../core/quasars.js';
 import { GALAXIES }    from '../core/galaxies.js';
@@ -797,6 +797,29 @@ const FIELD_GROUPS = [
       { title: 'Constellations', rows: [
         { key: 'ShowConstellationLines', label: 'Outlines', bool: true },
         { key: 'GPOverrideConstellations', label: 'GP Override', bool: true },
+        // Constellation-name row: clicking a name toggles every
+        // star in that constellation in `TrackerTargets`. Stars
+        // already in the set are removed (toggle-off); otherwise
+        // the constellation's full roster is added.
+        { layout: 'wrap', actions: CONSTELLATIONS.map((con) => ({
+          buttonLabel: con.name,
+          onClick: (m) => {
+            const ids = con.stars.map((st) => `star:${st.celnav || st.id}`);
+            const cur = Array.isArray(m.state.TrackerTargets) ? m.state.TrackerTargets : [];
+            const set = new Set(cur);
+            const allIn = ids.every((id) => set.has(id));
+            if (allIn) {
+              const drop = new Set(ids);
+              m.setState({ TrackerTargets: cur.filter((t) => !drop.has(t)) });
+            } else {
+              for (const id of ids) set.add(id);
+              m.setState({
+                TrackerTargets: [...set],
+                ShowConstellationLines: true,
+              });
+            }
+          },
+        })) },
         { label: '', buttonLabel: 'Enable All',
           onClick: (m) => {
             const celnavIds = new Set(CEL_NAV_STARS.map((s) => s.id));
@@ -1149,7 +1172,10 @@ function clickRow(model, row) {
 
 function clickGroupRow(model, row) {
   const el = document.createElement('div');
-  el.className = 'row action-group-row';
+  // `layout: 'wrap'` switches the row from equal-flex columns to a
+  // flex-wrap cluster — used for the constellation-name list where
+  // each button keeps its natural width and rows wrap as needed.
+  el.className = 'row action-group-row' + (row.layout === 'wrap' ? ' wrap' : '');
   for (const a of row.actions) {
     const btn = document.createElement('button');
     btn.type = 'button';

@@ -5571,3 +5571,32 @@ Format:
     correct geometry is emitted for the active
     mode.
 - **Revert:** `git checkout v-s000496 -- .`
+
+## S498 — Constellation-name buttons in Tracker tab
+
+- **Date:** 2026-04-26
+- **Files changed:** `js/ui/controlPanel.js`,
+  `css/styles.css`.
+- **Change:**
+  - `Tracker → Constellations` group now leads
+    with a row of constellation-name buttons (one
+    per `CONSTELLATIONS` entry). Click toggles
+    every star in that constellation in
+    `TrackerTargets`: stars not yet in the set
+    get added (constellation activated, with
+    `ShowConstellationLines: true` flipped on so
+    the stick figure draws); stars already
+    present get removed (constellation
+    deactivated). Star ids resolve via
+    `st.celnav || st.id` so cel-nav crossover
+    stars share the same id space as the
+    standalone CEL_NAV_STARS catalogue.
+  - `clickGroupRow` honours an optional
+    `layout: 'wrap'` flag on the row spec which
+    switches the action cluster from equal-flex
+    columns to flex-wrap. CSS adds
+    `.row.action-group-row.wrap` /
+    `.wrap .action-btn` so the constellation
+    cluster sits at natural button widths and
+    wraps cleanly across multiple lines.
+- **Revert:** `git checkout v-s000497 -- .`

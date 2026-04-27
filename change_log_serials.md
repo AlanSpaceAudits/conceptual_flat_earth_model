@@ -6288,3 +6288,33 @@ Format:
     'function' ? d.intro(this.model) : d.intro`),
     no animation change needed.
 - **Revert:** `git checkout v-s000525 -- .`
+
+## S527 — Dynamic equirect day/night swap + demo state save/restore
+
+- **Date:** 2026-04-27
+- **Files changed:** `js/render/index.js`,
+  `js/demos/index.js`.
+- **Change:**
+  - Renderer's `frame()` now picks
+    `hq_equirect_day` vs `hq_equirect_night` per
+    frame based on observer `c.NightFactor` when
+    `MapProjectionGe` is one of the two equirect
+    options (threshold `0.5` ≈ civil-twilight
+    midpoint). State key untouched — only the
+    rendered texture flips, so the dropdown
+    still shows the user's selection.
+  - `Demos` now snapshots `model.state` at the
+    start of any demo / queue (`this._savedState
+    = { ...this.model.state }` if `null`) and
+    restores it on natural end, manual `Stop`
+    (bottom-bar / demo-menu / End Demo button),
+    or queue completion. Replaces
+    `_snapToDefaultEphemeris` with
+    `_restoreSavedState`. Pre-demo observer lat
+    / lon / time / tracking / view options now
+    return exactly to where the user left them
+    instead of snapping to a fixed default.
+  - Snapshot persists across queued demos so a
+    `Play all` group restores the pre-queue
+    state, not the inter-demo transition state.
+- **Revert:** `git checkout v-s000526 -- .`

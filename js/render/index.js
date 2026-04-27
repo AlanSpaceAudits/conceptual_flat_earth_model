@@ -536,7 +536,16 @@ export class Renderer {
       if (!geProjEntry || geProjEntry.wrapsSphere !== true) {
         geProjId = 'hq_equirect_night';
       }
-      this.worldGlobe.applyMapTexture(geProjId, getProjection);
+      // Dynamic day/night swap when the user is on either equirect
+      // map: pick the day variant while the observer's sun is above
+      // civil-twilight midpoint (NightFactor < 0.5). Preserves the
+      // user's dropdown selection — only the rendered texture flips.
+      let effectiveProjId = geProjId;
+      if (geProjId === 'hq_equirect_night' || geProjId === 'hq_equirect_day') {
+        effectiveProjId = (c.NightFactor || 0) < 0.5
+          ? 'hq_equirect_day' : 'hq_equirect_night';
+      }
+      this.worldGlobe.applyMapTexture(effectiveProjId, getProjection);
     }
     this.globeHeavenlyVault.update(m);
     this.domeCaustic.update(m);

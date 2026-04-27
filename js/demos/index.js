@@ -20,6 +20,10 @@ export class Demos {
     // queue empties we advance to the next index in `_queue`.
     this._queue = null;
     this._queueCursor = 0;
+    // Snapshot of model.state taken at the start of a demo (or
+    // queue), restored when the demo ends or is stopped. `null`
+    // means no demo is holding a snapshot.
+    this._savedState = null;
 
     // Poll the animator each rAF. Two separate transitions matter:
     //   running → !running  → demo truly ended (queue empty, or
@@ -34,7 +38,7 @@ export class Demos {
       if (wasRunning && !nowRunning) {
         const queueDone = !this._queue
           || this._queueCursor >= this._queue.length;
-        if (queueDone) this._snapToDefaultEphemeris();
+        if (queueDone) this._restoreSavedState();
       }
       wasRunning = nowRunning;
       wasPlaying = nowPlaying;
@@ -49,26 +53,26 @@ export class Demos {
     requestAnimationFrame(tick);
   }
 
-  // When a demo ends, reset DateTime + BodySource to the DE405 defaults
-  // so post-demo exploration isn't anchored on Ptolemy-era dates or a
-  // pipeline with known timing drift.
-  _snapToDefaultEphemeris() {
-    this.model.setState({
-      DateTime:   812.88,
-      BodySource: 'astropixels',
-      // Demos often light up ShowSunTrack / ShowMoonTrack / GPPath*
-      // in their intros; reset them so post-demo exploration doesn't
-      // inherit those visualisations.
-      ShowSunTrack:  false,
-      ShowMoonTrack: false,
-      ShowGPPath:    false,
-      TraceCelestialFrame: false,
-    });
+  // Restore the model.state snapshot taken at demo / queue start so
+  // observer lat / lon / time / tracking / view options return to
+  // exactly what the user had before pressing play. No-op if no
+  // snapshot is held.
+  _restoreSavedState() {
+    if (!this._savedState) return;
+    this.model.setState(this._savedState);
+    this._savedState = null;
   }
 
   _playSingle(index, fromQueue = false) {
     if (index < 0 || index >= this.list.length) return;
     this.animator.stop();
+    // Snapshot pre-demo state on the first play of a (possibly
+    // queued) sequence — subsequent queued demos share the same
+    // snapshot so the eventual restore returns to what the user
+    // had before any demo ran.
+    if (this._savedState === null) {
+      this._savedState = { ...this.model.state };
+    }
     this.currentIndex = index;
     const d = this.list[index];
     // reset eclipse state before each demo's intro so the
@@ -117,6 +121,7 @@ export class Demos {
     this.animator.stop();
     this._queue = null;
     this._queueCursor = 0;
+    this._restoreSavedState();
     if (this._btnPauseResume) this._btnPauseResume.textContent = 'Pause';
     this._refreshPanel();
   }

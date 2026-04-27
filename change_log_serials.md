@@ -6586,3 +6586,21 @@ Format:
     in `DEMO_GROUPS`, inserted directly after
     `24h-sun` in `DEMOS`.
 - **Revert:** `git checkout v-s000534 -- .`
+
+## S536 — Geo-hops moved to bar-left, 2x5 grid
+
+- **Date:** 2026-04-27
+- **Files changed:** `js/ui/controlPanel.js`,
+  `css/styles.css`.
+- **Change:**
+  - `geoHops` removed from
+    `timeControls.append(...)` and appended to
+    `barLeft` (after `presets`). The vault-swap
+    eye button now sits where it did before
+    S535.
+  - `.geo-hops` switched from `display: flex` to
+    `display: grid` with
+    `grid-template-columns: repeat(5, auto)` so
+    the ten country codes fill a compact 5×2
+    block (5 columns, 2 rows).
+- **Revert:** `git checkout v-s000535 -- .`

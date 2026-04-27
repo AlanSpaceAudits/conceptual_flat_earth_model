@@ -442,10 +442,16 @@ header .info-popup.legend-popup a { color: var(--accent); }
   margin-top: 1px;
 }
 #bottom-bar .time-controls { display: flex; align-items: center; gap: 4px; flex: 0 0 auto; }
-#bottom-bar .vault-swap { font-size: 15px; margin-right: 4px; }
-#bottom-bar .geo-hops { display: flex; gap: 2px; margin-right: 8px; }
+#bottom-bar .vault-swap { font-size: 15px; margin-right: 8px; }
+#bottom-bar .geo-hops {
+  display: grid;
+  grid-template-columns: repeat(5, auto);
+  grid-auto-rows: auto;
+  gap: 2px;
+  margin: 0 8px;
+}
 #bottom-bar .geo-hops .time-btn {
-  padding: 3px 5px;
+  padding: 2px 4px;
   min-width: 0;
   font-size: 10px;
   font-weight: 600;

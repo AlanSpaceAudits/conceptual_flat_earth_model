@@ -1920,7 +1920,8 @@ export function buildControlPanel(host, model, demos) {
     makeJumpBtn('+y',  () => stepYears(1),   'Forward 1 year'),
   );
 
-  timeControls.append(btnVault, geoHops, btnRew, btnPlay, btnFf, btnSlow, btnSpeed, jumpGrid, speedStack);
+  timeControls.append(btnVault, btnRew, btnPlay, btnFf, btnSlow, btnSpeed, jumpGrid, speedStack);
+  barLeft.appendChild(geoHops);
 
   const compassControls = document.createElement('div');
   compassControls.className = 'compass-controls';

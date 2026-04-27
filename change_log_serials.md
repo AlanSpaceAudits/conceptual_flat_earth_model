@@ -7055,3 +7055,27 @@ Format:
     analemma on the same surface — the
     observer's actual sky hemisphere.
 - **Revert:** `git checkout v-s000551 -- .`
+
+## S553 — Drop disc-clip from MonthMarkers so GE noon notches render
+
+- **Date:** 2026-04-27
+- **Files changed:** `js/render/index.js`.
+- **Change:**
+  - All five `MonthMarkers` instances
+    (`sunMonthMarkers`, `sunMonthMarkersOpp`,
+    `moonMonthMarkers`, `eclipseMapSolar`,
+    `eclipseMapLunar`) constructed with
+    `clippingPlanes: []` instead of the
+    shared `clipPlanes` (which carries the
+    FE `z < 0` disc clip).
+  - In GE, optical-vault sprite positions
+    can land at world `z < 0` for southern-
+    hemisphere observers, getting silently
+    culled by the disc plane. The clip was
+    only ever meaningful in FE; the markers
+    are now on the optical-vault hemisphere
+    in both modes and stay above the
+    observer's local horizon, so disabling
+    the FE-specific clip doesn't introduce
+    any sub-disc leakage.
+- **Revert:** `git checkout v-s000552 -- .`

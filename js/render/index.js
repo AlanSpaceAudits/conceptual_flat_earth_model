@@ -148,31 +148,31 @@ export class Renderer {
     this.sm.world.add(this.gpTracer.group);
 
     this.sunMonthMarkers = new MonthMarkers({
-      color: '#ffe680', size: 0.011, clippingPlanes: clipPlanes,
+      color: '#ffe680', size: 0.011, clippingPlanes: [],
       markersKey: 'SunMonthMarkers',
       worldSpaceKey: 'SunMonthMarkersWorldSpace',
       name: 'sun-month-markers',
     });
     this.sunMonthMarkersOpp = new MonthMarkers({
-      color: '#ff80c0', size: 0.011, clippingPlanes: clipPlanes,
+      color: '#ff80c0', size: 0.011, clippingPlanes: [],
       markersKey: 'SunMonthMarkersOpp',
       worldSpaceKey: 'SunMonthMarkersOppWorldSpace',
       name: 'sun-month-markers-opp',
     });
     this.moonMonthMarkers = new MonthMarkers({
-      color: '#ffffff', size: 0.013, clippingPlanes: clipPlanes,
+      color: '#ffffff', size: 0.013, clippingPlanes: [],
       markersKey: 'MoonMonthMarkers',
       worldSpaceKey: 'MoonMonthMarkersWorldSpace',
       name: 'moon-month-markers',
     });
     this.eclipseMapSolar = new MonthMarkers({
-      color: '#ffd040', size: 0.010, clippingPlanes: clipPlanes,
+      color: '#ffd040', size: 0.010, clippingPlanes: [],
       markersKey: 'EclipseMapSolar',
       worldSpace: true, noLoop: true, maxLoopPts: 1,
       name: 'eclipse-map-solar',
     });
     this.eclipseMapLunar = new MonthMarkers({
-      color: '#a0c8ff', size: 0.010, clippingPlanes: clipPlanes,
+      color: '#a0c8ff', size: 0.010, clippingPlanes: [],
       markersKey: 'EclipseMapLunar',
       worldSpace: true, noLoop: true, maxLoopPts: 1,
       name: 'eclipse-map-lunar',

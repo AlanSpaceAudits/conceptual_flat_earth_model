@@ -313,9 +313,18 @@ export class Renderer {
       this._losRaycaster.setFromCamera(this._losMouseV, this.sm.camera);
       const hits = this._losRaycaster.intersectObjects(this._losMarks, false);
       if (hits.length) {
-        const ang = hits[0].object.userData.intersectionAngle;
+        const ud = hits[0].object.userData;
         const tip = this._ensureLosTip();
-        tip.textContent = `LoS / surface: ${ang.toFixed(2)}°`;
+        // Three angles by the central-angle theorem corollaries:
+        //   Central (obs ↔ GP): angle at the globe centre.
+        //   Inscribed (½ central): inscribed-angle theorem reading.
+        //   Tangent at exit:    chord-tangent corollary,
+        //                       = (arc obs ↔ Q) / 2.
+        tip.innerHTML =
+          '<div class="los-tip-title">LoS / surface</div>' +
+          `<div>Central (obs↔GP): ${ud.centralAngle.toFixed(2)}°</div>` +
+          `<div>Inscribed (½): ${ud.inscribedAngle.toFixed(2)}°</div>` +
+          `<div>Tangent at exit: ${ud.tangentAngle.toFixed(2)}°</div>`;
         const viewRect = (document.getElementById('view') || document.body).getBoundingClientRect();
         tip.style.left = `${e.clientX - viewRect.left + 12}px`;
         tip.style.top  = `${e.clientY - viewRect.top  + 12}px`;
@@ -411,8 +420,8 @@ export class Renderer {
     el.style.cssText = [
       'position: absolute',
       'pointer-events: none',
-      'padding: 3px 8px',
-      'font: 11px/1.2 ui-monospace, Menlo, monospace',
+      'padding: 5px 9px',
+      'font: 11px/1.35 ui-monospace, Menlo, monospace',
       'color: #fff',
       'background: rgba(180, 40, 40, 0.92)',
       'border: 1px solid #ff6868',
@@ -421,6 +430,17 @@ export class Renderer {
       'white-space: nowrap',
       'display: none',
     ].join(';');
+    // Title row sits in a slightly brighter shade so the readout
+    // rows below read as the body of the tooltip.
+    const styleTag = document.createElement('style');
+    styleTag.textContent = `
+      #los-mark-tip .los-tip-title {
+        color: #ffe0e0;
+        font-weight: 600;
+        margin-bottom: 2px;
+      }
+    `;
+    document.head.appendChild(styleTag);
     const view = document.getElementById('view') || document.body;
     view.appendChild(el);
     this._losTip = el;
@@ -973,16 +993,37 @@ export class Renderer {
       });
       const mesh = new THREE.Mesh(geo, mat);
       mesh.renderOrder = 70;
-      // Angle of intersection between the LoS chord and the local
-      // tangent plane at the exit point. Equals 90° minus the angle
-      // between chord direction and surface normal: asin(|D̂ · N̂|).
-      // Stashed on userData so the canvas-level pointermove handler
-      // can read it back without recomputing the chord geometry.
+      // Three related angles by the inscribed / chord-tangent
+      // corollaries of the central-angle theorem:
+      //   • Central angle obs↔GP: angle at the globe centre between
+      //     observer's radial and the body's GP direction. For a
+      //     body on the celestial sphere at world position T, the
+      //     GP direction equals T̂ (T normalised), so this is
+      //     `acos(Ô · T̂)`. For below-horizon bodies it exceeds
+      //     90° (the body sits past the geometric horizon).
+      //   • Inscribed angle: by the inscribed-angle theorem, half
+      //     the central angle obs↔GP — the angle a great-circle
+      //     observer at any other surface point would measure
+      //     looking at the same arc.
+      //   • Chord-tangent angle: the angle between the LoS chord
+      //     and the tangent plane at the exit point Q, equal to
+      //     `asin(|D̂ · N̂|)` where D̂ is the chord direction and N̂
+      //     is the surface normal at Q. By the chord-tangent
+      //     corollary this equals (arc obs↔Q) / 2.
       const Dlen = Math.sqrt(dd) || 1;
       const dn = (Dx * nx + Dy * ny + Dz * nz) / Dlen;
-      const angDeg = Math.asin(Math.min(1, Math.abs(dn))) * 180 / Math.PI;
+      const tangentDeg = Math.asin(Math.min(1, Math.abs(dn))) * 180 / Math.PI;
+      const Tlen = Math.hypot(T[0], T[1], T[2]) || 1;
+      const Olen = Math.hypot(O[0], O[1], O[2]) || 1;
+      const cosCentral = (O[0] * T[0] + O[1] * T[1] + O[2] * T[2])
+                       / (Olen * Tlen);
+      const centralDeg = Math.acos(Math.max(-1, Math.min(1, cosCentral)))
+                       * 180 / Math.PI;
+      const inscribedDeg = centralDeg / 2;
       mesh.userData.kind = 'losMark';
-      mesh.userData.intersectionAngle = angDeg;
+      mesh.userData.tangentAngle = tangentDeg;
+      mesh.userData.centralAngle = centralDeg;
+      mesh.userData.inscribedAngle = inscribedDeg;
       this._losMarks.push(mesh);
       this.rayGroup.add(mesh);
     };

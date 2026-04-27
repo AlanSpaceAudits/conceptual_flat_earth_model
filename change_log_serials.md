@@ -5642,3 +5642,33 @@ Format:
     paint it, so Orion's belt always reads as
     three stars.
 - **Revert:** `git checkout v-s000499 -- .`
+
+## S501 — LoS-mark tooltip: central + inscribed + tangent angles
+
+- **Date:** 2026-04-26
+- **Files changed:** `js/render/index.js`.
+- **Change:**
+  - `addLosIntersectionMark` now stashes three
+    angles on the triangle's `userData`, all
+    derived from the same chord geometry by
+    central-angle-theorem corollaries:
+      - `centralAngle`: angle at the globe centre
+        between the observer's radial Ô and the
+        body's GP direction T̂. For a body on the
+        celestial sphere at world position T this
+        is `acos(Ô · T̂)`. Below-horizon → > 90°.
+      - `inscribedAngle`: half the central angle
+        per the inscribed-angle theorem.
+      - `tangentAngle`: the chord vs surface-tangent
+        angle at the exit point, equal to
+        `asin(|D̂ · N̂|)` and to `(arc obs↔Q)/2`
+        by the chord-tangent corollary.
+  - Hover tooltip switched from a single line to
+    a three-row readout listing all three angles
+    so the relationships visible. Title row
+    styled in a brighter pink so the readout body
+    reads cleanly underneath.
+  - `intersectionAngle` userData key renamed to
+    `tangentAngle`; the old key isn't used
+    anywhere else.
+- **Revert:** `git checkout v-s000500 -- .`

@@ -507,26 +507,31 @@ export function attachMouseHandler(canvas, model) {
   }, { passive: false });
 
   // Continuous follow: whenever the model state changes (time tick,
-  // observer move, etc.), re-aim the camera at FollowTarget. Below-
-  // horizon targets pin pitch to 0 so the camera keeps facing their
-  // azimuth along the horizon instead of looking underground.
+  // observer move, etc.), re-aim toward FollowTarget. ObserverHeading
+  // (= avatar facing) updates in both Optical and Heavenly views so
+  // the figure rotates with the tracked body. CameraHeight pitch
+  // only auto-recentres inside Optical (Heavenly camera pitch stays
+  // user-controlled). Below-horizon targets pin pitch to 0.
   model.addEventListener('update', () => {
     const s = model.state;
-    if (!s.FollowTarget || !s.InsideVault) return;
+    if (!s.FollowTarget) return;
     if (s.FreeCameraMode) return;
-    // Let the user pan / drag without fighting the auto-recentre.
     if (dragging) return;
     const angles = resolveTargetAngles(s.FollowTarget, model.computed);
     if (!angles) return;
     const targetHeading = ((angles.azimuth % 360) + 360) % 360;
-    const targetPitch = Math.max(0, Math.min(89.9, angles.elevation));
     const curHeading = ((s.ObserverHeading || 0) % 360 + 360) % 360;
-    const curPitch = s.CameraHeight || 0;
-    if (Math.abs(targetHeading - curHeading) < CLICK_EPS_DEG
-        && Math.abs(targetPitch - curPitch) < CLICK_EPS_DEG) return;
-    model.setState({
-      ObserverHeading: targetHeading,
-      CameraHeight: targetPitch,
-    }, false);
+    const patch = {};
+    if (Math.abs(targetHeading - curHeading) >= CLICK_EPS_DEG) {
+      patch.ObserverHeading = targetHeading;
+    }
+    if (s.InsideVault) {
+      const targetPitch = Math.max(0, Math.min(89.9, angles.elevation));
+      const curPitch = s.CameraHeight || 0;
+      if (Math.abs(targetPitch - curPitch) >= CLICK_EPS_DEG) {
+        patch.CameraHeight = targetPitch;
+      }
+    }
+    if (Object.keys(patch).length > 0) model.setState(patch, false);
   });
 }

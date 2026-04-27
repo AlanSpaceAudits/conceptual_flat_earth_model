@@ -6604,3 +6604,26 @@ Format:
     the ten country codes fill a compact 5×2
     block (5 columns, 2 rows).
 - **Revert:** `git checkout v-s000535 -- .`
+
+## S537 — Avatar follows tracked target's azimuth in all views
+
+- **Date:** 2026-04-27
+- **Files changed:** `js/ui/mouseHandler.js`.
+- **Change:**
+  - Continuous-follow handler in
+    `attachMouseHandlers` no longer requires
+    `s.InsideVault`. `ObserverHeading` (which
+    drives the avatar figure's facing direction
+    on both the FE disc and the GE globe) now
+    auto-updates to the tracked target's
+    azimuth on every `update` tick regardless
+    of view mode, so the avatar rotates as the
+    tracked body moves across the sky.
+  - `CameraHeight` pitch auto-recentre kept
+    gated on `InsideVault` so external
+    Heavenly / GE camera pitch stays
+    user-controlled. The patch object is built
+    incrementally — only fields that actually
+    changed are written, no redundant
+    `setState` calls per tick.
+- **Revert:** `git checkout v-s000536 -- .`

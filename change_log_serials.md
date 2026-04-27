@@ -5914,3 +5914,36 @@ Format:
     the constructor and calls its `update(m)`
     next to `gpPathOverlay.update(m)`.
 - **Revert:** `git checkout v-s000509 -- .`
+
+## S511 — Central / inscribed angle now applies to FE too
+
+- **Date:** 2026-04-26
+- **Files changed:** `js/render/worldObjects.js`,
+  `js/ui/controlPanel.js`.
+- **Change:**
+  - Toggles renamed: `Central Angle` /
+    `Inscribed Angle` (the "(GE)" qualifier
+    dropped). They now apply in both world
+    models.
+  - `CentralAngleArcs.update` branches on
+    `WorldModel`. GE keeps the great-circle slerp
+    on the globe surface. FE projects observer
+    and body GP through `canonicalLatLongToDisc`
+    and draws the chord between the two disc
+    points at `z = 8e-4`.
+  - Inscribed-angle tick adapts per mode:
+    - GE: still pops radially out from the
+      arc's great-circle midpoint M̂.
+    - FE: rises straight `+z` from the
+      disc-chord midpoint, since the disc is the
+      "horizontal of the arc length" and `+z`
+      is perpendicular to it.
+  - Tick length keeps scaling with the central
+    angle so a small sweep reads as a small
+    tick and a half-globe sweep as a tall one in
+    both modes.
+  - Arc material flips `depthTest` per mode (GE
+    on, FE off) so the FE chord doesn't z-fight
+    the disc projection while GE arcs still get
+    occluded by the back half of the globe.
+- **Revert:** `git checkout v-s000510 -- .`

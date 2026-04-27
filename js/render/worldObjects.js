@@ -5073,8 +5073,8 @@ export class CentralAngleArcs {
     const s = model.state;
     const c = model.computed;
     const ge = s.WorldModel === 'ge';
-    const showArc = ge && !!s.ShowCentralAngle && !s.InsideVault;
-    const showTick = ge && !!s.ShowInscribedAngle && !s.InsideVault;
+    const showArc = !!s.ShowCentralAngle && !s.InsideVault;
+    const showTick = !!s.ShowInscribedAngle && !s.InsideVault;
     this.group.visible = showArc || showTick;
     if (!this.group.visible) {
       for (const a of this._arcs) a.line.visible = false;
@@ -5089,6 +5089,15 @@ export class CentralAngleArcs {
     const Ohat = [cLat * cLon, cLat * sLon, sLat];
     const Rsurf = FE_RADIUS * 1.0006;
     const infos = c.TrackerInfos || [];
+
+    // FE-mode disc projection of the observer's surface point so
+    // the planar (circle) version of the central-angle arc has a
+    // start point in the same coordinate frame as `info.gpLat /
+    // gpLon` projected via `canonicalLatLongToDisc`.
+    const observerDisc = canonicalLatLongToDisc(
+      s.ObserverLat || 0, s.ObserverLong || 0, FE_RADIUS,
+    );
+    const FE_LIFT = 8e-4;
 
     for (let i = 0; i < this._arcs.length; i++) {
       const arc = this._arcs[i];
@@ -5114,39 +5123,84 @@ export class CentralAngleArcs {
         tick.visible = false;
         continue;
       }
-
-      // Slerp arc Ô → Ĝ at radius Rsurf.
       const buf = arc.line.geometry.attributes.position.array;
       const N = arc.maxPts - 1;
-      for (let k = 0; k <= N; k++) {
-        const t = k / N;
-        const k1 = Math.sin((1 - t) * theta) / sinTheta;
-        const k2 = Math.sin(t * theta) / sinTheta;
-        buf[k * 3]     = Rsurf * (k1 * Ohat[0] + k2 * Ghat[0]);
-        buf[k * 3 + 1] = Rsurf * (k1 * Ohat[1] + k2 * Ghat[1]);
-        buf[k * 3 + 2] = Rsurf * (k1 * Ohat[2] + k2 * Ghat[2]);
+
+      // Make the arc material flip depthTest based on mode — GE
+      // arc gets occluded by the back of the globe; FE arc stays
+      // flat on the disc and reads better with depthTest off so
+      // it doesn't z-fight the projection.
+      const wantDT = ge;
+      const am = arc.line.material;
+      if (am.depthTest !== wantDT) { am.depthTest = wantDT; am.needsUpdate = true; }
+
+      if (ge) {
+        // GE: slerp Ô → Ĝ on the surface at radius Rsurf.
+        for (let k = 0; k <= N; k++) {
+          const t = k / N;
+          const k1 = Math.sin((1 - t) * theta) / sinTheta;
+          const k2 = Math.sin(t * theta) / sinTheta;
+          buf[k * 3]     = Rsurf * (k1 * Ohat[0] + k2 * Ghat[0]);
+          buf[k * 3 + 1] = Rsurf * (k1 * Ohat[1] + k2 * Ghat[1]);
+          buf[k * 3 + 2] = Rsurf * (k1 * Ohat[2] + k2 * Ghat[2]);
+        }
+      } else {
+        // FE: the disc is the planar (circle) analogue of the
+        // sphere; the central-angle arc collapses to the chord on
+        // the disc between observer's AE-projected point and the
+        // body's GP disc point. Sample as a straight segment so
+        // longer central angles still look proportional.
+        const gpDisc = canonicalLatLongToDisc(
+          info.gpLat, info.gpLon, FE_RADIUS,
+        );
+        const ox = observerDisc[0], oy = observerDisc[1];
+        const gx = gpDisc[0], gy = gpDisc[1];
+        for (let k = 0; k <= N; k++) {
+          const t = k / N;
+          buf[k * 3]     = ox + (gx - ox) * t;
+          buf[k * 3 + 1] = oy + (gy - oy) * t;
+          buf[k * 3 + 2] = FE_LIFT;
+        }
       }
       arc.line.geometry.attributes.position.needsUpdate = true;
       arc.line.geometry.setDrawRange(0, N + 1);
       arc.line.visible = showArc;
 
-      // Inscribed-angle tick: radial outward at the great-circle
-      // midpoint M̂. Length scales with the central angle so a
-      // big sweep gets a more visible tick than a tiny one.
+      // Inscribed-angle tick: perpendicular to the arc at its
+      // midpoint, length scales with the central angle so a tiny
+      // sweep gets a small tick and a half-globe sweep gets a
+      // tall one.
       if (showTick) {
-        const km = Math.sin(0.5 * theta) / sinTheta;
-        const Mx = km * (Ohat[0] + Ghat[0]);
-        const My = km * (Ohat[1] + Ghat[1]);
-        const Mz = km * (Ohat[2] + Ghat[2]);
-        const Mlen = Math.hypot(Mx, My, Mz) || 1;
-        const mx = Mx / Mlen, my = My / Mlen, mz = Mz / Mlen;
         const tickLen = FE_RADIUS * (0.05 + 0.10 * (theta / Math.PI));
-        const baseX = Rsurf * mx;
-        const baseY = Rsurf * my;
-        const baseZ = Rsurf * mz;
-        const tipX = baseX + mx * tickLen;
-        const tipY = baseY + my * tickLen;
-        const tipZ = baseZ + mz * tickLen;
+        let baseX, baseY, baseZ, tipX, tipY, tipZ;
+        if (ge) {
+          // GE: radial outward at the great-circle midpoint M̂.
+          const km = Math.sin(0.5 * theta) / sinTheta;
+          const Mx = km * (Ohat[0] + Ghat[0]);
+          const My = km * (Ohat[1] + Ghat[1]);
+          const Mz = km * (Ohat[2] + Ghat[2]);
+          const Mlen = Math.hypot(Mx, My, Mz) || 1;
+          const mx = Mx / Mlen, my = My / Mlen, mz = Mz / Mlen;
+          baseX = Rsurf * mx;
+          baseY = Rsurf * my;
+          baseZ = Rsurf * mz;
+          tipX = baseX + mx * tickLen;
+          tipY = baseY + my * tickLen;
+          tipZ = baseZ + mz * tickLen;
+        } else {
+          // FE: midpoint of the disc-chord, tick straight up
+          // (+z) — the disc is the "horizontal of the arc length"
+          // and +z is perpendicular to it.
+          const gpDisc = canonicalLatLongToDisc(
+            info.gpLat, info.gpLon, FE_RADIUS,
+          );
+          baseX = (observerDisc[0] + gpDisc[0]) * 0.5;
+          baseY = (observerDisc[1] + gpDisc[1]) * 0.5;
+          baseZ = FE_LIFT;
+          tipX = baseX;
+          tipY = baseY;
+          tipZ = baseZ + tickLen;
+        }
         tick.geometry.setAttribute('position',
           new THREE.Float32BufferAttribute([
             baseX, baseY, baseZ, tipX, tipY, tipZ,

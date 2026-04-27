@@ -5600,3 +5600,24 @@ Format:
     cluster sits at natural button widths and
     wraps cleanly across multiple lines.
 - **Revert:** `git checkout v-s000497 -- .`
+
+## S499 — Constellation menu shows celnav-overlap stars too
+
+- **Date:** 2026-04-26
+- **Files changed:** `js/ui/controlPanel.js`.
+- **Change:**
+  - `Tracker → Constellations` per-star
+    `buttonGrid` now lists the union of every
+    constellation-member star, regardless of
+    whether the membership came via a
+    `celnav: 'id'` link (entry borrowed from
+    `CEL_NAV_STARS`) or a standalone `id` (entry
+    living in `CATALOGUED_STARS`). Previously
+    the grid filtered out celnav overlap, so
+    Betelgeuse / Bellatrix / Alnilam / Rigel /
+    Dubhe / Alioth / Polaris / Kochab / etc.
+    were missing from the constellation
+    activator. Cel-nav overlap stars are tinted
+    cel-nav yellow (`#ffe8a0`); standalone
+    constellation-only stars stay white.
+- **Revert:** `git checkout v-s000498 -- .`

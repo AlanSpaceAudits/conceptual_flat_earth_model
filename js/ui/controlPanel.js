@@ -845,15 +845,34 @@ const FIELD_GROUPS = [
           } },
         { key: 'TrackerTargets', label: '', buttonGrid:
           (() => {
-            const celnavIds = new Set(CEL_NAV_STARS.map((s) => s.id));
-            return [...CATALOGUED_STARS]
-              .filter((s) => !celnavIds.has(s.id))
-              .sort((a, b) => a.name.localeCompare(b.name))
-              .map((s) => ({
-                value: `star:${s.id}`,
-                label: s.name,
-                color: '#ffffff',
-              }));
+            // Union of every constellation-member star, regardless
+            // of whether the membership came via a `celnav` link
+            // (entry borrowed from `CEL_NAV_STARS`) or a standalone
+            // `id` (entry living in `CATALOGUED_STARS`). Cel-nav
+            // overlap stars are tinted with the cel-nav yellow so
+            // they read at a glance vs the white constellation-only
+            // stars.
+            const celById = new Map(CEL_NAV_STARS.map((s) => [s.id, s]));
+            const catById = new Map(CATALOGUED_STARS.map((s) => [s.id, s]));
+            const seen = new Set();
+            const list = [];
+            for (const con of CONSTELLATIONS) {
+              for (const st of con.stars) {
+                const id = st.celnav || st.id;
+                if (!id || seen.has(id)) continue;
+                seen.add(id);
+                const fromCel = celById.get(id);
+                const ref = fromCel || catById.get(id);
+                if (!ref) continue;
+                list.push({
+                  value: `star:${id}`,
+                  label: ref.name,
+                  color: fromCel ? '#ffe8a0' : '#ffffff',
+                });
+              }
+            }
+            list.sort((a, b) => a.label.localeCompare(b.label));
+            return list;
           })(),
         },
       ]},

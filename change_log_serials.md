@@ -7141,3 +7141,34 @@ Format:
     the signed delta was a leftover from
     when a Visibility row consumed it.
 - **Revert:** `git checkout v-s000555 -- .`
+
+## S557 — GE polar analemma: fall back to celestial-sphere coord at |lat| ≥ 80
+
+- **Date:** 2026-04-27
+- **Files changed:** `js/core/app.js`,
+  `js/demos/definitions.js`.
+- **Change:**
+  - At the poles, the GE optical-vault coord
+    returns the below-horizon sentinel for ~7
+    months of the year (sun's dec puts it
+    below the local horizon for half the
+    annual cycle), so the analemma trace +
+    monthly notches were only capturing the
+    summer half. New rule: when
+    `Math.abs(s.ObserverLat) >= 80`, the
+    accumulators / snap helpers use
+    `*GlobeVaultCoord` (celestial sphere)
+    instead of `*GlobeOpticalVaultCoord`. The
+    celestial-sphere position is always
+    above-horizon-agnostic, so all 12 monthly
+    markers + the daily traces show through
+    the polar night.
+  - `_geSrc(c, body, lat, kind)` helper added
+    to `definitions.js` so all four `snap*`
+    helpers share the same polar-fallback
+    logic. `stepVaultArc` in `app.js` does
+    the same selection inline.
+  - For non-polar latitudes (|lat| < 80) the
+    behavior is unchanged — optical-vault
+    coord is used (S548 fix).
+- **Revert:** `git checkout v-s000556 -- .`

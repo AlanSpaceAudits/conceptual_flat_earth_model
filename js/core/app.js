@@ -686,9 +686,16 @@ export class FeModel extends EventTarget {
     this._moonVaultArc = this._moonVaultArc || { points: [], wasOn: false, key: null };
     // Both modes use the observer-local optical-vault coord (sun /
     // moon position on the user's actual sky hemisphere) so the
-    // analemma trace lives on the same surface in FE and GE.
-    const sunArcSrc  = _ge ? (c.SunGlobeOpticalVaultCoord  || c.SunOpticalVaultCoord)  : c.SunOpticalVaultCoord;
-    const moonArcSrc = _ge ? (c.MoonGlobeOpticalVaultCoord || c.MoonOpticalVaultCoord) : c.MoonOpticalVaultCoord;
+    // analemma trace lives on the same surface in FE and GE. At the
+    // poles GE optical-vault returns the below-horizon sentinel for
+    // most of the year (sun never gets above local horizon), so fall
+    // back to the celestial-sphere coord at |lat| ≥ 80 to keep the
+    // analemma figure complete.
+    const _polar = Math.abs(s.ObserverLat) >= 80;
+    const _sunGeArcSrc  = _polar ? (c.SunGlobeVaultCoord  || c.SunGlobeOpticalVaultCoord)  : (c.SunGlobeOpticalVaultCoord  || c.SunGlobeVaultCoord);
+    const _moonGeArcSrc = _polar ? (c.MoonGlobeVaultCoord || c.MoonGlobeOpticalVaultCoord) : (c.MoonGlobeOpticalVaultCoord || c.MoonGlobeVaultCoord);
+    const sunArcSrc  = _ge ? (_sunGeArcSrc  || c.SunOpticalVaultCoord)  : c.SunOpticalVaultCoord;
+    const moonArcSrc = _ge ? (_moonGeArcSrc || c.MoonOpticalVaultCoord) : c.MoonOpticalVaultCoord;
     stepVaultArc(this._sunVaultArc,  s.SunVaultArcOn,  sunArcSrc);
     stepVaultArc(this._moonVaultArc, s.MoonVaultArcOn, moonArcSrc);
     c.SunVaultArcPoints  = this._sunVaultArc.points;

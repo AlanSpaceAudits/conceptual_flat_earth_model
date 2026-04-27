@@ -219,13 +219,22 @@ const ANALEMMA_MONTH_DAYS = [
 ];
 const MONTHLY_DAY_DURATION_MS = 3500;
 
+function _geSrc(c, body, lat, kind) {
+  const polar = Math.abs(lat) >= 80;
+  if (kind === 'sun') {
+    return polar ? c.SunGlobeVaultCoord : c.SunGlobeOpticalVaultCoord;
+  }
+  return polar ? c.MoonGlobeVaultCoord : c.MoonGlobeOpticalVaultCoord;
+}
+
 function snapNoonVault(model, mode) {
   const c = model.computed;
   const ge = model.state.WorldModel === 'ge';
+  const lat = model.state.ObserverLat;
   const patch = {};
   const valid = (p) => p && p[2] !== -1000;
   if (mode === 'sun' || mode === 'both') {
-    const sv = ge ? (c.SunGlobeOpticalVaultCoord || c.SunOpticalVaultCoord) : c.SunOpticalVaultCoord;
+    const sv = ge ? (_geSrc(c, 'sun', lat, 'sun') || c.SunOpticalVaultCoord) : c.SunOpticalVaultCoord;
     if (valid(sv)) {
       const cur = Array.isArray(model.state.SunMonthMarkers)
         ? model.state.SunMonthMarkers : [];
@@ -233,7 +242,7 @@ function snapNoonVault(model, mode) {
     }
   }
   if (mode === 'moon' || mode === 'both') {
-    const mv = ge ? (c.MoonGlobeOpticalVaultCoord || c.MoonOpticalVaultCoord) : c.MoonOpticalVaultCoord;
+    const mv = ge ? (_geSrc(c, 'moon', lat, 'moon') || c.MoonOpticalVaultCoord) : c.MoonOpticalVaultCoord;
     if (valid(mv)) {
       const cur = Array.isArray(model.state.MoonMonthMarkers)
         ? model.state.MoonMonthMarkers : [];
@@ -337,7 +346,8 @@ const SYNODIC_DAY_DURATION_MS = 1500;
 function snapMoonNoonVault(model) {
   const c = model.computed;
   const ge = model.state.WorldModel === 'ge';
-  const mv = ge ? (c.MoonGlobeOpticalVaultCoord || c.MoonOpticalVaultCoord) : c.MoonOpticalVaultCoord;
+  const lat = model.state.ObserverLat;
+  const mv = ge ? (_geSrc(c, 'moon', lat, 'moon') || c.MoonOpticalVaultCoord) : c.MoonOpticalVaultCoord;
   if (!mv || mv[2] === -1000) return;
   const cur = Array.isArray(model.state.MoonMonthMarkers)
     ? model.state.MoonMonthMarkers : [];
@@ -412,7 +422,8 @@ const MOON_SYNODIC_DEMOS = ANALEMMA_LATS.map(([lat, t]) =>
 function snapSunNoonVaultLon0(model) {
   const c = model.computed;
   const ge = model.state.WorldModel === 'ge';
-  const sv = ge ? (c.SunGlobeOpticalVaultCoord || c.SunOpticalVaultCoord) : c.SunOpticalVaultCoord;
+  const lat = model.state.ObserverLat;
+  const sv = ge ? (_geSrc(c, 'sun', lat, 'sun') || c.SunOpticalVaultCoord) : c.SunOpticalVaultCoord;
   if (!sv || sv[2] === -1000) return;
   const cur = Array.isArray(model.state.SunMonthMarkers)
     ? model.state.SunMonthMarkers : [];
@@ -422,7 +433,8 @@ function snapSunNoonVaultLon0(model) {
 function snapSunNoonVaultLon180(model) {
   const c = model.computed;
   const ge = model.state.WorldModel === 'ge';
-  const sv = ge ? (c.SunGlobeOpticalVaultCoord || c.SunOpticalVaultCoord) : c.SunOpticalVaultCoord;
+  const lat = model.state.ObserverLat;
+  const sv = ge ? (_geSrc(c, 'sun', lat, 'sun') || c.SunOpticalVaultCoord) : c.SunOpticalVaultCoord;
   if (!sv || sv[2] === -1000) return;
   const cur = Array.isArray(model.state.SunMonthMarkersOpp)
     ? model.state.SunMonthMarkersOpp : [];

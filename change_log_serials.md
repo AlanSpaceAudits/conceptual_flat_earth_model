@@ -5811,3 +5811,33 @@ Format:
     stars when its parent button is active, so this
     sub-asterism doesn't add duplicate lines.
 - **Revert:** `git checkout v-s000506 -- .`
+
+## S508 — GE tracked-GP drop-line + drop redundant speed readout
+
+- **Date:** 2026-04-26
+- **Files changed:** `js/render/worldObjects.js`,
+  `js/ui/controlPanel.js`.
+- **Change:**
+  - `TrackedGroundPoints.update` now emits the
+    drop-line in GE mode too. FE keeps the
+    vertical fall from `info.vaultCoord` to
+    `z = 0.0015`. GE rebuilds the line as a
+    radial segment from the body's
+    celestial-sphere position
+    `R_v · (cosφ cosλ, cosφ sinλ, sinφ)` down to
+    the globe-surface GP scaled by
+    `FE_RADIUS / GlobeVaultRadius`. Closes the
+    gap where tracked planets / stars in GE had a
+    floating GP dot with no visible link to the
+    body overhead.
+  - Bottom-bar `time-controls` strip: speed
+    readout removed from `speedStack.append` (the
+    `+d/s` was already mirrored in the `slotSpeed`
+    section of the date / time bar). The
+    detached `speedReadout` span stays around so
+    the `refreshTimeControls` writes don't need
+    null-guards. Compass-controls panel slides
+    back to its pre-S495 position now that the
+    transport cluster is no longer carrying the
+    duplicate tail.
+- **Revert:** `git checkout v-s000507 -- .`

@@ -4936,15 +4936,37 @@ export class TrackedGroundPoints {
       slot.dot.material.color.setHex(color);
       slot.updateAt(info.gpLat, info.gpLon, FE_RADIUS, true, ge);
 
-      // Dashed line from vaultCoord straight down to the GP dot.
-      // FE: vertical drop to disc plane; GE: drop along the radial
-      // direction from the celestial sphere down to the surface point.
-      if (info.vaultCoord && s.ShowTruePositions !== false && !ge) {
+      // Drop-line from the body's celestial position down to its
+      // GP. FE: vertical fall from `info.vaultCoord` to the disc
+      // plane (z = 0.0015). GE: radial fall from the body's spot
+      // on the celestial sphere down to the globe-surface GP at
+      // the same direction. The GE celestial sphere sits at
+      // `c.GlobeVaultRadius` and the globe at `FE_RADIUS`, so the
+      // surface point is just the celestial point scaled by
+      // `FE_RADIUS / GlobeVaultRadius`.
+      if (s.ShowTruePositions !== false) {
         line.material.color.setHex(color);
-        const top = info.vaultCoord;
-        const pts = [top[0], top[1], top[2], top[0], top[1], 0.0015];
-        line.geometry.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
-        line.visible = true;
+        if (ge) {
+          const Rv = c.GlobeVaultRadius || (FE_RADIUS * 2);
+          const phi = (info.gpLat || 0) * Math.PI / 180;
+          const lam = (info.gpLon || 0) * Math.PI / 180;
+          const cp = Math.cos(phi), sp = Math.sin(phi);
+          const tx = Rv * cp * Math.cos(lam);
+          const ty = Rv * cp * Math.sin(lam);
+          const tz = Rv * sp;
+          const k = FE_RADIUS / Rv;
+          const bx = tx * k, by = ty * k, bz = tz * k;
+          const pts = [tx, ty, tz, bx, by, bz];
+          line.geometry.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
+          line.visible = true;
+        } else if (info.vaultCoord) {
+          const top = info.vaultCoord;
+          const pts = [top[0], top[1], top[2], top[0], top[1], 0.0015];
+          line.geometry.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
+          line.visible = true;
+        } else {
+          line.visible = false;
+        }
       } else {
         line.visible = false;
       }

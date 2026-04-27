@@ -1832,9 +1832,17 @@ export function buildControlPanel(host, model, demos) {
       SpecifiedTrackerMode: false,
     });
   });
+  // Speed readout is duplicated by `slotSpeed` in the date / time
+  // bar (the "+0.042 d/s" appendix on the date line). We keep the
+  // detached span around so the existing `speedReadout.textContent
+  // = lbl` writes still work without a guard, but it never enters
+  // the DOM — frees the time-controls strip from the redundant
+  // tail and lets the right-side compass-controls slide back to
+  // where they sat before the per-day jump-grid widened the
+  // transport cluster.
   const speedReadout = document.createElement('span');
   speedReadout.className = 'time-speed';
-  speedStack.append(btnEndDemo, btnEndTracking, speedReadout);
+  speedStack.append(btnEndDemo, btnEndTracking);
 
   // Day / month / year skippers. 2 × 3 compact grid (back row +
   // forward row) using calendar-aware month / year arithmetic so

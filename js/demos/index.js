@@ -98,6 +98,12 @@ export class Demos {
     const introWithLinesOff = { ShowConstellationLines: false, ...introState };
     this.model.setState(introWithLinesOff);
     this.animator.play(d.tasks(this.model));
+    // Fire a no-op setState after `animator.play` so the next
+    // `update` event sees `animator.running === true` and the
+    // controlPanel watchdog suspends autoplay immediately —
+    // otherwise autoplay can tick once or twice before the first
+    // `Tcall` triggers a state update.
+    this.model.setState({});
     if (this._btnPauseResume) this._btnPauseResume.textContent = 'Pause';
     this._refreshPanel();
     if (!fromQueue) {

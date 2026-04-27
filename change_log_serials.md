@@ -7408,3 +7408,30 @@ Format:
     twilight, East Africa night, Perth
     pre-dawn read naturally.
 - **Revert:** `git checkout v-s000564 -- .`
+
+## S566 — Lock DateTime during cycling-observer demos
+
+- **Date:** 2026-04-27
+- **Files changed:** `js/demos/index.js`,
+  `js/demos/definitions.js`.
+- **Change:**
+  - `Demos._playSingle` now fires a no-op
+    `model.setState({})` immediately after
+    `animator.play(...)`. The empty
+    setState emits an `update` event in
+    the same frame so the controlPanel
+    watchdog (S520) sees `animator.running
+    === true` and suspends autoplay on
+    frame 0 instead of waiting for the
+    first Tcall / Tval to trigger an
+    update. Closes the gap where autoplay
+    could tick once or twice before the
+    suspension landed.
+  - Sigma Octantis + Southern Cross demos:
+    each Tcall now re-asserts `DateTime:
+    1998.903` alongside the observer hop.
+    Belt-and-suspenders against any
+    autoplay leakage during the 5-second
+    holds — the next hop snaps DateTime
+    back to the observed instant.
+- **Revert:** `git checkout v-s000565 -- .`

@@ -6170,3 +6170,25 @@ Format:
     cadence; the `2×` bar button restores
     original speed.
 - **Revert:** `git checkout v-s000519 -- .`
+
+## S521 — Midnight-sun 75°N demo: start inside polar day
+
+- **Date:** 2026-04-27
+- **Files changed:** `js/demos/definitions.js`.
+- **Change:**
+  - 'Midnight sun at 75°N: start to end' intro
+    `DateTime` moved from `3021` (~2025-04-10) to
+    `3050` (~2025-05-09). At 75°N the polar day
+    requires sun dec ≥ +15°, which only happens
+    after ~May 1. Apr 10 sat ~3 weeks before
+    polar-day onset, so the intro showed the
+    sun below the horizon at midnight (-6.55°
+    elevation in tracker readout).
+  - Pre-polar-day narration steps removed
+    (`'still rises and sets daily'` → `'about
+    to stop setting'`); first task now opens
+    inside the polar-day window with sun dec
+    ~17° → midnight elevation ~+2°. Demo still
+    walks June 21 solstice → Aug 7 polar-day
+    end.
+- **Revert:** `git checkout v-s000520 -- .`

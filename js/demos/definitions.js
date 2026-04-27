@@ -609,7 +609,7 @@ const SUN_24H_DEMOS = [
     intro: {
       ObserverLat: 75, ObserverLong: 0,
       BodySource: 'astropixels',
-      DateTime: 3021,                 // ~2025-04-10
+      DateTime: 3050,                 // ~2025-05-09 — polar day in effect
       ObserverHeading: 0,
       InsideVault: true,              // Optical
       FollowTarget: 'sun',
@@ -621,15 +621,11 @@ const SUN_24H_DEMOS = [
       ShowTruePositions: true,
     },
     tasks: () => [
-      Ttxt('75°N, early April 2025 — sun still rises and sets daily.'),
-      Tval('DateTime', 3042, 2 * T8, T1, 'linear'),
-      Ttxt('May 1 — sun about to stop setting at midnight.'),
+      Ttxt('75°N, early May 2025 — midnight sun in effect (sun dec > 15°).'),
       Tval('DateTime', 3093, 2 * T8, T1, 'linear'),
       Ttxt('June 21 — solstice, sun at its highest arc of the year.'),
       Tval('DateTime', 3140, 2 * T8, T1, 'linear'),
       Ttxt('August 7 — midnight sun ends as declination drops back below 15°.'),
-      Tval('DateTime', 3179, 2 * T8, T1, 'linear'),
-      Ttxt('September 15 — normal day/night cycle back in full swing.'),
     ],
   },
   {

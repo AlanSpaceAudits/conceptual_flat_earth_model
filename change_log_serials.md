@@ -7034,3 +7034,24 @@ Format:
     they live as plain `setState` arrays
     rather than internal slot buffers.
 - **Revert:** `git checkout v-s000550 -- .`
+
+## S552 — Analemma trace lives on optical vault in both modes
+
+- **Date:** 2026-04-27
+- **Files changed:** `js/core/app.js`,
+  `js/demos/definitions.js`.
+- **Change:**
+  - FE branch of `stepVaultArc` and the four
+    `snap*` analemma helpers swapped from
+    `c.SunVaultCoord` / `c.MoonVaultCoord`
+    (heavenly-vault / true-source position
+    above the disc) to
+    `c.SunOpticalVaultCoord` /
+    `c.MoonOpticalVaultCoord` (observer-local
+    optical-vault hemisphere).
+  - GE branch already used
+    `*GlobeOpticalVaultCoord` since S548;
+    both modes now consistently render the
+    analemma on the same surface — the
+    observer's actual sky hemisphere.
+- **Revert:** `git checkout v-s000551 -- .`

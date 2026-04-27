@@ -684,13 +684,11 @@ export class FeModel extends EventTarget {
     };
     this._sunVaultArc  = this._sunVaultArc  || { points: [], wasOn: false, key: null };
     this._moonVaultArc = this._moonVaultArc || { points: [], wasOn: false, key: null };
-    // GE branch uses the observer-local optical-vault coord (sun /
-    // moon position on the local sky hemisphere) so daily-arc motion
-    // is captured. The heavenly-vault coord on the globe is fixed to
-    // the celestial sphere and only drifts ~1°/day, which would
-    // produce a zig-zag through 12 widely-spaced monthly points.
-    const sunArcSrc  = _ge ? (c.SunGlobeOpticalVaultCoord  || c.SunVaultCoord)  : c.SunVaultCoord;
-    const moonArcSrc = _ge ? (c.MoonGlobeOpticalVaultCoord || c.MoonVaultCoord) : c.MoonVaultCoord;
+    // Both modes use the observer-local optical-vault coord (sun /
+    // moon position on the user's actual sky hemisphere) so the
+    // analemma trace lives on the same surface in FE and GE.
+    const sunArcSrc  = _ge ? (c.SunGlobeOpticalVaultCoord  || c.SunOpticalVaultCoord)  : c.SunOpticalVaultCoord;
+    const moonArcSrc = _ge ? (c.MoonGlobeOpticalVaultCoord || c.MoonOpticalVaultCoord) : c.MoonOpticalVaultCoord;
     stepVaultArc(this._sunVaultArc,  s.SunVaultArcOn,  sunArcSrc);
     stepVaultArc(this._moonVaultArc, s.MoonVaultArcOn, moonArcSrc);
     c.SunVaultArcPoints  = this._sunVaultArc.points;

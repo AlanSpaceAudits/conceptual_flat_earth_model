@@ -854,6 +854,73 @@ export class Renderer {
       addRayLine(pts, color, opacity);
     };
 
+    // Chord-tangent intersection marker. For a GE LoS observer→body,
+    // when the body sits geometrically below the local horizon the
+    // ray's chord re-enters the globe; we mark the second
+    // intersection (where the chord exits the sphere) with a small
+    // red triangle tangent to the surface so the LoS / curve
+    // intersection reads at a glance. With observer ON the sphere
+    // (|O| = R), the chord parameter t > 0 satisfies:
+    //   t = -2 (O · D) / (D · D),  D = T − O
+    // and the marker is drawn only when 0 < t ≤ 1 (intersection
+    // lies on the observer-target segment).
+    const addLosIntersectionMark = (O, T) => {
+      if (!ge || !O || !T) return;
+      const Dx = T[0] - O[0], Dy = T[1] - O[1], Dz = T[2] - O[2];
+      const dd = Dx * Dx + Dy * Dy + Dz * Dz;
+      if (dd <= 1e-12) return;
+      const od = O[0] * Dx + O[1] * Dy + O[2] * Dz;
+      const t = -2 * od / dd;
+      if (t <= 1e-6 || t > 1) return;
+      const Px = O[0] + t * Dx;
+      const Py = O[1] + t * Dy;
+      const Pz = O[2] + t * Dz;
+      const r = Math.hypot(Px, Py, Pz) || 1;
+      const nx = Px / r, ny = Py / r, nz = Pz / r;
+      // Build two tangent axes perpendicular to the surface normal.
+      let ax, ay, az;
+      if (Math.abs(nz) < 0.9) { ax = 0; ay = 0; az = 1; }
+      else                    { ax = 1; ay = 0; az = 0; }
+      let ux = ay * nz - az * ny;
+      let uy = az * nx - ax * nz;
+      let uz = ax * ny - ay * nx;
+      const ul = Math.hypot(ux, uy, uz) || 1;
+      ux /= ul; uy /= ul; uz /= ul;
+      const vx = ny * uz - nz * uy;
+      const vy = nz * ux - nx * uz;
+      const vz = nx * uy - ny * ux;
+      const sz = FE_RADIUS * 0.012;
+      // Lift slightly off the surface so the triangle doesn't
+      // z-fight with the globe shader.
+      const lift = FE_RADIUS * 0.0008;
+      const cx = Px + nx * lift, cy = Py + ny * lift, cz = Pz + nz * lift;
+      // Equilateral triangle pointing along +u (apex up the slope),
+      // base along v.
+      const a = [cx + ux * sz, cy + uy * sz, cz + uz * sz];
+      const b = [cx + (-0.5 * ux + 0.866 * vx) * sz,
+                 cy + (-0.5 * uy + 0.866 * vy) * sz,
+                 cz + (-0.5 * uz + 0.866 * vz) * sz];
+      const cP = [cx + (-0.5 * ux - 0.866 * vx) * sz,
+                  cy + (-0.5 * uy - 0.866 * vy) * sz,
+                  cz + (-0.5 * uz - 0.866 * vz) * sz];
+      const verts = new Float32Array([
+        a[0], a[1], a[2],
+        b[0], b[1], b[2],
+        cP[0], cP[1], cP[2],
+      ]);
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.BufferAttribute(verts, 3));
+      const mat = new THREE.MeshBasicMaterial({
+        color: 0xff3030,
+        side: THREE.DoubleSide,
+        transparent: true, opacity: 0.95,
+        depthTest: false, depthWrite: false,
+      });
+      const mesh = new THREE.Mesh(geo, mat);
+      mesh.renderOrder = 70;
+      this.rayGroup.add(mesh);
+    };
+
     // When the body is above the horizon the ray is a gentle
     // quadratic bezier (one lift control). Below the horizon LoS is
     // broken, so we fall back to a cubic bezier with two control
@@ -929,15 +996,63 @@ export class Renderer {
     const sunOpt    = ge ? c.SunGlobeOpticalVaultCoord  : c.SunOpticalVaultCoord;
     const moonOpt   = ge ? c.MoonGlobeOpticalVaultCoord : c.MoonOpticalVaultCoord;
 
+    // Star catalog colour palette + lookup. Mirrors the GPTracer
+    // logic in worldObjects.js so trackers / rays / GP traces all
+    // pick the same colour for the same star.
+    const STAR_CAT_COLORS = {
+      celnav:     0xffe8a0,
+      catalogued: 0xffffff,
+      blackhole:  0x9966ff,
+      quasar:     0x40e0d0,
+      galaxy:     0xff80c0,
+      satellite:  0x66ff88,
+      bsc:        0xfff5d8,
+    };
+    const findStarEntry = (starId) => {
+      const lookups = [
+        ['celnav',     c.CelNavStars],
+        ['catalogued', c.CataloguedStars],
+        ['blackhole',  c.BlackHoles],
+        ['quasar',     c.Quasars],
+        ['galaxy',     c.Galaxies],
+        ['satellite',  c.Satellites],
+        ['bsc',        c.BscStars],
+      ];
+      for (const [cat, list] of lookups) {
+        if (!list) continue;
+        const e = list.find((x) => x.id === starId);
+        if (e) return { entry: e, cat };
+      }
+      return null;
+    };
+    const starTargets = [];
+    for (const id of trackerSet) {
+      if (typeof id === 'string' && id.startsWith('star:')) {
+        const found = findStarEntry(id.slice(5));
+        if (!found) continue;
+        const { entry, cat } = found;
+        const baseColor = (cat === 'bsc' && entry.color != null)
+          ? entry.color
+          : (STAR_CAT_COLORS[cat] || 0xffffff);
+        starTargets.push({ entry, color: baseColor, cat });
+      }
+    }
+
     // Vault rays to the true sun/moon position on the vault of the heavens
     // stay drawn regardless of horizon: the physical source is still there.
     if (s.ShowVaultRays) {
       if (ge) {
-        if (sunOn  && sunVault)  addStraight(obs, sunVault,  0xff8800, 0.9);
-        if (moonOn && moonVault) addStraight(obs, moonVault, 0xffffff, 0.9);
+        if (sunOn  && sunVault)  { addStraight(obs, sunVault,  0xff8800, 0.9); addLosIntersectionMark(obs, sunVault); }
+        if (moonOn && moonVault) { addStraight(obs, moonVault, 0xffffff, 0.9); addLosIntersectionMark(obs, moonVault); }
       } else {
         if (sunOn)  addRay(sunVault,  0xff8800, 0.9, sunElev);
         if (moonOn) addRay(moonVault, 0xffffff, 0.9, moonElev);
+      }
+      for (const st of starTargets) {
+        const v = ge ? (st.entry.globeVaultCoord || st.entry.vaultCoord) : st.entry.vaultCoord;
+        if (!v) continue;
+        if (ge) { addStraight(obs, v, st.color, 0.9); addLosIntersectionMark(obs, v); }
+        else    { addRay(v, st.color, 0.9, st.entry.anglesGlobe?.elevation ?? 90); }
       }
     }
     // Optical-vault rays represent what the observer sees, so they fade
@@ -949,6 +1064,15 @@ export class Renderer {
       } else {
         if (sunOn  && sunFade  > 0) addRay(sunOpt,  0xcc6600, 0.7 * sunFade,  sunElev);
         if (moonOn && moonFade > 0) addRay(moonOpt, 0xcccccc, 0.7 * moonFade, moonElev);
+      }
+      for (const st of starTargets) {
+        const elev = st.entry.anglesGlobe?.elevation ?? 0;
+        const f = fade(elev);
+        if (f <= 0) continue;
+        const o = ge ? (st.entry.globeOpticalVaultCoord || st.entry.opticalVaultCoord) : st.entry.opticalVaultCoord;
+        if (!o || isParked(o)) continue;
+        if (ge) addStraight(obs, o, st.color, 0.7 * f);
+        else    addRay(o, st.color, 0.7 * f, elev);
       }
     }
 
@@ -994,6 +1118,11 @@ export class Renderer {
         addProjectionRay(pVault, pOpt,
                          p.anglesGlobe.elevation,
                          PLANET_RAY_COLORS[name] || 0xff8c66);
+      }
+      for (const st of starTargets) {
+        const v = ge ? (st.entry.globeVaultCoord || st.entry.vaultCoord) : st.entry.vaultCoord;
+        const o = ge ? (st.entry.globeOpticalVaultCoord || st.entry.opticalVaultCoord) : st.entry.opticalVaultCoord;
+        addProjectionRay(v, o, st.entry.anglesGlobe?.elevation ?? 0, st.color);
       }
     }
   }

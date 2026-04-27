@@ -5431,3 +5431,43 @@ Format:
     celestial sphere and its GP on the globe
     surface for GE mode.
 - **Revert:** `git checkout v-s000491 -- .`
+
+## S493 — Star rays + LoS / Earth-curve intersection mark
+
+- **Date:** 2026-04-26
+- **Files changed:** `js/render/index.js`.
+- **Change:**
+  - `_updateRays` now walks `trackerSet` for any
+    `star:<id>` entries and looks them up across
+    `c.CelNavStars`, `c.CataloguedStars`,
+    `c.BlackHoles`, `c.Quasars`, `c.Galaxies`,
+    `c.Satellites`, `c.BscStars`. Colour palette
+    mirrors the GPTracer mapping
+    (`celnav` 0xffe8a0, `catalogued` 0xffffff,
+    `blackhole` 0x9966ff, `quasar` 0x40e0d0,
+    `galaxy` 0xff80c0, `satellite` 0x66ff88,
+    `bsc` per-entry colour or 0xfff5d8). Tracked
+    stars get vault, optical-vault, and projection
+    rays drawn through the same `addRayLine` /
+    `addProjectionRay` paths as planets, so the
+    solid-front + dashed-occluded behaviour
+    carries over for free.
+  - New `addLosIntersectionMark(O, T)` helper
+    (GE-only) computes the chord-tangent second
+    intersection of the LoS with the globe via
+    `t = -2 (O · D) / (D · D)` (since `|O| = R`
+    on the sphere). When `0 < t ≤ 1`, the chord
+    re-enters the globe between observer and
+    target and a small red equilateral triangle
+    is drawn tangent to the surface at the exit
+    point, lifted slightly along the normal so it
+    doesn't z-fight with the globe shader. Marker
+    has `depthTest: false` so it stays visible
+    through any layer.
+  - Vault-ray pass calls
+    `addLosIntersectionMark(obs, vaultCoord)` for
+    sun, moon, and each tracked star — the only
+    rays that legitimately reach below-horizon
+    targets where the LoS punches through the
+    Earth.
+- **Revert:** `git checkout v-s000492 -- .`

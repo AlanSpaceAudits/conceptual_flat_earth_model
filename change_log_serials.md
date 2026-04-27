@@ -6212,3 +6212,24 @@ Format:
     Dec 21 southern solstice → Feb 7 polar-day
     end.
 - **Revert:** `git checkout v-s000521 -- .`
+
+## S523 — Midnight-sun demos: enable DynamicStars
+
+- **Date:** 2026-04-27
+- **Files changed:** `js/demos/definitions.js`.
+- **Change:**
+  - Both midnight-sun demos
+    (75°N + 75°S `start to end`) now set
+    `DynamicStars: true` in their intro state.
+  - Without `DynamicStars`, FE-mode constellation
+    lines bypass the day/night fade (`canShow`
+    is hardcoded `true` when `dynamic` is false
+    in `js/render/constellations.js`), so the
+    Orion / belt outlines stayed painted on the
+    dome through the whole polar-day demo. With
+    `DynamicStars` on, `nightAlpha = NightFactor
+    = Limit01(-sunElev/12)` stays 0 while the
+    sun is above the horizon → constellation
+    layer hides, matching the expected daytime
+    appearance.
+- **Revert:** `git checkout v-s000522 -- .`

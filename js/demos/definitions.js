@@ -619,6 +619,7 @@ const SUN_24H_DEMOS = [
       ShowSunTrack: true,
       ShowShadow: true,
       ShowTruePositions: true,
+      DynamicStars: true,
     },
     tasks: () => [
       Ttxt('75°N, early May 2025 — midnight sun in effect (sun dec > 15°).'),
@@ -644,6 +645,7 @@ const SUN_24H_DEMOS = [
       ShowSunTrack: true,
       ShowShadow: true,
       ShowTruePositions: true,
+      DynamicStars: true,
     },
     tasks: () => [
       Ttxt('75°S, early November 2025 — midnight sun in effect (sun dec < -15°).'),

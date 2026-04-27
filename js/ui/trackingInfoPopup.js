@@ -367,6 +367,29 @@ export function buildTrackingInfoPopup(panelEl, model) {
     const a = ((deg % 360) + 360) % 360;
     return a.toFixed(2) + '°';
   };
+  // DMS helpers — degrees-minutes-seconds. Seconds rendered to one
+  // decimal so sub-arcsecond moves remain visible. `fmtDms` wraps
+  // input into [0, 360) for unsigned readouts (azimuth); `fmtSignedDms`
+  // keeps the sign and reads ±DD°MM'SS.S″.
+  const fmtDms = (deg) => {
+    if (!Number.isFinite(deg)) return '—';
+    const a = ((deg % 360) + 360) % 360;
+    const d = Math.floor(a);
+    const mF = (a - d) * 60;
+    const m = Math.floor(mF);
+    const sec = (mF - m) * 60;
+    return `${d}° ${String(m).padStart(2, '0')}' ${sec.toFixed(1)}"`;
+  };
+  const fmtSignedDms = (deg) => {
+    if (!Number.isFinite(deg)) return '—';
+    const sign = deg >= 0 ? '+' : '−';
+    const a = Math.abs(deg);
+    const d = Math.floor(a);
+    const mF = (a - d) * 60;
+    const m = Math.floor(mF);
+    const sec = (mF - m) * 60;
+    return `${sign}${d}° ${String(m).padStart(2, '0')}' ${sec.toFixed(1)}"`;
+  };
 
   function pickInfo(state, computed) {
     const infos = computed.TrackerInfos || [];
@@ -435,10 +458,10 @@ export function buildTrackingInfoPopup(panelEl, model) {
     elHeaderName.textContent = `Tracking · ${info.name || info.target}`;
     paint(info, c);
 
-    const az = fmtAz(info.azimuth);
-    const el = fmtSignedDeg(info.elevation);
-    const gpLat = fmtSignedDeg(info.gpLat);
-    const gpLon = fmtSignedDeg(info.gpLon);
+    const az = fmtDms(info.azimuth);
+    const el = fmtSignedDms(info.elevation);
+    const gpLat = fmtSignedDms(info.gpLat);
+    const gpLon = fmtSignedDms(info.gpLon);
     // Stars carry a single catalog `(ra, dec)` directly on `info`;
     // sun / moon / planets carry per-pipeline `*Reading` copies.
     const r = info.astropixelsReading || info.geoReading || info.helioReading
@@ -447,10 +470,29 @@ export function buildTrackingInfoPopup(panelEl, model) {
             ? { ra: info.ra, dec: info.dec }
             : null);
     const ra  = r ? fmtH(r.ra)  : '—';
-    const dec = r ? fmtSignedDeg(r.dec * 180 / Math.PI) : '—';
+    const dec = r ? fmtSignedDms(r.dec * 180 / Math.PI) : '—';
     const mag = (info.mag != null && Number.isFinite(info.mag))
       ? info.mag.toFixed(2)
       : '—';
+
+    // Central angle obs↔GP via the spherical law of cosines on
+    // (observer lat/lon, body GP lat/lon). Inscribed angle =
+    // central / 2 by the inscribed-angle theorem; this is the
+    // angle the LoS-Earth red triangle reads when below the
+    // geometric horizon.
+    let centralStr = '—', inscribedStr = '—';
+    if (Number.isFinite(info.gpLat) && Number.isFinite(info.gpLon)
+        && Number.isFinite(s.ObserverLat) && Number.isFinite(s.ObserverLong)) {
+      const oLat = s.ObserverLat * Math.PI / 180;
+      const oLon = s.ObserverLong * Math.PI / 180;
+      const gLat = info.gpLat * Math.PI / 180;
+      const gLon = info.gpLon * Math.PI / 180;
+      const cosC = Math.sin(oLat) * Math.sin(gLat)
+                 + Math.cos(oLat) * Math.cos(gLat) * Math.cos(oLon - gLon);
+      const centralDeg = Math.acos(Math.max(-1, Math.min(1, cosC))) * 180 / Math.PI;
+      centralStr = fmtDms(centralDeg);
+      inscribedStr = fmtDms(centralDeg / 2);
+    }
 
     elBody.innerHTML = `
       <div class="ti-row"><span>Azimuth</span><span>${az}</span></div>
@@ -459,6 +501,8 @@ export function buildTrackingInfoPopup(panelEl, model) {
       <div class="ti-row"><span>Dec</span><span>${dec}</span></div>
       <div class="ti-row"><span>GP lat</span><span>${gpLat}</span></div>
       <div class="ti-row"><span>GP lon</span><span>${gpLon}</span></div>
+      <div class="ti-row"><span>Central</span><span>${centralStr}</span></div>
+      <div class="ti-row"><span>Inscribed</span><span>${inscribedStr}</span></div>
       <div class="ti-row"><span>Mag</span><span>${mag}</span></div>
     `;
   }

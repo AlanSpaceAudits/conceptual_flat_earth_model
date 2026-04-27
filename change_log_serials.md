@@ -5697,3 +5697,24 @@ Format:
   - Hover tooltip simplified to the inscribed
     angle alone (`Inscribed angle: NN.NN°`).
 - **Revert:** `git checkout v-s000501 -- .`
+
+## S503 — Tracking popup: DMS readouts + central + inscribed + Mag last
+
+- **Date:** 2026-04-26
+- **Files changed:** `js/ui/trackingInfoPopup.js`.
+- **Change:**
+  - New `fmtDms` / `fmtSignedDms` helpers render
+    angles as `DD° MM' SS.S"` with one decimal on
+    the seconds field. Used for Azimuth (unsigned,
+    wrapped to `[0, 360)`), Elevation, Dec, GP lat,
+    GP lon. RA stays HMS via the existing `fmtH`.
+  - Two new rows: `Central` and `Inscribed`. Central
+    angle obs ↔ GP computed from the spherical law
+    of cosines on `(ObserverLat, ObserverLong,
+    info.gpLat, info.gpLon)`; inscribed = central /
+    2 by the inscribed-angle theorem (matches the
+    LoS red-triangle reading).
+  - Row order reshuffled: Azimuth, Elevation, RA,
+    Dec, GP lat, GP lon, Central, Inscribed, Mag.
+    Mag now reads as the last line.
+- **Revert:** `git checkout v-s000502 -- .`

@@ -2474,9 +2474,21 @@ export function buildControlPanel(host, model, demos) {
   });
 
   // Wire the bar's time controls into Autoplay.
+  // While a demo is active, autoplay is suspended so demo-Pause
+  // truly freezes time. `_autoplayWasPlaying` snapshots the prior
+  // state at demo start; non-null means demo holds the suspension.
+  let _autoplayWasPlaying = null;
   const refreshTimeControls = () => {
     const a = demos && demos.animator;
     const demoPlaying = !!a && (a.isPlaying() || a.isPaused());
+    if (demoPlaying && _autoplayWasPlaying === null) {
+      _autoplayWasPlaying = autoplay.playing;
+      if (autoplay.playing) autoplay.pause();
+    } else if (!demoPlaying && _autoplayWasPlaying !== null) {
+      const restore = _autoplayWasPlaying;
+      _autoplayWasPlaying = null;
+      if (restore && !autoplay.playing) autoplay.play();
+    }
     btnEndDemo.hidden = !demoPlaying;
     btnEndTracking.hidden = !(model.state.FollowTarget
                               || model.state.FreeCamActive);

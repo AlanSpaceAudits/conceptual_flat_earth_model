@@ -6146,3 +6146,27 @@ Format:
     `StarfieldVaultHeight` changes carry through
     automatically.
 - **Revert:** `git checkout v-s000518 -- .`
+
+## S520 — Demo pause freezes time + half-speed default
+
+- **Date:** 2026-04-27
+- **Files changed:** `js/ui/controlPanel.js`,
+  `js/demos/animation.js`.
+- **Change:**
+  - `refreshTimeControls` now suspends autoplay
+    while a demo's animator is `running` (playing
+    or paused) and restores its prior `playing`
+    state when the demo ends or stops.
+    `_autoplayWasPlaying` snapshots the state at
+    demo start (`null` = no suspension held).
+    Without this, autoplay's `+0.042 d/s` tick
+    kept advancing `DateTime` even after the
+    demo's tween was paused, so the bar's `⏸`
+    and the demo menu's `Pause` button appeared
+    to do nothing.
+  - `Animator` default `speedScale` lowered from
+    `1` → `0.5` (constructor + `play()`). All
+    demos now play at half the authored Tval
+    cadence; the `2×` bar button restores
+    original speed.
+- **Revert:** `git checkout v-s000519 -- .`

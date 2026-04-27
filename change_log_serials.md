@@ -5519,3 +5519,26 @@ Format:
     crowding the existing `⏪ ▶ ⏩ ½× 2×`
     cluster.
 - **Revert:** `git checkout v-s000494 -- .`
+
+## S496 — LoS-mark hover angle tooltip
+
+- **Date:** 2026-04-26
+- **Files changed:** `js/render/index.js`.
+- **Change:**
+  - `addLosIntersectionMark` now stores
+    `userData.kind = 'losMark'` and
+    `userData.intersectionAngle` (degrees,
+    `asin(|D̂ · N̂|)` between the chord direction
+    and the surface normal at the exit point) on
+    each red triangle mesh.
+  - Renderer constructor adds a canvas-level
+    `pointermove` handler that raycasts against
+    the per-frame `_losMarks` list and, on a hit,
+    shows a small tooltip near the cursor reading
+    `LoS / surface: NN.NN°`. Tooltip lazy-built
+    via `_ensureLosTip` (red-tinted div under
+    `#view`).
+  - `_updateRays` resets `_losMarks` at the start
+    of each rebuild so stale picks don't survive
+    after the user toggles trackers.
+- **Revert:** `git checkout v-s000495 -- .`

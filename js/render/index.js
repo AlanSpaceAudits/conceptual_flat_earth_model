@@ -294,6 +294,37 @@ export class Renderer {
     this.rayGroup.name = 'rays';
     this.sm.world.add(this.rayGroup);
 
+    // Hover-pickable LoS / Earth-curve intersection markers. Cleared
+    // and rebuilt every `_updateRays` call. The canvas pointermove
+    // handler raycasts against this list and shows a tooltip with
+    // the chord-tangent angle when the cursor is over a triangle.
+    this._losMarks = [];
+    this._losRaycaster = new THREE.Raycaster();
+    this._losMouseV = new THREE.Vector2();
+    this.canvas.addEventListener('pointermove', (e) => {
+      if (!this._losMarks.length) {
+        if (this._losTip) this._losTip.style.display = 'none';
+        return;
+      }
+      const rect = this.canvas.getBoundingClientRect();
+      const x = ((e.clientX - rect.left) / rect.width)  *  2 - 1;
+      const y = ((e.clientY - rect.top)  / rect.height) * -2 + 1;
+      this._losMouseV.set(x, y);
+      this._losRaycaster.setFromCamera(this._losMouseV, this.sm.camera);
+      const hits = this._losRaycaster.intersectObjects(this._losMarks, false);
+      if (hits.length) {
+        const ang = hits[0].object.userData.intersectionAngle;
+        const tip = this._ensureLosTip();
+        tip.textContent = `LoS / surface: ${ang.toFixed(2)}°`;
+        const viewRect = (document.getElementById('view') || document.body).getBoundingClientRect();
+        tip.style.left = `${e.clientX - viewRect.left + 12}px`;
+        tip.style.top  = `${e.clientY - viewRect.top  + 12}px`;
+        tip.style.display = 'block';
+      } else if (this._losTip) {
+        this._losTip.style.display = 'none';
+      }
+    });
+
     // Track curves (sun/moon arc lines). Also clipped at disc.
     this.sunTrack  = this._blankLine(0xffa000, 0.75, clipPlanes);
     this.moonTrack = this._blankLine(0xffffff, 0.7, clipPlanes);
@@ -371,6 +402,29 @@ export class Renderer {
       color, transparent: opacity < 1, opacity, clippingPlanes,
     });
     return new THREE.Line(new THREE.BufferGeometry(), m);
+  }
+
+  _ensureLosTip() {
+    if (this._losTip) return this._losTip;
+    const el = document.createElement('div');
+    el.id = 'los-mark-tip';
+    el.style.cssText = [
+      'position: absolute',
+      'pointer-events: none',
+      'padding: 3px 8px',
+      'font: 11px/1.2 ui-monospace, Menlo, monospace',
+      'color: #fff',
+      'background: rgba(180, 40, 40, 0.92)',
+      'border: 1px solid #ff6868',
+      'border-radius: 3px',
+      'z-index: 42',
+      'white-space: nowrap',
+      'display: none',
+    ].join(';');
+    const view = document.getElementById('view') || document.body;
+    view.appendChild(el);
+    this._losTip = el;
+    return el;
   }
 
   _makeDashedLine(color) {
@@ -797,6 +851,7 @@ export class Renderer {
       c.geometry?.dispose();
       c.material?.dispose();
     }
+    if (this._losMarks) this._losMarks.length = 0;
     const s = this.model.state;
     const c = this.model.computed;
     const ge = s.WorldModel === 'ge';
@@ -918,6 +973,17 @@ export class Renderer {
       });
       const mesh = new THREE.Mesh(geo, mat);
       mesh.renderOrder = 70;
+      // Angle of intersection between the LoS chord and the local
+      // tangent plane at the exit point. Equals 90° minus the angle
+      // between chord direction and surface normal: asin(|D̂ · N̂|).
+      // Stashed on userData so the canvas-level pointermove handler
+      // can read it back without recomputing the chord geometry.
+      const Dlen = Math.sqrt(dd) || 1;
+      const dn = (Dx * nx + Dy * ny + Dz * nz) / Dlen;
+      const angDeg = Math.asin(Math.min(1, Math.abs(dn))) * 180 / Math.PI;
+      mesh.userData.kind = 'losMark';
+      mesh.userData.intersectionAngle = angDeg;
+      this._losMarks.push(mesh);
       this.rayGroup.add(mesh);
     };
 

@@ -6872,3 +6872,33 @@ Format:
     `0.024`. Camera-aligned (`quaternion.copy`)
     so canvas-up = screen-up.
 - **Revert:** `git checkout v-s000544 -- .`
+
+## S546 — Analemma + synodic + eclipse-map demos: pick coord by WorldModel
+
+- **Date:** 2026-04-27
+- **Files changed:** `js/core/app.js`,
+  `js/demos/definitions.js`.
+- **Change:**
+  - `app.js` `stepAnalemma` and `stepVaultArc`
+    accumulators now select source coord by
+    `WorldModel`: GE → `Sun/MoonGlobeVaultCoord`
+    or `Sun/MoonGlobeOpticalVaultCoord`; FE
+    keeps the original AE-disc coords.
+    `analKey` and `arcKey` both fold
+    `s.WorldModel` so toggling FE↔GE resets the
+    trace cleanly instead of mixing two
+    projection frames.
+  - `snapNoonVault`, `snapMoonNoonVault`,
+    `snapSunNoonVaultLon0`, and
+    `snapSunNoonVaultLon180` (analemma /
+    synodic / paired-analemma helpers) all
+    branch on `WorldModel === 'ge'` and pull
+    the globe-vault coord when in GE so the
+    monthly noon-position notches drop on the
+    sphere instead of the FE disc.
+  - Eclipse-map demo's `EclipseMapSolar` /
+    `EclipseMapLunar` accumulators also branch
+    on world model so the pre-computed eclipse
+    positions render at the right place in
+    either mode.
+- **Revert:** `git checkout v-s000545 -- .`

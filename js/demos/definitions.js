@@ -221,9 +221,10 @@ const MONTHLY_DAY_DURATION_MS = 3500;
 
 function snapNoonVault(model, mode) {
   const c = model.computed;
+  const ge = model.state.WorldModel === 'ge';
   const patch = {};
   if (mode === 'sun' || mode === 'both') {
-    const sv = c.SunVaultCoord;
+    const sv = ge ? (c.SunGlobeVaultCoord || c.SunVaultCoord) : c.SunVaultCoord;
     if (sv) {
       const cur = Array.isArray(model.state.SunMonthMarkers)
         ? model.state.SunMonthMarkers : [];
@@ -231,7 +232,7 @@ function snapNoonVault(model, mode) {
     }
   }
   if (mode === 'moon' || mode === 'both') {
-    const mv = c.MoonVaultCoord;
+    const mv = ge ? (c.MoonGlobeVaultCoord || c.MoonVaultCoord) : c.MoonVaultCoord;
     if (mv) {
       const cur = Array.isArray(model.state.MoonMonthMarkers)
         ? model.state.MoonMonthMarkers : [];
@@ -334,7 +335,8 @@ const SYNODIC_DAY_DURATION_MS = 1500;
 
 function snapMoonNoonVault(model) {
   const c = model.computed;
-  const mv = c.MoonVaultCoord;
+  const ge = model.state.WorldModel === 'ge';
+  const mv = ge ? (c.MoonGlobeVaultCoord || c.MoonVaultCoord) : c.MoonVaultCoord;
   if (!mv) return;
   const cur = Array.isArray(model.state.MoonMonthMarkers)
     ? model.state.MoonMonthMarkers : [];
@@ -408,7 +410,8 @@ const MOON_SYNODIC_DEMOS = ANALEMMA_LATS.map(([lat, t]) =>
 // own dots.
 function snapSunNoonVaultLon0(model) {
   const c = model.computed;
-  const sv = c.SunVaultCoord;
+  const ge = model.state.WorldModel === 'ge';
+  const sv = ge ? (c.SunGlobeVaultCoord || c.SunVaultCoord) : c.SunVaultCoord;
   if (!sv) return;
   const cur = Array.isArray(model.state.SunMonthMarkers)
     ? model.state.SunMonthMarkers : [];
@@ -417,7 +420,8 @@ function snapSunNoonVaultLon0(model) {
 
 function snapSunNoonVaultLon180(model) {
   const c = model.computed;
-  const sv = c.SunVaultCoord;
+  const ge = model.state.WorldModel === 'ge';
+  const sv = ge ? (c.SunGlobeVaultCoord || c.SunVaultCoord) : c.SunVaultCoord;
   if (!sv) return;
   const cur = Array.isArray(model.state.SunMonthMarkersOpp)
     ? model.state.SunMonthMarkersOpp : [];
@@ -506,18 +510,23 @@ function plotAllEclipses(model) {
   const solarPts = [];
   const lunarPts = [];
   const origDateTime = model.state.DateTime;
+  const ge = model.state.WorldModel === 'ge';
   for (const ev of ASTROPIXELS_ECLIPSES.solar) {
     const dt = _utisoToDateTime(ev.utISO);
     if (!isFinite(dt)) continue;
     model.setState({ DateTime: dt }, false);
-    const sv = model.computed.SunVaultCoord;
+    const sv = ge
+      ? (model.computed.SunGlobeVaultCoord || model.computed.SunVaultCoord)
+      : model.computed.SunVaultCoord;
     if (sv) solarPts.push([sv[0], sv[1], sv[2]]);
   }
   for (const ev of ASTROPIXELS_ECLIPSES.lunar) {
     const dt = _utisoToDateTime(ev.utISO);
     if (!isFinite(dt)) continue;
     model.setState({ DateTime: dt }, false);
-    const mv = model.computed.MoonVaultCoord;
+    const mv = ge
+      ? (model.computed.MoonGlobeVaultCoord || model.computed.MoonVaultCoord)
+      : model.computed.MoonVaultCoord;
     if (mv) lunarPts.push([mv[0], mv[1], mv[2]]);
   }
   model.setState({

@@ -608,7 +608,11 @@ export class FeModel extends EventTarget {
     // One vault-coord point per integer day-of-year while the
     // corresponding flag is on. Cleared whenever the cache key
     // (observer / time-of-day / year / bodySource) changes.
-    const analKey = `${s.ObserverLat}|${s.ObserverLong}|${s.ObserverHeading}|${Math.round(s.Time*1000)/1000}|${utcDate.getUTCFullYear()}|${bodySource}`;
+    // WorldModel folded into the cache key: switching FE↔GE resets
+    // the trace because the source coord changes (FE optical-vault →
+    // globe optical-vault projection).
+    const _ge = s.WorldModel === 'ge';
+    const analKey = `${s.WorldModel}|${s.ObserverLat}|${s.ObserverLong}|${s.ObserverHeading}|${Math.round(s.Time*1000)/1000}|${utcDate.getUTCFullYear()}|${bodySource}`;
     this._sunAnalemma  = this._sunAnalemma  || { points: [], lastDay: -1, key: null };
     this._moonAnalemma = this._moonAnalemma || { points: [], lastDay: -1, key: null };
     const stepAnalemma = (slot, flag, srcCoord) => {
@@ -624,8 +628,10 @@ export class FeModel extends EventTarget {
         slot.lastDay = s.DayOfYear;
       }
     };
-    stepAnalemma(this._sunAnalemma,  s.ShowSunAnalemma,  c.SunOpticalVaultCoord);
-    stepAnalemma(this._moonAnalemma, s.ShowMoonAnalemma, c.MoonOpticalVaultCoord);
+    const sunOptSrc  = _ge ? (c.SunGlobeOpticalVaultCoord  || c.SunOpticalVaultCoord)  : c.SunOpticalVaultCoord;
+    const moonOptSrc = _ge ? (c.MoonGlobeOpticalVaultCoord || c.MoonOpticalVaultCoord) : c.MoonOpticalVaultCoord;
+    stepAnalemma(this._sunAnalemma,  s.ShowSunAnalemma,  sunOptSrc);
+    stepAnalemma(this._moonAnalemma, s.ShowMoonAnalemma, moonOptSrc);
     c.SunAnalemmaPoints  = this._sunAnalemma.points;
     c.MoonAnalemmaPoints = this._moonAnalemma.points;
 
@@ -641,7 +647,7 @@ export class FeModel extends EventTarget {
         slot.key = null;
         return;
       }
-      const arcKey = `${s.ObserverLat}|${utcDate.getUTCFullYear()}|${bodySource}`;
+      const arcKey = `${s.WorldModel}|${s.ObserverLat}|${utcDate.getUTCFullYear()}|${bodySource}`;
       if (!slot.wasOn || slot.key !== arcKey) {
         slot.points.length = 0;
         slot.key = arcKey;
@@ -658,8 +664,10 @@ export class FeModel extends EventTarget {
     };
     this._sunVaultArc  = this._sunVaultArc  || { points: [], wasOn: false, key: null };
     this._moonVaultArc = this._moonVaultArc || { points: [], wasOn: false, key: null };
-    stepVaultArc(this._sunVaultArc,  s.SunVaultArcOn,  c.SunVaultCoord);
-    stepVaultArc(this._moonVaultArc, s.MoonVaultArcOn, c.MoonVaultCoord);
+    const sunArcSrc  = _ge ? (c.SunGlobeVaultCoord  || c.SunVaultCoord)  : c.SunVaultCoord;
+    const moonArcSrc = _ge ? (c.MoonGlobeVaultCoord || c.MoonVaultCoord) : c.MoonVaultCoord;
+    stepVaultArc(this._sunVaultArc,  s.SunVaultArcOn,  sunArcSrc);
+    stepVaultArc(this._moonVaultArc, s.MoonVaultArcOn, moonArcSrc);
     c.SunVaultArcPoints  = this._sunVaultArc.points;
     c.MoonVaultArcPoints = this._moonVaultArc.points;
 

@@ -7326,3 +7326,18 @@ Format:
     and no Tval touches `DateTime`, so the
     instant is fixed.
 - **Revert:** `git checkout v-s000560 -- .`
+
+## S562 — Sigma Octantis demo: real dynamic lighting
+
+- **Date:** 2026-04-27
+- **Files changed:** `js/demos/definitions.js`.
+- **Change:**
+  - Sigma Octantis demo intro: `PermanentNight`
+    flipped `true → false`, `DynamicStars`
+    flipped `false → true`. Each location's
+    sky brightness now reflects the actual
+    sun elevation at the demo's frozen
+    instant — Brazil reads as late twilight,
+    East Africa as full night, Perth as
+    pre-dawn.
+- **Revert:** `git checkout v-s000561 -- .`

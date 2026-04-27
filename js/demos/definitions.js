@@ -159,8 +159,8 @@ const GENERAL_DEMOS = [
       ShowOpticalVault: true,
       ShowTruePositions: false,
       ShowConstellationLines: false,
-      DynamicStars: false,
-      PermanentNight: true,
+      DynamicStars: true,
+      PermanentNight: false,
     },
     tasks: () => [
       Ttxt('2022-06-22 21:40 UTC · three observers in three timezones, all looking south at Sigma Octantis (the south celestial pole) at the same instant.'),

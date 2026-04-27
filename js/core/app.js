@@ -408,6 +408,20 @@ export class FeModel extends EventTarget {
     const camDistMin = GEOMETRY.CameraDistanceMinRel * s.VaultSize * FE_RADIUS;
     if (s.CameraDistance < camDistMin) s.CameraDistance = camDistMin;
 
+    // World-model switch invalidates accumulated markers — they
+    // were captured in the previous projection's coords and would
+    // render at wrong positions otherwise. The arc / analemma
+    // accumulators auto-reset via their own keys; markers (state
+    // arrays) need explicit clearing.
+    if (this._lastWorldModel !== undefined && this._lastWorldModel !== s.WorldModel) {
+      s.SunMonthMarkers = [];
+      s.MoonMonthMarkers = [];
+      s.SunMonthMarkersOpp = [];
+      s.EclipseMapSolar = [];
+      s.EclipseMapLunar = [];
+    }
+    this._lastWorldModel = s.WorldModel;
+
     // date/time sync
     s.DayOfYear = Math.round(s.DayOfYear);
     if (s.DayOfYear !== this._dayOfYearLast || s.Time !== this._timeLast) {

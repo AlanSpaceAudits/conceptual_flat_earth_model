@@ -7009,3 +7009,28 @@ Format:
     horizon between months — left for a
     separate, fully-tested pass.
 - **Revert:** `git checkout v-s000549 -- .`
+
+## S551 — Clear month-marker arrays on WorldModel switch
+
+- **Date:** 2026-04-27
+- **Files changed:** `js/core/app.js`.
+- **Change:**
+  - `app.update()` now tracks
+    `this._lastWorldModel` and clears
+    `SunMonthMarkers`, `MoonMonthMarkers`,
+    `SunMonthMarkersOpp`, `EclipseMapSolar`,
+    and `EclipseMapLunar` whenever the model
+    flips between FE and GE. Without this,
+    markers captured in one projection's
+    coords stayed in state and rendered at
+    the wrong positions after switching
+    modes mid-demo (the trace dropped through
+    space at random places after a swap).
+  - Arc + analemma point accumulators were
+    already auto-resetting via their
+    per-key checks (`arcKey` / `analKey`
+    include `WorldModel`); only the state
+    arrays needed an explicit clear because
+    they live as plain `setState` arrays
+    rather than internal slot buffers.
+- **Revert:** `git checkout v-s000550 -- .`

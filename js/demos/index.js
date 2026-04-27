@@ -92,7 +92,11 @@ export class Demos {
       this._refreshPanel();
       return;
     }
-    this.model.setState(introState);
+    // Universal demo-time setting: hide constellation outlines so
+    // they don't compete with the demo's own visualization. Demos
+    // that explicitly want lines on can override in their intro.
+    const introWithLinesOff = { ShowConstellationLines: false, ...introState };
+    this.model.setState(introWithLinesOff);
     this.animator.play(d.tasks(this.model));
     if (this._btnPauseResume) this._btnPauseResume.textContent = 'Pause';
     this._refreshPanel();

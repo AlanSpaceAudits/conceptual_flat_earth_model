@@ -808,11 +808,8 @@ export class Renderer {
     if (ge) {
       this.celestialPoles.group.visible     = false;
       this.decCircles.group.visible         = false;
-      this.sunMonthMarkers.group.visible    = false;
-      this.sunMonthMarkersOpp.group.visible = false;
-      this.moonMonthMarkers.group.visible   = false;
-      this.eclipseMapSolar.group.visible    = false;
-      this.eclipseMapLunar.group.visible    = false;
+      // MonthMarkers + eclipse-map markers now use globe-aware
+      // optical-vault coords (S546/S548/S552), so they read in GE.
       this.sunNine.group.visible            = false;
       this.moonNine.group.visible           = false;
       // GP-tracer sky line still uses the FE-projected

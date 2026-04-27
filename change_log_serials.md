@@ -7098,3 +7098,34 @@ Format:
     in both modes without disturbing the
     analemma figure-8 layout.
 - **Revert:** `git checkout v-s000553 -- .`
+
+## S555 — Show MonthMarkers in GE + hide constellation lines on every demo
+
+- **Date:** 2026-04-27
+- **Files changed:** `js/render/index.js`,
+  `js/demos/index.js`.
+- **Change:**
+  - **MonthMarkers no longer hidden in GE.**
+    The renderer's GE branch in `frame()` was
+    explicitly setting
+    `sunMonthMarkers.group.visible = false`
+    (and the four sibling marker groups + the
+    eclipse-map markers). That predated S546 /
+    S548 / S552 which moved the markers onto
+    globe-aware optical-vault coords. Removed
+    those forced-hide lines so the captured
+    noon-position notches actually paint in
+    GE. `sunNine` / `moonNine` / `gpTracer`
+    skyGroup still hidden in GE (they still
+    use FE-projected coords).
+  - **Constellation lines off during demos.**
+    `Demos._playSingle` now wraps the
+    intro state in
+    `{ ShowConstellationLines: false, ...intro }`
+    so every demo plays with the
+    stick-figure outlines suppressed by
+    default. A demo that wants them on can
+    set `ShowConstellationLines: true` in
+    its intro to override (intro overrides
+    win because spread comes after).
+- **Revert:** `git checkout v-s000554 -- .`

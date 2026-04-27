@@ -1599,6 +1599,7 @@ export function buildControlPanel(host, model, demos) {
       <span class="info-slot" data-k="speed">—</span>
       <span class="info-sep">│</span>
       <span class="info-slot info-track" data-k="track">Tracking: —</span>
+      <span class="info-actions" data-k="actions"></span>
     </div>
   `;
   const slotLat   = infoBar.querySelector('[data-k="lat"]');
@@ -1835,16 +1836,22 @@ export function buildControlPanel(host, model, demos) {
     });
   });
   // Speed readout is duplicated by `slotSpeed` in the date / time
-  // bar (the "+0.042 d/s" appendix on the date line). We keep the
-  // detached span around so the existing `speedReadout.textContent
-  // = lbl` writes still work without a guard, but it never enters
-  // the DOM — frees the time-controls strip from the redundant
-  // tail and lets the right-side compass-controls slide back to
-  // where they sat before the per-day jump-grid widened the
-  // transport cluster.
+  // bar (the "+0.042 d/s" appendix on the date line). The detached
+  // span stays for the existing `speedReadout.textContent = lbl`
+  // writes to no-op safely. End Demo / End Tracking get docked
+  // into the `info-bar` (next to the "Tracking: ..." slot)
+  // instead of riding the transport strip — that's the natural
+  // anchor for "stop the active session" controls and frees the
+  // bottom bar from the floating button.
   const speedReadout = document.createElement('span');
   speedReadout.className = 'time-speed';
-  speedStack.append(btnEndDemo, btnEndTracking);
+  // speedStack is now empty in normal layout but kept so
+  // refreshTimeControls can flip btnEndDemo / btnEndTracking
+  // hidden flags through the same handle. The buttons live in
+  // infoBar's `info-actions` span.
+  void speedStack;
+  const slotActions = infoBar.querySelector('[data-k="actions"]');
+  if (slotActions) slotActions.append(btnEndDemo, btnEndTracking);
 
   // Day / month / year skippers. 2 × 3 compact grid (back row +
   // forward row) using calendar-aware month / year arithmetic so

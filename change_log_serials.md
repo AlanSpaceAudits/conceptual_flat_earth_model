@@ -5998,3 +5998,34 @@ Format:
     FE since that lift conveys the dome shape;
     GE was already straight in both passes.
 - **Revert:** `git checkout v-s000513 -- .`
+
+## S515 — End Demo / End Tracking docked into info-bar
+
+- **Date:** 2026-04-27
+- **Files changed:** `js/ui/controlPanel.js`,
+  `css/styles.css`.
+- **Change:**
+  - `infoBar` HTML grew an `info-actions` span at
+    the end of the info-row. After
+    `btnEndDemo` / `btnEndTracking` are built,
+    they're appended to that span instead of the
+    bottom-bar's `speedStack`. Their existing
+    click handlers and `refreshTimeControls`
+    hidden-flag flips still drive show/hide.
+  - `speedStack` now stays empty (the
+    `speedReadout` span and the End buttons all
+    live elsewhere) but is kept in the DOM for
+    layout consistency.
+  - New CSS for `#info-bar .info-actions` /
+    `.end-demo-btn` / `.end-tracking-btn` —
+    pointer-events restored to `auto` (info-bar
+    itself is `pointer-events: none` so click
+    pass-through still works for the rest of the
+    readout).
+  - `#info-bar` right padding bumped to `280 px`
+    so the End buttons settle to the right of
+    the Tracking slot but stop short of the
+    bottom-bar's right cluster (cardinal grid +
+    GE button + search field), preventing visual
+    overlap.
+- **Revert:** `git checkout v-s000514 -- .`

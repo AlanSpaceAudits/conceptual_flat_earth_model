@@ -2828,9 +2828,19 @@ function makeUnderlinedDigitCanvas(text, color) {
   return cv;
 }
 
-// Procedural lunar surface texture: base grey + maria + crater field.
+// Lunar surface texture: base grey + a three-crater triangle in the
+// top-left quadrant (small crater on top, two larger ones of
+// different sizes underneath, northern-hemisphere observer view).
 // Drawn once at module load; reused as the unshaded base for the
 // per-frame phase composite.
+function _drawMoonCrater(ctx, cx, cy, r) {
+  ctx.fillStyle = 'rgba(220, 215, 200, 0.32)';
+  ctx.beginPath(); ctx.arc(cx, cy, r * 1.45, 0, 2 * Math.PI); ctx.fill();
+  ctx.fillStyle = 'rgba(60, 55, 50, 0.7)';
+  ctx.beginPath(); ctx.arc(cx, cy, r, 0, 2 * Math.PI); ctx.fill();
+  ctx.fillStyle = 'rgba(35, 30, 25, 0.55)';
+  ctx.beginPath(); ctx.arc(cx, cy, r * 0.55, 0, 2 * Math.PI); ctx.fill();
+}
 function makeMoonCraterCanvas() {
   const W = 256, H = 256;
   const cv = document.createElement('canvas');
@@ -2842,40 +2852,11 @@ function makeMoonCraterCanvas() {
   baseGrad.addColorStop(1, '#a89e8c');
   ctx.fillStyle = baseGrad;
   ctx.fillRect(0, 0, W, H);
-  const maria = [
-    { x: 0.30, y: 0.30, r: 0.18 }, { x: 0.55, y: 0.25, r: 0.14 },
-    { x: 0.40, y: 0.50, r: 0.20 }, { x: 0.65, y: 0.55, r: 0.16 },
-    { x: 0.50, y: 0.70, r: 0.12 }, { x: 0.30, y: 0.65, r: 0.10 },
-  ];
-  for (const m of maria) {
-    const cx = m.x * W, cy = m.y * H, r = m.r * W;
-    const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
-    g.addColorStop(0, 'rgba(70, 65, 60, 0.55)');
-    g.addColorStop(1, 'rgba(70, 65, 60, 0)');
-    ctx.fillStyle = g;
-    ctx.beginPath(); ctx.arc(cx, cy, r, 0, 2 * Math.PI); ctx.fill();
-  }
-  let seed = 12345;
-  const rnd = () => { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; };
-  for (let i = 0; i < 110; i++) {
-    const cx = rnd() * W, cy = rnd() * H;
-    const r = 1.5 + rnd() * 6;
-    ctx.fillStyle = `rgba(220, 215, 200, ${0.12 + rnd() * 0.18})`;
-    ctx.beginPath(); ctx.arc(cx, cy, r * 1.3, 0, 2 * Math.PI); ctx.fill();
-    ctx.fillStyle = `rgba(60, 55, 50, ${0.4 + rnd() * 0.3})`;
-    ctx.beginPath(); ctx.arc(cx, cy, r, 0, 2 * Math.PI); ctx.fill();
-  }
-  for (let i = 0; i < 3; i++) {
-    const cx = rnd() * W, cy = rnd() * H;
-    const r = 4 + rnd() * 4;
-    const g = ctx.createRadialGradient(cx, cy, r * 0.5, cx, cy, r * 4);
-    g.addColorStop(0, 'rgba(240, 235, 220, 0.4)');
-    g.addColorStop(1, 'rgba(240, 235, 220, 0)');
-    ctx.fillStyle = g;
-    ctx.beginPath(); ctx.arc(cx, cy, r * 4, 0, 2 * Math.PI); ctx.fill();
-    ctx.fillStyle = 'rgba(40, 35, 30, 0.7)';
-    ctx.beginPath(); ctx.arc(cx, cy, r, 0, 2 * Math.PI); ctx.fill();
-  }
+  // Three-crater triangle, top-left quadrant. Top crater is the
+  // smallest; the two beneath are larger and of different sizes.
+  _drawMoonCrater(ctx, W * 0.30, H * 0.22, 5);   // top   — small
+  _drawMoonCrater(ctx, W * 0.21, H * 0.34, 7);   // bot-L — medium
+  _drawMoonCrater(ctx, W * 0.36, H * 0.36, 11);  // bot-R — large
   return cv;
 }
 
@@ -2900,7 +2881,7 @@ function drawMoonBodyToCanvas(ctx, W, H, craterCanvas, phase, rot) {
     ctx.beginPath();
     ctx.arc(0, 0, r, 0, 2 * Math.PI);
     ctx.clip();
-    ctx.fillStyle = 'rgba(8, 12, 18, 0.93)';
+    ctx.fillStyle = 'rgba(8, 12, 18, 0.85)';
     if (frac < 0.001) {
       ctx.beginPath();
       ctx.arc(0, 0, r, 0, 2 * Math.PI);
@@ -2915,6 +2896,13 @@ function drawMoonBodyToCanvas(ctx, W, H, craterCanvas, phase, rot) {
     }
     ctx.restore();
   }
+  // Always-visible rim so the moon stays distinct from the sun even
+  // at new-moon (sun + moon at same sky position).
+  ctx.beginPath();
+  ctx.arc(0, 0, r, 0, 2 * Math.PI);
+  ctx.strokeStyle = 'rgba(190, 185, 175, 0.55)';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
   ctx.restore();
 }
 

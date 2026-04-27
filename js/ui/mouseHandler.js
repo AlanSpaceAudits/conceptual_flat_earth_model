@@ -133,11 +133,13 @@ function collectClickables(c, state) {
 function findNearestCelestial(clickAz, clickEl, c, state, fovV) {
   const threshold = Math.max(1, Math.min(8, fovV / 10));
   const candidates = collectClickables(c, state);
+  const followId = state.FollowTarget || null;
   let best = null, bestD = threshold;
   for (const opt of candidates) {
     if (!opt.angles || opt.angles.elevation < 0) continue;
     const d = angularDistance(clickAz, clickEl, opt.angles.azimuth, opt.angles.elevation);
-    if (d < bestD) { bestD = d; best = opt; }
+    const dEff = (followId && opt.id === followId) ? d - 0.05 : d;
+    if (dEff < bestD) { bestD = dEff; best = opt; }
   }
   return best;
 }
@@ -256,22 +258,21 @@ function projectToCanvasPixels(coord, camera, canvas) {
 
 function findNearestInHeavenly(mouseX, mouseY, canvas, c, state, camera) {
   const candidates = collectHeavenlyCandidates(c, state);
+  // Prefer the followed target on tie/near-tie so coincident bodies
+  // (e.g. sun + moon at new moon) hover-pick the body the user is
+  // tracking, not whichever was first in the candidate list.
+  const followId = state.FollowTarget || null;
   let best = null, bestD = HEAVENLY_HIT_PX;
+  const test = (cand, pt) => {
+    if (!pt) return;
+    const d = Math.hypot(pt.x - mouseX, pt.y - mouseY);
+    const isFollow = followId && cand.id === followId;
+    const dEff = isFollow ? d - 0.5 : d;
+    if (dEff < bestD) { bestD = dEff; best = { id: cand.id, angles: cand.angles }; }
+  };
   for (const cand of candidates) {
-    if (cand.domeCoord) {
-      const pt = projectToCanvasPixels(cand.domeCoord, camera, canvas);
-      if (pt) {
-        const d = Math.hypot(pt.x - mouseX, pt.y - mouseY);
-        if (d < bestD) { bestD = d; best = { id: cand.id, angles: cand.angles }; }
-      }
-    }
-    if (cand.opticalCoord) {
-      const pt = projectToCanvasPixels(cand.opticalCoord, camera, canvas);
-      if (pt) {
-        const d = Math.hypot(pt.x - mouseX, pt.y - mouseY);
-        if (d < bestD) { bestD = d; best = { id: cand.id, angles: cand.angles }; }
-      }
-    }
+    if (cand.domeCoord) test(cand, projectToCanvasPixels(cand.domeCoord, camera, canvas));
+    if (cand.opticalCoord) test(cand, projectToCanvasPixels(cand.opticalCoord, camera, canvas));
   }
   return best;
 }

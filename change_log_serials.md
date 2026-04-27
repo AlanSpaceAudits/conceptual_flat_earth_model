@@ -6355,3 +6355,42 @@ Format:
     alpha 0.93 + depthTest off + higher
     `renderOrder 52` keeps it on top.
 - **Revert:** `git checkout v-s000527 -- .`
+
+## S529 — Moon body: 3-crater pattern + outline + follow-target picker priority
+
+- **Date:** 2026-04-27
+- **Files changed:** `js/render/worldObjects.js`,
+  `js/ui/mouseHandler.js`.
+- **Change:**
+  - `makeMoonCraterCanvas` rewritten: replaced
+    the procedural 100+-crater field with a
+    deliberate three-crater triangle in the
+    top-left quadrant — small (`r=5`) on top,
+    medium (`r=7`) bottom-left, large (`r=11`)
+    bottom-right. Northern-hemisphere observer
+    convention. Each crater rendered via shared
+    `_drawMoonCrater(ctx, cx, cy, r)` helper
+    (rim halo + dark body + darker centre).
+    Maria gradients dropped — clean lunar grey
+    base with the triangle as the only feature.
+  - `drawMoonBodyToCanvas` now strokes a faint
+    rim around the moon disc (color
+    `rgba(190,185,175,0.55)`, width 1.5) on
+    every redraw. Keeps the moon visually
+    distinct from the sun even at new moon
+    (frac ≈ 0) when both bodies sit at the
+    same sky position. Shadow alpha lowered
+    from `0.93` to `0.85` so the night side
+    has a hint of earthshine peeking through.
+  - `findNearestInHeavenly` and
+    `findNearestCelestial` (`js/ui/mouseHandler.js`)
+    now bias the pick by the active
+    `FollowTarget`: when a target is being
+    followed, its hit distance is reduced by a
+    small epsilon (`0.5 px` heavenly-hover,
+    `0.05°` optical-click) so coincident
+    candidates (e.g. new-moon sun + moon)
+    resolve to the followed body's name instead
+    of whichever was first in the candidate
+    list.
+- **Revert:** `git checkout v-s000528 -- .`

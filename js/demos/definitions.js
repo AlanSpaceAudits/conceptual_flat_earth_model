@@ -178,6 +178,52 @@ const GENERAL_DEMOS = [
       Thold(),
     ],
   },
+  {
+    name: 'Southern Cross · three observers, one instant',
+    group: 'general',
+    intro: {
+      // 2022-06-22 21:40 UTC = 1998.903 — same instant as the
+      // Sigma Octantis demo, this time framed on Crux instead.
+      DateTime: 1998.903,
+      ObserverLat: -8.05, ObserverLong: -34.88, ObserverHeading: 180,
+      BodySource: 'astropixels',
+      InsideVault: true,
+      FollowTarget: 'star:acrux',
+      // Crux's four stars — Acrux + Gacrux are celnav, Mimosa +
+      // Delta Cru are constellation-only. All four go in
+      // TrackerTargets so the cross stays painted as the observer
+      // hops.
+      TrackerTargets: [
+        'star:acrux', 'star:gacrux',
+        'star:mimosa', 'star:deltacru',
+      ],
+      SpecifiedTrackerMode: false,
+      OpticalZoom: 3.0,
+      VaultSize: 1, VaultHeight: 0.45,
+      ShowStars: true,
+      ShowOpticalVault: true,
+      ShowTruePositions: false,
+      ShowConstellations: true,
+      ShowConstellationLines: true,
+      DynamicStars: true,
+      PermanentNight: false,
+    },
+    tasks: () => [
+      Ttxt('2022-06-22 21:40 UTC · three observers, three timezones, all looking south at the Southern Cross (Crux) at the same instant.'),
+      Tpse(3500),
+      Ttxt('Recife, Brazil (8°S, 35°W) · local 18:40 — Crux high in the southern sky.'),
+      Tpse(4500),
+      Tcall((m) => m.setState({ ObserverLat: -5.0, ObserverLong: 30.0, ObserverHeading: 180 })),
+      Ttxt('East Africa (5°S, 30°E) · local 23:40 — Crux still framed south.'),
+      Tpse(4500),
+      Tcall((m) => m.setState({ ObserverLat: -31.95, ObserverLong: 115.86, ObserverHeading: 180 })),
+      Ttxt('Perth, Australia (32°S, 116°E) · local 05:40 next morning — Crux nearly overhead.'),
+      Tpse(4500),
+      Tcall((m) => m.setState({ ObserverLat: -8.05, ObserverLong: -34.88, ObserverHeading: 180 })),
+      Ttxt('Three observers, one constellation, same instant — different local clocks and altitudes.'),
+      Thold(),
+    ],
+  },
 ];
 
 // Analemma demos. Observer stationary, Time fixed at 12:00 UTC,

@@ -7341,3 +7341,28 @@ Format:
     East Africa as full night, Perth as
     pre-dawn.
 - **Revert:** `git checkout v-s000561 -- .`
+
+## S563 — Southern Cross · three observers demo
+
+- **Date:** 2026-04-27
+- **Files changed:** `js/demos/definitions.js`.
+- **Change:**
+  - New `general` group entry: `Southern
+    Cross · three observers, one instant`.
+    Same UTC moment + same observer cycle as
+    the Sigma Octantis demo (2022-06-22 21:40
+    UTC · Recife BR → East Africa → Perth
+    AU), but framed on Crux instead.
+  - All four Crux stars (Acrux, Mimosa,
+    Gacrux, Delta Cru) loaded into
+    `TrackerTargets`; `FollowTarget` locks
+    on the brightest (Acrux). `ShowConstellationLines:
+    true` overrides the demo-default off so
+    the cross outline paints. `OpticalZoom:
+    3.0` fits the four-star pattern in the
+    frame.
+  - `DynamicStars: true`, `PermanentNight:
+    false` — sky brightness reflects each
+    location's actual sun elevation at the
+    frozen instant.
+- **Revert:** `git checkout v-s000562 -- .`

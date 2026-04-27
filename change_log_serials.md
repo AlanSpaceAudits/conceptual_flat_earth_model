@@ -7199,3 +7199,55 @@ Format:
     `snapSunNoonVaultLon180`) now share the
     same horizon-gate convention.
 - **Revert:** `git checkout v-s000557 -- .`
+
+## S559 — Mobile-friendly pass + PWA manifest
+
+- **Date:** 2026-04-27
+- **Files changed:** `index.html`,
+  `css/styles.css`,
+  `manifest.webmanifest` (new).
+- **Change:**
+  - **Viewport meta tag** extended with
+    `viewport-fit=cover` and added
+    `theme-color`, `mobile-web-app-capable`,
+    `apple-mobile-web-app-capable` /
+    `-status-bar-style` so the app reads as
+    a native-feeling fullscreen app on iOS /
+    Android.
+  - **PWA manifest** (`manifest.webmanifest`)
+    added with name, short-name, scope
+    (relative `./` so the same bundle works
+    locally and on GH Pages), `display:
+    standalone`, theme/background colors
+    matching the existing dark theme, and
+    a single icon entry pointing at
+    `assets/ac_logo.png`. `<link rel="manifest">`,
+    `<link rel="icon">`, and
+    `<link rel="apple-touch-icon">` wired in
+    `index.html` so install-to-home-screen
+    works in modern mobile browsers.
+  - **Responsive CSS** appended to
+    `styles.css`. Two breakpoints:
+    - `@media (max-width: 900px)` — header
+      subtitle hidden, info bar trimmed,
+      bottom-bar switches to horizontal
+      scroll (`overflow-x: auto`,
+      `flex-wrap: nowrap`) so the dense
+      time / mode / search controls stay in
+      one row and remain usable at finger
+      width. Tab popups become near-full-
+      screen overlays
+      (`position: fixed; left/right: 4px`)
+      so panel content actually fits. HUD
+      moon-phase canvas shrinks to 60×60.
+    - `@media (max-width: 520px)` — phone-
+      sized: header title shrinks, time-btn
+      padding tightens further, body-search
+      input narrows.
+  - Canvas already has `touch-action: none`
+    so pinch / drag gestures route through
+    the existing `pointermove` /
+    `pointerdown` handlers in
+    `mouseHandler.js` — no JS changes needed
+    for basic touch.
+- **Revert:** `git checkout v-s000558 -- .`

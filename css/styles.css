@@ -1024,3 +1024,94 @@ footer#desc .desc-dynamic { color: var(--fg); }
   font-size: 11px;
 }
 .demo-play-all:hover { background: rgba(255, 154, 60, 0.15); }
+
+/* --- Mobile / narrow-viewport pass --------------------------------------
+   Keeps the desktop layout intact above 900 px; below that, the bottom
+   bar gets a horizontal-scroll fallback, popups go near-full-width, the
+   HUD shrinks, and touch tap targets are bumped where possible. */
+@media (max-width: 900px) {
+  html, body { -webkit-text-size-adjust: 100%; }
+
+  /* Header strip on top: trim padding, hide subtitle. */
+  #app > header { padding: 6px 10px; }
+  #app > header h1 { font-size: 14px; }
+  #app > header p.sub { display: none; }
+  #app > header .info-box { gap: 4px; }
+
+  /* HUD overlay — smaller fonts, tighter padding. */
+  #hud { font-size: 11px; padding: 6px; }
+  #hud .moon-phase-wrapper canvas { width: 60px !important; height: 60px !important; }
+
+  /* Bottom bar: scroll horizontally instead of wrapping the controls
+     into something illegible. Keep the same dense layout, just
+     scrollable. */
+  #bottom-bar {
+    height: auto;
+    padding: 8px 8px 6px;
+    gap: 8px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    flex-wrap: nowrap;
+    -webkit-overflow-scrolling: touch;
+    zoom: 1;  /* let media query own the scale */
+  }
+  #bottom-bar > * { flex-shrink: 0; }
+  #bottom-bar .bar-left { flex: 0 0 auto; }
+  #bottom-bar .time-btn {
+    min-width: 28px;
+    padding: 6px 8px;
+    font-size: 12px;
+  }
+  #bottom-bar .geo-hops {
+    grid-template-columns: repeat(5, auto);
+    gap: 1px;
+    margin: 0 4px;
+  }
+  #bottom-bar .geo-hops .time-btn {
+    padding: 3px 4px;
+    font-size: 9px;
+  }
+  #bottom-bar .body-search { width: 140px; }
+  #bottom-bar .tabs button { padding: 6px 8px; font-size: 12px; }
+
+  /* Info bar — drop the right padding since the action buttons can
+     overflow when the readout strip is tight. */
+  #info-bar { padding: 4px 10px; font-size: 11px; }
+
+  /* Tab popups: near-fullscreen on mobile so dense controls become
+     usable instead of a tiny dropdown that clips offscreen. */
+  .tab-popup {
+    position: fixed !important;
+    left: 4px !important;
+    right: 4px !important;
+    top: 56px !important;
+    bottom: 88px !important;
+    width: auto !important;
+    max-width: none !important;
+    max-height: none !important;
+    overflow-y: auto;
+  }
+
+  /* Tracking info popup — ensure it stays on-screen. */
+  .tracking-info-panel {
+    max-width: calc(100vw - 12px);
+    font-size: 11px;
+  }
+
+  /* About / Legend popups full-width too. */
+  .info-popup {
+    position: fixed;
+    left: 4px;
+    right: 4px;
+    max-width: none;
+  }
+}
+
+/* Phone-sized: even tighter. */
+@media (max-width: 520px) {
+  #app > header h1 { font-size: 12px; }
+  #app > header .info-btn { padding: 3px 6px; font-size: 11px; }
+  #bottom-bar .time-btn { min-width: 26px; padding: 5px 6px; font-size: 11px; }
+  #bottom-bar .body-search { width: 110px; }
+  #hud { font-size: 10px; }
+}

@@ -1,0 +1,19 @@
+{
+  "name": "FE Conceptual Model",
+  "short_name": "FE Model",
+  "description": "Conceptual flat-earth astronomy simulation",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0e121a",
+  "theme_color": "#0e121a",
+  "icons": [
+    {
+      "src": "assets/ac_logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

@@ -7435,3 +7435,28 @@ Format:
     holds — the next hop snaps DateTime
     back to the observed instant.
 - **Revert:** `git checkout v-s000565 -- .`
+
+## S567 — Cycling-observer demos: swap Tpse for Tval-based wait
+
+- **Date:** 2026-04-27
+- **Files changed:** `js/demos/definitions.js`.
+- **Change:**
+  - Replaced each `Tpse(625)` hold with
+    `Tval('OpticalZoom', current, 625, 0,
+    'linear')` in both Sigma Octantis and
+    Southern Cross demos. Tval re-asserts
+    the current `OpticalZoom` value over
+    625 ms (= 5 sec wall at the default
+    0.125 speedScale) — same wait duration
+    as Tpse but it fires `setState` every
+    frame, which keeps the update event
+    chain firing reliably.
+  - Diagnostic for the "demo doesn't cycle"
+    report — Tpse should drain via
+    `task.remaining -= elapsed` per frame
+    but somehow wasn't completing on the
+    user's side. Tval is a more
+    battle-tested code path (every
+    midnight-sun / analemma demo uses it)
+    so swapping should resolve.
+- **Revert:** `git checkout v-s000566 -- .`

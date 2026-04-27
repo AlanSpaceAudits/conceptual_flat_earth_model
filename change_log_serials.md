@@ -7386,3 +7386,25 @@ Format:
     🧭 button and Show-tab toggles stay
     fully usable mid-demo.
 - **Revert:** `git checkout v-s000563 -- .`
+
+## S565 — Cycling-observer demos: 5-second hold per location
+
+- **Date:** 2026-04-27
+- **Files changed:** `js/demos/definitions.js`.
+- **Change:**
+  - Sigma Octantis + Southern Cross demo
+    `Tpse` durations dropped to `625` ms
+    authored. With the Animator's default
+    `speedScale = 0.125` (S524), that's
+    `625 / 0.125 = 5000` ms wall time per
+    location. Intro pause + final-narration
+    pause removed; narration text shown
+    inline so each location gets the full
+    5-second hold.
+  - Lighting still derives from real sun
+    elevation at the frozen 21:40 UTC
+    instant (`PermanentNight: false`,
+    `DynamicStars: true` per S562) — Brazil
+    twilight, East Africa night, Perth
+    pre-dawn read naturally.
+- **Revert:** `git checkout v-s000564 -- .`

@@ -5621,3 +5621,24 @@ Format:
     cel-nav yellow (`#ffe8a0`); standalone
     constellation-only stars stay white.
 - **Revert:** `git checkout v-s000498 -- .`
+
+## S500 — Constellation owns celnav-dup dot when cel-nav layer skips it
+
+- **Date:** 2026-04-26
+- **Files changed:** `js/render/constellations.js`.
+- **Change:**
+  - Tightens the cel-nav-ownership rule from
+    `celnavDup && celnavLayerActive` to
+    `celnavDup && celnavLayerActive && tracked`.
+    Closes the gap from S494 where the cel-nav
+    layer was active but the star wasn't in
+    `TrackerTargets` — both layers were skipping
+    the dot (cel-nav requires tracker
+    membership; constellation deferred to
+    cel-nav). Alnilam (and any other
+    celnav-linked constellation member) now
+    paints from the constellation layer whenever
+    the cel-nav layer isn't actually going to
+    paint it, so Orion's belt always reads as
+    three stars.
+- **Revert:** `git checkout v-s000499 -- .`

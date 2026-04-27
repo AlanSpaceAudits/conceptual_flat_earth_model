@@ -205,13 +205,18 @@ export class Constellations {
       const [lat, lon] = this._stars[i];
       const vect = this._starVect[i];
       // cel-nav duplicates get their POINT sprite parked off-screen
-      // ONLY when the cel-nav layer is active and would paint it.
-      // Otherwise the constellation owns the dot. Line endpoints
-      // always use the computed positions below.
+      // ONLY when the cel-nav layer is active AND will actually
+      // paint that star (cel-nav requires the star to be in
+      // `TrackerTargets`). When the cel-nav layer is off or the
+      // star is untracked, the constellation owns the dot — that's
+      // what kept Alnilam visible as the centre of Orion's belt
+      // when the cel-nav layer was active but Alnilam wasn't
+      // explicitly tracked. Line endpoints always use the computed
+      // positions below.
       const starId = this._starId[i];
       const untracked = !starId || !trackerSet.has(`star:${starId}`);
-      const celnavOwned = this._celnavDup[i] && celnavLayerActive;
-      const skipPoint = celnavOwned || (untracked && !this._celnavDup[i]);
+      const celnavWillPaint = this._celnavDup[i] && celnavLayerActive && !untracked;
+      const skipPoint = celnavWillPaint || (untracked && !this._celnavDup[i]);
 
       // Heavenly-vault projection. GE places the star on the celestial
       // sphere at radius GlobeVaultRadius (longitude folded by

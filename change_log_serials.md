@@ -6318,3 +6318,40 @@ Format:
     `Play all` group restores the pre-queue
     state, not the inter-demo transition state.
 - **Revert:** `git checkout v-s000526 -- .`
+
+## S528 — Optical-vault moon body: craters + phase shading
+
+- **Date:** 2026-04-27
+- **Files changed:** `js/render/worldObjects.js`,
+  `js/render/index.js`.
+- **Change:**
+  - New `MoonOpticalBody` class
+    (`js/render/worldObjects.js`) renders the
+    moon as a billboarded plane with a procedural
+    crater texture (256×256 canvas: gradient base
+    + maria gradients + ~110 craters + 3
+    ray-craters) overlaid by a phase shadow
+    composited per-frame. Phase shadow uses
+    `c.MoonPhase` (radians, 0=full, π=new) and
+    `c.MoonRotation` (terminator rotation as
+    seen by observer) — both already computed
+    in `js/core/app.js` from real
+    `MoonCelestCoord` / `SunCelestCoord`.
+  - Composite redraw triggers only when phase or
+    rot change (not every frame), so the canvas
+    cost is paid at the moon's motion rate, not
+    rAF rate.
+  - Wired in `Renderer` (`js/render/index.js`):
+    `this.moonOpticalBody` instantiated alongside
+    other markers; per-frame `update(...)` gates
+    on `showMoon && s.ShowOpticalVault &&
+    s.InsideVault` so it only paints inside
+    Optical view. Size `0.024` chosen ~8× the
+    moon dot's `opticalSize 0.003` so craters
+    read at zoom. `lookAt(camera.position)`
+    keeps the plane facing the camera.
+  - Existing `moonMarker.sphereDot` left in
+    place underneath; the moon body's canvas
+    alpha 0.93 + depthTest off + higher
+    `renderOrder 52` keeps it on top.
+- **Revert:** `git checkout v-s000527 -- .`

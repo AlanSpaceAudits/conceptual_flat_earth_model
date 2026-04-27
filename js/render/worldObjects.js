@@ -2828,6 +2828,147 @@ function makeUnderlinedDigitCanvas(text, color) {
   return cv;
 }
 
+// Procedural lunar surface texture: base grey + maria + crater field.
+// Drawn once at module load; reused as the unshaded base for the
+// per-frame phase composite.
+function makeMoonCraterCanvas() {
+  const W = 256, H = 256;
+  const cv = document.createElement('canvas');
+  cv.width = W; cv.height = H;
+  const ctx = cv.getContext('2d');
+  const baseGrad = ctx.createRadialGradient(W * 0.45, H * 0.4, W * 0.1, W * 0.5, H * 0.5, W * 0.6);
+  baseGrad.addColorStop(0, '#dcd4c4');
+  baseGrad.addColorStop(0.6, '#c8bfae');
+  baseGrad.addColorStop(1, '#a89e8c');
+  ctx.fillStyle = baseGrad;
+  ctx.fillRect(0, 0, W, H);
+  const maria = [
+    { x: 0.30, y: 0.30, r: 0.18 }, { x: 0.55, y: 0.25, r: 0.14 },
+    { x: 0.40, y: 0.50, r: 0.20 }, { x: 0.65, y: 0.55, r: 0.16 },
+    { x: 0.50, y: 0.70, r: 0.12 }, { x: 0.30, y: 0.65, r: 0.10 },
+  ];
+  for (const m of maria) {
+    const cx = m.x * W, cy = m.y * H, r = m.r * W;
+    const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
+    g.addColorStop(0, 'rgba(70, 65, 60, 0.55)');
+    g.addColorStop(1, 'rgba(70, 65, 60, 0)');
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(cx, cy, r, 0, 2 * Math.PI); ctx.fill();
+  }
+  let seed = 12345;
+  const rnd = () => { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; };
+  for (let i = 0; i < 110; i++) {
+    const cx = rnd() * W, cy = rnd() * H;
+    const r = 1.5 + rnd() * 6;
+    ctx.fillStyle = `rgba(220, 215, 200, ${0.12 + rnd() * 0.18})`;
+    ctx.beginPath(); ctx.arc(cx, cy, r * 1.3, 0, 2 * Math.PI); ctx.fill();
+    ctx.fillStyle = `rgba(60, 55, 50, ${0.4 + rnd() * 0.3})`;
+    ctx.beginPath(); ctx.arc(cx, cy, r, 0, 2 * Math.PI); ctx.fill();
+  }
+  for (let i = 0; i < 3; i++) {
+    const cx = rnd() * W, cy = rnd() * H;
+    const r = 4 + rnd() * 4;
+    const g = ctx.createRadialGradient(cx, cy, r * 0.5, cx, cy, r * 4);
+    g.addColorStop(0, 'rgba(240, 235, 220, 0.4)');
+    g.addColorStop(1, 'rgba(240, 235, 220, 0)');
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(cx, cy, r * 4, 0, 2 * Math.PI); ctx.fill();
+    ctx.fillStyle = 'rgba(40, 35, 30, 0.7)';
+    ctx.beginPath(); ctx.arc(cx, cy, r, 0, 2 * Math.PI); ctx.fill();
+  }
+  return cv;
+}
+
+// Repaint the per-frame moon composite: clipped crater base + a
+// shadow lune positioned by phase / rot. `phase` ∈ [0, π] (0=full,
+// π=new); `rot` rotates the terminator around the line of sight.
+function drawMoonBodyToCanvas(ctx, W, H, craterCanvas, phase, rot) {
+  ctx.clearRect(0, 0, W, H);
+  ctx.save();
+  ctx.translate(W / 2, H / 2);
+  ctx.rotate(rot);
+  const r = Math.min(W, H) / 2 - 2;
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(0, 0, r, 0, 2 * Math.PI);
+  ctx.clip();
+  ctx.drawImage(craterCanvas, -r, -r, 2 * r, 2 * r);
+  ctx.restore();
+  const frac = 0.5 * (1 + Math.cos(phase));
+  if (frac < 0.999) {
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(0, 0, r, 0, 2 * Math.PI);
+    ctx.clip();
+    ctx.fillStyle = 'rgba(8, 12, 18, 0.93)';
+    if (frac < 0.001) {
+      ctx.beginPath();
+      ctx.arc(0, 0, r, 0, 2 * Math.PI);
+      ctx.fill();
+    } else {
+      const e = Math.abs(1 - 2 * frac) * r;
+      ctx.beginPath();
+      ctx.arc(0, 0, r, Math.PI / 2, -Math.PI / 2, false);
+      ctx.ellipse(0, 0, e, r, 0, -Math.PI / 2, Math.PI / 2, frac >= 0.5);
+      ctx.closePath();
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+  ctx.restore();
+}
+
+// Optical-vault moon body: billboarded plane mesh whose canvas
+// texture is repainted per (phase, rot) change. Crater base is
+// generated once; phase shading rebuilds the composite when MoonPhase
+// or MoonRotation changes.
+export class MoonOpticalBody {
+  constructor(clippingPlanes = []) {
+    this._craterCanvas = makeMoonCraterCanvas();
+    this._composite = document.createElement('canvas');
+    this._composite.width = 256;
+    this._composite.height = 256;
+    this._compCtx = this._composite.getContext('2d');
+    this.tex = new THREE.CanvasTexture(this._composite);
+    this.tex.colorSpace = THREE.SRGBColorSpace;
+    this.tex.minFilter = THREE.LinearMipMapLinearFilter;
+    this.tex.magFilter = THREE.LinearFilter;
+    this.tex.anisotropy = 4;
+    const geom = new THREE.PlaneGeometry(1, 1);
+    this.material = new THREE.MeshBasicMaterial({
+      map: this.tex,
+      transparent: true,
+      side: THREE.DoubleSide,
+      depthTest: false,
+      depthWrite: false,
+      clippingPlanes,
+    });
+    this.mesh = new THREE.Mesh(geom, this.material);
+    this.mesh.renderOrder = 52;
+    this.group = new THREE.Group();
+    this.group.add(this.mesh);
+    this._lastPhase = -999;
+    this._lastRot = -999;
+    drawMoonBodyToCanvas(this._compCtx, 256, 256, this._craterCanvas, 0, 0);
+    this.tex.needsUpdate = true;
+  }
+
+  update(opticalPos, size, show, phase, rot, camera, alpha = 1) {
+    this.group.visible = !!show;
+    if (!show) return;
+    this.mesh.position.set(opticalPos[0], opticalPos[1], opticalPos[2]);
+    this.mesh.scale.set(size, size, 1);
+    if (camera) this.mesh.lookAt(camera.position);
+    this.material.opacity = alpha;
+    if (phase !== this._lastPhase || rot !== this._lastRot) {
+      this._lastPhase = phase;
+      this._lastRot = rot;
+      drawMoonBodyToCanvas(this._compCtx, 256, 256, this._craterCanvas, phase, rot);
+      this.tex.needsUpdate = true;
+    }
+  }
+}
+
 export class SunMoonGlyph {
   constructor(text, color, clippingPlanes = []) {
     const tex = new THREE.CanvasTexture(makeUnderlinedDigitCanvas(text, color));

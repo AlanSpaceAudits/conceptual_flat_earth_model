@@ -9,7 +9,7 @@ import {
   CelestialPoles, DeclinationCircles, Yggdrasil, MtMeru, ToroidalVortex,
   LongitudeRing, CelNavStars, TrackedGroundPoints, CatalogPointStars,
   GPPathOverlay, GPTracer, StellariumTraceOverlay, Discworld, AnalemmaLine, SunMoonGlyph,
-  CentralAngleArcs,
+  CentralAngleArcs, MoonOpticalBody,
   MonthMarkers, WorldGlobe, GlobeHeavenlyVault, DomeCausticOverlay,
 } from './worldObjects.js';
 import { loadLandGeo, buildGeoJsonLand, buildImageMap, buildBlankMap } from './earthMap.js';
@@ -287,6 +287,12 @@ export class Renderer {
     this.moonNine = new SunMoonGlyph('9', '#1a1a1a', clipPlanes);
     this.sm.world.add(this.sunNine.group);
     this.sm.world.add(this.moonNine.group);
+
+    // Optical-vault moon body: textured + phase-shaded plane that
+    // overlays the small moon dot when the user is inside the
+    // optical hemisphere. Crater base + per-frame phase composite.
+    this.moonOpticalBody = new MoonOpticalBody(clipPlanes);
+    this.sm.world.add(this.moonOpticalBody.group);
 
     this._clipPlanes = clipPlanes;
 
@@ -712,6 +718,21 @@ export class Renderer {
     this.moonNine.update(
       moonVaultVis, moonOptVis, 0.08, 0.020,
       nineOn && showMoon,
+    );
+
+    // Optical-vault moon body (craters + phase) — only when the user
+    // is inside the optical hemisphere (Optical view in FE, sphere
+    // wrap in GE). Uses real ephemeris MoonPhase / MoonRotation.
+    const moonBodyShow = showMoon && s.ShowOpticalVault && s.InsideVault;
+    const moonElevFade = Math.max(0, Math.min(1, (moonElevForFade + 3) / 5));
+    this.moonOpticalBody.update(
+      moonOptVis,
+      0.024,
+      moonBodyShow,
+      c.MoonPhase || 0,
+      c.MoonRotation || 0,
+      this.sm.camera,
+      moonElevFade,
     );
 
     // Planet markers: same pipeline as sun/moon but each has its own vault

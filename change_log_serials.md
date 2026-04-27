@@ -6527,3 +6527,23 @@ Format:
     so the crater texture itself is circular
     on a transparent square.
 - **Revert:** `git checkout v-s000532 -- .`
+
+## S534 — Revert moon-body changes back to S529 state
+
+- **Date:** 2026-04-27
+- **Files changed:** `js/core/app.js`,
+  `js/render/index.js`,
+  `js/render/worldObjects.js`,
+  `js/ui/controlPanel.js`.
+- **Change:**
+  - `git checkout v-s000529 --` for the four
+    files touched by S530-S533. Restores the
+    S529 moon body: single composite plane,
+    `c.MoonRotation` driving in-canvas
+    rotation, no waxing-flag mirroring, no
+    layered crater/shadow split, no screen-
+    space sun-projection rotation.
+  - The lat-flip behaviour the user flagged
+    is preserved (S529 had it, but the moon
+    body otherwise reads correctly enough).
+- **Revert:** `git checkout v-s000533 -- .`

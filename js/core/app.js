@@ -751,10 +751,6 @@ export class FeModel extends EventTarget {
     const shadowUp    = V.Norm(V.Mult(moonToSun, moonToGlobe));
     c.MoonPhase = Math.acos(Limit1(V.ScalarProd(moonToSun, moonToGlobe)));
     c.MoonPhaseFraction = 0.5 * (1 + Math.cos(c.MoonPhase));
-    // Waxing detection from RA difference (observer-independent):
-    // moon east of sun (dRA in [0, π)) → waxing toward full.
-    const _dRA = ((moonEq.ra - sunEq.ra) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI);
-    c.MoonWaxing = _dRA < Math.PI;
 
     // Terminator rotation as seen from the observer.
     const globeToMoon = V.Scale(celestCoordToLocalGlobeCoord(

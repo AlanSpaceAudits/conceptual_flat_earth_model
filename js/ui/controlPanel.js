@@ -2764,7 +2764,10 @@ export function buildHud(hudEl, model) {
       ? `${t('next_lunar_eclipse')}: ${shortDate(ec.nextLunar)}  ${formatCountdown(now, ec.nextLunar)}`
       : `${t('next_lunar_eclipse')}: —`;
 
-    const waxing = c.MoonWaxing !== false;
+    // Waxing / waning from moon-sun longitude difference: when the moon is
+    // east of the sun (RA difference 0..π) it's waxing toward full.
+    const dRA = ((c.MoonRA - c.SunRA) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI);
+    const waxing = dRA < Math.PI;
     const ctx = canvas.getContext('2d');
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     drawMoonPhase(ctx, 28, 28, 22, c.MoonPhaseFraction, waxing);

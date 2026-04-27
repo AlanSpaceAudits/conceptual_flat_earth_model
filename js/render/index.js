@@ -722,41 +722,15 @@ export class Renderer {
 
     // Optical-vault moon body (craters + phase) — only when the user
     // is inside the optical hemisphere (Optical view in FE, sphere
-    // wrap in GE). Lit-side rotation = angle (in screen space) of the
-    // sun direction projected onto the camera plane: depends on
-    // observer's lat / lon (because sun/moon optical-vault coords
-    // are observer-relative) but stays correct regardless of camera
-    // orientation.
+    // wrap in GE). Uses real ephemeris MoonPhase / MoonRotation.
     const moonBodyShow = showMoon && s.ShowOpticalVault && s.InsideVault;
     const moonElevFade = Math.max(0, Math.min(1, (moonElevForFade + 3) / 5));
-    let moonShadowRot = 0;
-    if (moonBodyShow && sunOptVis && moonOptVis) {
-      const cam = this.sm.camera;
-      const sx0 = sunOptVis[0] - moonOptVis[0];
-      const sy0 = sunOptVis[1] - moonOptVis[1];
-      const sz0 = sunOptVis[2] - moonOptVis[2];
-      const sl = Math.hypot(sx0, sy0, sz0) || 1;
-      const sdx = sx0 / sl, sdy = sy0 / sl, sdz = sz0 / sl;
-      const vx0 = moonOptVis[0] - cam.position.x;
-      const vy0 = moonOptVis[1] - cam.position.y;
-      const vz0 = moonOptVis[2] - cam.position.z;
-      const vl = Math.hypot(vx0, vy0, vz0) || 1;
-      const vdx = vx0 / vl, vdy = vy0 / vl, vdz = vz0 / vl;
-      const dotSV = sdx * vdx + sdy * vdy + sdz * vdz;
-      const spx = sdx - dotSV * vdx;
-      const spy = sdy - dotSV * vdy;
-      const spz = sdz - dotSV * vdz;
-      const e = cam.matrixWorld.elements;
-      const screenX = spx * e[0] + spy * e[1] + spz * e[2];
-      const screenY = spx * e[4] + spy * e[5] + spz * e[6];
-      moonShadowRot = Math.atan2(screenY, screenX);
-    }
     this.moonOpticalBody.update(
       moonOptVis,
       0.024,
       moonBodyShow,
       c.MoonPhase || 0,
-      moonShadowRot,
+      c.MoonRotation || 0,
       this.sm.camera,
       moonElevFade,
     );

@@ -2846,11 +2846,6 @@ function makeMoonCraterCanvas() {
   const cv = document.createElement('canvas');
   cv.width = W; cv.height = H;
   const ctx = cv.getContext('2d');
-  const r = Math.min(W, H) / 2 - 2;
-  ctx.save();
-  ctx.beginPath();
-  ctx.arc(W / 2, H / 2, r, 0, 2 * Math.PI);
-  ctx.clip();
   const baseGrad = ctx.createRadialGradient(W * 0.45, H * 0.4, W * 0.1, W * 0.5, H * 0.5, W * 0.6);
   baseGrad.addColorStop(0, '#dcd4c4');
   baseGrad.addColorStop(0.6, '#c8bfae');
@@ -2862,123 +2857,102 @@ function makeMoonCraterCanvas() {
   _drawMoonCrater(ctx, W * 0.30, H * 0.22, 5);   // top   — small
   _drawMoonCrater(ctx, W * 0.21, H * 0.34, 7);   // bot-L — medium
   _drawMoonCrater(ctx, W * 0.36, H * 0.36, 11);  // bot-R — large
-  ctx.restore();
-  ctx.beginPath();
-  ctx.arc(W / 2, H / 2, r, 0, 2 * Math.PI);
-  ctx.strokeStyle = 'rgba(190, 185, 175, 0.55)';
-  ctx.lineWidth = 1.5;
-  ctx.stroke();
   return cv;
 }
 
-// Repaint the shadow-only canvas at default orientation (lit limb on
-// canvas-right, dark on canvas-left). `phase` ∈ [0, π] (0=full,
-// π=new) sets the shadow width. The shadow plane mesh applies its
-// own rotation around the view axis, independently of the crater
-// plane, so the lit-side direction can be forced without disturbing
-// the crater orientation.
-function drawMoonShadowToCanvas(ctx, W, H, phase) {
+// Repaint the per-frame moon composite: clipped crater base + a
+// shadow lune positioned by phase / rot. `phase` ∈ [0, π] (0=full,
+// π=new); `rot` rotates the terminator around the line of sight.
+function drawMoonBodyToCanvas(ctx, W, H, craterCanvas, phase, rot) {
   ctx.clearRect(0, 0, W, H);
-  const frac = 0.5 * (1 + Math.cos(phase));
-  if (frac >= 0.999) return;
   ctx.save();
   ctx.translate(W / 2, H / 2);
+  ctx.rotate(rot);
   const r = Math.min(W, H) / 2 - 2;
+  ctx.save();
   ctx.beginPath();
   ctx.arc(0, 0, r, 0, 2 * Math.PI);
   ctx.clip();
-  ctx.fillStyle = 'rgba(8, 12, 18, 0.85)';
-  if (frac < 0.001) {
+  ctx.drawImage(craterCanvas, -r, -r, 2 * r, 2 * r);
+  ctx.restore();
+  const frac = 0.5 * (1 + Math.cos(phase));
+  if (frac < 0.999) {
+    ctx.save();
     ctx.beginPath();
     ctx.arc(0, 0, r, 0, 2 * Math.PI);
-    ctx.fill();
-  } else {
-    const e = Math.abs(1 - 2 * frac) * r;
-    ctx.beginPath();
-    ctx.arc(0, 0, r, -Math.PI / 2, Math.PI / 2, true);
-    if (frac < 0.5) {
-      ctx.ellipse(0, 0, e, r, 0, Math.PI / 2, -Math.PI / 2, false);
+    ctx.clip();
+    ctx.fillStyle = 'rgba(8, 12, 18, 0.85)';
+    if (frac < 0.001) {
+      ctx.beginPath();
+      ctx.arc(0, 0, r, 0, 2 * Math.PI);
+      ctx.fill();
     } else {
-      ctx.ellipse(0, 0, e, r, 0, Math.PI / 2, 3 * Math.PI / 2, false);
+      const e = Math.abs(1 - 2 * frac) * r;
+      ctx.beginPath();
+      ctx.arc(0, 0, r, Math.PI / 2, -Math.PI / 2, false);
+      ctx.ellipse(0, 0, e, r, 0, -Math.PI / 2, Math.PI / 2, frac >= 0.5);
+      ctx.closePath();
+      ctx.fill();
     }
-    ctx.closePath();
-    ctx.fill();
+    ctx.restore();
   }
+  // Always-visible rim so the moon stays distinct from the sun even
+  // at new-moon (sun + moon at same sky position).
+  ctx.beginPath();
+  ctx.arc(0, 0, r, 0, 2 * Math.PI);
+  ctx.strokeStyle = 'rgba(190, 185, 175, 0.55)';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
   ctx.restore();
 }
 
-// Optical-vault moon body: two camera-aligned plane meshes layered
-// at the same world position. The crater plane shows the procedural
-// lunar surface. The shadow plane shows only the phase shadow lune
-// at default orientation, then rotates around the view axis by an
-// externally-supplied angle to force the lit-limb direction without
-// touching the crater orientation.
+// Optical-vault moon body: billboarded plane mesh whose canvas
+// texture is repainted per (phase, rot) change. Crater base is
+// generated once; phase shading rebuilds the composite when MoonPhase
+// or MoonRotation changes.
 export class MoonOpticalBody {
   constructor(clippingPlanes = []) {
-    const W = 256, H = 256;
-    const geom = new THREE.PlaneGeometry(1, 1);
-
     this._craterCanvas = makeMoonCraterCanvas();
-    this._craterTex = new THREE.CanvasTexture(this._craterCanvas);
-    this._craterTex.colorSpace = THREE.SRGBColorSpace;
-    this._craterTex.minFilter = THREE.LinearMipMapLinearFilter;
-    this._craterTex.magFilter = THREE.LinearFilter;
-    this._craterTex.anisotropy = 4;
-    this._craterMaterial = new THREE.MeshBasicMaterial({
-      map: this._craterTex,
-      transparent: true, side: THREE.DoubleSide,
-      depthTest: false, depthWrite: false,
+    this._composite = document.createElement('canvas');
+    this._composite.width = 256;
+    this._composite.height = 256;
+    this._compCtx = this._composite.getContext('2d');
+    this.tex = new THREE.CanvasTexture(this._composite);
+    this.tex.colorSpace = THREE.SRGBColorSpace;
+    this.tex.minFilter = THREE.LinearMipMapLinearFilter;
+    this.tex.magFilter = THREE.LinearFilter;
+    this.tex.anisotropy = 4;
+    const geom = new THREE.PlaneGeometry(1, 1);
+    this.material = new THREE.MeshBasicMaterial({
+      map: this.tex,
+      transparent: true,
+      side: THREE.DoubleSide,
+      depthTest: false,
+      depthWrite: false,
       clippingPlanes,
     });
-    this._craterMesh = new THREE.Mesh(geom, this._craterMaterial);
-    this._craterMesh.renderOrder = 52;
-
-    this._shadowCanvas = document.createElement('canvas');
-    this._shadowCanvas.width = W;
-    this._shadowCanvas.height = H;
-    this._shadowCtx = this._shadowCanvas.getContext('2d');
-    this._shadowTex = new THREE.CanvasTexture(this._shadowCanvas);
-    this._shadowTex.colorSpace = THREE.SRGBColorSpace;
-    this._shadowTex.minFilter = THREE.LinearMipMapLinearFilter;
-    this._shadowTex.magFilter = THREE.LinearFilter;
-    this._shadowTex.anisotropy = 4;
-    this._shadowMaterial = new THREE.MeshBasicMaterial({
-      map: this._shadowTex,
-      transparent: true, side: THREE.DoubleSide,
-      depthTest: false, depthWrite: false,
-      clippingPlanes,
-    });
-    this._shadowMesh = new THREE.Mesh(geom, this._shadowMaterial);
-    this._shadowMesh.renderOrder = 53;
-
+    this.mesh = new THREE.Mesh(geom, this.material);
+    this.mesh.renderOrder = 52;
     this.group = new THREE.Group();
-    this.group.add(this._craterMesh);
-    this.group.add(this._shadowMesh);
-
+    this.group.add(this.mesh);
     this._lastPhase = -999;
-    this._zAxis = new THREE.Vector3(0, 0, 1);
-    drawMoonShadowToCanvas(this._shadowCtx, W, H, 0);
-    this._shadowTex.needsUpdate = true;
+    this._lastRot = -999;
+    drawMoonBodyToCanvas(this._compCtx, 256, 256, this._craterCanvas, 0, 0);
+    this.tex.needsUpdate = true;
   }
 
   update(opticalPos, size, show, phase, rot, camera, alpha = 1) {
     this.group.visible = !!show;
     if (!show) return;
-    this._craterMesh.position.set(opticalPos[0], opticalPos[1], opticalPos[2]);
-    this._shadowMesh.position.set(opticalPos[0], opticalPos[1], opticalPos[2]);
-    this._craterMesh.scale.set(size, size, 1);
-    this._shadowMesh.scale.set(size, size, 1);
-    if (camera) {
-      this._craterMesh.quaternion.copy(camera.quaternion);
-      this._shadowMesh.quaternion.copy(camera.quaternion);
-      this._shadowMesh.rotateOnAxis(this._zAxis, rot);
-    }
-    this._craterMaterial.opacity = alpha;
-    this._shadowMaterial.opacity = alpha;
-    if (phase !== this._lastPhase) {
+    this.mesh.position.set(opticalPos[0], opticalPos[1], opticalPos[2]);
+    this.mesh.scale.set(size, size, 1);
+    if (camera) this.mesh.lookAt(camera.position);
+    this.material.opacity = alpha;
+    if (phase !== this._lastPhase || rot !== this._lastRot) {
       this._lastPhase = phase;
-      drawMoonShadowToCanvas(this._shadowCtx, 256, 256, phase);
-      this._shadowTex.needsUpdate = true;
+      this._lastRot = rot;
+      drawMoonBodyToCanvas(this._compCtx, 256, 256, this._craterCanvas, phase, rot);
+      this.tex.needsUpdate = true;
     }
   }
 }

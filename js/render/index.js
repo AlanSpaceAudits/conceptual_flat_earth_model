@@ -315,16 +315,9 @@ export class Renderer {
       if (hits.length) {
         const ud = hits[0].object.userData;
         const tip = this._ensureLosTip();
-        // Three angles by the central-angle theorem corollaries:
-        //   Central (obs ↔ GP): angle at the globe centre.
-        //   Inscribed (½ central): inscribed-angle theorem reading.
-        //   Tangent at exit:    chord-tangent corollary,
-        //                       = (arc obs ↔ Q) / 2.
-        tip.innerHTML =
-          '<div class="los-tip-title">LoS / surface</div>' +
-          `<div>Central (obs↔GP): ${ud.centralAngle.toFixed(2)}°</div>` +
-          `<div>Inscribed (½): ${ud.inscribedAngle.toFixed(2)}°</div>` +
-          `<div>Tangent at exit: ${ud.tangentAngle.toFixed(2)}°</div>`;
+        // Inscribed angle = ½ × central angle (obs ↔ GP). That's
+        // the angle the red triangle reads.
+        tip.textContent = `Inscribed angle: ${ud.inscribedAngle.toFixed(2)}°`;
         const viewRect = (document.getElementById('view') || document.body).getBoundingClientRect();
         tip.style.left = `${e.clientX - viewRect.left + 12}px`;
         tip.style.top  = `${e.clientY - viewRect.top  + 12}px`;
@@ -947,11 +940,25 @@ export class Renderer {
       const od = O[0] * Dx + O[1] * Dy + O[2] * Dz;
       const t = -2 * od / dd;
       if (t <= 1e-6 || t > 1) return;
-      const Px = O[0] + t * Dx;
-      const Py = O[1] + t * Dy;
-      const Pz = O[2] + t * Dz;
-      const r = Math.hypot(Px, Py, Pz) || 1;
-      const nx = Px / r, ny = Py / r, nz = Pz / r;
+      // Marker position: place at the great-circle MIDPOINT of the
+      // minor arc from observer Ô to the body's GP direction T̂.
+      // From any point on the major arc the chord obs↔GP subtends
+      // an inscribed angle equal to half the central angle (the
+      // inscribed-angle theorem). Anchoring the marker at this
+      // midpoint surfaces the geometry — its angular distance from
+      // both observer and GP equals the inscribed angle (central /
+      // 2). Lift to FE_RADIUS so the marker sits on the globe.
+      const Tlen0 = Math.hypot(T[0], T[1], T[2]) || 1;
+      const Olen0 = Math.hypot(O[0], O[1], O[2]) || 1;
+      const oxh = O[0] / Olen0, oyh = O[1] / Olen0, ozh = O[2] / Olen0;
+      const txh = T[0] / Tlen0, tyh = T[1] / Tlen0, tzh = T[2] / Tlen0;
+      let mxh = oxh + txh, myh = oyh + tyh, mzh = ozh + tzh;
+      const mLen = Math.hypot(mxh, myh, mzh) || 1;
+      mxh /= mLen; myh /= mLen; mzh /= mLen;
+      const Px = mxh * FE_RADIUS;
+      const Py = myh * FE_RADIUS;
+      const Pz = mzh * FE_RADIUS;
+      const nx = mxh, ny = myh, nz = mzh;
       // Build two tangent axes perpendicular to the surface normal.
       let ax, ay, az;
       if (Math.abs(nz) < 0.9) { ax = 0; ay = 0; az = 1; }

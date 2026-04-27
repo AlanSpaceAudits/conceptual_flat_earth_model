@@ -5672,3 +5672,28 @@ Format:
     `tangentAngle`; the old key isn't used
     anywhere else.
 - **Revert:** `git checkout v-s000500 -- .`
+
+## S502 — LoS marker repositioned to inscribed-angle midpoint
+
+- **Date:** 2026-04-26
+- **Files changed:** `js/render/index.js`.
+- **Change:**
+  - Red triangle now anchors at the great-circle
+    midpoint of the minor arc obs↔GP rather than
+    the LoS-chord exit point. From any point on
+    the major arc, the chord obs↔GP subtends an
+    inscribed angle equal to half the central
+    angle, so anchoring at the midpoint puts the
+    marker at angular distance (central / 2) =
+    inscribed angle from both observer and GP —
+    the position itself encodes the inscribed
+    geometry.
+  - Position computed via
+    `M̂ = (Ô + T̂) / |Ô + T̂|`, then scaled to
+    `FE_RADIUS`. Surface normal at marker is
+    just `M̂` so the existing tangent-axis
+    construction still produces a valid
+    equilateral triangle.
+  - Hover tooltip simplified to the inscribed
+    angle alone (`Inscribed angle: NN.NN°`).
+- **Revert:** `git checkout v-s000501 -- .`

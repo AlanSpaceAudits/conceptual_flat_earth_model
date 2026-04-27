@@ -564,18 +564,22 @@ const SUN_24H_DEMOS = [
   {
     name: "24h sun at 82°30'N (Alert, Nunavut)",
     group: '24h-sun',
-    intro: {
-      ObserverLat: 82.505, ObserverLong: -62.335,
-      BodySource: 'astropixels',
-      DateTime: 3093,                        // 2025-06-21 00:00 UTC
-      InsideVault: true,                     // Optical (first-person)
-      FollowTarget: 'sun',                   // camera auto-aims at sun
-      TrackerTargets: ['sun'],               // hide everything except sun
-      OpticalZoom: 1.0,
-      VaultSize: 1, VaultHeight: 0.45,
-      ObserverHeading: 180,
-      ShowSunTrack: true,
-      ShowShadow: true, ShowTruePositions: true,
+    intro: (m) => {
+      const base = {
+        ObserverLat: 82.505, ObserverLong: -62.335,
+        BodySource: 'astropixels',
+        DateTime: 3093,                        // 2025-06-21 00:00 UTC
+        InsideVault: true,                     // Optical (first-person)
+        FollowTarget: 'sun',                   // camera auto-aims at sun
+        TrackerTargets: ['sun'],               // hide everything except sun
+        OpticalZoom: 1.0,
+        VaultSize: 1, VaultHeight: 0.45,
+        ObserverHeading: 180,
+        ShowSunTrack: true,
+        ShowShadow: true, ShowTruePositions: true,
+      };
+      if (m.state.WorldModel === 'ge') base.MapProjectionGe = 'hq_equirect_day';
+      return base;
     },
     tasks: () => [
       Ttxt('82°30′N · Alert, Nunavut · 2025-06-21 solstice · Optical view locked on the sun — two weeks of continuous midnight-sun without setting.'),
@@ -585,18 +589,22 @@ const SUN_24H_DEMOS = [
   {
     name: "24h sun at 79°46'S 83°15'W (West Antarctica)",
     group: '24h-sun',
-    intro: {
-      ObserverLat: -79.76806, ObserverLong: -83.26167,
-      BodySource: 'astropixels',
-      DateTime: 2911,                        // 2024-12-21 solstice
-      InsideVault: true,                     // Optical (first-person)
-      FollowTarget: 'sun',                   // camera auto-aims at sun
-      TrackerTargets: ['sun'],               // hide everything except sun
-      OpticalZoom: 1.0,
-      VaultSize: 1, VaultHeight: 0.45,
-      ObserverHeading: 0,
-      ShowSunTrack: true,
-      ShowShadow: true, ShowTruePositions: true,
+    intro: (m) => {
+      const base = {
+        ObserverLat: -79.76806, ObserverLong: -83.26167,
+        BodySource: 'astropixels',
+        DateTime: 2911,                        // 2024-12-21 solstice
+        InsideVault: true,                     // Optical (first-person)
+        FollowTarget: 'sun',                   // camera auto-aims at sun
+        TrackerTargets: ['sun'],               // hide everything except sun
+        OpticalZoom: 1.0,
+        VaultSize: 1, VaultHeight: 0.45,
+        ObserverHeading: 0,
+        ShowSunTrack: true,
+        ShowShadow: true, ShowTruePositions: true,
+      };
+      if (m.state.WorldModel === 'ge') base.MapProjectionGe = 'hq_equirect_day';
+      return base;
     },
     tasks: () => [
       Ttxt('79°46′S 83°15′W · West Antarctica · 2024-12-21 solstice · Optical view locked on the sun — two weeks of continuous midnight-sun. Elevation dips to ~13° at each "midnight" pass but never sets.'),
@@ -606,20 +614,24 @@ const SUN_24H_DEMOS = [
   {
     name: 'Midnight sun at 75°N: start to end',
     group: '24h-sun',
-    intro: {
-      ObserverLat: 75, ObserverLong: 0,
-      BodySource: 'astropixels',
-      DateTime: 3050,                 // ~2025-05-09 — polar day in effect
-      ObserverHeading: 0,
-      InsideVault: true,              // Optical
-      FollowTarget: 'sun',
-      TrackerTargets: ['sun'],
-      OpticalZoom: 1.0,
-      VaultSize: 1, VaultHeight: 0.45,
-      ShowSunTrack: true,
-      ShowShadow: true,
-      ShowTruePositions: true,
-      DynamicStars: true,
+    intro: (m) => {
+      const base = {
+        ObserverLat: 75, ObserverLong: 0,
+        BodySource: 'astropixels',
+        DateTime: 3050,                 // ~2025-05-09 — polar day in effect
+        ObserverHeading: 0,
+        InsideVault: true,              // Optical
+        FollowTarget: 'sun',
+        TrackerTargets: ['sun'],
+        OpticalZoom: 1.0,
+        VaultSize: 1, VaultHeight: 0.45,
+        ShowSunTrack: true,
+        ShowShadow: true,
+        ShowTruePositions: true,
+        DynamicStars: true,
+      };
+      if (m.state.WorldModel === 'ge') base.MapProjectionGe = 'hq_equirect_day';
+      return base;
     },
     tasks: () => [
       Ttxt('75°N, early May 2025 — midnight sun in effect (sun dec > 15°).'),
@@ -632,20 +644,24 @@ const SUN_24H_DEMOS = [
   {
     name: 'Midnight sun at 75°S: start to end',
     group: '24h-sun',
-    intro: {
-      ObserverLat: -75, ObserverLong: 0,
-      BodySource: 'astropixels',
-      DateTime: 3232,                 // ~2025-11-07 — polar day in effect
-      ObserverHeading: 180,
-      InsideVault: true,              // Optical
-      FollowTarget: 'sun',
-      TrackerTargets: ['sun'],
-      OpticalZoom: 1.0,
-      VaultSize: 1, VaultHeight: 0.45,
-      ShowSunTrack: true,
-      ShowShadow: true,
-      ShowTruePositions: true,
-      DynamicStars: true,
+    intro: (m) => {
+      const base = {
+        ObserverLat: -75, ObserverLong: 0,
+        BodySource: 'astropixels',
+        DateTime: 3232,                 // ~2025-11-07 — polar day in effect
+        ObserverHeading: 180,
+        InsideVault: true,              // Optical
+        FollowTarget: 'sun',
+        TrackerTargets: ['sun'],
+        OpticalZoom: 1.0,
+        VaultSize: 1, VaultHeight: 0.45,
+        ShowSunTrack: true,
+        ShowShadow: true,
+        ShowTruePositions: true,
+        DynamicStars: true,
+      };
+      if (m.state.WorldModel === 'ge') base.MapProjectionGe = 'hq_equirect_day';
+      return base;
     },
     tasks: () => [
       Ttxt('75°S, early November 2025 — midnight sun in effect (sun dec < -15°).'),

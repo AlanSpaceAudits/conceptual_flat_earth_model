@@ -6266,3 +6266,25 @@ Format:
     hover tooltips and clicks both pass through
     them onto whatever is behind.
 - **Revert:** `git checkout v-s000524 -- .`
+
+## S526 — 24h-sun demos: HQ Equirect day map in GE mode
+
+- **Date:** 2026-04-27
+- **Files changed:** `js/demos/definitions.js`.
+- **Change:**
+  - All four 24h-sun demos
+    (Alert / West Antarctica / 75°N / 75°S
+    midnight sun) converted from object-form
+    `intro` to function-form `intro: (m) => …`.
+    The function checks `m.state.WorldModel ===
+    'ge'` and, when true, adds
+    `MapProjectionGe: 'hq_equirect_day'` to the
+    intro state. FE-mode loads leave
+    `MapProjectionGe` untouched (default
+    `hq_equirect_night`), so switching to GE
+    later doesn't surprise-flip the map.
+  - Demo runner already routes function intros
+    through `_playSingle` (`typeof d.intro ===
+    'function' ? d.intro(this.model) : d.intro`),
+    no animation change needed.
+- **Revert:** `git checkout v-s000525 -- .`

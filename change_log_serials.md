@@ -5471,3 +5471,25 @@ Format:
     targets where the LoS punches through the
     Earth.
 - **Revert:** `git checkout v-s000492 -- .`
+
+## S494 — Constellation paints celnav-dup stars when celnav layer off
+
+- **Date:** 2026-04-26
+- **Files changed:** `js/render/constellations.js`.
+- **Change:**
+  - Constellation renderer's `skipPoint` rule now
+    parks a celnav-duplicate dot only when the
+    cel-nav star layer is actually painting it
+    (i.e. `s.StarfieldType === 'celnav' &&
+    s.ShowCelNav !== false`). When that layer is
+    off, the constellation owns the dot so
+    Alnilam, Betelgeuse, Bellatrix, Rigel and the
+    other celnav crossover stars stay visible
+    along with the rest of the stick figure.
+  - `untracked && !celnavDup` guard keeps the
+    tracker-membership filter in effect for
+    plain (non-celnav) constellation stars while
+    letting celnav-dup endpoints draw
+    unconditionally — they're already
+    constellation-essential.
+- **Revert:** `git checkout v-s000493 -- .`

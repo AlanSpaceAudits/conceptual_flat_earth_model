@@ -192,18 +192,26 @@ export class Constellations {
     const ge = s.WorldModel === 'ge';
     const Rgv = c.GlobeVaultRadius || 0;
     const skyRotDeg = c.SkyRotAngle || 0;
+    // The cel-nav star layer only paints when the user has the
+    // 'celnav' starfield active. When it's not active, the
+    // constellation renderer itself owns the visible dot for any
+    // celnav-duplicate constellation star (Betelgeuse, Bellatrix,
+    // Alnilam, Rigel, etc.) — otherwise those stars would vanish
+    // even though their constellation lines are drawn through their
+    // positions.
+    const celnavLayerActive = s.StarfieldType === 'celnav' && s.ShowCelNav !== false;
 
     for (let i = 0; i < this._nStars; i++) {
       const [lat, lon] = this._stars[i];
       const vect = this._starVect[i];
-      // cel-nav duplicates get their POINT sprite parked off
-      // screen so the cel-nav renderer owns the visible star. Line
-      // endpoints still use the computed positions below — the lines
-      // are written into `domePos` / `sphPos` below regardless, and
-      // the line-builder reads those, not the point buffer.
+      // cel-nav duplicates get their POINT sprite parked off-screen
+      // ONLY when the cel-nav layer is active and would paint it.
+      // Otherwise the constellation owns the dot. Line endpoints
+      // always use the computed positions below.
       const starId = this._starId[i];
       const untracked = !starId || !trackerSet.has(`star:${starId}`);
-      const skipPoint = this._celnavDup[i] || untracked;
+      const celnavOwned = this._celnavDup[i] && celnavLayerActive;
+      const skipPoint = celnavOwned || (untracked && !this._celnavDup[i]);
 
       // Heavenly-vault projection. GE places the star on the celestial
       // sphere at radius GlobeVaultRadius (longitude folded by

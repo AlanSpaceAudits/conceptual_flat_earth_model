@@ -1870,11 +1870,26 @@ export function buildControlPanel(host, model, demos) {
     } catch (_e) { /* ignore */ }
   });
 
+  // Rays: opens the Show → Rays group so the four ray toggles
+  // (Vault, Optical Vault, Projection, Many) are one click away.
+  // GE and FE both read the same toggles; the renderer dispatches
+  // on WorldModel and draws the right geometry per mode.
+  const btnRays = document.createElement('button');
+  btnRays.className = 'time-btn rays-btn';
+  btnRays.type = 'button';
+  btnRays.textContent = '🔦';
+  btnRays.title = 'Rays';
+  btnRays.addEventListener('click', () => {
+    if (typeof featureOpen.fn === 'function') {
+      featureOpen.fn('Show', 'Rays');
+    }
+  });
+
   // Grid order (CSS grid-auto-flow row, 4 columns):
   //   🌙  📷  ◉   🎯     — visibility-state toggles + screenshot
-  //   🎛  📍  🎥        — navigation / camera-mode jumps
+  //   🎛  📍  🎥  🔦     — navigation / camera-mode jumps + rays
   modeGrid.append(btnNight, btnScreenshot, btnTrue, btnStm,
-                  btnTrackerOpts, btnObserver, btnFreeCamKb);
+                  btnTrackerOpts, btnObserver, btnFreeCamKb, btnRays);
   compassControls.appendChild(modeGrid);
 
   // Cycle buttons sit next to the grid — they swap fundamental

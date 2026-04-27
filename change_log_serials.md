@@ -5357,3 +5357,37 @@ Format:
     re-link that was accumulating cost on the
     view-mode flips.
 - **Revert:** `git checkout v-s000489 -- .`
+
+## S491 — GE rays + bottom-bar Rays button
+
+- **Date:** 2026-04-26
+- **Files changed:** `js/render/index.js`,
+  `js/ui/controlPanel.js`.
+- **Change:**
+  - `_updateRays` now dispatches on
+    `s.WorldModel === 'ge'`. GE branch reads
+    `c.GlobeObserverCoord` for the observer end
+    and `c.SunGlobeVaultCoord /
+    c.MoonGlobeVaultCoord / p.globeVaultCoord` +
+    the matching `*GlobeOpticalVaultCoord` for the
+    sphere-projected positions. Rays draw as
+    plain straight segments since the FE
+    disc-arc bezier has no analogue on a sphere.
+  - Optical-vault rays in GE skip the parking
+    sentinel `[0, 0, -1000]` so below-horizon
+    bodies don't shoot a ray to the sub-disc
+    coord. Vault rays still draw because the
+    celestial-sphere position is valid in every
+    direction.
+  - Projection rays in GE bridge
+    `*GlobeVaultCoord → *GlobeOpticalVaultCoord`,
+    matching the FE convention but in the GE
+    coordinate frame.
+  - New `🔦 Rays` button in the bottom-bar
+    `modeGrid`. Sits in the previously empty 4th
+    cell of the second row (between 🎥 and the
+    cycle-row). Click opens the `Show → Rays`
+    group of the side panel so the four ray
+    toggles + ray parameter slider are one click
+    away.
+- **Revert:** `git checkout v-s000490 -- .`

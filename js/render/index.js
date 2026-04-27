@@ -779,7 +779,31 @@ export class Renderer {
     }
     const s = this.model.state;
     const c = this.model.computed;
-    const obs = c.ObserverFeCoord;
+    const ge = s.WorldModel === 'ge';
+    const obs = ge ? c.GlobeObserverCoord : c.ObserverFeCoord;
+    if (!obs) return;
+    // Below-horizon parking sentinel from worldObjects.js / app.js
+    // (`localGlobe[0] <= 0` → coord = [0, 0, -1000]). Only apply
+    // to the optical-vault layer; the heavenly-vault coord is
+    // valid in every direction.
+    const isParked = (v) => !v || (v[0] === 0 && v[1] === 0 && v[2] === -1000);
+
+    // Straight-line GE ray. The disc-arc bezier the FE side uses
+    // doesn't have a sensible analogue on the sphere, so GE draws
+    // a plain segment from the observer (or vault point) to the
+    // body's vault / optical-vault coord.
+    const addStraight = (from, to, color, opacity = 0.9) => {
+      const pts = [from[0], from[1], from[2], to[0], to[1], to[2]];
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
+      this.rayGroup.add(new THREE.Line(
+        geo,
+        new THREE.LineBasicMaterial({
+          color, transparent: opacity < 1, opacity,
+          clippingPlanes: this._clipPlanes,
+        }),
+      ));
+    };
 
     // When the body is above the horizon the ray is a gentle
     // quadratic bezier (one lift control). Below the horizon LoS is
@@ -855,17 +879,36 @@ export class Renderer {
 
     const sunElev  = c.SunAnglesGlobe.elevation;
     const moonElev = c.MoonAnglesGlobe.elevation;
+    // Mode-dispatched coords. GE reads the globe-sphere projections
+    // (sphere → celestial sphere for vault, sphere → optical
+    // hemisphere for optical-vault) which co-locate the rays with
+    // the same per-mode geometry the markers use.
+    const sunVault  = ge ? c.SunGlobeVaultCoord  : c.SunVaultCoord;
+    const moonVault = ge ? c.MoonGlobeVaultCoord : c.MoonVaultCoord;
+    const sunOpt    = ge ? c.SunGlobeOpticalVaultCoord  : c.SunOpticalVaultCoord;
+    const moonOpt   = ge ? c.MoonGlobeOpticalVaultCoord : c.MoonOpticalVaultCoord;
+
     // Vault rays to the true sun/moon position on the vault of the heavens
     // stay drawn regardless of horizon: the physical source is still there.
     if (s.ShowVaultRays) {
-      if (sunOn)  addRay(c.SunVaultCoord,  0xff8800, 0.9, sunElev);
-      if (moonOn) addRay(c.MoonVaultCoord, 0xffffff, 0.9, moonElev);
+      if (ge) {
+        if (sunOn  && sunVault)  addStraight(obs, sunVault,  0xff8800, 0.9);
+        if (moonOn && moonVault) addStraight(obs, moonVault, 0xffffff, 0.9);
+      } else {
+        if (sunOn)  addRay(sunVault,  0xff8800, 0.9, sunElev);
+        if (moonOn) addRay(moonVault, 0xffffff, 0.9, moonElev);
+      }
     }
     // Optical-vault rays represent what the observer sees, so they fade
     // smoothly with the body's elevation.
     if (s.ShowOpticalVaultRays) {
-      if (sunOn  && sunFade  > 0) addRay(c.SunOpticalVaultCoord,  0xcc6600, 0.7 * sunFade,  sunElev);
-      if (moonOn && moonFade > 0) addRay(c.MoonOpticalVaultCoord, 0xcccccc, 0.7 * moonFade, moonElev);
+      if (ge) {
+        if (sunOn  && sunFade  > 0 && !isParked(sunOpt))  addStraight(obs, sunOpt,  0xcc6600, 0.7 * sunFade);
+        if (moonOn && moonFade > 0 && !isParked(moonOpt)) addStraight(obs, moonOpt, 0xcccccc, 0.7 * moonFade);
+      } else {
+        if (sunOn  && sunFade  > 0) addRay(sunOpt,  0xcc6600, 0.7 * sunFade,  sunElev);
+        if (moonOn && moonFade > 0) addRay(moonOpt, 0xcccccc, 0.7 * moonFade, moonElev);
+      }
     }
 
     // projection rays: straight segments from a body's true
@@ -903,16 +946,18 @@ export class Renderer {
       // mode is off — `sunOn` / `moonOn` / `trackerSet` use the
       // same logic the two ray classes above use).
       if (sunOn) {
-        addProjectionRay(c.SunVaultCoord,  c.SunOpticalVaultCoord,
+        addProjectionRay(sunVault, sunOpt,
                          c.SunAnglesGlobe.elevation,  0xffc844);
       }
       if (moonOn) {
-        addProjectionRay(c.MoonVaultCoord, c.MoonOpticalVaultCoord,
+        addProjectionRay(moonVault, moonOpt,
                          c.MoonAnglesGlobe.elevation, 0xf4f4f4);
       }
       for (const [name, p] of Object.entries(c.Planets || {})) {
         if (!bodyCatOn || !trackerSet.has(name)) continue;
-        addProjectionRay(p.vaultCoord, p.opticalVaultCoord,
+        const pVault = ge ? (p.globeVaultCoord || p.vaultCoord) : p.vaultCoord;
+        const pOpt   = ge ? (p.globeOpticalVaultCoord || p.opticalVaultCoord) : p.opticalVaultCoord;
+        addProjectionRay(pVault, pOpt,
                          p.anglesGlobe.elevation,
                          PLANET_RAY_COLORS[name] || 0xff8c66);
       }

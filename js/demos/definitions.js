@@ -224,7 +224,7 @@ function snapNoonVault(model, mode) {
   const ge = model.state.WorldModel === 'ge';
   const patch = {};
   if (mode === 'sun' || mode === 'both') {
-    const sv = ge ? (c.SunGlobeVaultCoord || c.SunVaultCoord) : c.SunVaultCoord;
+    const sv = ge ? (c.SunGlobeOpticalVaultCoord || c.SunVaultCoord) : c.SunVaultCoord;
     if (sv) {
       const cur = Array.isArray(model.state.SunMonthMarkers)
         ? model.state.SunMonthMarkers : [];
@@ -232,7 +232,7 @@ function snapNoonVault(model, mode) {
     }
   }
   if (mode === 'moon' || mode === 'both') {
-    const mv = ge ? (c.MoonGlobeVaultCoord || c.MoonVaultCoord) : c.MoonVaultCoord;
+    const mv = ge ? (c.MoonGlobeOpticalVaultCoord || c.MoonVaultCoord) : c.MoonVaultCoord;
     if (mv) {
       const cur = Array.isArray(model.state.MoonMonthMarkers)
         ? model.state.MoonMonthMarkers : [];
@@ -336,7 +336,7 @@ const SYNODIC_DAY_DURATION_MS = 1500;
 function snapMoonNoonVault(model) {
   const c = model.computed;
   const ge = model.state.WorldModel === 'ge';
-  const mv = ge ? (c.MoonGlobeVaultCoord || c.MoonVaultCoord) : c.MoonVaultCoord;
+  const mv = ge ? (c.MoonGlobeOpticalVaultCoord || c.MoonVaultCoord) : c.MoonVaultCoord;
   if (!mv) return;
   const cur = Array.isArray(model.state.MoonMonthMarkers)
     ? model.state.MoonMonthMarkers : [];
@@ -411,7 +411,7 @@ const MOON_SYNODIC_DEMOS = ANALEMMA_LATS.map(([lat, t]) =>
 function snapSunNoonVaultLon0(model) {
   const c = model.computed;
   const ge = model.state.WorldModel === 'ge';
-  const sv = ge ? (c.SunGlobeVaultCoord || c.SunVaultCoord) : c.SunVaultCoord;
+  const sv = ge ? (c.SunGlobeOpticalVaultCoord || c.SunVaultCoord) : c.SunVaultCoord;
   if (!sv) return;
   const cur = Array.isArray(model.state.SunMonthMarkers)
     ? model.state.SunMonthMarkers : [];
@@ -421,7 +421,7 @@ function snapSunNoonVaultLon0(model) {
 function snapSunNoonVaultLon180(model) {
   const c = model.computed;
   const ge = model.state.WorldModel === 'ge';
-  const sv = ge ? (c.SunGlobeVaultCoord || c.SunVaultCoord) : c.SunVaultCoord;
+  const sv = ge ? (c.SunGlobeOpticalVaultCoord || c.SunVaultCoord) : c.SunVaultCoord;
   if (!sv) return;
   const cur = Array.isArray(model.state.SunMonthMarkersOpp)
     ? model.state.SunMonthMarkersOpp : [];

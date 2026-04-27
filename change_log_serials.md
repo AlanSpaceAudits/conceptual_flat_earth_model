@@ -6926,3 +6926,38 @@ Format:
     terminator already uses) so sun and moon
     share a consistent rotation convention.
 - **Revert:** `git checkout v-s000546 -- .`
+
+## S548 — GE analemma demos: use optical-vault coord (fix zig-zag)
+
+- **Date:** 2026-04-27
+- **Files changed:** `js/core/app.js`,
+  `js/demos/definitions.js`.
+- **Change:**
+  - `stepVaultArc` GE branch now pulls
+    `Sun/MoonGlobeOpticalVaultCoord` (sun /
+    moon position on the observer's local sky
+    hemisphere, world-anchored) instead of
+    `Sun/MoonGlobeVaultCoord` (celestial
+    sphere). The celestial-sphere coord only
+    drifts ~1°/day so 12 monthly samples
+    produced a zig-zag through widely-spaced
+    points; the optical-vault coord captures
+    the full daily-arc motion as the sun /
+    moon rises and sets.
+  - `snapNoonVault` (sun + moon),
+    `snapMoonNoonVault`,
+    `snapSunNoonVaultLon0`, and
+    `snapSunNoonVaultLon180` analemma helpers
+    likewise switched their GE branches from
+    `*GlobeVaultCoord` to `*GlobeOpticalVaultCoord`
+    so the noon-position notches sit on the
+    same observer-local sky hemisphere as the
+    arc trace and form the analemma figure-8
+    instead of 12 points scattered on the
+    celestial sphere.
+  - Eclipse-map demo's GE branch left on
+    `*GlobeVaultCoord` since each eclipse is at
+    a different time and the celestial-sphere
+    coord is the right frame for plotting the
+    eclipse positions as a sky chart.
+- **Revert:** `git checkout v-s000547 -- .`

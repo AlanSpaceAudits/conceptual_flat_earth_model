@@ -749,7 +749,7 @@ export class Renderer {
       const e = cam.matrixWorld.elements;
       const screenX = spx * e[0] + spy * e[1] + spz * e[2];
       const screenY = spx * e[4] + spy * e[5] + spz * e[6];
-      moonShadowRot = Math.atan2(-screenY, screenX);
+      moonShadowRot = Math.atan2(screenY, screenX);
     }
     this.moonOpticalBody.update(
       moonOptVis,

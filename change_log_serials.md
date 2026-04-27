@@ -6486,3 +6486,44 @@ Format:
     behaviour preserved); only the shadow path
     rotates.
 - **Revert:** `git checkout v-s000531 -- .`
+
+## S533 — Moon: split into independent crater + shadow layers
+
+- **Date:** 2026-04-27
+- **Files changed:** `js/render/worldObjects.js`,
+  `js/render/index.js`.
+- **Change:**
+  - `MoonOpticalBody` rebuilt with two
+    co-located plane meshes:
+    `_craterMesh` (crater texture, drawn once,
+    includes the rim outline) and
+    `_shadowMesh` (shadow-only canvas with
+    transparent base, `renderOrder` 53 so it
+    paints above the crater). Both
+    camera-aligned via
+    `quaternion.copy(camera.quaternion)`.
+  - `_shadowMesh` then receives an additional
+    `rotateOnAxis(zAxis, rot)` around its local
+    `+Z` (= camera-forward axis after the
+    quaternion copy). Rotates the lit-side
+    direction independently of the crater
+    plane — moon image stays oriented in
+    screen-space, shadow can be forced to any
+    angle.
+  - `drawMoonShadowToCanvas` is the new
+    shadow-only painter (transparent
+    background, dark lune at default
+    orientation). Repaints only on `phase`
+    changes; rotation is a 3D mesh transform,
+    no canvas redraw needed.
+  - Renderer's screen-projected angle changed
+    sign convention to match mesh-rotation
+    (right-hand rule around `+Z`):
+    `atan2(screenY, screenX)` (was
+    `atan2(-screenY, screenX)` for
+    canvas-frame rotation).
+  - `makeMoonCraterCanvas` now disc-clips its
+    drawing and strokes the rim outline once,
+    so the crater texture itself is circular
+    on a transparent square.
+- **Revert:** `git checkout v-s000532 -- .`

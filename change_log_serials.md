@@ -6428,3 +6428,31 @@ Format:
     recomputing the RA diff inline; both views
     drive off the same flag.
 - **Revert:** `git checkout v-s000529 -- .`
+
+## S531 — Moon body: crater fixed in screen, shadow rotates with observer
+
+- **Date:** 2026-04-27
+- **Files changed:** `js/render/worldObjects.js`,
+  `js/render/index.js`.
+- **Change:**
+  - `MoonOpticalBody.update` now camera-aligns
+    the moon plane via
+    `mesh.quaternion.copy(camera.quaternion)`
+    (sprite-style) instead of `lookAt(camera.position)`.
+    Canvas-up = screen-up for any camera angle,
+    so the top-left crater triangle stays in
+    the same screen-space corner as the user
+    pans / orbits.
+  - `drawMoonBodyToCanvas`: shadow path is now
+    rotated by `ctx.rotate(rot)` where `rot` =
+    `c.MoonRotation` (signed terminator-up
+    angle as seen by observer, lat/lon/sky-pos
+    dependent). Crater base is *not* rotated,
+    so it stays oriented in screen space while
+    the lit/dark boundary tilts with real
+    geometry.
+  - Renderer wires `c.MoonRotation` back into
+    `update(...)` (replacing the S530 waxing
+    flag). `c.MoonWaxing` stays around for the
+    HUD tracker's mirror flip.
+- **Revert:** `git checkout v-s000530 -- .`

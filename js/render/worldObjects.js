@@ -2860,12 +2860,14 @@ function makeMoonCraterCanvas() {
   return cv;
 }
 
-// Repaint the per-frame moon composite: crater base (never mirrored,
-// so the top-left triangle stays in place) + a shadow lune sized by
-// `phase` ∈ [0, π] (0=full, π=new) and flipped by `waxing` so the
-// dark side sits opposite the lit limb (waxing → dark on left,
-// waning → dark on right). Observer-independent.
-function drawMoonBodyToCanvas(ctx, W, H, craterCanvas, phase, waxing) {
+// Repaint the per-frame moon composite: crater base (drawn at fixed
+// canvas orientation — top-left triangle stays in place in
+// screen-space) + a shadow lune rotated by `rot`
+// (= `c.MoonRotation`, the terminator-up angle as seen by the
+// observer). `phase` ∈ [0, π] (0=full, π=new) sets the shadow
+// width. The rotation is observer-latitude dependent; the crater
+// orientation is not.
+function drawMoonBodyToCanvas(ctx, W, H, craterCanvas, phase, rot) {
   ctx.clearRect(0, 0, W, H);
   ctx.save();
   ctx.translate(W / 2, H / 2);
@@ -2879,10 +2881,10 @@ function drawMoonBodyToCanvas(ctx, W, H, craterCanvas, phase, waxing) {
   const frac = 0.5 * (1 + Math.cos(phase));
   if (frac < 0.999) {
     ctx.save();
-    if (!waxing) ctx.scale(-1, 1);
     ctx.beginPath();
     ctx.arc(0, 0, r, 0, 2 * Math.PI);
     ctx.clip();
+    ctx.rotate(rot);
     ctx.fillStyle = 'rgba(8, 12, 18, 0.85)';
     if (frac < 0.001) {
       ctx.beginPath();
@@ -2940,22 +2942,25 @@ export class MoonOpticalBody {
     this.group = new THREE.Group();
     this.group.add(this.mesh);
     this._lastPhase = -999;
-    this._lastWaxing = null;
-    drawMoonBodyToCanvas(this._compCtx, 256, 256, this._craterCanvas, 0, true);
+    this._lastRot = -999;
+    drawMoonBodyToCanvas(this._compCtx, 256, 256, this._craterCanvas, 0, 0);
     this.tex.needsUpdate = true;
   }
 
-  update(opticalPos, size, show, phase, waxing, camera, alpha = 1) {
+  update(opticalPos, size, show, phase, rot, camera, alpha = 1) {
     this.group.visible = !!show;
     if (!show) return;
     this.mesh.position.set(opticalPos[0], opticalPos[1], opticalPos[2]);
     this.mesh.scale.set(size, size, 1);
-    if (camera) this.mesh.lookAt(camera.position);
+    // Camera-aligned (sprite-style): canvas-up = screen-up regardless
+    // of where the camera looks. Keeps the crater triangle in the
+    // same screen-space corner of the disc.
+    if (camera) this.mesh.quaternion.copy(camera.quaternion);
     this.material.opacity = alpha;
-    if (phase !== this._lastPhase || waxing !== this._lastWaxing) {
+    if (phase !== this._lastPhase || rot !== this._lastRot) {
       this._lastPhase = phase;
-      this._lastWaxing = waxing;
-      drawMoonBodyToCanvas(this._compCtx, 256, 256, this._craterCanvas, phase, waxing);
+      this._lastRot = rot;
+      drawMoonBodyToCanvas(this._compCtx, 256, 256, this._craterCanvas, phase, rot);
       this.tex.needsUpdate = true;
     }
   }

@@ -730,7 +730,7 @@ export class Renderer {
       0.024,
       moonBodyShow,
       c.MoonPhase || 0,
-      c.MoonWaxing !== false,
+      c.MoonRotation || 0,
       this.sm.camera,
       moonElevFade,
     );

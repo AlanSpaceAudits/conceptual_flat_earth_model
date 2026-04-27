@@ -440,6 +440,22 @@ header .info-popup.legend-popup a { color: var(--accent); }
   gap: 2px;
   flex: 0 0 auto;
 }
+
+/* Day / month / year skipper grid sits between the speed
+   buttons and the speed-stack readout. Compact 2×3 of small
+   `time-btn` buttons. */
+#bottom-bar .time-jump-grid {
+  display: grid;
+  grid-template-columns: repeat(3, auto);
+  grid-template-rows: repeat(2, 1fr);
+  gap: 2px;
+  flex: 0 0 auto;
+}
+#bottom-bar .time-jump-grid .time-btn {
+  min-width: 32px;
+  padding: 1px 6px;
+  font: 11px/1.1 ui-monospace, Menlo, monospace;
+}
 #bottom-bar .end-demo-btn {
   font: 11px/1.1 ui-monospace, Menlo, monospace;
   padding: 2px 8px;

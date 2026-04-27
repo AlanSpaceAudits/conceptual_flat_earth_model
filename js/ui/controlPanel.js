@@ -1765,7 +1765,48 @@ export function buildControlPanel(host, model, demos) {
   const speedReadout = document.createElement('span');
   speedReadout.className = 'time-speed';
   speedStack.append(btnEndDemo, btnEndTracking, speedReadout);
-  timeControls.append(btnVault, btnRew, btnPlay, btnFf, btnSlow, btnSpeed, speedStack);
+
+  // Day / month / year skippers. 2 × 3 compact grid (back row +
+  // forward row) using calendar-aware month / year arithmetic so
+  // "+1mo" lands on the same day-of-month even across month-length
+  // changes; same for "+1y" across leap years.
+  const jumpGrid = document.createElement('div');
+  jumpGrid.className = 'time-jump-grid';
+  const stepDays = (n) => {
+    const cur = model.state.DateTime || 0;
+    model.setState({ DateTime: cur + n });
+  };
+  const stepMonths = (n) => {
+    const cur = model.state.DateTime || 0;
+    const d = dateTimeToDate(cur);
+    d.setUTCMonth(d.getUTCMonth() + n);
+    model.setState({ DateTime: d.getTime() / TIME_ORIGIN.msPerDay - TIME_ORIGIN.ZeroDate });
+  };
+  const stepYears = (n) => {
+    const cur = model.state.DateTime || 0;
+    const d = dateTimeToDate(cur);
+    d.setUTCFullYear(d.getUTCFullYear() + n);
+    model.setState({ DateTime: d.getTime() / TIME_ORIGIN.msPerDay - TIME_ORIGIN.ZeroDate });
+  };
+  const makeJumpBtn = (label, fn, tip) => {
+    const b = document.createElement('button');
+    b.className = 'time-btn jump-btn';
+    b.type = 'button';
+    b.textContent = label;
+    if (tip) b.title = tip;
+    b.addEventListener('click', fn);
+    return b;
+  };
+  jumpGrid.append(
+    makeJumpBtn('−d',  () => stepDays(-1),   'Back 1 day'),
+    makeJumpBtn('−mo', () => stepMonths(-1), 'Back 1 month'),
+    makeJumpBtn('−y',  () => stepYears(-1),  'Back 1 year'),
+    makeJumpBtn('+d',  () => stepDays(1),    'Forward 1 day'),
+    makeJumpBtn('+mo', () => stepMonths(1),  'Forward 1 month'),
+    makeJumpBtn('+y',  () => stepYears(1),   'Forward 1 year'),
+  );
+
+  timeControls.append(btnVault, btnRew, btnPlay, btnFf, btnSlow, btnSpeed, jumpGrid, speedStack);
 
   const compassControls = document.createElement('div');
   compassControls.className = 'compass-controls';

@@ -5493,3 +5493,29 @@ Format:
     unconditionally — they're already
     constellation-essential.
 - **Revert:** `git checkout v-s000493 -- .`
+
+## S495 — Day / month / year skip buttons
+
+- **Date:** 2026-04-26
+- **Files changed:** `js/ui/controlPanel.js`,
+  `css/styles.css`.
+- **Change:**
+  - New `time-jump-grid` (2 × 3 compact grid of
+    `time-btn`) injected between the speed
+    buttons and the speed-stack readout in the
+    bottom-bar `time-controls`. Six buttons:
+    `−d / −mo / −y` on the back row, `+d / +mo /
+    +y` on the forward row.
+  - Day step adds ±1 to `state.DateTime`
+    directly. Month / year steps round-trip
+    through `dateTimeToDate` →
+    `setUTCMonth` / `setUTCFullYear` →
+    `getTime() / msPerDay − ZeroDate` so the
+    same day-of-month / day-of-year is preserved
+    across month-length changes and leap years.
+  - Per-button CSS sized smaller than the main
+    transport buttons (32 px min-width, 11 px
+    monospace) so the new grid fits without
+    crowding the existing `⏪ ▶ ⏩ ½× 2×`
+    cluster.
+- **Revert:** `git checkout v-s000494 -- .`

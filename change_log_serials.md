@@ -7251,3 +7251,47 @@ Format:
     `mouseHandler.js` — no JS changes needed
     for basic touch.
 - **Revert:** `git checkout v-s000558 -- .`
+
+## S560 — Update about.md with session features
+
+- **Date:** 2026-04-27
+- **Files changed:** `about.md`.
+- **Change:**
+  - **Bottom-bar legend** — transport row note
+    on autoplay-suspended demo pause + half-
+    speed default; new "Country quick-hops"
+    subsection covering the 5 × 2 ISO grid in
+    the bar-left.
+  - **Tracker tab** — Bright Star Catalog
+    subsection + ~2,967-entry breakdown table
+    removed (BSC was retired in S540). Quasar
+    + Galaxy entries simplified to their
+    standalone counts.
+  - **Demos tab** — refreshed:
+    - Autoplay suspension during demo, 1/8
+      authored cadence default, state save
+      / restore behaviour, constellation
+      lines hidden by default.
+    - 24 h Sun: GE map auto-switch to HQ
+      Equirect Day.
+    - **24 h Moon (2)** new entry (75°N,
+      75°S).
+    - Annual Cycle group removed.
+    - Analemma: now works in both FE and GE
+      on observer's local sky hemisphere;
+      polar latitudes show only physically
+      observable months.
+  - **New `Sun and Moon bodies` section**
+    after the unit discipline header —
+    documents the three-crater moon body,
+    sunspots + halo / corona, dynamic
+    equirect day/night map flip.
+  - **New `Mobile / install` section** —
+    PWA manifest, responsive breakpoints,
+    touch routing.
+  - **New `Tracking helpers` section** —
+    avatar follows target azimuth in all
+    views, picker prefers FollowTarget,
+    daytime-faded stars excluded from
+    pickers.
+- **Revert:** `git checkout v-s000559 -- .`

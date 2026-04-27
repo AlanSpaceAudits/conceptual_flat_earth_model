@@ -15,6 +15,14 @@ Live at [alanspaceaudits.github.io/conceptual_flat_earth_model](https://alanspac
 
 All distances are unitless. `FE_RADIUS = 1`. No earth radius, no AU, no kilometres, no great-circle trigonometry. The spherical-earth framing here is purely conceptual.
 
+## Sun and Moon bodies
+
+When zoomed in inside the optical vault (FE Optical or GE Optical view, body actively tracked):
+
+- **Moon** — disc with a three-crater triangle pattern in the upper-left (small over a medium-and-large pair), real-ephemeris phase shading driven by `c.MoonPhase` + `c.MoonRotation`, faint rim outline so the moon stays distinct from the sun even at new moon. Camera-aligned so its perceived orientation reads the same in FE and GE.
+- **Sun** — yellow disc with seven procedural sunspots, additive-blend halo plane scaled 2.5× the face. Sized to match the moon so a solar eclipse overlays cleanly: the moon body covers the sun face while the halo's outer ring shows through as a corona. Sunspots tilt with the same observer-frame angle the moon's terminator uses.
+- **Equirect day/night map (GE)** — when the active map is `hq_equirect_*`, the renderer flips between the day and night raster per frame based on the observer's `NightFactor` (so the globe re-textures at sunrise/sunset). Dropdown selection is preserved.
+
 ---
 
 # Bottom bar — icon legend
@@ -27,11 +35,19 @@ The dark bar runs the full width of the viewport. From left to right:
 | --- | --- |
 | 🌐 / 👁 | Vault swap. 🌐 = currently in **Heavenly orbit**; 👁 = currently in **Optical first-person**. Click to flip. |
 | ⏪ | Rewind. First click reverses direction; subsequent clicks double the negative magnitude. |
-| ▶ / ⏸ | Play / Pause. Pressing ▶ resets autoplay to the Day preset. While a demo is playing, this pauses / resumes the demo without ending it. |
+| ▶ / ⏸ | Play / Pause. Pressing ▶ resets autoplay to the Day preset. While a demo is playing, this pauses / resumes the demo without ending it (autoplay is suspended for the demo's duration so pause truly freezes time). |
 | ⏩ | Fast-forward. Mirror of ⏪. |
 | ½× | Halve current speed magnitude. Direction preserved. |
 | 2× | Double current speed magnitude. Direction preserved. |
-| End Demo | Appears only while a demo is active. Click to stop and reset. |
+| End Demo / End Tracking | Appears in the info bar while a demo is active or a target is being followed. Click to stop. |
+
+### Country quick-hops
+
+A compact 5 × 2 grid of ISO 3-letter codes lives between the presets and the transport buttons:
+
+`USA · BRA · GBR · EGY · ZAF · RUS · IND · JPN · AUS · ARG`
+
+One click sets `ObserverLat` / `ObserverLong` to that country's representative city (Denver, Brasília, London, Cairo, Cape Town, Moscow, Delhi, Tokyo, Sydney, Ushuaia). Hover for full name + decimal coords.
 
 ## Compass cluster (centre-right)
 
@@ -197,36 +213,31 @@ The button grid below lists every entry (alphabetised). Click an entry to toggle
 - **Cel Nav** — 58 Nautical-Almanac navigational stars (warm-yellow dots).
 - **Constellations** — named catalogued stars (white dots) minus cel-nav crossovers. Carries an extra **Outlines** toggle that draws the Stellarium-style stick figures connecting each constellation's primary stars.
 - **Black Holes** — 11 entries (Sgr A*, M87*, M31*, Cygnus X-1, V404 Cygni, NGC 4258, A0620-00, NGC 1275, NGC 5128, M81*, 3C 273 BH).
-- **Quasars** — 19 originals (3C 273, OJ 287, BL Lacertae, etc.); the BSC adds 700 more.
-- **Galaxies** — 20 originals (M31, M82, M104, NGC 5128, LMC, SMC, etc.) plus the **Milky Way (Galactic Centre)** entry; BSC adds 700 more.
+- **Quasars** — 19 entries (3C 273, OJ 287, BL Lacertae, etc.).
+- **Galaxies** — 20 entries (M31, M82, M104, NGC 5128, LMC, SMC, etc.) plus the **Milky Way (Galactic Centre)** entry.
 - **Satellites** — 12 base orbital entries: ISS, Hubble, Tiangong, eight Starlink-shell representatives, James Webb (L2). Two-body Kepler elements; ~1°/day drift from the 2024-04-15 epoch — conceptual, not precision tracking.
-- **Bright Star Catalog (BSC)** — a union catalog of ~2,967 entries assembled from every other category plus extras. Has **its own** `BscTargets` list (independent from `TrackerTargets`) and **its own** render gate `ShowBsc`. **Enable All** in BSC only writes to `BscTargets`, so highlights appear immediately but no dots render until `Show` is checked. The BSC's renderer paints all selected entries with per-source colors (cel nav warm yellow, catalogued white, black holes purple, etc.). An extra **Disable Satellites** button strips every `star:sat_*` id from `BscTargets` while leaving the rest alone — useful when the satellite cloud is overwhelming the view.
 
-The BSC's content breakdown:
-
-| Source | Count |
-| --- | --- |
-| Cel-nav stars | 58 |
-| Catalogued stars (constellation primaries) | 47 |
-| Black holes | 11 |
-| Galaxies (originals + 200 OpenNGC + 500 OpenNGC) | 720 |
-| Quasars (originals + 200 VizieR + 500 VizieR) | 719 |
-| Named stars (393 IAU/HYG mag ≤ 8 + 500 next-brightest unnamed) | 892 |
-| Satellites (12 + ~500 CelesTrak) | 509 |
-| Solar-system bodies + Pluto | 10 |
-| **Total (deduped)** | **2,967** |
-
-Each catalogued body renders in its own colour: cel nav warm-yellow, catalogued white, black holes purple, quasars cyan, galaxies pink, satellites lime green, BSC per-entry color matched to source category.
+Each catalogued body renders in its own colour: cel nav warm-yellow, catalogued white, black holes purple, quasars cyan, galaxies pink, satellites lime green.
 
 ---
 
 # Demos tab
 
-Scripted-animation browser. Controls along the top: **Stop**, **Pause / Resume**, **Prev / Next**. While a demo plays, transport bar ▶ / ⏸ pauses the demo in place; ½× / 2× scale its tempo; **End Demo** appears in the speed stack. Sections:
+Scripted-animation browser. Controls along the top: **Stop**, **Pause / Resume**, **Prev / Next**. While a demo plays:
 
-- **24 h Sun (4)** — polar-sun demonstrations (Alert NU, West Antarctica, midnight sun N/S).
+- Transport bar ▶ / ⏸ pauses the demo in place; ½× / 2× scale its tempo.
+- **End Demo / End Tracking** appear in the info bar.
+- Autoplay is suspended for the duration of the demo so pause truly freezes time.
+- Default playback runs at 1/8 the authored cadence (use 2× a few times to speed up).
+- Pre-demo state (observer lat/lon, time, tracker, view options) snapshots on play and restores on stop / End Demo / queue completion.
+- Constellation outlines are hidden during every demo by default (an intro can opt back in).
+
+Sections:
+
+- **24 h Sun (4)** — polar-sun demonstrations (Alert NU, West Antarctica, midnight sun N/S). Auto-switches the GE map to HQ Equirectangular Daytime so the globe shows daylit imagery during polar day.
+- **24 h Moon (2)** — 75°N (~2025-01-12, near max +declination) and 75°S (~2025-01-26, near max -declination). Watches one full sidereal day at lunar standstill; same cadence as the 24 h Sun demos.
 - **General (6)** — equinox at equator, summer / winter solstice at 45°N, moon-phase month, observer travel, 78°N 24-hour daylight.
-- **Sun Analemma / Moon Analemma / Sun + Moon Analemma** — 5 latitude variants each (90°N, 45°N, 0°, 45°S, 90°S). Observer fixed; Time fixed at 12:00 UTC; one daily step per 30/365 s. Hold-at-end so you can study the curve.
+- **Sun Analemma / Moon Analemma / Sun + Moon Analemma** — 5 latitude variants each (90°N, 45°N, 0°, 45°S, 90°S). The trace and noon-position notches now render in **both FE and GE**, on the observer's local sky hemisphere. The body must be above the observer's horizon at noon to be captured, so polar latitudes naturally produce a partial figure (only the months when the sun / moon is physically observable). Mid-latitudes get the full figure-8.
 - **Solar Eclipses (44 entries, 2021–2040)** — one per real solar eclipse (Espenak). Demo refines syzygy time using the active pipeline's own sun + moon and plants the observer at that pipeline's subsolar point.
 - **Lunar Eclipses (67 entries, 2021–2040)** — same structure, including 22 penumbrals.
 - **FE Eclipse Predictions** — placeholder for a future Saros-harmonic predictor.
@@ -280,6 +291,20 @@ Tab labels, group titles, row labels, button labels, info-bar slots, autoplay ch
 # Orientation persistence
 
 Every state field lives in the URL hash so a sim setup can be shared as a link. The URL is versioned — when a default changes between releases, the version bump tells the loader to drop stale keys and use the new default rather than pinning to old values.
+
+---
+
+# Mobile / install
+
+The sim ships a PWA `manifest.webmanifest`, `theme-color`, and the `mobile-web-app-capable` / `apple-mobile-web-app-*` meta tags, so modern mobile browsers offer **Install / Add to Home Screen** and the app then runs full-screen with the dark UI theme. Two responsive breakpoints kick in below 900 px (tablet) and 520 px (phone): the bottom bar switches to horizontal scroll instead of wrapping, the header subtitle is hidden, tab popups become near-fullscreen overlays so dense control panels actually fit, and the HUD shrinks. Touch input routes through the existing pointer-event handlers.
+
+---
+
+# Tracking helpers
+
+- **Avatar follows the tracked body** — when a target is being followed, the observer figure rotates so its facing direction tracks the target's azimuth in all three views (FE Heavenly, FE Optical, GE). The first click also snaps the heading immediately so the avatar doesn't have to wait for the next update tick.
+- **Picker prefers `FollowTarget` on ties** — when the cursor is near two coincident-position bodies (e.g. sun + moon at new moon), hover/click resolves to the one being followed instead of whichever was first in the candidate list.
+- **Stars hidden by daytime aren't hover targets** — when DynamicStars / GE forces the day-night fade and the sky is bright, faded-out catalog stars no longer collect tooltips or absorb clicks; the cursor falls through to whatever's behind.
 
 ---
 

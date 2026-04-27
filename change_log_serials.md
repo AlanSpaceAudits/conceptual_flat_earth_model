@@ -6547,3 +6547,42 @@ Format:
     is preserved (S529 had it, but the moon
     body otherwise reads correctly enough).
 - **Revert:** `git checkout v-s000533 -- .`
+
+## S535 — Country quick-hops + 24h-moon demos
+
+- **Date:** 2026-04-27
+- **Files changed:** `js/ui/controlPanel.js`,
+  `css/styles.css`, `js/demos/definitions.js`.
+- **Change:**
+  - Added a `geo-hops` button group between
+    `btnVault` and the rew/play buttons in the
+    bottom-bar `time-controls`. Ten 3-letter
+    country codes (USA / BRA / GBR / EGY /
+    ZAF / RUS / IND / JPN / AUS / ARG) jump
+    `ObserverLat` / `ObserverLong` to the
+    listed coordinates on click; `title`
+    tooltip shows full name + decimal coords.
+    Latitudes span -54.81° to +55.76°,
+    longitudes span -104.99° to +151.21° for
+    a varied global spread.
+  - New CSS rules `#bottom-bar .geo-hops`
+    (flex container, 2px gap) and
+    `#bottom-bar .geo-hops .time-btn`
+    (smaller padding, 10px monospace
+    code-style font) so the row stays compact.
+    `vault-swap` right margin trimmed
+    `8 → 4 px` so the hops sit tight against
+    the eye button.
+  - New `MOON_24H_DEMOS` array with two
+    entries: `24h moon at 75°N` (DateTime
+    2933, ~2025-01-12, moon near max +dec) and
+    `24h moon at 75°S` (DateTime 2947,
+    ~2025-01-26, moon near max -dec). Each
+    follows the moon for one full sidereal
+    day (~27 h walltime ramp). Same intro
+    structure as the 24h-sun demos, including
+    GE-mode HQ-equirect-day map switch.
+    Registered under new group id `24h-moon`
+    in `DEMO_GROUPS`, inserted directly after
+    `24h-sun` in `DEMOS`.
+- **Revert:** `git checkout v-s000534 -- .`

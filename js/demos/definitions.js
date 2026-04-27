@@ -673,6 +673,69 @@ const SUN_24H_DEMOS = [
   },
 ];
 
+// 24-hour moon demos. When the moon's declination exceeds 90° -
+// |observer lat|, the moon stays above the horizon for one full
+// rotation. We're near a major lunar standstill in 2024-2025 (max
+// |moon dec| ~28.5°) so polar observers get a "midnight moon"
+// window every ~27.3-day sidereal cycle. Dates picked at the
+// approximate northern / southern monthly maxima.
+const MOON_24H_DEMOS = [
+  {
+    name: '24h moon at 75°N',
+    group: '24h-moon',
+    intro: (m) => {
+      const base = {
+        ObserverLat: 75, ObserverLong: 0,
+        BodySource: 'astropixels',
+        DateTime: 2933,                 // ~2025-01-12 — moon near max +dec
+        ObserverHeading: 0,
+        InsideVault: true,
+        FollowTarget: 'moon',
+        TrackerTargets: ['moon'],
+        OpticalZoom: 1.0,
+        VaultSize: 1, VaultHeight: 0.45,
+        ShowMoonTrack: true,
+        ShowShadow: true,
+        ShowTruePositions: true,
+        DynamicStars: true,
+      };
+      if (m.state.WorldModel === 'ge') base.MapProjectionGe = 'hq_equirect_day';
+      return base;
+    },
+    tasks: () => [
+      Ttxt('75°N · ~2025-01-12 · moon near max +declination · watch one full sidereal day — moon never sets.'),
+      Tval('DateTime', 2934.13, 30 * 1000, T1, 'linear'),
+    ],
+  },
+  {
+    name: '24h moon at 75°S',
+    group: '24h-moon',
+    intro: (m) => {
+      const base = {
+        ObserverLat: -75, ObserverLong: 0,
+        BodySource: 'astropixels',
+        DateTime: 2947,                 // ~2025-01-26 — moon near max -dec
+        ObserverHeading: 180,
+        InsideVault: true,
+        FollowTarget: 'moon',
+        TrackerTargets: ['moon'],
+        OpticalZoom: 1.0,
+        VaultSize: 1, VaultHeight: 0.45,
+        ShowMoonTrack: true,
+        ShowShadow: true,
+        ShowTruePositions: true,
+        DynamicStars: true,
+      };
+      if (m.state.WorldModel === 'ge') base.MapProjectionGe = 'hq_equirect_day';
+      return base;
+    },
+    tasks: () => [
+      Ttxt('75°S · ~2025-01-26 · moon near max -declination · watch one full sidereal day — moon never sets.'),
+      Tval('DateTime', 2948.13, 30 * 1000, T1, 'linear'),
+    ],
+  },
+];
+
 // Annual-cycle demos — one per body. Each parks the observer at
 // the disc centre (lat 90° N, the AE projection's pole) so the
 // camera looks straight down on the full disc, makes the chosen
@@ -807,6 +870,7 @@ const ANNUAL_CYCLE_DEMOS = ANNUAL_CYCLE_BODIES.map((body) => ({
 // `group` field so the UI can render section headings.
 export const DEMOS = [
   ...SUN_24H_DEMOS,
+  ...MOON_24H_DEMOS,
   ...GENERAL_DEMOS,
   ...ANNUAL_CYCLE_DEMOS,
   ...YEAR_CYCLE_DEMOS,
@@ -822,6 +886,7 @@ export const DEMOS = [
 // Section metadata for the UI.
 export const DEMO_GROUPS = [
   { id: '24h-sun',         label: '24 h Sun' },
+  { id: '24h-moon',        label: '24 h Moon' },
   { id: 'general',         label: 'General' },
   { id: 'annual-cycle',    label: 'Annual Cycle' },
   { id: 'sun-analemma',    label: 'Sun Analemma' },

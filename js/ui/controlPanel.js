@@ -1794,6 +1794,33 @@ export function buildControlPanel(host, model, demos) {
   btnVault.className = 'time-btn vault-swap';
   btnVault.type = 'button';
   bindTip(btnVault, 'tip_vault_swap');
+
+  // Quick-hop buttons: jump observer to varied country lat/lons.
+  const geoHops = document.createElement('div');
+  geoHops.className = 'geo-hops';
+  const COUNTRY_HOPS = [
+    { code: 'USA', name: 'USA (Denver)',             lat: 39.74,  lon: -104.99 },
+    { code: 'BRA', name: 'Brazil (Brasília)',         lat: -15.78, lon: -47.93  },
+    { code: 'GBR', name: 'UK (London)',               lat: 51.51,  lon: -0.13   },
+    { code: 'EGY', name: 'Egypt (Cairo)',             lat: 30.05,  lon: 31.24   },
+    { code: 'ZAF', name: 'South Africa (Cape Town)',  lat: -33.92, lon: 18.42   },
+    { code: 'RUS', name: 'Russia (Moscow)',           lat: 55.76,  lon: 37.62   },
+    { code: 'IND', name: 'India (Delhi)',             lat: 28.61,  lon: 77.21   },
+    { code: 'JPN', name: 'Japan (Tokyo)',             lat: 35.68,  lon: 139.65  },
+    { code: 'AUS', name: 'Australia (Sydney)',        lat: -33.87, lon: 151.21  },
+    { code: 'ARG', name: 'Argentina (Ushuaia)',       lat: -54.81, lon: -68.31  },
+  ];
+  for (const h of COUNTRY_HOPS) {
+    const b = document.createElement('button');
+    b.className = 'time-btn geo-hop';
+    b.type = 'button';
+    b.textContent = h.code;
+    b.title = `${h.name}  ·  ${h.lat.toFixed(2)}°, ${h.lon.toFixed(2)}°`;
+    b.addEventListener('click', () => {
+      model.setState({ ObserverLat: h.lat, ObserverLong: h.lon });
+    });
+    geoHops.appendChild(b);
+  }
   const btnRew  = document.createElement('button');
   btnRew.className = 'time-btn';  btnRew.type = 'button';
   btnRew.textContent = '⏪'; bindTip(btnRew, 'tip_rewind');
@@ -1893,7 +1920,7 @@ export function buildControlPanel(host, model, demos) {
     makeJumpBtn('+y',  () => stepYears(1),   'Forward 1 year'),
   );
 
-  timeControls.append(btnVault, btnRew, btnPlay, btnFf, btnSlow, btnSpeed, jumpGrid, speedStack);
+  timeControls.append(btnVault, geoHops, btnRew, btnPlay, btnFf, btnSlow, btnSpeed, jumpGrid, speedStack);
 
   const compassControls = document.createElement('div');
   compassControls.className = 'compass-controls';

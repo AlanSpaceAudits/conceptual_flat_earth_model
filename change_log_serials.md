@@ -6646,3 +6646,22 @@ Format:
     the inline write just covers the initial
     snap.
 - **Revert:** `git checkout v-s000537 -- .`
+
+## S539 — Moon body camera-aligned: preserves orientation across FE/GE
+
+- **Date:** 2026-04-27
+- **Files changed:** `js/render/worldObjects.js`.
+- **Change:**
+  - `MoonOpticalBody.update` swapped
+    `mesh.lookAt(camera.position)` for
+    `mesh.quaternion.copy(camera.quaternion)`.
+    `lookAt` aligned the plane's up-vector to
+    world-up, which differs between FE (disc
+    normal) and GE (sphere-tangent observer
+    up), so the same `c.MoonRotation` produced
+    different visual orientations after mode
+    swap. Direct quaternion copy makes
+    canvas-up = screen-up in both modes, so
+    the canvas rotation reads identically when
+    observer lat/lon and view direction match.
+- **Revert:** `git checkout v-s000538 -- .`

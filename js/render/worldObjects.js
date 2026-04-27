@@ -2946,7 +2946,11 @@ export class MoonOpticalBody {
     if (!show) return;
     this.mesh.position.set(opticalPos[0], opticalPos[1], opticalPos[2]);
     this.mesh.scale.set(size, size, 1);
-    if (camera) this.mesh.lookAt(camera.position);
+    // Camera-aligned (canvas-up = screen-up) instead of
+    // lookAt(camera.position): preserves perceived moon orientation
+    // across FE / GE since both modes share the same camera
+    // up-vector in optical view.
+    if (camera) this.mesh.quaternion.copy(camera.quaternion);
     this.material.opacity = alpha;
     if (phase !== this._lastPhase || rot !== this._lastRot) {
       this._lastPhase = phase;

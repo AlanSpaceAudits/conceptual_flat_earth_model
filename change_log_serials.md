@@ -6456,3 +6456,33 @@ Format:
     flag). `c.MoonWaxing` stays around for the
     HUD tracker's mirror flip.
 - **Revert:** `git checkout v-s000530 -- .`
+
+## S532 — Moon shadow: screen-space sun-direction projection
+
+- **Date:** 2026-04-27
+- **Files changed:** `js/render/index.js`.
+- **Change:**
+  - Replaced `c.MoonRotation` (which was producing
+    wrong-sign rotations for the screen-space
+    moon body) with an inline computation that
+    projects the world-space sun→moon vector
+    onto the plane perpendicular to the
+    camera→moon axis, then projects the result
+    onto the camera's screen-right /
+    screen-up basis vectors. The
+    `atan2(-screenY, screenX)` gives the canvas
+    rotation that points the lit limb toward
+    the sun in screen-space.
+  - Inputs: `sunOptVis`, `moonOptVis`,
+    `camera.matrixWorld` columns 0 and 1
+    (camera-right / camera-up in world).
+    Independent of camera orientation
+    (rotation tracks the sun's screen-space
+    angle, not the camera's), but
+    observer-lat/lon dependent because the
+    optical-vault coords are derived from
+    observer-local az/el.
+  - Crater texture still drawn unrotated (S531
+    behaviour preserved); only the shadow path
+    rotates.
+- **Revert:** `git checkout v-s000531 -- .`

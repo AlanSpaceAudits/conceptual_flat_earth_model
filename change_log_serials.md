@@ -6394,3 +6394,37 @@ Format:
     of whichever was first in the candidate
     list.
 - **Revert:** `git checkout v-s000528 -- .`
+
+## S530 — Moon body lighting independent of observer location
+
+- **Date:** 2026-04-27
+- **Files changed:** `js/core/app.js`,
+  `js/render/worldObjects.js`,
+  `js/render/index.js`,
+  `js/ui/controlPanel.js`.
+- **Change:**
+  - New computed `c.MoonWaxing` (boolean) in
+    `js/core/app.js` — derived from `(MoonRA -
+    SunRA) mod 2π < π` (moon east of sun =
+    waxing). Observer-independent.
+  - `drawMoonBodyToCanvas` rewrites: dropped
+    `ctx.rotate(rot)` (rotation by
+    `c.MoonRotation` which depends on observer
+    lat/lon and was flipping the lit side
+    incorrectly). Replaced with
+    `if (!waxing) ctx.scale(-1, 1)` so the
+    shadow lune mirrors for waning — same
+    convention as the HUD `drawMoonPhase`.
+    Crater base stays unmirrored so the
+    top-left triangle pattern keeps its place.
+    Shadow path rewritten as left-half +
+    terminator ellipse (crescent: ellipse via
+    right; gibbous: ellipse via left).
+  - `MoonOpticalBody.update(...)` signature:
+    `rot` → `waxing`. Renderer wires
+    `c.MoonWaxing` in.
+  - HUD tracker (`js/ui/controlPanel.js`) now
+    reads precomputed `c.MoonWaxing` instead of
+    recomputing the RA diff inline; both views
+    drive off the same flag.
+- **Revert:** `git checkout v-s000529 -- .`

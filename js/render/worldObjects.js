@@ -2860,14 +2860,15 @@ function makeMoonCraterCanvas() {
   return cv;
 }
 
-// Repaint the per-frame moon composite: clipped crater base + a
-// shadow lune positioned by phase / rot. `phase` ∈ [0, π] (0=full,
-// π=new); `rot` rotates the terminator around the line of sight.
-function drawMoonBodyToCanvas(ctx, W, H, craterCanvas, phase, rot) {
+// Repaint the per-frame moon composite: crater base (never mirrored,
+// so the top-left triangle stays in place) + a shadow lune sized by
+// `phase` ∈ [0, π] (0=full, π=new) and flipped by `waxing` so the
+// dark side sits opposite the lit limb (waxing → dark on left,
+// waning → dark on right). Observer-independent.
+function drawMoonBodyToCanvas(ctx, W, H, craterCanvas, phase, waxing) {
   ctx.clearRect(0, 0, W, H);
   ctx.save();
   ctx.translate(W / 2, H / 2);
-  ctx.rotate(rot);
   const r = Math.min(W, H) / 2 - 2;
   ctx.save();
   ctx.beginPath();
@@ -2878,6 +2879,7 @@ function drawMoonBodyToCanvas(ctx, W, H, craterCanvas, phase, rot) {
   const frac = 0.5 * (1 + Math.cos(phase));
   if (frac < 0.999) {
     ctx.save();
+    if (!waxing) ctx.scale(-1, 1);
     ctx.beginPath();
     ctx.arc(0, 0, r, 0, 2 * Math.PI);
     ctx.clip();
@@ -2889,15 +2891,17 @@ function drawMoonBodyToCanvas(ctx, W, H, craterCanvas, phase, rot) {
     } else {
       const e = Math.abs(1 - 2 * frac) * r;
       ctx.beginPath();
-      ctx.arc(0, 0, r, Math.PI / 2, -Math.PI / 2, false);
-      ctx.ellipse(0, 0, e, r, 0, -Math.PI / 2, Math.PI / 2, frac >= 0.5);
+      ctx.arc(0, 0, r, -Math.PI / 2, Math.PI / 2, true);
+      if (frac < 0.5) {
+        ctx.ellipse(0, 0, e, r, 0, Math.PI / 2, -Math.PI / 2, false);
+      } else {
+        ctx.ellipse(0, 0, e, r, 0, Math.PI / 2, 3 * Math.PI / 2, false);
+      }
       ctx.closePath();
       ctx.fill();
     }
     ctx.restore();
   }
-  // Always-visible rim so the moon stays distinct from the sun even
-  // at new-moon (sun + moon at same sky position).
   ctx.beginPath();
   ctx.arc(0, 0, r, 0, 2 * Math.PI);
   ctx.strokeStyle = 'rgba(190, 185, 175, 0.55)';
@@ -2936,22 +2940,22 @@ export class MoonOpticalBody {
     this.group = new THREE.Group();
     this.group.add(this.mesh);
     this._lastPhase = -999;
-    this._lastRot = -999;
-    drawMoonBodyToCanvas(this._compCtx, 256, 256, this._craterCanvas, 0, 0);
+    this._lastWaxing = null;
+    drawMoonBodyToCanvas(this._compCtx, 256, 256, this._craterCanvas, 0, true);
     this.tex.needsUpdate = true;
   }
 
-  update(opticalPos, size, show, phase, rot, camera, alpha = 1) {
+  update(opticalPos, size, show, phase, waxing, camera, alpha = 1) {
     this.group.visible = !!show;
     if (!show) return;
     this.mesh.position.set(opticalPos[0], opticalPos[1], opticalPos[2]);
     this.mesh.scale.set(size, size, 1);
     if (camera) this.mesh.lookAt(camera.position);
     this.material.opacity = alpha;
-    if (phase !== this._lastPhase || rot !== this._lastRot) {
+    if (phase !== this._lastPhase || waxing !== this._lastWaxing) {
       this._lastPhase = phase;
-      this._lastRot = rot;
-      drawMoonBodyToCanvas(this._compCtx, 256, 256, this._craterCanvas, phase, rot);
+      this._lastWaxing = waxing;
+      drawMoonBodyToCanvas(this._compCtx, 256, 256, this._craterCanvas, phase, waxing);
       this.tex.needsUpdate = true;
     }
   }

@@ -6627,3 +6627,22 @@ Format:
     changed are written, no redundant
     `setState` calls per tick.
 - **Revert:** `git checkout v-s000536 -- .`
+
+## S538 — Heavenly tracking click snaps avatar heading immediately
+
+- **Date:** 2026-04-27
+- **Files changed:** `js/ui/mouseHandler.js`.
+- **Change:**
+  - Heavenly / free-cam branch of the canvas
+    pointer-up click handler now writes
+    `ObserverHeading: targetHeading` alongside
+    the `FollowTarget` / `FreeCamActive` patch.
+    Without this, FE Heavenly clicks set the
+    follow target but the avatar didn't rotate
+    to face it until something else triggered
+    an `update` (e.g. switching to GE and
+    back). The same heading is recomputed by
+    the continuous-follow handler each tick;
+    the inline write just covers the initial
+    snap.
+- **Revert:** `git checkout v-s000537 -- .`

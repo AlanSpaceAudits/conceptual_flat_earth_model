@@ -360,14 +360,18 @@ export function attachMouseHandler(canvas, model) {
       });
     } else {
       // Heavenly / free-cam click: lock on without touching Optical
-      // heading/pitch; scene.js recenters the orbit around the body's
-      // GP because FreeCamActive is on.
+      // pitch; scene.js recenters the orbit around the body's GP
+      // because FreeCamActive is on. ObserverHeading still snaps to
+      // the target's azimuth so the avatar figure faces it
+      // immediately instead of waiting for the next update tick.
+      const targetHeading = ((best.angles.azimuth % 360) + 360) % 360;
       model.setState({
-        FollowTarget:   best.id,
-        FreeCamActive:  true,
-        CameraHeight:   80.3,
-        CameraDistance: 10,
-        Zoom:           4.67,
+        FollowTarget:    best.id,
+        FreeCamActive:   true,
+        ObserverHeading: targetHeading,
+        CameraHeight:    80.3,
+        CameraDistance:  10,
+        Zoom:            4.67,
       });
     }
   });

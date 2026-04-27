@@ -730,13 +730,17 @@ export class Renderer {
     );
 
     // Optical-vault sun body — same size as the moon body, gated
-    // identically (only inside the optical hemisphere).
+    // identically (only inside the optical hemisphere). Sunspots
+    // rotate with `c.MoonRotation`: the same observer-frame angle
+    // the moon's terminator uses so the sun's surface markings tilt
+    // with latitude / sky position.
     const sunBodyShow = showSun && s.ShowOpticalVault && s.InsideVault;
     const sunElevFade = Math.max(0, Math.min(1, (sunElevForFade + 3) / 5));
     this.sunOpticalBody.update(
       sunOptVis,
       0.024,
       sunBodyShow,
+      c.MoonRotation || 0,
       this.sm.camera,
       sunElevFade,
     );

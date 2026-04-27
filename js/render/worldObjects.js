@@ -3060,9 +3060,10 @@ export class SunOpticalBody {
     this.group = new THREE.Group();
     this.group.add(this._haloMesh);
     this.group.add(this._faceMesh);
+    this._zAxis = new THREE.Vector3(0, 0, 1);
   }
 
-  update(opticalPos, size, show, camera, alpha = 1) {
+  update(opticalPos, size, show, rot, camera, alpha = 1) {
     this.group.visible = !!show;
     if (!show) return;
     this._faceMesh.position.set(opticalPos[0], opticalPos[1], opticalPos[2]);
@@ -3070,8 +3071,14 @@ export class SunOpticalBody {
     this._faceMesh.scale.set(size, size, 1);
     this._haloMesh.scale.set(size * 2.5, size * 2.5, 1);
     if (camera) {
-      this._faceMesh.quaternion.copy(camera.quaternion);
+      // Halo stays camera-aligned (symmetric, no rotation needed).
+      // Face camera-aligns then rotates around the local view axis
+      // so the sunspot pattern reads as a real surface marking that
+      // tilts with observer latitude — same convention the moon
+      // canvas uses via ctx.rotate(c.MoonRotation).
       this._haloMesh.quaternion.copy(camera.quaternion);
+      this._faceMesh.quaternion.copy(camera.quaternion);
+      this._faceMesh.rotateOnAxis(this._zAxis, rot);
     }
     this._faceMat.opacity = alpha;
     this._haloMat.opacity = alpha;

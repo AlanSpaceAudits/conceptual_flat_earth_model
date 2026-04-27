@@ -6902,3 +6902,27 @@ Format:
     positions render at the right place in
     either mode.
 - **Revert:** `git checkout v-s000545 -- .`
+
+## S547 — Sun face rotates with observer-frame angle
+
+- **Date:** 2026-04-27
+- **Files changed:** `js/render/worldObjects.js`,
+  `js/render/index.js`.
+- **Change:**
+  - `SunOpticalBody.update` signature gained
+    a `rot` parameter. After
+    `quaternion.copy(camera.quaternion)`,
+    `_faceMesh.rotateOnAxis(zAxis, rot)`
+    spins the sun face (sunspots) around the
+    local view axis so the surface markings
+    read as physical features that tilt with
+    observer latitude / sky position.
+  - Halo mesh stays unrotated — it's
+    radially symmetric so a rotation has no
+    visual effect; keeping it aligned avoids
+    edge-aliasing transitions.
+  - Renderer passes `c.MoonRotation` (the
+    same observer-frame angle the moon
+    terminator already uses) so sun and moon
+    share a consistent rotation convention.
+- **Revert:** `git checkout v-s000546 -- .`

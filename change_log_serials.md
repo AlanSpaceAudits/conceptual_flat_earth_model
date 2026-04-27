@@ -7295,3 +7295,34 @@ Format:
     daytime-faded stars excluded from
     pickers.
 - **Revert:** `git checkout v-s000559 -- .`
+
+## S561 — Sigma Octantis · three observers demo
+
+- **Date:** 2026-04-27
+- **Files changed:** `js/demos/definitions.js`.
+- **Change:**
+  - New `general` group entry: `Sigma
+    Octantis · three observers, one instant`.
+    Sets `DateTime` to 2022-06-22 21:40 UTC
+    (= 1998.903) and follows
+    `star:sigmaoct` while teleporting the
+    observer between three locations:
+    Recife BR (8°S 35°W, local 18:40),
+    East Africa (5°S 30°E, local 23:40),
+    and Perth AU (32°S 116°E, local 05:40
+    next-day).
+  - `PermanentNight: true` keeps the star
+    visible regardless of local solar time.
+    `OpticalZoom: 2.0` zooms in enough that
+    the south-pole region fills the frame.
+    `FollowTarget: 'star:sigmaoct'` keeps
+    the camera locked on the star while the
+    observer hops, so the visual centre
+    stays fixed and the user reads the
+    altitude / azimuth shift via the
+    tracking HUD.
+  - Time stays paused for the duration —
+    autoplay is suspended during demo (S520)
+    and no Tval touches `DateTime`, so the
+    instant is fixed.
+- **Revert:** `git checkout v-s000560 -- .`

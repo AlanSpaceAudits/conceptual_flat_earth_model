@@ -5841,3 +5841,38 @@ Format:
     transport cluster is no longer carrying the
     duplicate tail.
 - **Revert:** `git checkout v-s000507 -- .`
+
+## S509 — GE GP path projection + GE radial dashed GP→centre line
+
+- **Date:** 2026-04-26
+- **Files changed:** `js/core/app.js`,
+  `js/render/worldObjects.js`.
+- **Change:**
+  - `c.GPPaths[*]` entries now carry a `latLon`
+    array alongside the existing FE-disc `pts`.
+    Same sample loop in `sampleFrom` /
+    `sampleFromSubPointFn`; an extra
+    `latLon.push([gpLat, gpLon])` per step.
+  - `GPPathOverlay.update` branches on
+    `WorldModel`. FE keeps the disc-plane build
+    using `pts`; GE projects each `latLon` step
+    onto the globe sphere at
+    `R = FE_RADIUS · 1.0008` so the path curves
+    around the surface. GE lines flip
+    `depthTest: true` so the back half of the
+    trace gets occluded by the globe.
+  - `TrackedGroundPoints` now keeps a parallel
+    `_radialLines` pool of `LineDashedMaterial`
+    segments. In GE, each tracked GP grows a
+    dashed line from its surface point down to
+    the globe centre; FE leaves the radial line
+    invisible (no centre to drop to). Same
+    colour as the body-to-GP solid line, same
+    `ShowTruePositions` visibility gate.
+  - Net effect in GE: a tracked target now shows
+    a continuous solid line from the body's
+    celestial-sphere position down to the GP on
+    the surface, plus a dashed line from that GP
+    radially in to the globe centre — the
+    body-overhead-direction reads at a glance.
+- **Revert:** `git checkout v-s000508 -- .`

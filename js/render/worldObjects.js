@@ -4839,6 +4839,7 @@ export class TrackedGroundPoints {
     this.group.name = 'tracked-gps';
     this._pool  = [];
     this._lines = [];
+    this._radialLines = [];
     for (let i = 0; i < max; i++) {
       const gp = new GroundPoint(0xffffff);
       this._pool.push(gp);
@@ -4858,6 +4859,23 @@ export class TrackedGroundPoints {
       line.renderOrder = 45;
       this._lines.push(line);
       this.group.add(line);
+
+      // Second per-GP line (GE-only): dashed radial from the GP on
+      // the surface down to the globe centre. Surfaces the radial
+      // direction visually so the GP reads as "the spot directly
+      // beneath the body" along a true centre-line. Hidden in FE
+      // mode (the disc has no centre to drop to).
+      const rgeo = new THREE.BufferGeometry();
+      rgeo.setAttribute('position', new THREE.Float32BufferAttribute([0, 0, 0, 0, 0, 0], 3));
+      const rmat = new THREE.LineDashedMaterial({
+        color: 0xffffff, transparent: true, opacity: 0.55,
+        dashSize: 0.022, gapSize: 0.014,
+        depthTest: false, depthWrite: false,
+      });
+      const rline = new THREE.Line(rgeo, rmat);
+      rline.renderOrder = 45;
+      this._radialLines.push(rline);
+      this.group.add(rline);
     }
   }
 
@@ -4909,6 +4927,7 @@ export class TrackedGroundPoints {
     for (let i = 0; i < this._pool.length; i++) {
       const slot = this._pool[i];
       const line = this._lines[i];
+      const radial = this._radialLines[i];
       const info = infos[i];
       const isFollow = info && followId && info.target === followId;
       const catOv = categoryOverride(info);
@@ -4920,6 +4939,7 @@ export class TrackedGroundPoints {
       if (!showThis) {
         slot.group.visible = false;
         line.visible = false;
+        if (radial) radial.visible = false;
         continue;
       }
       const key = info.target === 'sun'  ? 'sun'
@@ -4969,6 +4989,33 @@ export class TrackedGroundPoints {
         }
       } else {
         line.visible = false;
+      }
+
+      // GE-only radial dashed line: GP → globe centre. Same colour
+      // and visibility gate as the body→GP line above. The GP
+      // surface point shares its direction with the body's
+      // celestial-sphere coord, so we can scale the celestial coord
+      // by `FE_RADIUS / GlobeVaultRadius` to get the GP and use
+      // `[gp, origin]` as the segment.
+      if (radial) {
+        if (ge && s.ShowTruePositions !== false) {
+          const Rv = c.GlobeVaultRadius || (FE_RADIUS * 2);
+          const phi = (info.gpLat || 0) * Math.PI / 180;
+          const lam = (info.gpLon || 0) * Math.PI / 180;
+          const cp = Math.cos(phi), sp = Math.sin(phi);
+          const tx = Rv * cp * Math.cos(lam);
+          const ty = Rv * cp * Math.sin(lam);
+          const tz = Rv * sp;
+          const k = FE_RADIUS / Rv;
+          const bx = tx * k, by = ty * k, bz = tz * k;
+          radial.material.color.setHex(color);
+          radial.geometry.setAttribute('position',
+            new THREE.Float32BufferAttribute([bx, by, bz, 0, 0, 0], 3));
+          radial.computeLineDistances();
+          radial.visible = true;
+        } else {
+          radial.visible = false;
+        }
       }
     }
   }
@@ -5368,15 +5415,40 @@ export class GPPathOverlay {
     this.group.visible = !s.InsideVault;
     const paths = c.GPPaths || {};
     const seen = new Set();
+    const ge = s.WorldModel === 'ge';
+    // Slight outward lift in GE so the path line clears the
+    // textured globe shader without z-fighting; FE keeps the
+    // disc-plane lift it already used.
+    const Rge = FE_RADIUS * 1.0008;
     for (const [key, entry] of Object.entries(paths)) {
-      if (!entry || !entry.pts || !entry.pts.length) continue;
+      if (!entry) continue;
+      const haveLatLon = Array.isArray(entry.latLon) && entry.latLon.length;
+      const havePts    = Array.isArray(entry.pts)    && entry.pts.length;
+      if (!havePts && !haveLatLon) continue;
       const rec = this._ensureLine(key, entry.color || 0xffffff);
-      const n = Math.min(entry.pts.length, rec.maxPts);
+      const len = ge && haveLatLon ? entry.latLon.length : entry.pts.length;
+      const n = Math.min(len, rec.maxPts);
       for (let i = 0; i < n; i++) {
-        rec.buf[i * 3    ] = entry.pts[i][0];
-        rec.buf[i * 3 + 1] = entry.pts[i][1];
-        rec.buf[i * 3 + 2] = 0.002;
+        if (ge && haveLatLon) {
+          const [lat, lon] = entry.latLon[i];
+          const phi = lat * Math.PI / 180;
+          const lam = lon * Math.PI / 180;
+          const cp = Math.cos(phi);
+          rec.buf[i * 3    ] = Rge * cp * Math.cos(lam);
+          rec.buf[i * 3 + 1] = Rge * cp * Math.sin(lam);
+          rec.buf[i * 3 + 2] = Rge * Math.sin(phi);
+        } else {
+          rec.buf[i * 3    ] = entry.pts[i][0];
+          rec.buf[i * 3 + 1] = entry.pts[i][1];
+          rec.buf[i * 3 + 2] = 0.002;
+        }
       }
+      // GE lines need depthTest so the back half of the trace
+      // gets occluded by the globe; FE lines stay always-visible
+      // (no front/back ambiguity on the disc).
+      const wantDT = ge;
+      const m = rec.line.material;
+      if (m.depthTest !== wantDT) { m.depthTest = wantDT; m.needsUpdate = true; }
       rec.line.geometry.setDrawRange(0, n);
       rec.line.geometry.attributes.position.needsUpdate = true;
       seen.add(key);

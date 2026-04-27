@@ -946,6 +946,7 @@ export class FeModel extends EventTarget {
     const N_GP = Math.max(48, Math.min(2048, Math.round(48 * Math.sqrt(_gpDays))));
     const sampleFrom = (getRaDec) => {
       const pts = [];
+      const latLon = [];
       for (let i = 0; i <= N_GP; i++) {
         const d = new Date(dayMs + (i / N_GP) * _gpSpanMs);
         const eq = getRaDec(d);
@@ -955,17 +956,20 @@ export class FeModel extends EventTarget {
         let gpLon = raDeg - gmstDegAt(d);
         gpLon = ((gpLon + 180) % 360 + 360) % 360 - 180;
         pts.push(canonicalLatLongToDisc(gpLat, gpLon, FE_RADIUS));
+        latLon.push([gpLat, gpLon]);
       }
-      return pts;
+      return { pts, latLon };
     };
     const sampleFromSubPointFn = (subFn) => {
       const pts = [];
+      const latLon = [];
       for (let i = 0; i <= N_GP; i++) {
         const d = new Date(dayMs + (i / N_GP) * _gpSpanMs);
         const sub = subFn(d);
         pts.push(canonicalLatLongToDisc(sub.lat, sub.lon, FE_RADIUS));
+        latLon.push([sub.lat, sub.lon]);
       }
-      return pts;
+      return { pts, latLon };
     };
 
     // Single master toggle — `ShowGPPath` (lives in Tracker Options).
@@ -989,10 +993,12 @@ export class FeModel extends EventTarget {
       };
       for (const [body, color] of Object.entries(PLANET_COLORS)) {
         if (!gpSet.has(body)) continue;
-        const pts = sampleFrom((d) => {
+        const sampled = sampleFrom((d) => {
           try { return activeEph.bodyGeocentric(body, d); } catch { return null; }
         });
-        if (pts) c.GPPaths[`p:${body}`] = { pts, color };
+        if (sampled) {
+          c.GPPaths[`p:${body}`] = { pts: sampled.pts, latLon: sampled.latLon, color };
+        }
       }
 
       // Stars: use `apparentStarPosition` with full apparent-of-date
@@ -1018,15 +1024,21 @@ export class FeModel extends EventTarget {
           if (!gpSet.has(`star:${star.id}`)) continue;
           const raRad  = (star.raH / 24) * 2 * Math.PI;
           const decRad = star.decD * Math.PI / 180;
-          const pts = sampleFixedStar(raRad, decRad);
-          if (pts) c.GPPaths[`${prefix}:${star.id}`] = { pts, color };
+          const sampled = sampleFixedStar(raRad, decRad);
+          if (sampled) {
+            c.GPPaths[`${prefix}:${star.id}`] = {
+              pts: sampled.pts, latLon: sampled.latLon, color,
+            };
+          }
         }
       }
 
       for (const sat of [...SATELLITES, ...SATELLITES_EXTRA]) {
         if (!gpSet.has(`star:${sat.id}`)) continue;
-        const pts = sampleFromSubPointFn((d) => satelliteSubPoint(sat, d));
-        c.GPPaths[`sat:${sat.id}`] = { pts, color: 0x66ff88 };
+        const sampled = sampleFromSubPointFn((d) => satelliteSubPoint(sat, d));
+        c.GPPaths[`sat:${sat.id}`] = {
+          pts: sampled.pts, latLon: sampled.latLon, color: 0x66ff88,
+        };
       }
     }
 

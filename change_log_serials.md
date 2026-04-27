@@ -6796,3 +6796,20 @@ Format:
     `applyMapTexture`. Per-frame projection
     work runs unconditionally as before.
 - **Revert:** `git checkout v-s000541 -- .`
+
+## S543 — 24h-moon demos: match 24h-sun demo cadence
+
+- **Date:** 2026-04-27
+- **Files changed:** `js/demos/definitions.js`.
+- **Change:**
+  - `24h moon at 75°N` Tval changed from
+    `(2934.13, 30 s)` (1.13 days in 30 s) to
+    `(2947, 40 s)` (14 days in 40 s) — same
+    cadence as the Alert / West Antarctica
+    24h-sun demos.
+  - `24h moon at 75°S` Tval changed from
+    `(2948.13, 30 s)` to `(2961, 40 s)` (same
+    14-day window).
+  - Narration updated to reflect two-week motion
+    instead of one-sidereal-day.
+- **Revert:** `git checkout v-s000542 -- .`

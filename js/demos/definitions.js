@@ -703,8 +703,8 @@ const MOON_24H_DEMOS = [
       return base;
     },
     tasks: () => [
-      Ttxt('75°N · ~2025-01-12 · moon near max +declination · watch one full sidereal day — moon never sets.'),
-      Tval('DateTime', 2934.13, 30 * 1000, T1, 'linear'),
+      Ttxt('75°N · ~2025-01-12 · moon near max +declination · two weeks of motion — moon stays above horizon during the high-dec window, then dips back into the day-night cycle as dec drops.'),
+      Tval('DateTime', 2947, 40 * 1000, T1, 'linear'),
     ],
   },
   {
@@ -730,8 +730,8 @@ const MOON_24H_DEMOS = [
       return base;
     },
     tasks: () => [
-      Ttxt('75°S · ~2025-01-26 · moon near max -declination · watch one full sidereal day — moon never sets.'),
-      Tval('DateTime', 2948.13, 30 * 1000, T1, 'linear'),
+      Ttxt('75°S · ~2025-01-26 · moon near max -declination · two weeks of motion — moon stays above horizon during the high-dec window, then dips back as dec moves north again.'),
+      Tval('DateTime', 2961, 40 * 1000, T1, 'linear'),
     ],
   },
 ];

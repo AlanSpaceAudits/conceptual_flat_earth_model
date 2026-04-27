@@ -800,26 +800,51 @@ const FIELD_GROUPS = [
         // Constellation-name row: clicking a name toggles every
         // star in that constellation in `TrackerTargets`. Stars
         // already in the set are removed (toggle-off); otherwise
-        // the constellation's full roster is added.
-        { layout: 'wrap', actions: CONSTELLATIONS.map((con) => ({
-          buttonLabel: con.name,
-          onClick: (m) => {
-            const ids = con.stars.map((st) => `star:${st.celnav || st.id}`);
-            const cur = Array.isArray(m.state.TrackerTargets) ? m.state.TrackerTargets : [];
-            const set = new Set(cur);
-            const allIn = ids.every((id) => set.has(id));
-            if (allIn) {
-              const drop = new Set(ids);
-              m.setState({ TrackerTargets: cur.filter((t) => !drop.has(t)) });
-            } else {
-              for (const id of ids) set.add(id);
-              m.setState({
-                TrackerTargets: [...set],
-                ShowConstellationLines: true,
-              });
-            }
+        // the constellation's full roster is added. The
+        // "Orion's Belt" entry at the head of the list is a
+        // sub-asterism — three stars (Mintaka, Alnilam, Alnitak),
+        // no extra constellation line, since Orion's own outline
+        // already draws them when its parent toggle is on.
+        { layout: 'wrap', actions: [
+          {
+            buttonLabel: "Orion's Belt",
+            onClick: (m) => {
+              const ids = ['star:mintaka', 'star:alnilam', 'star:alnitak'];
+              const cur = Array.isArray(m.state.TrackerTargets) ? m.state.TrackerTargets : [];
+              const set = new Set(cur);
+              const allIn = ids.every((id) => set.has(id));
+              if (allIn) {
+                const drop = new Set(ids);
+                m.setState({ TrackerTargets: cur.filter((t) => !drop.has(t)) });
+              } else {
+                for (const id of ids) set.add(id);
+                m.setState({
+                  TrackerTargets: [...set],
+                  ShowConstellationLines: true,
+                });
+              }
+            },
           },
-        })) },
+          ...CONSTELLATIONS.map((con) => ({
+            buttonLabel: con.name,
+            onClick: (m) => {
+              const ids = con.stars.map((st) => `star:${st.celnav || st.id}`);
+              const cur = Array.isArray(m.state.TrackerTargets) ? m.state.TrackerTargets : [];
+              const set = new Set(cur);
+              const allIn = ids.every((id) => set.has(id));
+              if (allIn) {
+                const drop = new Set(ids);
+                m.setState({ TrackerTargets: cur.filter((t) => !drop.has(t)) });
+              } else {
+                for (const id of ids) set.add(id);
+                m.setState({
+                  TrackerTargets: [...set],
+                  ShowConstellationLines: true,
+                });
+              }
+            },
+          })),
+        ] },
         { label: '', buttonLabel: 'Enable All',
           onClick: (m) => {
             const celnavIds = new Set(CEL_NAV_STARS.map((s) => s.id));

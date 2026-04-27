@@ -12,6 +12,21 @@ import {
 import { canonicalLatLongToDisc } from '../core/canonical.js';
 import { STELLARIUM_TRACES } from '../data/stellariumTraces.js';
 import { generateGeArtTexture } from './geArt.js';
+import { CONSTELLATIONS } from '../core/constellations.js';
+
+// Cel-nav star ids that are also members of a constellation
+// (referenced via the `celnav: 'id'` link in CONSTELLATIONS). The
+// tracked-GP override needs this so flipping
+// `GPOverrideConstellations` covers Alnilam / Betelgeuse / Rigel /
+// etc. — they sit in the cel-nav cohort by data origin, but they
+// also belong to a constellation and the user expects the
+// constellation override to drive their GP visibility.
+const CONSTELLATION_CELNAV_IDS = new Set();
+for (const _con of CONSTELLATIONS) {
+  for (const _st of _con.stars) {
+    if (_st && _st.celnav) CONSTELLATION_CELNAV_IDS.add(_st.celnav);
+  }
+}
 import {
   latLongToCoord, coordToLatLong, vaultCoordToGlobalFeCoord,
 } from '../core/transforms.js';
@@ -4874,6 +4889,17 @@ export class TrackedGroundPoints {
         return !!s.GPOverridePlanets;
       }
       if (info.category === 'star' && info.subCategory) {
+        // Celnav stars that are also constellation members (e.g.
+        // Alnilam in Orion's belt) should track the constellation
+        // override too — toggling Constellations on shouldn't leave
+        // a hole where one of the belt stars has no GP because
+        // it's data-origin-tagged 'celnav'.
+        if (info.subCategory === 'celnav' && info.target
+            && info.target.startsWith('star:')
+            && CONSTELLATION_CELNAV_IDS.has(info.target.slice(5))
+            && !!s.GPOverrideConstellations) {
+          return true;
+        }
         const k = OVERRIDE_BY_SUBCAT[info.subCategory];
         return !!(k && s[k]);
       }

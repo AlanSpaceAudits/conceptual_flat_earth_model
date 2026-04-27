@@ -5783,3 +5783,31 @@ Format:
     `oxh0` / `oyh0` / `ozh0` unit-direction
     components.
 - **Revert:** `git checkout v-s000505 -- .`
+
+## S507 — Constellation override covers celnav-overlap stars; Orion's Belt selector
+
+- **Date:** 2026-04-26
+- **Files changed:** `js/render/worldObjects.js`,
+  `js/ui/controlPanel.js`.
+- **Change:**
+  - `worldObjects.js` now imports `CONSTELLATIONS`
+    and precomputes `CONSTELLATION_CELNAV_IDS`, the
+    set of cel-nav star ids referenced by any
+    constellation via `celnav: 'id'`. Tracked-GP
+    `categoryOverride` for celnav-cohort stars
+    falls under `GPOverrideConstellations` whenever
+    their id sits in that set, so flipping the
+    constellation override draws the GP for
+    Alnilam, Betelgeuse, Bellatrix, Rigel, and
+    every other celnav-overlap constellation
+    member. Standalone celnav stars (Sirius, Vega,
+    Polaris, ...) still depend on
+    `GPOverrideCelNav`.
+  - New "Orion's Belt" entry leads the
+    constellation-name button row in
+    `Tracker → Constellations`. Click toggles only
+    Mintaka / Alnilam / Alnitak in `TrackerTargets`;
+    Orion's own line outline still draws all eight
+    stars when its parent button is active, so this
+    sub-asterism doesn't add duplicate lines.
+- **Revert:** `git checkout v-s000506 -- .`

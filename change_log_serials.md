@@ -5765,3 +5765,21 @@ Format:
     introducing the lift would erode the
     `central / 2` identity).
 - **Revert:** `git checkout v-s000504 -- .`
+
+## S506 — Fix: duplicate `const Olen0` declaration in addLosIntersectionMark
+
+- **Date:** 2026-04-26
+- **Files changed:** `js/render/index.js`.
+- **Change:**
+  - S505 introduced `const Olen0` at the top of
+    `addLosIntersectionMark` for the 6-ft eye
+    lift; the existing midpoint-positioning code
+    further down also declared `const Olen0`. ES
+    modules run in strict mode, so the duplicate
+    `const` was a SyntaxError that aborted the
+    whole module and produced a black canvas.
+    Removed the second declaration and have the
+    midpoint code reuse the already-computed
+    `oxh0` / `oyh0` / `ozh0` unit-direction
+    components.
+- **Revert:** `git checkout v-s000505 -- .`

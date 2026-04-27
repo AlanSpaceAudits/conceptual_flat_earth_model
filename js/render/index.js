@@ -975,8 +975,10 @@ export class Renderer {
       // both observer and GP equals the inscribed angle (central /
       // 2). Lift to FE_RADIUS so the marker sits on the globe.
       const Tlen0 = Math.hypot(T[0], T[1], T[2]) || 1;
-      const Olen0 = Math.hypot(O[0], O[1], O[2]) || 1;
-      const oxh = O[0] / Olen0, oyh = O[1] / Olen0, ozh = O[2] / Olen0;
+      // Olen0 / oxh0 / oyh0 / ozh0 are already defined above for the
+      // 6-ft-lift step; reuse them so the unit-direction work isn't
+      // duplicated and the module doesn't choke on a redeclaration.
+      const oxh = oxh0, oyh = oyh0, ozh = ozh0;
       const txh = T[0] / Tlen0, tyh = T[1] / Tlen0, tzh = T[2] / Tlen0;
       let mxh = oxh + txh, myh = oyh + tyh, mzh = ozh + tzh;
       const mLen = Math.hypot(mxh, myh, mzh) || 1;

@@ -738,135 +738,6 @@ const MOON_24H_DEMOS = [
   },
 ];
 
-// Annual-cycle demos — one per body. Each parks the observer at
-// the disc centre (lat 90° N, the AE projection's pole) so the
-// camera looks straight down on the full disc, makes the chosen
-// body the sole tracked target, and traces its GP live as
-// `DateTime` advances by exactly one sidereal period in 4 s.
-// Mercury's tight retrograde loops, Mars's broad swing, Jupiter's
-// slow arc — each writes its unique AE signature at the same
-// playback duration.
-const PERIOD_DAYS = {
-  sun:     365.25,
-  moon:    27.32,    // sidereal lunar period
-  mercury: 87.97,
-  venus:   224.70,
-  mars:    686.97,
-  jupiter: 4332.59,
-  saturn:  10759.22,
-  uranus:  30688.5,
-  neptune: 60182.0,
-};
-
-const ANNUAL_CYCLE_BODIES = [
-  'sun', 'moon', 'mercury', 'venus', 'mars',
-  'jupiter', 'saturn', 'uranus', 'neptune',
-];
-
-// 1-year cycle demos: 365.25 days for every body, played in 8 s.
-// Mercury and Venus complete multiple orbits inside the year; Mars
-// sketches roughly half its orbit; Jupiter, Saturn, Uranus, Neptune
-// trace the small slice of their orbits the year subtends. Earth's
-// daily rotation overlays the slow drift, producing the rosette /
-// spirograph signatures characteristic of each body's
-// year-bounded path on the AE disc.
-const YEAR_CYCLE_DEMOS = ANNUAL_CYCLE_BODIES.map((body) => ({
-  name: `Annual Cycle · ${body[0].toUpperCase()}${body.slice(1)} (1 calendar year · 8 s)`,
-  group: 'annual-cycle',
-  intro: (model) => {
-    const s = model.state;
-    return {
-      ObserverLat: 90, ObserverLong: 0, ObserverElevation: 0,
-      ObserverHeading: 0,
-      InsideVault: false,
-      WorldModel: 'fe',
-      CameraDirection: 0, CameraHeight: 89.9, CameraDistance: 10,
-      Zoom: 1.5,
-      VaultSize: 1, VaultHeight: 0.45,
-      TrackerTargets: [body],
-      FollowTarget: null,
-      SpecifiedTrackerMode: false,
-      ShowGPPath: false,
-      ShowGPTracer: true,
-      ShowOpticalVaultTrace: true,
-      // Plot in the celestial (sidereal) frame so the body's
-      // apparent orbital motion writes its rosette / spirograph
-      // pattern across the disc instead of collapsing into
-      // daily-rotation circles.
-      TraceCelestialFrame: true,
-      ClearTraceCount: (s.ClearTraceCount | 0) + 1,
-      ShowTruePositions: true,
-      ShowOpticalVault: true,
-      ShowStars: true,
-      ShowFeGrid: true,
-      ShowCelestialBodies: true,
-    };
-  },
-  tasks: (m) => {
-    const start = m.state.DateTime;
-    const period = PERIOD_DAYS[body];
-    const orbits = (365.25 / period).toFixed(2);
-    return [
-      Ttxt(`${body} · 365.25 days traced live in 8 s · ~${orbits} sidereal orbit(s) inside the year · observer at the disc pole`),
-      Tval('DateTime', start + 365.25, 8 * 1000, T1, 'linear'),
-      Ttxt('Year complete — the AE-disc signature reads as the year-bounded interaction of daily rotation and the body\'s orbital drift.'),
-      Thold(),
-    ];
-  },
-}));
-
-const ANNUAL_CYCLE_DEMOS = ANNUAL_CYCLE_BODIES.map((body) => ({
-  name: `Annual Cycle · ${body[0].toUpperCase()}${body.slice(1)} (1 period · 4 s)`,
-  group: 'annual-cycle',
-  intro: (model) => {
-    const s = model.state;
-    return {
-      ObserverLat: 90, ObserverLong: 0, ObserverElevation: 0,
-      ObserverHeading: 0,
-      InsideVault: false,
-      WorldModel: 'fe',
-      // Orbital view looking straight down on the disc from the
-      // pole — the AE projection then reads as a flat circle with
-      // the body's GP carving its retrograde / declination pattern.
-      CameraDirection: 0, CameraHeight: 89.9, CameraDistance: 10,
-      Zoom: 1.5,
-      VaultSize: 1, VaultHeight: 0.45,
-      // Tracker locked to this body alone so the renderer + tracer
-      // only paint its trace.
-      TrackerTargets: [body],
-      FollowTarget: null,
-      SpecifiedTrackerMode: false,
-      // Live tracer (disc + sky); pre-plotted `ShowGPPath` off so
-      // the signature emerges with playback. `ClearTraceCount`
-      // bumps wipe leftover trace from prior runs.
-      ShowGPPath: false,
-      ShowGPTracer: true,
-      ShowOpticalVaultTrace: true,
-      // Plot in the celestial (sidereal) frame so the body's
-      // apparent orbital motion writes its rosette / spirograph
-      // pattern across the disc instead of collapsing into
-      // daily-rotation circles.
-      TraceCelestialFrame: true,
-      ClearTraceCount: (s.ClearTraceCount | 0) + 1,
-      ShowTruePositions: true,
-      ShowOpticalVault: true,
-      ShowStars: true,
-      ShowFeGrid: true,
-      ShowCelestialBodies: true,
-    };
-  },
-  tasks: (m) => {
-    const period = PERIOD_DAYS[body];
-    const start = m.state.DateTime;
-    return [
-      Ttxt(`${body} · ${period.toFixed(1)} days traced live in 4 s · observer at the disc pole`),
-      Tval('DateTime', start + period, 4 * 1000, T1, 'linear'),
-      Ttxt('Period complete — full orbital signature traced.'),
-      Thold(),
-    ];
-  },
-}));
-
 // The final exported list, in section order: general → solar eclipses
 // → lunar eclipses → FE prediction track. Each entry carries a
 // `group` field so the UI can render section headings.
@@ -874,8 +745,6 @@ export const DEMOS = [
   ...SUN_24H_DEMOS,
   ...MOON_24H_DEMOS,
   ...GENERAL_DEMOS,
-  ...ANNUAL_CYCLE_DEMOS,
-  ...YEAR_CYCLE_DEMOS,
   ...ANALEMMA_DEMOS,
   ...MOON_SYNODIC_DEMOS,
   ...SUN_PAIRED_DEMOS,
@@ -890,7 +759,6 @@ export const DEMO_GROUPS = [
   { id: '24h-sun',         label: '24 h Sun' },
   { id: '24h-moon',        label: '24 h Moon' },
   { id: 'general',         label: 'General' },
-  { id: 'annual-cycle',    label: 'Annual Cycle' },
   { id: 'sun-analemma',    label: 'Sun Analemma' },
   { id: 'moon-analemma',   label: 'Moon Analemma' },
   { id: 'combo-analemma',  label: 'Sun + Moon Analemma' },

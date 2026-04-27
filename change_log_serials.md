@@ -6828,3 +6828,47 @@ Format:
     from the moon-only focus the demos are
     framed around.
 - **Revert:** `git checkout v-s000543 -- .`
+
+## S545 — Remove annual-cycle demos + Sun optical body with halo + sunspots
+
+- **Date:** 2026-04-27
+- **Files changed:** `js/demos/definitions.js`,
+  `js/render/worldObjects.js`,
+  `js/render/index.js`.
+- **Change:**
+  - **Annual-cycle demos removed.** Deleted
+    `PERIOD_DAYS`, `ANNUAL_CYCLE_BODIES`,
+    `YEAR_CYCLE_DEMOS`, `ANNUAL_CYCLE_DEMOS`
+    arrays from `definitions.js`. Dropped both
+    `...YEAR_CYCLE_DEMOS` and
+    `...ANNUAL_CYCLE_DEMOS` spreads from the
+    `DEMOS` export. Removed the `annual-cycle`
+    entry from `DEMO_GROUPS`. The two
+    one-body-per-period and one-year-per-body
+    demo families that didn't behave correctly
+    are gone end-to-end.
+  - **`SunOpticalBody` class added.** Mirrors
+    `MoonOpticalBody` structure: two
+    camera-aligned plane meshes at the same
+    world position. Face plane uses a
+    procedural canvas (radial yellow gradient
+    `#fff8b0 → #ffd24a → #ffa840` + 7 seeded
+    sunspots as soft dark patches). Halo plane
+    uses an additive-blend canvas (bright ring
+    fading outward), scaled 2.5× the face so
+    the corona extends well beyond the face's
+    edge.
+  - **Render orders layered** for clean
+    eclipse appearance:
+    `halo (49) < sunMarker.sphereDot (51) <
+    sunFace (51.5) < moonOpticalBody (52)`.
+    Moon body draws on top of sun face during
+    overlap; halo's outer ring stays visible
+    around the moon's silhouette as corona.
+  - **Wired in renderer** with the same gating
+    as the moon body
+    (`showSun && ShowOpticalVault &&
+    InsideVault`). Size matches moon at
+    `0.024`. Camera-aligned (`quaternion.copy`)
+    so canvas-up = screen-up.
+- **Revert:** `git checkout v-s000544 -- .`

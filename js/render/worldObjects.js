@@ -2961,6 +2961,123 @@ export class MoonOpticalBody {
   }
 }
 
+// Sun face canvas: warm yellow disc with a few sunspots scattered
+// across the surface. Drawn once at module load.
+function makeSunFaceCanvas() {
+  const W = 256, H = 256;
+  const cv = document.createElement('canvas');
+  cv.width = W; cv.height = H;
+  const ctx = cv.getContext('2d');
+  const r = Math.min(W, H) / 2 - 2;
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(W / 2, H / 2, r, 0, 2 * Math.PI);
+  ctx.clip();
+  const g = ctx.createRadialGradient(W * 0.5, H * 0.5, r * 0.1, W * 0.5, H * 0.5, r);
+  g.addColorStop(0, '#fff8b0');
+  g.addColorStop(0.65, '#ffd24a');
+  g.addColorStop(1, '#ffa840');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, W, H);
+  // Sunspots — small darker patches with soft falloff. Seeded so the
+  // pattern is reproducible.
+  let seed = 7;
+  const rnd = () => { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; };
+  for (let i = 0; i < 7; i++) {
+    const cx = W * 0.5 + (rnd() - 0.5) * r * 1.3;
+    const cy = H * 0.5 + (rnd() - 0.5) * r * 1.3;
+    const sr = 4 + rnd() * 5;
+    const dist = Math.hypot(cx - W * 0.5, cy - H * 0.5);
+    if (dist + sr > r) continue;
+    const sg = ctx.createRadialGradient(cx, cy, sr * 0.3, cx, cy, sr);
+    sg.addColorStop(0, 'rgba(50, 28, 8, 0.7)');
+    sg.addColorStop(1, 'rgba(120, 70, 30, 0)');
+    ctx.fillStyle = sg;
+    ctx.beginPath(); ctx.arc(cx, cy, sr, 0, 2 * Math.PI); ctx.fill();
+  }
+  ctx.restore();
+  return cv;
+}
+
+// Sun halo canvas: bright ring outside the sun's edge, fading
+// outward. Used as an additive-blend overlay so the corona stays
+// visible during a solar eclipse when the moon body covers the face.
+function makeSunHaloCanvas() {
+  const W = 256, H = 256;
+  const cv = document.createElement('canvas');
+  cv.width = W; cv.height = H;
+  const ctx = cv.getContext('2d');
+  const r = Math.min(W, H) / 2 - 2;
+  const g = ctx.createRadialGradient(W * 0.5, H * 0.5, r * 0.35, W * 0.5, H * 0.5, r);
+  g.addColorStop(0, 'rgba(255, 230, 130, 0)');
+  g.addColorStop(0.42, 'rgba(255, 230, 130, 0.55)');
+  g.addColorStop(0.7, 'rgba(255, 200, 90, 0.30)');
+  g.addColorStop(1, 'rgba(255, 180, 60, 0)');
+  ctx.fillStyle = g;
+  ctx.beginPath(); ctx.arc(W * 0.5, H * 0.5, r, 0, 2 * Math.PI); ctx.fill();
+  return cv;
+}
+
+// Optical-vault sun body: face plane (yellow disc + sunspots) +
+// halo plane (additive corona). Sized to match the moon's optical
+// body so eclipses overlap cleanly. Render orders are layered so
+// halo (49) draws first, sun face (51.5) on top, and the moon body
+// (52) eclipses the face while the halo's outer ring stays visible
+// as a corona.
+export class SunOpticalBody {
+  constructor(clippingPlanes = []) {
+    const geom = new THREE.PlaneGeometry(1, 1);
+
+    this._haloCanvas = makeSunHaloCanvas();
+    this._haloTex = new THREE.CanvasTexture(this._haloCanvas);
+    this._haloTex.colorSpace = THREE.SRGBColorSpace;
+    this._haloTex.minFilter = THREE.LinearMipMapLinearFilter;
+    this._haloTex.magFilter = THREE.LinearFilter;
+    this._haloMat = new THREE.MeshBasicMaterial({
+      map: this._haloTex,
+      transparent: true, side: THREE.DoubleSide,
+      depthTest: false, depthWrite: false,
+      blending: THREE.AdditiveBlending,
+      clippingPlanes,
+    });
+    this._haloMesh = new THREE.Mesh(geom, this._haloMat);
+    this._haloMesh.renderOrder = 49;
+
+    this._faceCanvas = makeSunFaceCanvas();
+    this._faceTex = new THREE.CanvasTexture(this._faceCanvas);
+    this._faceTex.colorSpace = THREE.SRGBColorSpace;
+    this._faceTex.minFilter = THREE.LinearMipMapLinearFilter;
+    this._faceTex.magFilter = THREE.LinearFilter;
+    this._faceMat = new THREE.MeshBasicMaterial({
+      map: this._faceTex,
+      transparent: true, side: THREE.DoubleSide,
+      depthTest: false, depthWrite: false,
+      clippingPlanes,
+    });
+    this._faceMesh = new THREE.Mesh(geom, this._faceMat);
+    this._faceMesh.renderOrder = 51.5;
+
+    this.group = new THREE.Group();
+    this.group.add(this._haloMesh);
+    this.group.add(this._faceMesh);
+  }
+
+  update(opticalPos, size, show, camera, alpha = 1) {
+    this.group.visible = !!show;
+    if (!show) return;
+    this._faceMesh.position.set(opticalPos[0], opticalPos[1], opticalPos[2]);
+    this._haloMesh.position.set(opticalPos[0], opticalPos[1], opticalPos[2]);
+    this._faceMesh.scale.set(size, size, 1);
+    this._haloMesh.scale.set(size * 2.5, size * 2.5, 1);
+    if (camera) {
+      this._faceMesh.quaternion.copy(camera.quaternion);
+      this._haloMesh.quaternion.copy(camera.quaternion);
+    }
+    this._faceMat.opacity = alpha;
+    this._haloMat.opacity = alpha;
+  }
+}
+
 export class SunMoonGlyph {
   constructor(text, color, clippingPlanes = []) {
     const tex = new THREE.CanvasTexture(makeUnderlinedDigitCanvas(text, color));

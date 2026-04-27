@@ -9,7 +9,7 @@ import {
   CelestialPoles, DeclinationCircles, Yggdrasil, MtMeru, ToroidalVortex,
   LongitudeRing, CelNavStars, TrackedGroundPoints, CatalogPointStars,
   GPPathOverlay, GPTracer, StellariumTraceOverlay, Discworld, AnalemmaLine, SunMoonGlyph,
-  CentralAngleArcs, MoonOpticalBody,
+  CentralAngleArcs, MoonOpticalBody, SunOpticalBody,
   MonthMarkers, WorldGlobe, GlobeHeavenlyVault, DomeCausticOverlay,
 } from './worldObjects.js';
 import { loadLandGeo, buildGeoJsonLand, buildImageMap, buildBlankMap } from './earthMap.js';
@@ -280,6 +280,14 @@ export class Renderer {
     // optical hemisphere. Crater base + per-frame phase composite.
     this.moonOpticalBody = new MoonOpticalBody(clipPlanes);
     this.sm.world.add(this.moonOpticalBody.group);
+
+    // Optical-vault sun body: yellow face plane (with sunspots) +
+    // additive halo plane. Same size as the moon body so eclipses
+    // overlap exactly. Render orders layered so the moon body
+    // (52) eclipses the sun face (51.5) while the halo (49) shows
+    // through as corona.
+    this.sunOpticalBody = new SunOpticalBody(clipPlanes);
+    this.sm.world.add(this.sunOpticalBody.group);
 
     this._clipPlanes = clipPlanes;
 
@@ -719,6 +727,18 @@ export class Renderer {
       c.MoonRotation || 0,
       this.sm.camera,
       moonElevFade,
+    );
+
+    // Optical-vault sun body — same size as the moon body, gated
+    // identically (only inside the optical hemisphere).
+    const sunBodyShow = showSun && s.ShowOpticalVault && s.InsideVault;
+    const sunElevFade = Math.max(0, Math.min(1, (sunElevForFade + 3) / 5));
+    this.sunOpticalBody.update(
+      sunOptVis,
+      0.024,
+      sunBodyShow,
+      this.sm.camera,
+      sunElevFade,
     );
 
     // Planet markers: same pipeline as sun/moon but each has its own vault

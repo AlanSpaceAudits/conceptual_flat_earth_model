@@ -7366,3 +7366,23 @@ Format:
     location's actual sun elevation at the
     frozen instant.
 - **Revert:** `git checkout v-s000562 -- .`
+
+## S564 — Tracking demos: facing vector + azimuth ring on by default
+
+- **Date:** 2026-04-27
+- **Files changed:** `js/demos/definitions.js`.
+- **Change:**
+  - Sigma Octantis + Southern Cross demo
+    intros now set `ShowFacingVector: true`,
+    `ShowAzimuthRing: true`,
+    `ShowLongitudeRing: true`, and
+    `ShowOpticalVaultGrid: true` so the
+    observer's facing direction + the
+    compass ring are visible from the start
+    of each demo (consistent with the 🧭
+    bottom-bar one-click compass set).
+  - Both flags read straight from state
+    with no demo-specific gating, so the
+    🧭 button and Show-tab toggles stay
+    fully usable mid-demo.
+- **Revert:** `git checkout v-s000563 -- .`

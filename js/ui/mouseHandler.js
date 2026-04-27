@@ -93,6 +93,16 @@ function resolveTargetAngles(targetId, c) {
   return null;
 }
 
+// Mirrors the renderer's NightFactor gate (DynamicStars or GE forces
+// dynamic fade): when stars are faded out by daytime, hover/click
+// pickers skip them too.
+function starsVisible(c, state) {
+  if (!state.ShowStars) return false;
+  const dynamic = state.DynamicStars || state.WorldModel === 'ge';
+  if (!dynamic) return true;
+  return (c.NightFactor || 0) > 0.01;
+}
+
 function collectClickables(c, state) {
   const out = [];
   if (c.SunAnglesGlobe)  out.push({ id: 'sun',  angles: c.SunAnglesGlobe });
@@ -102,7 +112,7 @@ function collectClickables(c, state) {
       if (p && p.anglesGlobe) out.push({ id: name, angles: p.anglesGlobe });
     }
   }
-  if (state.ShowStars) {
+  if (starsVisible(c, state)) {
     for (const list of [
       c.CelNavStars, c.CataloguedStars, c.BlackHoles, c.Quasars, c.Galaxies,
     ]) {
@@ -199,7 +209,7 @@ function collectHeavenlyCandidates(c, state) {
       pushBody(out, name, p.vaultCoord, p.opticalVaultCoord, p.anglesGlobe);
     }
   }
-  if (state.ShowStars) {
+  if (starsVisible(c, state)) {
     for (const list of [
       c.CelNavStars, c.CataloguedStars, c.BlackHoles, c.Quasars, c.Galaxies, c.Satellites,
     ]) {

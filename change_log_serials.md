@@ -6244,3 +6244,25 @@ Format:
     `play()`). Equivalent to two extra `½×`
     bar clicks compared to S520's default.
 - **Revert:** `git checkout v-s000523 -- .`
+
+## S525 — Hover / click pickers respect star fade gate
+
+- **Date:** 2026-04-27
+- **Files changed:** `js/ui/mouseHandler.js`.
+- **Change:**
+  - New helper `starsVisible(c, state)` mirrors
+    the renderer's per-layer `dynamic +
+    NightFactor` gate: returns `false` when
+    `ShowStars` is off, or when DynamicStars /
+    GE force the day-night fade and
+    `NightFactor ≤ 0.01`.
+  - `collectClickables` (Optical click picker)
+    and `collectHeavenlyCandidates` (Heavenly /
+    free-cam hover picker) now route their star
+    blocks through `starsVisible(...)` instead
+    of the bare `state.ShowStars` flag. Stars
+    that are faded to zero opacity by daytime
+    no longer hold a hit-test slot, so cursor
+    hover tooltips and clicks both pass through
+    them onto whatever is behind.
+- **Revert:** `git checkout v-s000524 -- .`

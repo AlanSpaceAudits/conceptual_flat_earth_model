@@ -6122,3 +6122,27 @@ Format:
     HEADROOM` and `heavenlyVaultCeiling`
     bounds preserved.
 - **Revert:** `git checkout v-s000517 -- .`
+
+## S519 — VaultHeight floor derives from StarfieldVaultHeight
+
+- **Date:** 2026-04-27
+- **Files changed:** `js/core/app.js`.
+- **Change:**
+  - `s.VaultHeight` clamp at `update()` head now
+    uses a derived floor:
+    `max(GEOMETRY.VaultHeightMin,
+    s.StarfieldVaultHeight + 0.26)` where
+    `0.26 = HEADROOM (0.06) + SUN_RANGE (0.20)`.
+  - Fixes demos that hard-code `VaultHeight: 0.45`
+    in their intro: under S516's raised
+    `StarfieldVaultHeight: 0.485` the dome ceiling
+    fell below the body band, pinning the sun to
+    the ceiling (≈ 0.45) below the starfield and
+    floor-stacking moon + planets at 0.545. The
+    derived floor now silently bumps any demo's
+    `VaultHeight` to ≥ 0.745 when the starfield
+    sits at 0.485.
+  - No demo file edits needed; future
+    `StarfieldVaultHeight` changes carry through
+    automatically.
+- **Revert:** `git checkout v-s000518 -- .`

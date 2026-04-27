@@ -399,7 +399,10 @@ export class FeModel extends EventTarget {
     s.Zoom         = Clamp(s.Zoom, 0.1, 10);
     s.OpticalZoom  = Clamp(s.OpticalZoom, 0.2, 75);
     s.VaultSize     = Clamp(s.VaultSize, GEOMETRY.VaultSizeMin, GEOMETRY.VaultSizeMax);
-    s.VaultHeight   = Clamp(s.VaultHeight, GEOMETRY.VaultHeightMin, GEOMETRY.VaultHeightMax);
+    // VaultHeight floor derives from StarfieldVaultHeight + body
+    // band (HEADROOM 0.06 + SUN_RANGE 0.20 = 0.26).
+    const _vhFloor = Math.max(GEOMETRY.VaultHeightMin, s.StarfieldVaultHeight + 0.26);
+    s.VaultHeight   = Clamp(s.VaultHeight, _vhFloor, GEOMETRY.VaultHeightMax);
     s.OpticalVaultSize   = Clamp(s.OpticalVaultSize,
                                  GEOMETRY.OpticalVaultSizeMin, GEOMETRY.OpticalVaultSizeMax);
     s.OpticalVaultHeight = Clamp(s.OpticalVaultHeight,

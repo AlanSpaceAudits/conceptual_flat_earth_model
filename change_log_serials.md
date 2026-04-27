@@ -5981,3 +5981,20 @@ Format:
     and the underlying calc may resurface for
     future per-body horizon comparisons.
 - **Revert:** `git checkout v-s000512 -- .`
+
+## S514 — FE optical-vault rays draw as straight chords
+
+- **Date:** 2026-04-27
+- **Files changed:** `js/render/index.js`.
+- **Change:**
+  - FE optical-vault rays for sun, moon, and tracked
+    stars switched from the heavenly-vault bezier
+    arc (`addRay`) to plain straight chords
+    (`addStraight`). The optical-vault projection
+    represents the literal LoS the observer sees;
+    the bezier was carrying the dome-lift profile
+    that only makes sense for true-vault rays.
+  - Heavenly-vault rays still use the bezier in
+    FE since that lift conveys the dome shape;
+    GE was already straight in both passes.
+- **Revert:** `git checkout v-s000513 -- .`

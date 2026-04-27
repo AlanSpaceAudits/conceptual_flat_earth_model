@@ -1206,23 +1206,22 @@ export class Renderer {
       }
     }
     // Optical-vault rays represent what the observer sees, so they fade
-    // smoothly with the body's elevation.
+    // smoothly with the body's elevation. Optical-vault rays are
+    // straight LoS segments in both FE and GE — the bezier arc only
+    // suits the heavenly-vault rays, where the body sits on the
+    // dome and the lift control conveys the dome shape. The
+    // observer's optical projection is a literal "what you see"
+    // line, so a straight chord reads more honestly.
     if (s.ShowOpticalVaultRays) {
-      if (ge) {
-        if (sunOn  && sunFade  > 0 && !isParked(sunOpt))  addStraight(obs, sunOpt,  0xcc6600, 0.7 * sunFade);
-        if (moonOn && moonFade > 0 && !isParked(moonOpt)) addStraight(obs, moonOpt, 0xcccccc, 0.7 * moonFade);
-      } else {
-        if (sunOn  && sunFade  > 0) addRay(sunOpt,  0xcc6600, 0.7 * sunFade,  sunElev);
-        if (moonOn && moonFade > 0) addRay(moonOpt, 0xcccccc, 0.7 * moonFade, moonElev);
-      }
+      if (sunOn  && sunFade  > 0 && !isParked(sunOpt))  addStraight(obs, sunOpt,  0xcc6600, 0.7 * sunFade);
+      if (moonOn && moonFade > 0 && !isParked(moonOpt)) addStraight(obs, moonOpt, 0xcccccc, 0.7 * moonFade);
       for (const st of starTargets) {
         const elev = st.entry.anglesGlobe?.elevation ?? 0;
         const f = fade(elev);
         if (f <= 0) continue;
         const o = ge ? (st.entry.globeOpticalVaultCoord || st.entry.opticalVaultCoord) : st.entry.opticalVaultCoord;
         if (!o || isParked(o)) continue;
-        if (ge) addStraight(obs, o, st.color, 0.7 * f);
-        else    addRay(o, st.color, 0.7 * f, elev);
+        addStraight(obs, o, st.color, 0.7 * f);
       }
     }
 

@@ -388,7 +388,27 @@ export class Renderer {
   }
 
   _updateDashedLine(line, topPos, color) {
-    const pts = [topPos[0], topPos[1], topPos[2], topPos[0], topPos[1], 0.0015];
+    // FE: drop the line straight down from the body's vault coord
+    // to the disc surface (z ≈ 0). GE: drop radially from the
+    // celestial-sphere coord to the globe-surface GP. The GE
+    // celestial sphere sits at radius `c.GlobeVaultRadius` and the
+    // globe at `FE_RADIUS`, both centred on the world origin and
+    // sharing direction with `topPos`, so the surface point is
+    // just `topPos * (FE_RADIUS / GlobeVaultRadius)`.
+    const ge = this.model.state.WorldModel === 'ge';
+    let bx, by, bz;
+    if (ge) {
+      const vR = this.model.computed.GlobeVaultRadius || (FE_RADIUS * 2);
+      const k = FE_RADIUS / vR;
+      bx = topPos[0] * k;
+      by = topPos[1] * k;
+      bz = topPos[2] * k;
+    } else {
+      bx = topPos[0];
+      by = topPos[1];
+      bz = 0.0015;
+    }
+    const pts = [topPos[0], topPos[1], topPos[2], bx, by, bz];
     line.geometry.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
   }
 
@@ -788,21 +808,50 @@ export class Renderer {
     // valid in every direction.
     const isParked = (v) => !v || (v[0] === 0 && v[1] === 0 && v[2] === -1000);
 
+    // Two-pass ray drawer: solid where the line is unoccluded,
+    // dashed where it passes behind something opaque (the GE
+    // terrestrial sphere is the typical occluder). The solid pass
+    // uses the default depth test (LessEqualDepth → renders only
+    // when the fragment is in front); the dashed pass flips
+    // depthFunc to GreaterDepth so it renders only behind opaque
+    // geometry. Together they give a continuous line that visibly
+    // passes through the globe so the line-of-sight reads at a
+    // glance. FE has no opaque occluders along ray paths, so the
+    // dashed pass is invisible there.
+    const addRayLine = (pts, color, opacity) => {
+      const op = Math.max(0, Math.min(1, opacity));
+      const geoSolid = new THREE.BufferGeometry();
+      geoSolid.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
+      this.rayGroup.add(new THREE.Line(
+        geoSolid,
+        new THREE.LineBasicMaterial({
+          color, transparent: op < 1, opacity: op,
+          clippingPlanes: this._clipPlanes,
+        }),
+      ));
+      const geoDash = new THREE.BufferGeometry();
+      geoDash.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
+      const lineDash = new THREE.Line(
+        geoDash,
+        new THREE.LineDashedMaterial({
+          color, transparent: true, opacity: op * 0.55,
+          dashSize: 0.018, gapSize: 0.012,
+          depthFunc: THREE.GreaterDepth,
+          depthWrite: false,
+          clippingPlanes: this._clipPlanes,
+        }),
+      );
+      lineDash.computeLineDistances();
+      this.rayGroup.add(lineDash);
+    };
+
     // Straight-line GE ray. The disc-arc bezier the FE side uses
     // doesn't have a sensible analogue on the sphere, so GE draws
     // a plain segment from the observer (or vault point) to the
     // body's vault / optical-vault coord.
     const addStraight = (from, to, color, opacity = 0.9) => {
       const pts = [from[0], from[1], from[2], to[0], to[1], to[2]];
-      const geo = new THREE.BufferGeometry();
-      geo.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
-      this.rayGroup.add(new THREE.Line(
-        geo,
-        new THREE.LineBasicMaterial({
-          color, transparent: opacity < 1, opacity,
-          clippingPlanes: this._clipPlanes,
-        }),
-      ));
+      addRayLine(pts, color, opacity);
     };
 
     // When the body is above the horizon the ray is a gentle
@@ -846,15 +895,7 @@ export class Renderer {
           );
         }
       }
-      const geo = new THREE.BufferGeometry();
-      geo.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
-      this.rayGroup.add(new THREE.Line(
-        geo,
-        new THREE.LineBasicMaterial({
-          color, transparent: opacity < 1, opacity,
-          clippingPlanes: this._clipPlanes,
-        }),
-      ));
+      addRayLine(pts, color, opacity);
     };
 
     // Smooth fade from -3° below horizon up to +2° above, matching the
@@ -927,19 +968,12 @@ export class Renderer {
       const addProjectionRay = (vaultCoord, opticalCoord, elev, color) => {
         if (elev <= 0) return;
         if (!vaultCoord || !opticalCoord) return;
+        if (isParked(opticalCoord)) return;
         const pts = [
           vaultCoord[0], vaultCoord[1], vaultCoord[2],
           opticalCoord[0], opticalCoord[1], opticalCoord[2],
         ];
-        const geo = new THREE.BufferGeometry();
-        geo.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
-        this.rayGroup.add(new THREE.Line(
-          geo,
-          new THREE.LineBasicMaterial({
-            color, transparent: true, opacity: 0.7,
-            clippingPlanes: this._clipPlanes,
-          }),
-        ));
+        addRayLine(pts, color, 0.7);
       };
       // STM filter. Sun / moon / per-planet rays only
       // render when their id is in `TrackerTargets` (or when the

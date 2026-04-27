@@ -5391,3 +5391,43 @@ Format:
     toggles + ray parameter slider are one click
     away.
 - **Revert:** `git checkout v-s000490 -- .`
+
+## S492 — Rays pass through occluders (dashed) + GE GP drop-line
+
+- **Date:** 2026-04-26
+- **Files changed:** `js/render/index.js`.
+- **Change:**
+  - New `addRayLine(pts, color, opacity)` helper
+    in `_updateRays` adds each ray as TWO lines:
+    a `LineBasicMaterial` solid pass at default
+    depth (visible portion) and a
+    `LineDashedMaterial` pass with
+    `depthFunc: GreaterDepth` (renders only where
+    something opaque is in front). Result is a
+    continuous trace that switches from solid to
+    dashed where the line passes behind an
+    occluder — typically the GE terrestrial
+    sphere. FE has no opaque occluders along ray
+    paths, so the dashed pass stays invisible
+    there.
+  - All three ray builders (FE bezier `addRay`,
+    GE straight `addStraight`, projection-ray
+    `addProjectionRay`) now route through
+    `addRayLine` instead of constructing their
+    own `THREE.Line` directly.
+  - `addProjectionRay` also short-circuits on the
+    `[0, 0, -1000]` parking sentinel so GE
+    below-horizon projection rays don't shoot to
+    the parked coord.
+  - `_updateDashedLine` (sun / moon GP drop-line)
+    now branches on `WorldModel`. FE drops to
+    `(x, y, 0.0015)` as before. GE drops radially
+    from the celestial-sphere coord to the
+    globe-surface GP via
+    `topPos * (FE_RADIUS / GlobeVaultRadius)`,
+    matching how `_globeVaultAt` builds the two
+    sphere positions. Restores the visible link
+    between the body's true position on the
+    celestial sphere and its GP on the globe
+    surface for GE mode.
+- **Revert:** `git checkout v-s000491 -- .`

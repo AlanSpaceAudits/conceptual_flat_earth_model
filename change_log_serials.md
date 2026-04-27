@@ -6082,3 +6082,43 @@ Format:
     overwritten next frame; a follow-up serial can
     add `*VaultManual` flags to lock manual values.
 - **Revert:** `git checkout v-s000516 -- .`
+
+## S518 — Toggle feature buttons + ecliptic-β-driven body offsets
+
+- **Date:** 2026-04-27
+- **Files changed:** `js/core/app.js`,
+  `js/ui/controlPanel.js`.
+- **Change:**
+  - `featureOpen.fn(tab, group)` now tracks the
+    last-opened (tab, group) and a re-click on
+    the same shortcut button toggles the popup
+    closed instead of just re-focusing it. Other
+    buttons still cleanly switch tabs without
+    closing.
+  - Body height offsets switched from
+    `(planetDec − sunDec)` (S517) to **ecliptic
+    latitude β** computed from `(RA, Dec)` via
+    the obliquity rotation
+    `β = arcsin(cos ε · sin Dec − sin ε · cos Dec
+    · sin RA)`. Slope kept at
+    `SUN_RANGE / (2·SUN_DEC_DEG)` ≈ 0.00427 / °
+    so β offsets sit on the same proportional
+    scale as the sun's dec → height slope. With
+    β = 0 a body lands at the sun's exact vault
+    z — the geometric pre-condition for solar
+    eclipses, so the moon and any aligned planet
+    visually overlap the sun when their orbital
+    plane crosses the ecliptic.
+  - Moon's vault height switched from its old
+    `MOON_RANGE`-based formula to the same
+    sun-anchored β offset; lunar inclination
+    ±5.14° now reads as ±0.022 around the sun's
+    arc instead of an independent dec band.
+  - Planets use `eq.ra` / `eq.dec` directly to
+    compute β; old `PLANET_HEIGHT_PER_DEG`
+    constant retired (now `ECLIPTIC_HEIGHT_PER_DEG`
+    in the moon block).
+  - `planetFloor = StarfieldVaultHeight +
+    HEADROOM` and `heavenlyVaultCeiling`
+    bounds preserved.
+- **Revert:** `git checkout v-s000517 -- .`

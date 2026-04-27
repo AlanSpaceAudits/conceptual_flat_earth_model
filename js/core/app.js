@@ -555,15 +555,36 @@ export class FeModel extends EventTarget {
     c.MoonCelestLatLong  = coordToLatLong(c.MoonCelestCoord);
     c.MoonCelestAngle    = c.MoonCelestLatLong.lng;
     c.MoonNorthCelestCoord = [0, 0, 1];
-    const MOON_RANGE = SUN_RANGE * (MOON_DEC_DEG / SUN_DEC_DEG);
-    const moonDecNorm = 0.5 + 0.5 * Math.max(-1, Math.min(1,
-      c.MoonCelestLatLong.lat / MOON_DEC_DEG));
+    // Moon slaves to the sun's ecliptic too — height = sun's
+    // current vault z plus a small offset proportional to the
+    // moon's ecliptic latitude β (lunar inclination ±5.14°). β
+    // computed by rotating the equatorial unit vector
+    // (RA, Dec) by the obliquity ε about the x-axis, taking
+    // arcsin of the z component. With β = 0 the moon sits at the
+    // sun's exact height — the geometric pre-condition for solar
+    // eclipses, so the eclipse demos visually align when the
+    // moon crosses the ecliptic.
+    const ECL_OBLIQ_RAD = SUN_DEC_DEG * Math.PI / 180;
+    const ECL_COS = Math.cos(ECL_OBLIQ_RAD);
+    const ECL_SIN = Math.sin(ECL_OBLIQ_RAD);
+    const eclipticBeta = (raRad, decRad) => Math.asin(
+      Math.max(-1, Math.min(1,
+        ECL_COS * Math.sin(decRad)
+        - ECL_SIN * Math.cos(decRad) * Math.sin(raRad),
+      )),
+    );
+    // Slope: 0.20 / 23.44° ≈ 0.00427 per degree. Same slope the
+    // sun uses for dec → height, so β offsets sit on the same
+    // proportional scale as the rest of the dome.
+    const ECLIPTIC_HEIGHT_PER_DEG = SUN_RANGE / (2 * SUN_DEC_DEG);
+    const moonBetaDeg = eclipticBeta(c.MoonRA, c.MoonDec) * 180 / Math.PI;
     const moonCeil = heavenlyVaultCeiling(
       c.MoonCelestLatLong.lat, s.VaultSize, s.VaultHeight, FE_RADIUS,
     );
-    s.MoonVaultHeight = Math.min(
-      moonCeil,
-      s.StarfieldVaultHeight + HEADROOM + moonDecNorm * MOON_RANGE,
+    const moonFloor = s.StarfieldVaultHeight + HEADROOM;
+    s.MoonVaultHeight = Math.max(
+      moonFloor,
+      Math.min(moonCeil, s.SunVaultHeight + moonBetaDeg * ECLIPTIC_HEIGHT_PER_DEG),
     );
     c.MoonGlobeVaultCoord = _globeVaultAt(
       c.MoonCelestLatLong.lat,
@@ -772,23 +793,17 @@ export class FeModel extends EventTarget {
     }
 
     // Planets slave to the sun's ecliptic. Default height tracks
-    // s.SunVaultHeight (the "ecliptic floor") plus a small offset
-    // for any deviation of the planet's dec from the sun's dec —
-    // ecliptic-latitude inclinations stay within a few degrees for
-    // every body the model carries, so this keeps planets visibly
-    // close to the sun's path while still nudging them up/down a
-    // hair per planet.
+    // s.SunVaultHeight plus a small offset proportional to the
+    // planet's ecliptic latitude β. Real-world solar-system
+    // |β|max stays under ~7° (Mercury) so the offset is tiny in
+    // proportion to the sim's height range — the offsets read as
+    // a thin band of bodies riding the sun's arc.
     const PLANET_RANGE_KEY = {
       mercury: 'MercuryVaultHeight', venus: 'VenusVaultHeight',
       mars: 'MarsVaultHeight', jupiter: 'JupiterVaultHeight',
       saturn: 'SaturnVaultHeight',
       uranus: 'UranusVaultHeight', neptune: 'NeptuneVaultHeight',
     };
-    // Height per degree of dec deviation from the sun's dec —
-    // matches the sun's `SUN_RANGE` slope so a planet 23.44° off
-    // the ecliptic would land at the sun's solstice extreme.
-    const PLANET_HEIGHT_PER_DEG = SUN_RANGE / (2 * SUN_DEC_DEG);
-    const sunDecDeg = c.SunCelestLatLong.lat;
     const sunVaultZ = s.SunVaultHeight;
 
     c.Planets = {};
@@ -798,18 +813,17 @@ export class FeModel extends EventTarget {
       if (!Number.isFinite(eq.ra) || !Number.isFinite(eq.dec)) continue;
       const celestCoord = equatorialToCelestCoord(eq);
       const ll = coordToLatLong(celestCoord);
-      // Default height: anchored to the sun's vault z plus a
-      // small offset proportional to the planet's dec offset
-      // from the sun's dec. With every solar-system body's
-      // ecliptic inclination under ~7°, planets sit very close
-      // to the sun's height by default — riding the same arc
-      // the sun traces through the year. Manual panel slider
-      // edits aren't preserved across frames yet (a future
-      // serial can add per-planet `*VaultManual` flags); for now
-      // every frame recomputes the slaved value.
-      const planetDecDeg = ll.lat;
-      const decDelta = planetDecDeg - sunDecDeg;
-      const desired = sunVaultZ + decDelta * PLANET_HEIGHT_PER_DEG;
+      // Default height: sun's vault z + (planet's ecliptic
+      // latitude β) × the same dec → height slope the sun uses
+      // (`SUN_RANGE / (2·SUN_DEC_DEG)` ≈ 0.00427 / °). With β =
+      // 0 a planet sits exactly at the sun's height — the
+      // visualisation places every body on the sun's arc with a
+      // small perpendicular offset for its inclination off the
+      // ecliptic plane. Manual panel slider edits aren't
+      // preserved across frames yet; a future serial can add
+      // `*VaultManual` flags to lock manual values.
+      const planetBetaDeg = eclipticBeta(eq.ra, eq.dec) * 180 / Math.PI;
+      const desired = sunVaultZ + planetBetaDeg * ECLIPTIC_HEIGHT_PER_DEG;
       const planetCeil = heavenlyVaultCeiling(ll.lat, s.VaultSize, s.VaultHeight, FE_RADIUS);
       const planetFloor = s.StarfieldVaultHeight + HEADROOM;
       const planetZ = Math.max(planetFloor, Math.min(planetCeil, desired));

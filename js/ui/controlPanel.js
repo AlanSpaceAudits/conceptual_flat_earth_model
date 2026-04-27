@@ -2277,11 +2277,29 @@ export function buildControlPanel(host, model, demos) {
   // closed so the user's current window switches to whatever the
   // search result lives in. No-op when the tab name or group can't
   // be resolved.
+  // Track the last opened (tab, group) so a re-click on the same
+  // shortcut button toggles the popup closed instead of just
+  // re-focusing it.
+  let _lastFeatureTab = null, _lastFeatureGroup = null;
   featureOpen.fn = (tabName, groupTitle) => {
     const idx = tabEntries.findIndex(
       (t) => t.btn.textContent.trim() === tabName,
     );
     if (idx < 0) return;
+    // Toggle close: if the same tab + group was the last thing the
+    // user opened via a shortcut button, the second press closes
+    // the popup. `null` matches `null` so a button with no group
+    // arg also toggles cleanly.
+    if (activeIdx === idx
+        && _lastFeatureTab === tabName
+        && _lastFeatureGroup === (groupTitle || null)) {
+      tabEntries[idx].popup.hidden = true;
+      tabEntries[idx].btn.setAttribute('aria-selected', 'false');
+      activeIdx = -1;
+      _lastFeatureTab = null;
+      _lastFeatureGroup = null;
+      return;
+    }
     if (activeIdx >= 0 && activeIdx !== idx) {
       tabEntries[activeIdx].popup.hidden = true;
       tabEntries[activeIdx].btn.setAttribute('aria-selected', 'false');
@@ -2290,6 +2308,8 @@ export function buildControlPanel(host, model, demos) {
     tabEntries[idx].popup.hidden = false;
     tabEntries[idx].btn.setAttribute('aria-selected', 'true');
     activeIdx = idx;
+    _lastFeatureTab = tabName;
+    _lastFeatureGroup = groupTitle || null;
     if (!groupTitle) return;
     const popup = tabEntries[idx].popup;
     const groupEl = popup.querySelector(

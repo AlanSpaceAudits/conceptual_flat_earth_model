@@ -771,18 +771,25 @@ export class FeModel extends EventTarget {
       c.NightFactor = Limit01((-sunElev) / 12.0);
     }
 
-    // Planets share sun's dec-range so they anchor at sun's z.
-    const PLANET_BASELINE = {
-      mercury: 0, venus: 0, mars: 0, jupiter: 0, saturn: 0,
-      uranus:  0, neptune: 0,
-    };
+    // Planets slave to the sun's ecliptic. Default height tracks
+    // s.SunVaultHeight (the "ecliptic floor") plus a small offset
+    // for any deviation of the planet's dec from the sun's dec —
+    // ecliptic-latitude inclinations stay within a few degrees for
+    // every body the model carries, so this keeps planets visibly
+    // close to the sun's path while still nudging them up/down a
+    // hair per planet.
     const PLANET_RANGE_KEY = {
       mercury: 'MercuryVaultHeight', venus: 'VenusVaultHeight',
       mars: 'MarsVaultHeight', jupiter: 'JupiterVaultHeight',
       saturn: 'SaturnVaultHeight',
       uranus: 'UranusVaultHeight', neptune: 'NeptuneVaultHeight',
     };
-    const PLANET_DEC_RANGE = SUN_RANGE;
+    // Height per degree of dec deviation from the sun's dec —
+    // matches the sun's `SUN_RANGE` slope so a planet 23.44° off
+    // the ecliptic would land at the sun's solstice extreme.
+    const PLANET_HEIGHT_PER_DEG = SUN_RANGE / (2 * SUN_DEC_DEG);
+    const sunDecDeg = c.SunCelestLatLong.lat;
+    const sunVaultZ = s.SunVaultHeight;
 
     c.Planets = {};
     for (const name of PLANET_NAMES) {
@@ -791,20 +798,21 @@ export class FeModel extends EventTarget {
       if (!Number.isFinite(eq.ra) || !Number.isFinite(eq.dec)) continue;
       const celestCoord = equatorialToCelestCoord(eq);
       const ll = coordToLatLong(celestCoord);
-      // `decNorm` was clamped to ±1 at sun's max declination
-      // (`SUN_DEC_DEG = 23.44°`). Mercury and a few other bodies
-      // occasionally swing past that, so the cap was flattening
-      // their vault-height response — visually as if the body
-      // were stuck near the equator. Drop the clamp so the
-      // height follows actual ephemeris dec; the heavenly-vault
-      // ceiling clamp below still keeps extreme values inside
-      // the dome.
-      const decNorm = 0.5 + 0.5 * (eq.dec / Math.PI * 180 / SUN_DEC_DEG);
-      const desired = s.StarfieldVaultHeight + HEADROOM
-                    + PLANET_BASELINE[name]
-                    + decNorm * PLANET_DEC_RANGE;
+      // Default height: anchored to the sun's vault z plus a
+      // small offset proportional to the planet's dec offset
+      // from the sun's dec. With every solar-system body's
+      // ecliptic inclination under ~7°, planets sit very close
+      // to the sun's height by default — riding the same arc
+      // the sun traces through the year. Manual panel slider
+      // edits aren't preserved across frames yet (a future
+      // serial can add per-planet `*VaultManual` flags); for now
+      // every frame recomputes the slaved value.
+      const planetDecDeg = ll.lat;
+      const decDelta = planetDecDeg - sunDecDeg;
+      const desired = sunVaultZ + decDelta * PLANET_HEIGHT_PER_DEG;
       const planetCeil = heavenlyVaultCeiling(ll.lat, s.VaultSize, s.VaultHeight, FE_RADIUS);
-      const planetZ = Math.min(planetCeil, desired);
+      const planetFloor = s.StarfieldVaultHeight + HEADROOM;
+      const planetZ = Math.max(planetFloor, Math.min(planetCeil, desired));
       s[PLANET_RANGE_KEY[name]] = planetZ;
       const vaultCoord = vaultCoordToGlobalFeCoord(
         vaultCoordAt(ll.lat, ll.lng, planetZ, FE_RADIUS),

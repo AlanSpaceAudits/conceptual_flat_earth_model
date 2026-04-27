@@ -6057,3 +6057,28 @@ Format:
     `~0.37` and end up below the new starfield
     baseline at low declinations).
 - **Revert:** `git checkout v-s000515 -- .`
+
+## S517 — Planets slave to sun's ecliptic by default
+
+- **Date:** 2026-04-27
+- **Files changed:** `js/core/app.js`.
+- **Change:**
+  - Per-planet height formula rewritten. Old:
+    `Starfield + HEADROOM + planetDecNorm · SUN_RANGE`
+    (each planet anchored to starfield via its own
+    dec, drifting away from the sun's path through
+    the year). New:
+    `sunVaultZ + (planetDec − sunDec) · k` where
+    `k = SUN_RANGE / (2 · SUN_DEC_DEG)` — planets
+    now ride the sun's vault z with a small
+    proportional offset for any ecliptic-latitude
+    deviation, so the whole solar-system roster
+    "follows the sun" through the year instead of
+    each body tracing its own band.
+  - `planetFloor = Starfield + HEADROOM` clamps
+    the bottom; `planetCeil =
+    heavenlyVaultCeiling(...)` still caps the top.
+  - Manual per-planet panel-slider edits still get
+    overwritten next frame; a follow-up serial can
+    add `*VaultManual` flags to lock manual values.
+- **Revert:** `git checkout v-s000516 -- .`

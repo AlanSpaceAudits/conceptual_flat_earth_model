@@ -6813,3 +6813,18 @@ Format:
   - Narration updated to reflect two-week motion
     instead of one-sidereal-day.
 - **Revert:** `git checkout v-s000542 -- .`
+
+## S544 — 24h-moon demos: hide constellation lines
+
+- **Date:** 2026-04-27
+- **Files changed:** `js/demos/definitions.js`.
+- **Change:**
+  - Both `24h moon` demos (75°N, 75°S) intros
+    now set `ShowConstellationLines: false`.
+    During the polar-night dates the demos open
+    on, NightFactor stays high and the
+    constellation outlines were painting
+    through the optical vault — distracting
+    from the moon-only focus the demos are
+    framed around.
+- **Revert:** `git checkout v-s000543 -- .`

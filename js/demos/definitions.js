@@ -698,6 +698,7 @@ const MOON_24H_DEMOS = [
         ShowShadow: true,
         ShowTruePositions: true,
         DynamicStars: true,
+        ShowConstellationLines: false,
       };
       if (m.state.WorldModel === 'ge') base.MapProjectionGe = 'hq_equirect_day';
       return base;
@@ -725,6 +726,7 @@ const MOON_24H_DEMOS = [
         ShowShadow: true,
         ShowTruePositions: true,
         DynamicStars: true,
+        ShowConstellationLines: false,
       };
       if (m.state.WorldModel === 'ge') base.MapProjectionGe = 'hq_equirect_day';
       return base;

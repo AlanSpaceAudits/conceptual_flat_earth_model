@@ -7079,3 +7079,22 @@ Format:
     the FE-specific clip doesn't introduce
     any sub-disc leakage.
 - **Revert:** `git checkout v-s000552 -- .`
+
+## S554 — Bump month-marker sprite size for GE visibility
+
+- **Date:** 2026-04-27
+- **Files changed:** `js/render/index.js`.
+- **Change:**
+  - Sun / sun-opp month-marker sprite size
+    bumped from `0.011` → `0.022`; moon
+    bumped from `0.013` → `0.026`.
+  - In FE the markers were small but visible
+    because the camera sat close to the
+    optical-vault hemisphere; in GE the
+    camera typically sits farther from the
+    observer (orbit view of the globe), and
+    the original sizes ended up sub-pixel.
+    Doubling sprite size keeps them readable
+    in both modes without disturbing the
+    analemma figure-8 layout.
+- **Revert:** `git checkout v-s000553 -- .`

@@ -223,9 +223,10 @@ function snapNoonVault(model, mode) {
   const c = model.computed;
   const ge = model.state.WorldModel === 'ge';
   const patch = {};
+  const valid = (p) => p && p[2] !== -1000;
   if (mode === 'sun' || mode === 'both') {
     const sv = ge ? (c.SunGlobeOpticalVaultCoord || c.SunVaultCoord) : c.SunVaultCoord;
-    if (sv) {
+    if (valid(sv)) {
       const cur = Array.isArray(model.state.SunMonthMarkers)
         ? model.state.SunMonthMarkers : [];
       patch.SunMonthMarkers = [...cur, [sv[0], sv[1], sv[2]]];
@@ -233,7 +234,7 @@ function snapNoonVault(model, mode) {
   }
   if (mode === 'moon' || mode === 'both') {
     const mv = ge ? (c.MoonGlobeOpticalVaultCoord || c.MoonVaultCoord) : c.MoonVaultCoord;
-    if (mv) {
+    if (valid(mv)) {
       const cur = Array.isArray(model.state.MoonMonthMarkers)
         ? model.state.MoonMonthMarkers : [];
       patch.MoonMonthMarkers = [...cur, [mv[0], mv[1], mv[2]]];
@@ -337,7 +338,7 @@ function snapMoonNoonVault(model) {
   const c = model.computed;
   const ge = model.state.WorldModel === 'ge';
   const mv = ge ? (c.MoonGlobeOpticalVaultCoord || c.MoonVaultCoord) : c.MoonVaultCoord;
-  if (!mv) return;
+  if (!mv || mv[2] === -1000) return;
   const cur = Array.isArray(model.state.MoonMonthMarkers)
     ? model.state.MoonMonthMarkers : [];
   model.setState({ MoonMonthMarkers: [...cur, [mv[0], mv[1], mv[2]]] });
@@ -412,7 +413,7 @@ function snapSunNoonVaultLon0(model) {
   const c = model.computed;
   const ge = model.state.WorldModel === 'ge';
   const sv = ge ? (c.SunGlobeOpticalVaultCoord || c.SunVaultCoord) : c.SunVaultCoord;
-  if (!sv) return;
+  if (!sv || sv[2] === -1000) return;
   const cur = Array.isArray(model.state.SunMonthMarkers)
     ? model.state.SunMonthMarkers : [];
   model.setState({ SunMonthMarkers: [...cur, [sv[0], sv[1], sv[2]]] });
@@ -422,7 +423,7 @@ function snapSunNoonVaultLon180(model) {
   const c = model.computed;
   const ge = model.state.WorldModel === 'ge';
   const sv = ge ? (c.SunGlobeOpticalVaultCoord || c.SunVaultCoord) : c.SunVaultCoord;
-  if (!sv) return;
+  if (!sv || sv[2] === -1000) return;
   const cur = Array.isArray(model.state.SunMonthMarkersOpp)
     ? model.state.SunMonthMarkersOpp : [];
   model.setState({ SunMonthMarkersOpp: [...cur, [sv[0], sv[1], sv[2]]] });

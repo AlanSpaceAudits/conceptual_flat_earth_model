@@ -6961,3 +6961,31 @@ Format:
     coord is the right frame for plotting the
     eclipse positions as a sky chart.
 - **Revert:** `git checkout v-s000547 -- .`
+
+## S549 — Skip below-horizon sentinel in GE analemma accumulators
+
+- **Date:** 2026-04-27
+- **Files changed:** `js/core/app.js`,
+  `js/demos/definitions.js`.
+- **Change:**
+  - `_globeOpticalProject` returns
+    `[0, 0, -1000]` for sub-horizon bodies. The
+    arc + analemma + month-marker accumulators
+    were appending that sentinel when the sun /
+    moon dipped below the horizon, producing
+    long vertical chord lines dropping off the
+    sphere (visible in the equator-analemma
+    demo as yellow shafts hanging from the
+    daily-arc rings).
+  - `stepVaultArc` and `stepAnalemma` now bail
+    early on `!srcCoord || srcCoord[2] ===
+    -1000`. Same gate added to
+    `snapNoonVault` (sun + moon),
+    `snapMoonNoonVault`,
+    `snapSunNoonVaultLon0`, and
+    `snapSunNoonVaultLon180` so monthly noon
+    snapshots that happen to land below
+    horizon (rare but possible at extreme
+    latitudes) don't drop a marker at the
+    sentinel.
+- **Revert:** `git checkout v-s000548 -- .`

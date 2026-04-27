@@ -623,6 +623,8 @@ export class FeModel extends EventTarget {
       if (slot.key !== analKey) {
         slot.points.length = 0; slot.lastDay = -1; slot.key = analKey;
       }
+      // Skip below-horizon sentinel — same convention as stepVaultArc.
+      if (!srcCoord || srcCoord[2] === -1000) return;
       if (s.DayOfYear !== slot.lastDay) {
         slot.points.push(srcCoord[0], srcCoord[1], srcCoord[2]);
         slot.lastDay = s.DayOfYear;
@@ -653,6 +655,10 @@ export class FeModel extends EventTarget {
         slot.key = arcKey;
         slot.wasOn = true;
       }
+      // Skip the below-horizon sentinel ([0, 0, -1000]) the GE
+      // optical-vault projection emits — appending it produces a
+      // vertical line dropping off the sphere.
+      if (!srcCoord || srcCoord[2] === -1000) return;
       const pts = slot.points;
       const n = pts.length;
       if (n < 3

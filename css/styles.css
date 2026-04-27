@@ -237,6 +237,8 @@ header .info-popup.legend-popup a { color: var(--accent); }
 }
 #tracking-info-popup .ti-row span:first-child { color: var(--muted); }
 #tracking-info-popup .ti-row span:last-child  { font-variant-numeric: tabular-nums; }
+#tracking-info-popup .ti-vis-ok { color: #7fe39a; }
+#tracking-info-popup .ti-vis-no { color: #ff7b6b; }
 #tracker-hud .line { white-space: pre; }
 #tracker-hud .tracker-title { color: #f4a640; font-weight: 600; margin-bottom: 2px; }
 #tracker-hud .tracker-foot { color: #9aa3b3; font-size: 11px; margin-top: 1px; }

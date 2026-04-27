@@ -479,8 +479,13 @@ export function buildTrackingInfoPopup(panelEl, model) {
     // (observer lat/lon, body GP lat/lon). Inscribed angle =
     // central / 2 by the inscribed-angle theorem; this is the
     // angle the LoS-Earth red triangle reads when below the
-    // geometric horizon.
+    // geometric horizon. `Elev − Inscribed` is then the signed
+    // visibility margin: positive ⇒ the body sits above the
+    // inscribed-angle horizon, negative ⇒ it has dropped under
+    // it and reads as "below inscribed angle".
     let centralStr = '—', inscribedStr = '—';
+    let diffStr = '—', visStr = '—';
+    let visClass = '';
     if (Number.isFinite(info.gpLat) && Number.isFinite(info.gpLon)
         && Number.isFinite(s.ObserverLat) && Number.isFinite(s.ObserverLong)) {
       const oLat = s.ObserverLat * Math.PI / 180;
@@ -490,8 +495,20 @@ export function buildTrackingInfoPopup(panelEl, model) {
       const cosC = Math.sin(oLat) * Math.sin(gLat)
                  + Math.cos(oLat) * Math.cos(gLat) * Math.cos(oLon - gLon);
       const centralDeg = Math.acos(Math.max(-1, Math.min(1, cosC))) * 180 / Math.PI;
+      const inscribedDeg = centralDeg / 2;
       centralStr = fmtDms(centralDeg);
-      inscribedStr = fmtDms(centralDeg / 2);
+      inscribedStr = fmtDms(inscribedDeg);
+      if (Number.isFinite(info.elevation)) {
+        const diff = info.elevation - inscribedDeg;
+        diffStr = fmtSignedDms(diff);
+        if (diff > 0) {
+          visStr = 'Visible';
+          visClass = 'ti-vis-ok';
+        } else {
+          visStr = 'Below inscribed angle';
+          visClass = 'ti-vis-no';
+        }
+      }
     }
 
     elBody.innerHTML = `
@@ -503,6 +520,8 @@ export function buildTrackingInfoPopup(panelEl, model) {
       <div class="ti-row"><span>GP lon</span><span>${gpLon}</span></div>
       <div class="ti-row"><span>Central</span><span>${centralStr}</span></div>
       <div class="ti-row"><span>Inscribed</span><span>${inscribedStr}</span></div>
+      <div class="ti-row"><span>Elev − Inscribed</span><span>${diffStr}</span></div>
+      <div class="ti-row"><span>Visibility</span><span class="${visClass}">${visStr}</span></div>
       <div class="ti-row"><span>Mag</span><span>${mag}</span></div>
     `;
   }

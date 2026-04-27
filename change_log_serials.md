@@ -5947,3 +5947,19 @@ Format:
     the disc projection while GE arcs still get
     occluded by the back half of the globe.
 - **Revert:** `git checkout v-s000510 -- .`
+
+## S512 — Tracking popup: Elev − Inscribed visibility readout
+
+- **Date:** 2026-04-26
+- **Files changed:** `js/ui/trackingInfoPopup.js`,
+  `css/styles.css`.
+- **Change:**
+  - Two new rows after the central / inscribed
+    pair: `Elev − Inscribed` (signed DMS,
+    `info.elevation − inscribedDeg`) and
+    `Visibility` (`Visible` if the diff > 0,
+    `Below inscribed angle` otherwise). Visible
+    rows tint green (`#7fe39a`); failures tint
+    red (`#ff7b6b`) so the line reads at a
+    glance.
+- **Revert:** `git checkout v-s000511 -- .`

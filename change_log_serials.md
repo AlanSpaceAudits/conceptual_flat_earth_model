@@ -7172,3 +7172,30 @@ Format:
     behavior is unchanged — optical-vault
     coord is used (S548 fix).
 - **Revert:** `git checkout v-s000556 -- .`
+
+## S558 — Analemma snap respects observer's actual horizon
+
+- **Date:** 2026-04-27
+- **Files changed:** `js/core/app.js`,
+  `js/demos/definitions.js`.
+- **Change:**
+  - Drop the S557 polar fallback (`|lat| ≥ 80
+    → celestial-sphere coord`). Both modes
+    now use only the observer-local
+    optical-vault coord and capture *only*
+    when `c.SunAnglesGlobe.elevation > 0`
+    (resp. `MoonAnglesGlobe`). Below-horizon
+    noon snapshots are skipped entirely so
+    the rendered analemma matches what the
+    observer would physically see — partial
+    figure at the poles, complete figure at
+    mid-latitudes, full figure-8 at the
+    equator.
+  - `_geSrc` polar-fallback helper removed.
+    `stepVaultArc` and all four `snap*`
+    helpers (`snapNoonVault`,
+    `snapMoonNoonVault`,
+    `snapSunNoonVaultLon0`,
+    `snapSunNoonVaultLon180`) now share the
+    same horizon-gate convention.
+- **Revert:** `git checkout v-s000557 -- .`

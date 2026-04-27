@@ -634,7 +634,7 @@ const SUN_24H_DEMOS = [
     intro: {
       ObserverLat: -75, ObserverLong: 0,
       BodySource: 'astropixels',
-      DateTime: 3195,                 // ~2025-10-01
+      DateTime: 3232,                 // ~2025-11-07 — polar day in effect
       ObserverHeading: 180,
       InsideVault: true,              // Optical
       FollowTarget: 'sun',
@@ -646,15 +646,11 @@ const SUN_24H_DEMOS = [
       ShowTruePositions: true,
     },
     tasks: () => [
-      Ttxt('75°S, October 1 2025 — day/night cycle still present.'),
-      Tval('DateTime', 3226, 2 * T8, T1, 'linear'),
-      Ttxt('November 1 — sun about to stop setting at midnight.'),
+      Ttxt('75°S, early November 2025 — midnight sun in effect (sun dec < -15°).'),
       Tval('DateTime', 3276, 2 * T8, T1, 'linear'),
       Ttxt('December 21 — southern solstice, full 24-hour daylight.'),
       Tval('DateTime', 3324, 2 * T8, T1, 'linear'),
       Ttxt('February 7 2026 — midnight sun ends as dec moves north again.'),
-      Tval('DateTime', 3355, 2 * T8, T1, 'linear'),
-      Ttxt('March 10 — polar night incoming.'),
     ],
   },
 ];

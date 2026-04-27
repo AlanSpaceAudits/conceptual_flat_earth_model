@@ -6192,3 +6192,23 @@ Format:
     walks June 21 solstice → Aug 7 polar-day
     end.
 - **Revert:** `git checkout v-s000520 -- .`
+
+## S522 — Midnight-sun 75°S demo: start inside polar day
+
+- **Date:** 2026-04-27
+- **Files changed:** `js/demos/definitions.js`.
+- **Change:**
+  - 'Midnight sun at 75°S: start to end' intro
+    `DateTime` moved from `3195` (~2025-10-01) to
+    `3232` (~2025-11-07). At 75°S the polar day
+    requires sun dec ≤ -15°, which only happens
+    after ~Oct 30; Oct 1 sat ~30 days before
+    onset.
+  - Pre-polar-day narration steps removed
+    (`'day/night cycle still present'` /
+    `'about to stop setting'` and trailing
+    `'polar night incoming'`); first task now
+    opens inside polar-day window. Demo walks
+    Dec 21 southern solstice → Feb 7 polar-day
+    end.
+- **Revert:** `git checkout v-s000521 -- .`

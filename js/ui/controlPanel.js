@@ -10,7 +10,6 @@ import { BLACK_HOLES } from '../core/blackHoles.js';
 import { QUASARS }     from '../core/quasars.js';
 import { GALAXIES }    from '../core/galaxies.js';
 import { SATELLITES }  from '../core/satellites.js';
-import { BRIGHT_STAR_CATALOG } from '../core/brightStarCatalog.js';
 import { NAMED_STARS_HYG }    from '../core/_namedStarsHyg.js';
 import { NAMED_STARS_HYG_EXTRA } from '../core/_namedStarsHygExtra.js';
 import { GALAXIES_EXTRA }     from '../core/galaxiesExtra.js';
@@ -74,7 +73,7 @@ function resolveTargetAngles(targetId, c) {
   if (c.Planets && c.Planets[targetId]) return c.Planets[targetId].anglesGlobe || null;
   if (targetId.startsWith('star:')) {
     const id = targetId.slice(5);
-    for (const list of [c.CelNavStars, c.CataloguedStars, c.BlackHoles, c.Quasars, c.Galaxies, c.BscStars]) {
+    for (const list of [c.CelNavStars, c.CataloguedStars, c.BlackHoles, c.Quasars, c.Galaxies]) {
       if (!list) continue;
       const f = list.find((x) => x.id === id);
       if (f) return f.anglesGlobe || null;
@@ -999,43 +998,6 @@ const FIELD_GROUPS = [
             .map((x) => ({ value: `star:${x.id}`, label: x.name, color: '#66ff88' })),
         },
       ]},
-      { title: 'Bright Star Catalog', rows: [
-        { key: 'GPOverrideBsc', label: 'GP Override', bool: true },
-        { label: '', buttonLabel: 'Enable All',
-          onClick: (m) => m.setState({
-            BscTargets: [
-              ...new Set([
-                ...(Array.isArray(m.state.BscTargets) ? m.state.BscTargets : []),
-                ...BRIGHT_STAR_CATALOG
-                  .filter((x) => x.kind !== 'planet')
-                  .map((x) => `star:${x.id}`),
-              ]),
-            ],
-            ShowBsc: true,
-          }) },
-        { label: '', buttonLabel: 'Disable All',
-          onClick: (m) => m.setState({ BscTargets: [] }) },
-        { label: '', buttonLabel: 'Disable Satellites',
-          onClick: (m) => {
-            const ids = new Set(
-              BRIGHT_STAR_CATALOG
-                .filter((x) => x.cat === 'satellite')
-                .map((x) => `star:${x.id}`),
-            );
-            const cur = Array.isArray(m.state.BscTargets) ? m.state.BscTargets : [];
-            m.setState({ BscTargets: cur.filter((t) => !ids.has(t)) });
-          } },
-        { key: 'BscTargets', label: '', buttonGrid:
-          [...BRIGHT_STAR_CATALOG]
-            .filter((x) => x.kind !== 'planet')
-            .sort((a, b) => a.name.localeCompare(b.name))
-            .map((x) => ({
-              value: `star:${x.id}`,
-              label: x.name,
-              color: '#' + (x.color != null ? x.color : 0xfff5d8).toString(16).padStart(6, '0'),
-            })),
-        },
-      ]},
     ],
   },
 ];
@@ -1697,13 +1659,13 @@ export function buildControlPanel(host, model, demos) {
       ShowCelestialBodies: false,
       ShowCelNav: false, ShowConstellations: false, ShowConstellationLines: false,
       ShowBlackHoles: false, ShowQuasars: false, ShowGalaxies: false,
-      ShowSatellites: false, ShowBsc: false,
+      ShowSatellites: false,
       ShowStars: false,
       ShowSunAnalemma: false, ShowMoonAnalemma: false,
       ShowGPPath: false, ShowDomeCaustic: false,
       ShowGPTracer: false, ShowOpticalVaultTrace: false, ShowSunMoonNine: false,
       ShowTruePositions: false,
-      TrackerTargets: [], BscTargets: [],
+      TrackerTargets: [],
       SpecifiedTrackerMode: false,
     });
   };
@@ -1763,7 +1725,6 @@ export function buildControlPanel(host, model, demos) {
       ShowQuasars: true, GPOverrideQuasars: false,
       ShowGalaxies: true, GPOverrideGalaxies: false,
       ShowSatellites: true, GPOverrideSatellites: false,
-      ShowBsc: false, BscTargets: [],
       TrackerTargets: [
         ...PLANETS,
         ...allCelNav, ...allConstellation,

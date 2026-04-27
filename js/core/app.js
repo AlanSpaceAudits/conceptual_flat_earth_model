@@ -22,7 +22,6 @@ import { CATALOGUED_STARS, cataloguedStarById } from './constellations.js';
 import { BLACK_HOLES, blackHoleById } from './blackHoles.js';
 import { QUASARS,      quasarById }    from './quasars.js';
 import { GALAXIES,     galaxyById }    from './galaxies.js';
-import { BRIGHT_STAR_CATALOG, bscStarById } from './brightStarCatalog.js';
 import { SATELLITES,   satelliteById, satelliteSubPoint } from './satellites.js';
 import { SATELLITES_EXTRA } from './satellitesExtra.js';
 import {
@@ -207,8 +206,6 @@ function defaultState() {
     ShowBlackHoles:          true,
     ShowQuasars:             true,
     ShowGalaxies:            true,
-    ShowBsc:                 true,
-    BscTargets:              [],
     Language:                'en',
     GPOverridePlanets:         false,
     GPOverrideCelNav:          false,
@@ -216,7 +213,6 @@ function defaultState() {
     GPOverrideBlackHoles:      false,
     GPOverrideQuasars:         false,
     GPOverrideGalaxies:        false,
-    GPOverrideBsc:             false,
     GPOverrideSatellites:      false,
 
     InsideVault: false,
@@ -902,13 +898,6 @@ export class FeModel extends EventTarget {
     c.BlackHoles      = BLACK_HOLES.map(projectStar);
     c.Quasars         = QUASARS.map(projectStar);
     c.Galaxies        = GALAXIES.map(projectStar);
-    c.BscStars        = s.ShowBsc
-      ? BRIGHT_STAR_CATALOG
-          .filter((e) => e.kind !== 'planet'
-                      && Number.isFinite(e.raH)
-                      && Number.isFinite(e.decD))
-          .map(projectStar)
-      : [];
 
     // Satellites: sub-point (lat, lon) computed per-frame from
     // two-body Kepler; projected through the same vault /
@@ -919,10 +908,8 @@ export class FeModel extends EventTarget {
     const SAT_VAULT_HEIGHT = 0.15;
     const _trackerHasSat = (Array.isArray(s.TrackerTargets) ? s.TrackerTargets : [])
       .some((t) => typeof t === 'string' && t.startsWith('star:sat_'));
-    const _bscHasSat = (Array.isArray(s.BscTargets) ? s.BscTargets : [])
-      .some((t) => typeof t === 'string' && t.startsWith('star:sat_'));
     const _followIsSat = typeof s.FollowTarget === 'string' && s.FollowTarget.startsWith('star:sat_');
-    if (s.ShowSatellites || _trackerHasSat || _bscHasSat || _followIsSat) {
+    if (s.ShowSatellites || _trackerHasSat || _followIsSat) {
       const projectSatellite = (sat) => {
         const sub = satelliteSubPoint(sat, utcDate);
         const decRad = sub.lat * Math.PI / 180;
@@ -1050,7 +1037,6 @@ export class FeModel extends EventTarget {
         [BLACK_HOLES,      0x9966ff, 'bh'],
         [QUASARS,          0x40e0d0, 'q'],
         [GALAXIES,         0xff80c0, 'gal'],
-        [BRIGHT_STAR_CATALOG, 0xfff5d8, 'bsc'],
       ];
       for (const [list, color, prefix] of starCategories) {
         for (const star of list) {
@@ -1175,11 +1161,6 @@ export class FeModel extends EventTarget {
           def   = satelliteById(starId) || (entry ? { name: entry.name, mag: -1.5 } : null);
           if (entry) cat = 'satellite';
         }
-        if (!entry) {
-          entry = c.BscStars.find((x) => x.id === starId);
-          def   = bscStarById(starId);
-          if (entry) cat = 'bsc';
-        }
         if (entry && def) {
           // Star RA/Dec is pipeline-independent; all five readings share it.
           const gpColorByCat = {
@@ -1189,7 +1170,6 @@ export class FeModel extends EventTarget {
             quasar:     0x40e0d0,  // cyan
             galaxy:     0xff80c0,  // pink
             satellite:  0x66ff88,  // lime green
-            bsc:        0xfff5d8,  // pale ivory
           };
           // Stars carry a single catalog RA / Dec — no five-pipeline
           // ephemeris comparison applies. Drop the redundant

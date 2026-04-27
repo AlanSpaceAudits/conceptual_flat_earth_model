@@ -6665,3 +6665,56 @@ Format:
     the canvas rotation reads identically when
     observer lat/lon and view direction match.
 - **Revert:** `git checkout v-s000538 -- .`
+
+## S540 — Remove Bright Star Catalog (BSC) entirely
+
+- **Date:** 2026-04-27
+- **Files changed:** `js/core/app.js`,
+  `js/render/index.js`,
+  `js/render/worldObjects.js`,
+  `js/ui/controlPanel.js`,
+  `js/ui/urlState.js`,
+  `js/ui/trackingInfoPopup.js`.
+- **Change:**
+  - `app.js`: dropped `BRIGHT_STAR_CATALOG` /
+    `bscStarById` import, `ShowBsc` /
+    `BscTargets` / `GPOverrideBsc` state
+    defaults, `c.BscStars` projection block,
+    BSC entry in the GP-path star-categories
+    list, BSC entry-resolution branch in body
+    info lookup, and the `bsc` color-by-cat
+    entry. Satellite-builder gate no longer
+    consults `BscTargets`.
+  - `render/index.js`: removed the
+    `this.bscStars = new CatalogPointStars(...)`
+    instance (4096-cap layer), its
+    `.update(m)` call, its `spherePoints`
+    entry in the depth-test layer list, and
+    the `'bsc'` row in the GP-tracer star
+    lookup table. BSC color-override branch
+    in `findStarEntry` simplified to plain
+    category lookup.
+  - `render/worldObjects.js`: GPTracer no
+    longer merges `BscTargets` into its
+    target set; BSC branch in the star-color
+    resolver removed.
+  - `controlPanel.js`: BSC import dropped;
+    BSC tracker-tab section (Enable All /
+    Disable All / Disable Satellites /
+    button-grid of all 4096 entries) removed;
+    `c.BscStars` lookup in the body-search
+    candidate list removed; preset 1 / preset
+    2 no longer write `ShowBsc` /
+    `BscTargets`.
+  - `urlState.js`: removed `ShowBsc`,
+    `BscTargets`, `GPOverrideBsc` from the
+    persisted-key list and `BscTargets` from
+    `ARRAY_KEYS`.
+  - `trackingInfoPopup.js`: `drawBscStar`
+    helper deleted; `'bsc'` cases dropped
+    from `classifySubcategory` label table
+    and the `paint` dispatcher.
+  - Data files (`brightStarCatalog.js`,
+    `solarSystem.js`) kept on disk — unused
+    but harmless.
+- **Revert:** `git checkout v-s000539 -- .`

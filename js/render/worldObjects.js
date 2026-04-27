@@ -5962,8 +5962,7 @@ export class GPTracer {
     if (!on) return;
 
     const trackerArr = Array.isArray(s.TrackerTargets) ? s.TrackerTargets : [];
-    const bscArr     = Array.isArray(s.BscTargets) ? s.BscTargets : [];
-    const targets    = [...new Set([...trackerArr, ...bscArr])];
+    const targets    = [...new Set(trackerArr)];
     const key = targets.slice().sort().join(',');
     if (key !== this._lastTargetsKey) {
       const want = new Set(targets);
@@ -6019,8 +6018,6 @@ export class GPTracer {
           starColor = 0xff80c0;
         } else if (c.Satellites && (entry = c.Satellites.find((x) => x.id === starId))) {
           starColor = 0x66ff88;
-        } else if (c.BscStars && (entry = c.BscStars.find((x) => x.id === starId))) {
-          starColor = entry.color != null ? entry.color : 0xfff5d8;
         }
         if (!entry) continue;
         lat = entry.celestLatLong.lat;

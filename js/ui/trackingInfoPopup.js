@@ -216,19 +216,6 @@ function drawSatellite(ctx) {
   pix(ctx, cx, cy - 11, '#ff4040');
 }
 
-function drawBscStar(ctx) {
-  const cx = ART_SIZE / 2, cy = ART_SIZE / 2;
-  disc(ctx, cx, cy, 2, '#ffffff');
-  pix(ctx, cx, cy, '#fff5d8');
-  // Subtle 4-point spike
-  for (let i = 3; i <= 8; i++) {
-    pix(ctx, cx + i, cy, '#fff5d8');
-    pix(ctx, cx - i, cy, '#fff5d8');
-    pix(ctx, cx, cy + i, '#fff5d8');
-    pix(ctx, cx, cy - i, '#fff5d8');
-  }
-}
-
 function clearCanvas(ctx) {
   ctx.clearRect(0, 0, W, W);
 }
@@ -423,7 +410,6 @@ export function buildTrackingInfoPopup(panelEl, model) {
     if (info.subCategory === 'quasar')     return 'Quasar';
     if (info.subCategory === 'galaxy')     return 'Galaxy';
     if (info.subCategory === 'satellite')  return 'Satellite';
-    if (info.subCategory === 'bsc')        return 'BSC Star';
     return info.category || 'Object';
   }
 
@@ -440,7 +426,6 @@ export function buildTrackingInfoPopup(panelEl, model) {
     else if (kind === 'quasar')     drawQuasar(ctx);
     else if (kind === 'galaxy')     drawGalaxy(ctx);
     else if (kind === 'satellite')  drawSatellite(ctx);
-    else if (kind === 'bsc')        drawBscStar(ctx);
     else drawCelNavStar(ctx);
   }
 

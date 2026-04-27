@@ -17,7 +17,7 @@ const PERSISTED_KEYS = [
   'ShowCelestialPoles', 'DarkBackground',
   'ShowLiveEphemeris', 'MoonPhaseExpanded',
   'ShowSatellites', 'ShowCelestialBodies', 'ShowCelNav',
-  'ShowBlackHoles', 'ShowQuasars', 'ShowGalaxies', 'ShowBsc',
+  'ShowBlackHoles', 'ShowQuasars', 'ShowGalaxies',
   'ShowGPPath', 'GPPathDays',
   'ShowSunAnalemma', 'ShowMoonAnalemma',
   'DynamicStars',
@@ -30,12 +30,12 @@ const PERSISTED_KEYS = [
   'Cosmology',
   'MapProjection', 'MapProjectionGe',
   'StarfieldType',
-  'BodySource', 'PermanentNight', 'TrackerTargets', 'BscTargets',
+  'BodySource', 'PermanentNight', 'TrackerTargets',
   'Language',
   'ShowEphemerisReadings', 'SpecifiedTrackerMode', 'TrackerGPOverride',
   'GPOverridePlanets', 'GPOverrideCelNav', 'GPOverrideConstellations',
   'GPOverrideBlackHoles', 'GPOverrideQuasars', 'GPOverrideGalaxies',
-  'GPOverrideSatellites', 'GPOverrideBsc',
+  'GPOverrideSatellites',
   'StarApplyPrecession', 'StarApplyNutation', 'StarApplyAberration',
   'StarTrepidation',
 ];
@@ -46,7 +46,7 @@ const STRING_KEYS = new Set([
 ]);
 
 // Comma-joined in the URL hash.
-const ARRAY_KEYS = new Set(['TrackerTargets', 'BscTargets']);
+const ARRAY_KEYS = new Set(['TrackerTargets']);
 
 function stateToParams(state) {
   const p = new URLSearchParams();

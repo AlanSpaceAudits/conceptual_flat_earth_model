@@ -118,19 +118,6 @@ export class Renderer {
     });
     this.sm.world.add(this.quasarStars.group);
 
-    this.bscStars = new CatalogPointStars({
-      sourceKey: 'BscStars',
-      color: 0xfff5d8,
-      domeSize: 3,
-      sphereSize: 2.5,
-      maxCount: 4096,
-      clippingPlanes: clipPlanes,
-      showKey: 'ShowBsc',
-      perVertexColors: true,
-      trackerKey: 'BscTargets',
-    });
-    this.sm.world.add(this.bscStars.group);
-
     this.galaxyStars = new CatalogPointStars({
       sourceKey: 'Galaxies',
       color: 0xff80c0,
@@ -631,7 +618,6 @@ export class Renderer {
     this.blackHoleStars.update(m);
     this.quasarStars.update(m);
     this.galaxyStars.update(m);
-    this.bscStars.update(m);
     this.satelliteStars.update(m);
     this.gpPathOverlay.update(m);
     this.centralAngleArcs.update(m);
@@ -850,7 +836,6 @@ export class Renderer {
       this.blackHoleStars && this.blackHoleStars.spherePoints,
       this.quasarStars && this.quasarStars.spherePoints,
       this.galaxyStars && this.galaxyStars.spherePoints,
-      this.bscStars && this.bscStars.spherePoints,
       this.satelliteStars && this.satelliteStars.spherePoints,
       this.constellations && this.constellations.sphereStars,
       this.constellations && this.constellations.sphereLines,
@@ -1196,7 +1181,6 @@ export class Renderer {
         ['quasar',     c.Quasars],
         ['galaxy',     c.Galaxies],
         ['satellite',  c.Satellites],
-        ['bsc',        c.BscStars],
       ];
       for (const [cat, list] of lookups) {
         if (!list) continue;
@@ -1211,9 +1195,7 @@ export class Renderer {
         const found = findStarEntry(id.slice(5));
         if (!found) continue;
         const { entry, cat } = found;
-        const baseColor = (cat === 'bsc' && entry.color != null)
-          ? entry.color
-          : (STAR_CAT_COLORS[cat] || 0xffffff);
+        const baseColor = STAR_CAT_COLORS[cat] || 0xffffff;
         starTargets.push({ entry, color: baseColor, cat });
       }
     }

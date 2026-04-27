@@ -9,6 +9,7 @@ import {
   CelestialPoles, DeclinationCircles, Yggdrasil, MtMeru, ToroidalVortex,
   LongitudeRing, CelNavStars, TrackedGroundPoints, CatalogPointStars,
   GPPathOverlay, GPTracer, StellariumTraceOverlay, Discworld, AnalemmaLine, SunMoonGlyph,
+  CentralAngleArcs,
   MonthMarkers, WorldGlobe, GlobeHeavenlyVault, DomeCausticOverlay,
 } from './worldObjects.js';
 import { loadLandGeo, buildGeoJsonLand, buildImageMap, buildBlankMap } from './earthMap.js';
@@ -146,6 +147,12 @@ export class Renderer {
     // array is simply empty when the user hasn't enabled them).
     this.gpPathOverlay = new GPPathOverlay();
     this.sm.world.add(this.gpPathOverlay.group);
+
+    // Central / inscribed-angle arcs for GE mode. Visualised per
+    // tracker entry; visibility gated on `state.ShowCentralAngle`
+    // and `state.ShowInscribedAngle`.
+    this.centralAngleArcs = new CentralAngleArcs(16);
+    this.sm.world.add(this.centralAngleArcs.group);
 
     this.stellariumTraces = new StellariumTraceOverlay();
     this.sm.world.add(this.stellariumTraces.group);
@@ -612,6 +619,7 @@ export class Renderer {
     this.bscStars.update(m);
     this.satelliteStars.update(m);
     this.gpPathOverlay.update(m);
+    this.centralAngleArcs.update(m);
     this.stellariumTraces.update(m);
     this.gpTracer.update(m);
     this.sunMonthMarkers.update(m);

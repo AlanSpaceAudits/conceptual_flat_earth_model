@@ -5876,3 +5876,41 @@ Format:
     radially in to the globe centre — the
     body-overhead-direction reads at a glance.
 - **Revert:** `git checkout v-s000508 -- .`
+
+## S510 — Central / inscribed-angle arcs (GE)
+
+- **Date:** 2026-04-26
+- **Files changed:** `js/core/app.js`,
+  `js/render/worldObjects.js`,
+  `js/render/index.js`,
+  `js/ui/controlPanel.js`.
+- **Change:**
+  - New `state.ShowCentralAngle` and
+    `state.ShowInscribedAngle` (default off). Both
+    surfaced as bool toggles in
+    `Tracker → Tracker Options` ("Central Angle
+    (GE)" / "Inscribed Angle (GE)").
+  - New `CentralAngleArcs` class in
+    `worldObjects.js`. Per `c.TrackerInfos` entry
+    it slerps a great-circle arc on the globe
+    surface (radius `FE_RADIUS · 1.0006`) from
+    the observer's surface point Ô to the body's
+    GP direction Ĝ. Arc length in radians = the
+    central angle obs↔GP. A short
+    `LineDashedMaterial` tick pops out radially
+    at the arc midpoint M̂; M̂ is perpendicular
+    to the arc tangent there, so the tick reads
+    as "this is where the inscribed angle vertex
+    sits — central / 2 from each endpoint".
+  - Tick length scales with the central angle
+    (`0.05 + 0.10·θ/π` × `FE_RADIUS`) so a tiny
+    sweep gets a small tick and a half-globe
+    sweep gets a tall one.
+  - Arcs use `depthTest: true` so the back half
+    is occluded by the globe; tick stays
+    `depthTest: false` so it pokes through any
+    layer.
+  - Renderer instantiates `centralAngleArcs` in
+    the constructor and calls its `update(m)`
+    next to `gpPathOverlay.update(m)`.
+- **Revert:** `git checkout v-s000509 -- .`

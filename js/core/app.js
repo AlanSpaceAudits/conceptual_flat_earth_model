@@ -171,6 +171,14 @@ function defaultState() {
     ShowSatellites:          true,
     ShowGPPath:              false,
     GPPathDays:              1,
+    // GE-only inscribed/central-angle helpers. ShowCentralAngle
+    // draws a great-circle arc from the observer's surface point
+    // to the tracked body's GP; ShowInscribedAngle drops a short
+    // dashed tick perpendicular to that arc at its midpoint
+    // (which sits at central/2 from each endpoint by the
+    // inscribed-angle theorem).
+    ShowCentralAngle:        false,
+    ShowInscribedAngle:      false,
     ShowStellariumOverlay:   false,
     ShowSunMoonNine:         false,
     ShowGPTracer:            false,

@@ -5021,6 +5021,145 @@ export class TrackedGroundPoints {
   }
 }
 
+// Central-angle / inscribed-angle helper for GE mode.
+//
+// Per `c.TrackerInfos` entry, draws a great-circle arc on the
+// globe surface from the observer's GP (`ObserverLat / Long`) to
+// the body's GP (`info.gpLat / Long`). The arc length in radians
+// equals the central angle obs↔GP. A short dashed tick pops out
+// radially at the arc midpoint, marking the inscribed-angle
+// vertex (= central / 2 from each endpoint by the inscribed-angle
+// theorem). Both layers gate on `ShowCentralAngle` /
+// `ShowInscribedAngle` and only run in GE mode.
+export class CentralAngleArcs {
+  constructor(max = 16) {
+    this.group = new THREE.Group();
+    this.group.name = 'central-angle-arcs';
+    this._arcs = [];
+    this._ticks = [];
+    const ARC_PTS = 64;
+    for (let i = 0; i < max; i++) {
+      const ag = new THREE.BufferGeometry();
+      ag.setAttribute('position',
+        new THREE.BufferAttribute(new Float32Array((ARC_PTS + 1) * 3), 3));
+      ag.setDrawRange(0, 0);
+      const am = new THREE.LineBasicMaterial({
+        color: 0xffe680, transparent: true, opacity: 0.85,
+        depthTest: true, depthWrite: false,
+      });
+      const aline = new THREE.Line(ag, am);
+      aline.frustumCulled = false;
+      aline.renderOrder = 46;
+      this._arcs.push({ line: aline, maxPts: ARC_PTS + 1 });
+      this.group.add(aline);
+
+      const tg = new THREE.BufferGeometry();
+      tg.setAttribute('position',
+        new THREE.Float32BufferAttribute([0, 0, 0, 0, 0, 0], 3));
+      const tm = new THREE.LineDashedMaterial({
+        color: 0xffe680, transparent: true, opacity: 0.95,
+        dashSize: 0.014, gapSize: 0.010,
+        depthTest: false, depthWrite: false,
+      });
+      const tline = new THREE.Line(tg, tm);
+      tline.frustumCulled = false;
+      tline.renderOrder = 47;
+      this._ticks.push(tline);
+      this.group.add(tline);
+    }
+  }
+
+  update(model) {
+    const s = model.state;
+    const c = model.computed;
+    const ge = s.WorldModel === 'ge';
+    const showArc = ge && !!s.ShowCentralAngle && !s.InsideVault;
+    const showTick = ge && !!s.ShowInscribedAngle && !s.InsideVault;
+    this.group.visible = showArc || showTick;
+    if (!this.group.visible) {
+      for (const a of this._arcs) a.line.visible = false;
+      for (const t of this._ticks) t.visible = false;
+      return;
+    }
+
+    const oLat = (s.ObserverLat || 0) * Math.PI / 180;
+    const oLon = (s.ObserverLong || 0) * Math.PI / 180;
+    const cLat = Math.cos(oLat), sLat = Math.sin(oLat);
+    const cLon = Math.cos(oLon), sLon = Math.sin(oLon);
+    const Ohat = [cLat * cLon, cLat * sLon, sLat];
+    const Rsurf = FE_RADIUS * 1.0006;
+    const infos = c.TrackerInfos || [];
+
+    for (let i = 0; i < this._arcs.length; i++) {
+      const arc = this._arcs[i];
+      const tick = this._ticks[i];
+      const info = infos[i];
+      if (!info
+          || !Number.isFinite(info.gpLat)
+          || !Number.isFinite(info.gpLon)) {
+        arc.line.visible = false;
+        tick.visible = false;
+        continue;
+      }
+      const gLat = info.gpLat * Math.PI / 180;
+      const gLon = info.gpLon * Math.PI / 180;
+      const cgL = Math.cos(gLat), sgL = Math.sin(gLat);
+      const cgO = Math.cos(gLon), sgO = Math.sin(gLon);
+      const Ghat = [cgL * cgO, cgL * sgO, sgL];
+      const dot = Ohat[0] * Ghat[0] + Ohat[1] * Ghat[1] + Ohat[2] * Ghat[2];
+      const theta = Math.acos(Math.max(-1, Math.min(1, dot)));
+      const sinTheta = Math.sin(theta);
+      if (sinTheta < 1e-6) {
+        arc.line.visible = false;
+        tick.visible = false;
+        continue;
+      }
+
+      // Slerp arc Ô → Ĝ at radius Rsurf.
+      const buf = arc.line.geometry.attributes.position.array;
+      const N = arc.maxPts - 1;
+      for (let k = 0; k <= N; k++) {
+        const t = k / N;
+        const k1 = Math.sin((1 - t) * theta) / sinTheta;
+        const k2 = Math.sin(t * theta) / sinTheta;
+        buf[k * 3]     = Rsurf * (k1 * Ohat[0] + k2 * Ghat[0]);
+        buf[k * 3 + 1] = Rsurf * (k1 * Ohat[1] + k2 * Ghat[1]);
+        buf[k * 3 + 2] = Rsurf * (k1 * Ohat[2] + k2 * Ghat[2]);
+      }
+      arc.line.geometry.attributes.position.needsUpdate = true;
+      arc.line.geometry.setDrawRange(0, N + 1);
+      arc.line.visible = showArc;
+
+      // Inscribed-angle tick: radial outward at the great-circle
+      // midpoint M̂. Length scales with the central angle so a
+      // big sweep gets a more visible tick than a tiny one.
+      if (showTick) {
+        const km = Math.sin(0.5 * theta) / sinTheta;
+        const Mx = km * (Ohat[0] + Ghat[0]);
+        const My = km * (Ohat[1] + Ghat[1]);
+        const Mz = km * (Ohat[2] + Ghat[2]);
+        const Mlen = Math.hypot(Mx, My, Mz) || 1;
+        const mx = Mx / Mlen, my = My / Mlen, mz = Mz / Mlen;
+        const tickLen = FE_RADIUS * (0.05 + 0.10 * (theta / Math.PI));
+        const baseX = Rsurf * mx;
+        const baseY = Rsurf * my;
+        const baseZ = Rsurf * mz;
+        const tipX = baseX + mx * tickLen;
+        const tipY = baseY + my * tickLen;
+        const tipZ = baseZ + mz * tickLen;
+        tick.geometry.setAttribute('position',
+          new THREE.Float32BufferAttribute([
+            baseX, baseY, baseZ, tipX, tipY, tipZ,
+          ], 3));
+        tick.computeLineDistances();
+        tick.visible = true;
+      } else {
+        tick.visible = false;
+      }
+    }
+  }
+}
+
 // --- Cel Nav starfield --------------------------------------------
 //
 // Replacement for the procedural / chart star layers when

@@ -27,9 +27,9 @@ export class Animator {
     this.queue = [];
     this.running = false;
     this.paused  = false;   // pause/resume without clearing queue
-    // Default 0.5 = half the authored Tval cadence; 2× button
-    // gets back to original speed.
-    this.speedScale = 0.5;
+    // Default 0.125 = 1/8 the authored Tval cadence; 2× button
+    // doubles each click back toward original speed.
+    this.speedScale = 0.125;
     this._now = null;
     this._frame = this._frame.bind(this);
   }
@@ -41,7 +41,7 @@ export class Animator {
   play(tasks) {
     this.queue = tasks.slice();
     this.paused = false;
-    this.speedScale = 0.5;
+    this.speedScale = 0.125;
     this._now = performance.now();
     if (!this.running) {
       this.running = true;

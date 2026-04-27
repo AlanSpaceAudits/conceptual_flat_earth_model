@@ -6233,3 +6233,14 @@ Format:
     layer hides, matching the expected daytime
     appearance.
 - **Revert:** `git checkout v-s000522 -- .`
+
+## S524 — Demo default speedScale lowered to 0.125
+
+- **Date:** 2026-04-27
+- **Files changed:** `js/demos/animation.js`.
+- **Change:**
+  - `Animator` default `speedScale` lowered from
+    `0.5` (S520) to `0.125` (constructor +
+    `play()`). Equivalent to two extra `½×`
+    bar clicks compared to S520's default.
+- **Revert:** `git checkout v-s000523 -- .`

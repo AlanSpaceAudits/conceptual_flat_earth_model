@@ -204,19 +204,23 @@ export class Constellations {
     for (let i = 0; i < this._nStars; i++) {
       const [lat, lon] = this._stars[i];
       const vect = this._starVect[i];
-      // cel-nav duplicates get their POINT sprite parked off-screen
-      // ONLY when the cel-nav layer is active AND will actually
-      // paint that star (cel-nav requires the star to be in
-      // `TrackerTargets`). When the cel-nav layer is off or the
-      // star is untracked, the constellation owns the dot — that's
-      // what kept Alnilam visible as the centre of Orion's belt
-      // when the cel-nav layer was active but Alnilam wasn't
-      // explicitly tracked. Line endpoints always use the computed
-      // positions below.
+      // Two ownership rules, applied as `skipPoint = celnavWillPaint
+      // || untracked`:
+      //   1. Celnav layer owns the dot when it's active AND will
+      //      actually paint that star (cel-nav requires the star
+      //      to be in `TrackerTargets`). Skip the constellation
+      //      copy in that case to avoid double-paint.
+      //   2. Tracker membership gates EVERY constellation star
+      //      (celnav-dup and standalone alike). Without this,
+      //      celnav-dup stars from un-activated constellations
+      //      (e.g. Cassiopeia's stars when only Orion is
+      //      activated) would still paint when the cel-nav layer
+      //      is off, because rule 1 alone doesn't cover them.
+      // Line endpoints always use the computed positions below.
       const starId = this._starId[i];
       const untracked = !starId || !trackerSet.has(`star:${starId}`);
       const celnavWillPaint = this._celnavDup[i] && celnavLayerActive && !untracked;
-      const skipPoint = celnavWillPaint || (untracked && !this._celnavDup[i]);
+      const skipPoint = celnavWillPaint || untracked;
 
       // Heavenly-vault projection. GE places the star on the celestial
       // sphere at radius GlobeVaultRadius (longitude folded by

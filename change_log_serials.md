@@ -5718,3 +5718,50 @@ Format:
     Dec, GP lat, GP lon, Central, Inscribed, Mag.
     Mag now reads as the last line.
 - **Revert:** `git checkout v-s000502 -- .`
+
+## S504 — Constellation rule gates celnav-dup on tracker membership
+
+- **Date:** 2026-04-26
+- **Files changed:** `js/render/constellations.js`.
+- **Change:**
+  - `skipPoint` rule simplified to
+    `celnavWillPaint || untracked`. Without this,
+    celnav-duplicate stars from un-activated
+    constellations (e.g. Cassiopeia or Cygnus
+    while only Orion is activated) painted via the
+    constellation layer when the cel-nav layer was
+    off, because the previous rule only suppressed
+    them when celnav was active. Tracker
+    membership now gates every constellation dot
+    (celnav-dup and standalone alike), so the
+    constellation-name button is the single
+    source of truth for which dots show.
+- **Revert:** `git checkout v-s000503 -- .`
+
+## S505 — LoS observer lifted to 6-ft eye height
+
+- **Date:** 2026-04-26
+- **Files changed:** `js/render/index.js`.
+- **Change:**
+  - LoS chord computation in
+    `addLosIntersectionMark` now lifts the
+    observer along its outward normal by
+    `EYE_H_REL = 2.87 × 10⁻⁷` (6 ft on a 6378 km
+    Earth radius, expressed in `FE_RADIUS`
+    units). The chord origin sits at
+    `O + Ô · liftAbs`; the sphere intersection
+    then runs the full quadratic
+    `t²(D·D) + 2t(P·D) + (|P|² − R²) = 0` and
+    picks the smallest positive root in
+    `(0, 1]`. Marker therefore fires only when a
+    real ~6-ft observer's LoS actually breaks
+    across the Earth — bodies within the
+    ~50 arcsec horizon dip stay visible without
+    triggering a triangle.
+  - Central / inscribed angle calculation still
+    uses the original on-surface observer point
+    (the inscribed-angle theorem assumes the
+    inscribed vertex is on the circle, so
+    introducing the lift would erode the
+    `central / 2` identity).
+- **Revert:** `git checkout v-s000504 -- .`

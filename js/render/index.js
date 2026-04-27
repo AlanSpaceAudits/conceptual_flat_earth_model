@@ -932,14 +932,40 @@ export class Renderer {
     //   t = -2 (O · D) / (D · D),  D = T − O
     // and the marker is drawn only when 0 < t ≤ 1 (intersection
     // lies on the observer-target segment).
+    // Eye height in FE_RADIUS units. 6 ft / Earth radius
+    // = 1.8288 m / 6 378 000 m ≈ 2.87 × 10⁻⁷. Lifts the LoS
+    // observer just off the globe surface so the chord-crossing
+    // threshold matches a real ~6 ft tall observer's horizon dip
+    // (~50 arcsec) rather than the geometric tangent at the bare
+    // surface point.
+    const EYE_H_REL = 2.87e-7;
     const addLosIntersectionMark = (O, T) => {
       if (!ge || !O || !T) return;
-      const Dx = T[0] - O[0], Dy = T[1] - O[1], Dz = T[2] - O[2];
+      // Lift observer along its outward normal by EYE_H_REL.
+      const Olen0 = Math.hypot(O[0], O[1], O[2]) || 1;
+      const oxh0 = O[0] / Olen0, oyh0 = O[1] / Olen0, ozh0 = O[2] / Olen0;
+      const liftAbs = FE_RADIUS * EYE_H_REL;
+      const Pox = O[0] + oxh0 * liftAbs;
+      const Poy = O[1] + oyh0 * liftAbs;
+      const Poz = O[2] + ozh0 * liftAbs;
+      const Dx = T[0] - Pox, Dy = T[1] - Poy, Dz = T[2] - Poz;
       const dd = Dx * Dx + Dy * Dy + Dz * Dz;
       if (dd <= 1e-12) return;
-      const od = O[0] * Dx + O[1] * Dy + O[2] * Dz;
-      const t = -2 * od / dd;
-      if (t <= 1e-6 || t > 1) return;
+      // |P + t·D|² = R²; with |P| = R + h, the 2·t·(P·D) chord
+      // term acquires a constant `(2·R·h + h²)`. Solve the full
+      // quadratic and pick the smallest positive root in (0, 1].
+      const pd = Pox * Dx + Poy * Dy + Poz * Dz;
+      const Pl2 = Pox * Pox + Poy * Poy + Poz * Poz;
+      const c0 = Pl2 - FE_RADIUS * FE_RADIUS;
+      const disc = pd * pd - dd * c0;
+      if (disc <= 0) return;
+      const sq = Math.sqrt(disc);
+      const t1 = (-pd - sq) / dd;
+      const t2 = (-pd + sq) / dd;
+      let t = Number.POSITIVE_INFINITY;
+      if (t1 > 1e-6 && t1 <= 1) t = Math.min(t, t1);
+      if (t2 > 1e-6 && t2 <= 1) t = Math.min(t, t2);
+      if (!Number.isFinite(t)) return;
       // Marker position: place at the great-circle MIDPOINT of the
       // minor arc from observer Ô to the body's GP direction T̂.
       // From any point on the major arc the chord obs↔GP subtends

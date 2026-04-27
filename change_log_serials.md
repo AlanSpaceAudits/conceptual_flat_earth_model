@@ -6718,3 +6718,62 @@ Format:
     `solarSystem.js`) kept on disk — unused
     but harmless.
 - **Revert:** `git checkout v-s000539 -- .`
+
+## S541 — Performance: dirty-key caching on hot per-frame paths
+
+- **Date:** 2026-04-27
+- **Files changed:** `js/core/app.js`,
+  `js/render/index.js`,
+  `js/render/worldObjects.js`,
+  `js/render/constellations.js`.
+- **Change:**
+  - **`app.js` star-projection cache.** `projectStar`
+    fan-out
+    (`CelNavStars` / `CataloguedStars` / `BlackHoles`
+    / `Quasars` / `Galaxies`) now hits a key-based
+    cache. Key = `[DateTime, ObserverLat, ObserverLong,
+    ObserverElevation, ObserverHeading, VaultSize,
+    VaultHeight, StarfieldVaultHeight,
+    OpticalVaultSize, OpticalVaultHeight,
+    InsideVault, WorldModel, StarApply* flags]`.
+    On hit, the cached arrays are re-bound to the
+    `c.*` slots (same reference). Skips
+    `apparentStarPosition` (precession + nutation +
+    aberration trig) plus the vault / globe /
+    optical-vault transforms for every star when
+    no relevant input changed.
+  - **`Stars.update()` projection skip.** Computes
+    a key from `ge / skyRotDeg / opticalR /
+    opticalH / Rgv / StarfieldVaultHeight /
+    Observer*` and early-returns before the
+    per-star loop on hit. Avoids the
+    `BufferAttribute.needsUpdate = true` GPU
+    re-upload too, since the early-return runs
+    before those assignments.
+  - **`CatalogPointStars.update()` projection
+    skip.** Key built from `entries reference / ge
+    / n / tracker membership`. On hit, only
+    `setDrawRange` is called; the per-star copy
+    loop and `needsUpdate = true` flags are
+    skipped. Hits whenever the upstream
+    `c.CelNavStars` etc cache hit (same array
+    reference) and tracker hasn't changed.
+  - **`Constellations.update()` projection skip.**
+    Same pattern — key from `ge / skyRotDeg /
+    opticalR / opticalH / Rgv /
+    StarfieldVaultHeight / Observer* /
+    celnavLayerActive / showLines / showStars /
+    tracker`. Skips the per-star projection loop
+    AND the line-segment rebuild (which wrote
+    `_nLines × 6` floats per frame).
+  - **Renderer `applyMapTexture` gate.** Tracks
+    `_lastEffectiveGeProjId`; only re-applies
+    when the effective projection ID flips
+    (e.g. equirect day/night swap on
+    `NightFactor` crossing 0.5). Avoids
+    redundant GE map texture rebinds every
+    frame.
+  - LatitudeLines / FE-grid `_rebuild` calls
+    already gated by `_lastProj` keys —
+    confirmed during audit, no change needed.
+- **Revert:** `git checkout v-s000540 -- .`

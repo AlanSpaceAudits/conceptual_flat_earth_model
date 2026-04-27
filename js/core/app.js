@@ -893,11 +893,36 @@ export class FeModel extends EventTarget {
         anglesGlobe,
       };
     };
-    c.CelNavStars     = CEL_NAV_STARS.map(projectStar);
-    c.CataloguedStars = CATALOGUED_STARS.map(projectStar);
-    c.BlackHoles      = BLACK_HOLES.map(projectStar);
-    c.Quasars         = QUASARS.map(projectStar);
-    c.Galaxies        = GALAXIES.map(projectStar);
+    // Cache key — hits when none of projectStar's inputs changed (stable
+    // observer + time + projection params). On hit, reuse the cached
+    // arrays so downstream renderers can short-circuit on reference
+    // identity. apparentStarPosition's precession / nutation / aberration
+    // trig dominates this block when the catalogs grow.
+    const _starProjKey = [
+      s.DateTime, s.ObserverLat, s.ObserverLong, s.ObserverElevation, s.ObserverHeading,
+      s.VaultSize, s.VaultHeight, STAR_VAULT_HEIGHT,
+      s.OpticalVaultSize, s.OpticalVaultHeight, s.InsideVault,
+      s.WorldModel,
+      s.StarApplyPrecession, s.StarApplyNutation, s.StarApplyAberration, s.StarTrepidation,
+    ].join('|');
+    if (this._starProjKey === _starProjKey && this._starProjCache) {
+      c.CelNavStars     = this._starProjCache.celnav;
+      c.CataloguedStars = this._starProjCache.catalogued;
+      c.BlackHoles      = this._starProjCache.blackholes;
+      c.Quasars         = this._starProjCache.quasars;
+      c.Galaxies        = this._starProjCache.galaxies;
+    } else {
+      c.CelNavStars     = CEL_NAV_STARS.map(projectStar);
+      c.CataloguedStars = CATALOGUED_STARS.map(projectStar);
+      c.BlackHoles      = BLACK_HOLES.map(projectStar);
+      c.Quasars         = QUASARS.map(projectStar);
+      c.Galaxies        = GALAXIES.map(projectStar);
+      this._starProjCache = {
+        celnav: c.CelNavStars, catalogued: c.CataloguedStars,
+        blackholes: c.BlackHoles, quasars: c.Quasars, galaxies: c.Galaxies,
+      };
+      this._starProjKey = _starProjKey;
+    }
 
     // Satellites: sub-point (lat, lon) computed per-frame from
     // two-body Kepler; projected through the same vault /

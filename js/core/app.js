@@ -172,6 +172,13 @@ function defaultState() {
     LastObserverLat:         null,
     LastObserverLong:        null,
     ObserverAtCenter:        false,
+    // Flight Routes demo overlay. Selected = 'all' | route id | array
+    // of ids; null collapses to 'all' when ShowFlightRoutes is on.
+    // Progress (0..1) clips each route partway along its arc so the
+    // demo animator can sweep planes from departure to arrival.
+    ShowFlightRoutes:        false,
+    FlightRoutesSelected:    'all',
+    FlightRoutesProgress:    1,
     ShowGPPath:              false,
     GPPathDays:              1,
     // GE-only inscribed/central-angle helpers. ShowCentralAngle

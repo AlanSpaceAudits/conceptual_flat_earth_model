@@ -14,6 +14,7 @@ import {
 } from './worldObjects.js';
 import { loadLandGeo, buildGeoJsonLand, buildImageMap, buildBlankMap } from './earthMap.js';
 import { Constellations } from './constellations.js';
+import { FlightRoutes } from './flightRoutes.js';
 import { StarfieldChart } from './starfieldChart.js';
 import { getProjection } from '../core/projections.js';
 import { FE_RADIUS } from '../core/constants.js';
@@ -196,6 +197,9 @@ export class Renderer {
 
     this.constellations = new Constellations(clipPlanes);
     this.sm.world.add(this.constellations.group);
+
+    this.flightRoutes = new FlightRoutes();
+    this.sm.world.add(this.flightRoutes.group);
 
     this.starfieldChart = new StarfieldChart(clipPlanes);
     this.sm.world.add(this.starfieldChart.group);
@@ -671,6 +675,7 @@ export class Renderer {
     this.eclipseMapLunar.update(m);
     this.starfieldChart.update(m);
     this.constellations.update(m);
+    this.flightRoutes.update(m);
     // When a chart starfield is active, hide both the heavenly-vault and
     // the optical-vault random clouds so the chart is the sole sky source.
     // Constellations are auto-unchecked by the chart-transition handler in

@@ -8244,3 +8244,56 @@ Format:
   FE/GE) is separated by 2 px, matching
   the Maps↔Starfield spacing.
 - **Revert:** `git checkout v-s000593 -- .`
+
+## S595 — Flight Routes demo (Southern Non-Stop KMZ)
+
+- **Date:** 2026-04-28
+- **Files added:**
+  - `js/data/flightRoutes.js`
+  - `js/render/flightRoutes.js`
+  - `js/demos/flightRoutes.js`
+- **Files changed:**
+  - `js/core/app.js` (default state)
+  - `js/render/index.js` (renderer wiring)
+  - `js/demos/definitions.js` (DEMOS append +
+    DEMO_GROUPS append)
+- **Change:**
+  - New data module with the 9 cities
+    and 7 routes parsed from
+    `Southern Non-Stop.kmz` (Sydney /
+    Santiago / Melbourne / Auckland /
+    Johannesburg / Darwin / Sao Paulo /
+    Buenos Aires / Perth) plus
+    `greatCircleArc(latA, lonA, latB,
+    lonB, n)` (slerp on unit sphere) and
+    `centralAngleDeg(...)` helpers.
+  - `FlightRoutes` renderer draws each
+    leg as a sampled great-circle line
+    on either the FE disc (AE
+    projection at small z lift) or the
+    GE sphere (radial lift to avoid
+    z-fight), with city dot + label
+    sprites at each endpoint. Visibility
+    gated on `s.ShowFlightRoutes`;
+    `s.FlightRoutesSelected` accepts
+    `'all'` / route id / id array;
+    `s.FlightRoutesProgress` (0..1)
+    clips each line partway along its
+    arc for the demo sweep.
+  - Demo group `flight-routes` added
+    with: combined-all sweep,
+    central-angle theorem (numeric
+    south-vs-mirrored-north parity per
+    leg), constant-speed parity (two
+    Johannesburg legs sweeping at the
+    same rate on FE and GE), and one
+    entry per individual route. Each
+    intro hides every sky overlay
+    (stars / planets / vault / tracks /
+    rays), turns on `ShowFeGrid` +
+    `ShowGroundPoints`, parks the
+    observer at (90, 0) with a
+    top-down camera, and sets
+    `WorldModel = 'fe'` /
+    `MapProjection = 'ae'`.
+- **Revert:** `git checkout v-s000594 -- .`

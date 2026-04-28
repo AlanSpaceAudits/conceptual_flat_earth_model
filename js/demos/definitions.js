@@ -13,6 +13,7 @@
 import { Ttxt, Tval, Thold, Tcall } from './animation.js';
 import { SOLAR_ECLIPSE_DEMOS, LUNAR_ECLIPSE_DEMOS } from './eclipseRegistry.js';
 import { FE_ECLIPSE_PREDICTION_DEMOS } from './feEclipseTrack.js';
+import { FLIGHT_ROUTES_DEMOS } from './flightRoutes.js';
 import { ASTROPIXELS_ECLIPSES } from '../data/astropixelsEclipses.js';
 import { TIME_ORIGIN } from '../core/constants.js';
 
@@ -860,6 +861,7 @@ export const DEMOS = [
   ...SOLAR_ECLIPSE_DEMOS,
   ...LUNAR_ECLIPSE_DEMOS,
   ...FE_ECLIPSE_PREDICTION_DEMOS,
+  ...FLIGHT_ROUTES_DEMOS,
 ];
 
 // Section metadata for the UI.
@@ -876,4 +878,5 @@ export const DEMO_GROUPS = [
   { id: 'solar-eclipses',  label: 'Solar Eclipses (AstroPixels / DE405, 2021-2040)' },
   { id: 'lunar-eclipses',  label: 'Lunar Eclipses (AstroPixels / DE405, 2021-2040)' },
   { id: 'fe-predictions',  label: 'FE Eclipse Predictions (placeholder)' },
+  { id: 'flight-routes',   label: 'Flight Routes — Southern Non-Stop' },
 ];

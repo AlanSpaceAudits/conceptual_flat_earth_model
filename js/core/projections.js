@@ -465,7 +465,7 @@ export const PROJECTIONS = {
     generatedGeTexture: 'ge_translucent',
     imageAsset: null, imageInscribedRadius: 0.5,
     wrapsSphere: true,
-    geOpacity: 0.35,
+    geOpacity: 0.12,
     notes: 'See-through globe — faint blue continents, lets the centre observer view the celestial sphere through the shell.',
     project: projectEquirect,
   },

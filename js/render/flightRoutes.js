@@ -289,11 +289,15 @@ export class FlightRoutes {
       const angleLine = new THREE.LineSegments(
         angleGeom,
         new THREE.LineBasicMaterial({
-          color: 0x66c8ff, transparent: true, opacity: 0.85,
-          depthTest: true, depthWrite: false,
+          color: 0x66c8ff, transparent: true, opacity: 0.95,
+          // depthTest off so the legs from each endpoint to the
+          // world origin stay visible through the GE terrestrial
+          // sphere even when the camera sits inside it via
+          // ObserverAtCenter.
+          depthTest: false, depthWrite: false,
         }),
       );
-      angleLine.renderOrder = 67;
+      angleLine.renderOrder = 73;
       angleLine.frustumCulled = false;
       this.group.add(angleLine);
       this._routeAngleLines.set(r.id, angleLine);

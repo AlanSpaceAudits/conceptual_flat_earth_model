@@ -439,7 +439,7 @@ export class FeModel extends EventTarget {
       // across the toggle so the user's location persists; the
       // orange origin-dot click is the explicit way to teleport to
       // (90°, 0°).
-      if (s.ObserverAtCenter) {
+      if (s.ObserverAtCenter && !s.ShowFlightRoutes) {
         s.ObserverAtCenter = false;
       }
       // Flight-routes demo lives on the southern hemisphere. The FE
@@ -448,9 +448,12 @@ export class FeModel extends EventTarget {
       // the cities all hide behind the globe. Auto-flip camera
       // pitch on any mode toggle while a flight-routes demo is
       // active so the manual FE / GE button in the bottom bar keeps
-      // both projections framed.
+      // both projections framed. Also drop the observer to the
+      // globe centre on a GE switch so the central-angle legs read
+      // "from each endpoint to the observer at the centre".
       if (s.ShowFlightRoutes) {
         s.CameraHeight = (s.WorldModel === 'ge') ? -89.9 : 89.9;
+        s.ObserverAtCenter = (s.WorldModel === 'ge');
       }
     }
     this._lastWorldModel = s.WorldModel;

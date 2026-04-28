@@ -8903,3 +8903,44 @@ Format:
     only shows its own pair of
     legs.
 - **Revert:** `git checkout v-s000612 -- .`
+
+## S614 — Flight Routes: GE drops observer to centre + see-through tweaks
+
+- **Date:** 2026-04-28
+- **Files changed:**
+  - `js/core/app.js`
+  - `js/render/flightRoutes.js`
+  - `js/core/projections.js`
+- **Change:**
+  - `WorldModel` watchdog (FE↔GE
+    flip while a flight-routes demo
+    is active) now also sets
+    `s.ObserverAtCenter = true` on a
+    GE switch and `false` on a FE
+    switch. The GE-only
+    `GlobeObserverCoord` collapse to
+    world origin (S590) parks the
+    observer at the globe centre, so
+    the central-angle legs read
+    "from each endpoint to the
+    observer at the centre" instead
+    of "to a city on the surface".
+  - The earlier auto-clear of
+    `ObserverAtCenter` on any mode
+    flip is preserved for the
+    non-flight-routes case.
+  - Central-angle leg material
+    flipped `depthTest: true → false`,
+    `renderOrder 67 → 73`, opacity
+    `0.85 → 0.95`. The cyan legs now
+    draw on top of the GE
+    terrestrial sphere even when the
+    camera is parked inside it, so
+    the user can see both endpoints'
+    legs converge at the centre.
+  - `ge_art_translucent.geOpacity`
+    cut `0.35 → 0.12` so the
+    "Translucent" GE map reads as a
+    proper see-through shell instead
+    of a solid blue ball.
+- **Revert:** `git checkout v-s000613 -- .`

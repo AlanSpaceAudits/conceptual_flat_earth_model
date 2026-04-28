@@ -8341,3 +8341,26 @@ Format:
     catch their independent dot
     layers.
 - **Revert:** `git checkout v-s000595 -- .`
+
+## S597 — Flight Routes: Thold at end so demos wait for user
+
+- **Date:** 2026-04-28
+- **Files changed:** `js/demos/flightRoutes.js`.
+- **Change:**
+  - Replaced the auto-revert
+    `WorldModel: 'fe'` Tcalls at the
+    end of every flight-route demo
+    with a closing `Ttxt` + `Thold()`.
+    `Thold` returns `false` from the
+    animator step handler so the
+    queue never advances; the demo
+    sits on the connected route map
+    until the user presses Stop.
+  - Per-route, combined-all,
+    central-angle, and constant-
+    speed demos all now end with the
+    same hold-and-wait pattern. User
+    can flip FE / GE manually with
+    the world-model toggle to
+    compare projections.
+- **Revert:** `git checkout v-s000596 -- .`

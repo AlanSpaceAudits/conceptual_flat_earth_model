@@ -3,7 +3,7 @@
 // demo. Each entry sweeps `FlightRoutesProgress` 0 → 1 over a fixed
 // window so the great-circle line draws out across the disc / sphere.
 
-import { Ttxt, Tval, Tcall } from './animation.js';
+import { Ttxt, Tval, Tcall, Thold } from './animation.js';
 import {
   FLIGHT_ROUTES, FLIGHT_CITIES, cityById, centralAngleDeg,
 } from '../data/flightRoutes.js';
@@ -82,10 +82,8 @@ function sweepRoute(routeId) {
       FlightRoutesProgress: 0,
     })),
     Tval('FlightRoutesProgress', 1, SWEEP_PER_ROUTE, 0, 'linear'),
-    Ttxt('FE → GE: same arc, different visual.'),
-    Tcall((m) => m.setState({ WorldModel: 'ge' })),
-    Tval('FlightRoutesProgress', 1, 0, 800),
-    Tcall((m) => m.setState({ WorldModel: 'fe' })),
+    Ttxt('Route connected — toggle FE / GE freely; press Stop when done.'),
+    Thold(),
   ];
 }
 
@@ -124,10 +122,8 @@ const ALL_ROUTES_DEMO = {
       FlightRoutesProgress: 0,
     })),
     Tval('FlightRoutesProgress', 1, SWEEP_COMBINED, 0, 'linear'),
-    Ttxt('FE → GE: same legs, spherical view.'),
-    Tcall((m) => m.setState({ WorldModel: 'ge' })),
-    Tval('FlightRoutesProgress', 1, 0, 800),
-    Tcall((m) => m.setState({ WorldModel: 'fe' })),
+    Ttxt('Combined map ready — toggle FE / GE freely; press Stop when done.'),
+    Thold(),
   ],
 };
 
@@ -159,8 +155,8 @@ const CENTRAL_ANGLE_DEMO = {
       ...lines.map((l) => Ttxt(l, 1500)),
       Tcall((m) => m.setState({ ShowFlightRoutes: true, FlightRoutesSelected: 'all', FlightRoutesProgress: 0 })),
       Tval('FlightRoutesProgress', 1, SWEEP_COMBINED, 0, 'linear'),
-      Ttxt('FE → GE: arcs equalise on the sphere.'),
-      Tcall((m) => m.setState({ WorldModel: 'ge' })),
+      Ttxt('Toggle FE / GE to compare — arcs equalise on the sphere. Press Stop when done.'),
+      Thold(),
     ];
   },
 };
@@ -187,7 +183,8 @@ const CONST_SPEED_DEMO = {
     Ttxt('Same sweep on the GE sphere — same elapsed time, same arc-length per second.'),
     Tcall((m) => m.setState({ WorldModel: 'ge', FlightRoutesProgress: 0 })),
     Tval('FlightRoutesProgress', 1, SWEEP_COMBINED, 0, 'linear'),
-    Tcall((m) => m.setState({ WorldModel: 'fe' })),
+    Ttxt('Both sweeps complete — toggle FE / GE freely; press Stop when done.'),
+    Thold(),
   ],
 };
 

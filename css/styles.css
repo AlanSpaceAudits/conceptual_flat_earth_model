@@ -1120,7 +1120,14 @@ footer#desc .desc-dynamic { color: var(--fg); }
   display: grid;
   grid-template-columns: auto;
   grid-template-rows: repeat(2, 1fr);
+  grid-auto-rows: 1fr;
   gap: 2px;
   margin-right: 6px;
 }
-#bottom-bar .swap-stack .time-btn { min-width: 30px; padding: 4px 6px; font-size: 13px; }
+#bottom-bar .swap-stack .time-btn {
+  min-width: 36px;
+  padding: 2px 8px;
+  font-size: 14px;
+  line-height: 18px;
+  margin: 0;
+}

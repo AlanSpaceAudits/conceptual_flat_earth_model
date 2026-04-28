@@ -8127,3 +8127,25 @@ Format:
     from S589: dragging the dot drags
     the vault with it.
 - **Revert:** `git checkout v-s000589 -- .`
+
+## S591 — Swap-stack button sizing matches mode-grid
+
+- **Date:** 2026-04-28
+- **Files changed:** `css/styles.css`.
+- **Change:**
+  - `#bottom-bar .swap-stack .time-btn`
+    now uses `min-width: 36px`,
+    `padding: 2px 8px`, `font-size: 14px`,
+    `line-height: 18px`, `margin: 0`,
+    matching the mode-grid / cycle-row /
+    cardinal-grid button rules.
+  - Added `grid-auto-rows: 1fr` to the
+    `.swap-stack` container so its two
+    rows match the mode-grid's row
+    sizing for vertical alignment.
+- **Result:** vault-swap (`👁` / `🌐`) and
+  axis-line (`↕`) buttons now line up
+  visually with the moon / mode-grid /
+  starfield / cycle rows on the left
+  side of the bottom bar.
+- **Revert:** `git checkout v-s000590 -- .`

@@ -9070,3 +9070,19 @@ Format:
     against a flat backdrop on
     either projection.
 - **Revert:** `git checkout v-s000616 -- .`
+
+## S618 — Flight info box: Arrival predicted → Arrival (predicted)
+
+- **Date:** 2026-04-28
+- **Files changed:**
+  - `js/demos/flightRoutes.js`
+- **Change:**
+  - QF info box label
+    `Arrival predicted` →
+    `Arrival (predicted)` so the
+    parens line up with
+    `Arrival (measured)` directly
+    underneath.
+  - Same swap in the schematic
+    blank-data row.
+- **Revert:** `git checkout v-s000617 -- .`

@@ -8401,3 +8401,30 @@ Format:
     drop lines stay hidden during a
     flight-routes demo.
 - **Revert:** `git checkout v-s000597 -- .`
+
+## S599 — Flight Routes: centre-anchor labels + larger offset + closer zoom
+
+- **Date:** 2026-04-28
+- **Files changed:**
+  - `js/render/flightRoutes.js`
+  - `js/demos/flightRoutes.js`
+- **Change:**
+  - Label sprites now anchor at
+    `center.set(0.5, 0.5)` so the box
+    grows symmetrically from its
+    world-space anchor point. This
+    keeps the box clear of the ring on
+    every side and routes the leader
+    line into the box centre rather
+    than one edge.
+  - Label offsets bumped:
+    `LABEL_OFFSET_FE 0.075 → 0.115`,
+    `LABEL_OFFSET_GE 0.10 → 0.16`,
+    so the box sits well clear of the
+    ring even with the half-width of
+    longer city names.
+  - `TOP_DOWN_CAMERA.Zoom` bumped
+    `1.5 → 3.5` so the disc / globe
+    fills a usable chunk of the view
+    when a flight-routes demo opens.
+- **Revert:** `git checkout v-s000598 -- .`

@@ -31,8 +31,8 @@ const FE_LIFT       = 0.0035;
 const GE_LIFT       = 1.003;
 const ROUTE_COLOR   = 0xff8040;
 const CITY_COLOR    = 0xff8040;
-const LABEL_OFFSET_FE = 0.075;
-const LABEL_OFFSET_GE = 0.10;
+const LABEL_OFFSET_FE = 0.115;
+const LABEL_OFFSET_GE = 0.16;
 const RING_INNER    = 0.0085;
 const RING_OUTER    = 0.0125;
 
@@ -65,7 +65,11 @@ function makeLabelSprite(text) {
   const worldW = (w / cv.height) * worldH;
   sp.scale.set(worldW, worldH, 1);
   sp.userData.aspectScale = { worldW, worldH };
-  sp.center.set(0, 0.5);
+  // Anchor at sprite centre so the label box clears the ring on
+  // every side (and the leader line lands on the box centre rather
+  // than one edge, which would let the box cover the ring on the
+  // far side).
+  sp.center.set(0.5, 0.5);
   sp.renderOrder = 71;
   return sp;
 }

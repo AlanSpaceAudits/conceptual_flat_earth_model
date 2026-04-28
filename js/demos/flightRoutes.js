@@ -26,7 +26,7 @@ const TOP_DOWN_CAMERA = {
   CameraDirection: 0,
   CameraHeight:    89.9,
   CameraDistance:  20,
-  Zoom:            1.5,
+  Zoom:            3.5,
   ObserverLat:     90,
   ObserverLong:    0,
   InsideVault:     false,

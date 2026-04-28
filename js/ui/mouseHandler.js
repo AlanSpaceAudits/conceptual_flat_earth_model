@@ -327,17 +327,16 @@ export function attachMouseHandler(canvas, model, renderer = null) {
     hoveredHit = null;
   };
 
-  // Long-press drag state for the orange origin / anchor dot.
-  // After a 1-second hold over a dot, subsequent pointer moves
-  // teleport the observer's lat / lon under the cursor; release
-  // drops them at that position.
-  let dotDragTimer = null;
+  // Drag-on-press state for the orange origin / anchor dot. A
+  // single click + drag teleports the observer's lat / lon under
+  // the cursor; release drops it. A double-click toggles the
+  // ObserverAtCenter flag (the swap-to-fictitious-observer
+  // action).
   let dotDragging = false;
   const _ray = new THREE.Raycaster();
   const _ndc = new THREE.Vector2();
 
   const cancelDotDrag = () => {
-    if (dotDragTimer != null) { clearTimeout(dotDragTimer); dotDragTimer = null; }
     dotDragging = false;
   };
 
@@ -389,54 +388,31 @@ export function attachMouseHandler(canvas, model, renderer = null) {
     lastX = e.offsetX; lastY = e.offsetY;
     downX = e.offsetX; downY = e.offsetY;
     dragDist = 0;
-    // Long-press the orange dot to enter drag mode.
+    // Press on the orange dot enters drag mode immediately. A
+    // double-click on the same dot toggles ObserverAtCenter (handled
+    // by the dblclick listener below).
     if (overOrangeDot(e.offsetX, e.offsetY)) {
-      cancelDotDrag();
-      dotDragTimer = setTimeout(() => {
-        dotDragTimer = null;
-        dotDragging = true;
-      }, 500);
+      dotDragging = true;
     }
+  });
+
+  canvas.addEventListener('dblclick', (e) => {
+    if (!overOrangeDot(e.offsetX, e.offsetY)) return;
+    cancelDotDrag();
+    model.setState({
+      ObserverAtCenter: !model.state.ObserverAtCenter,
+      FollowTarget: null, FreeCamActive: false,
+    });
   });
 
   canvas.addEventListener('pointerup', (e) => {
     const wasClick = dragging && dragDist < CLICK_DRAG_PX;
+    const wasDotDrag = dotDragging;
     dragging = false;
     try { canvas.releasePointerCapture(e.pointerId); } catch {}
-    // If a long-press drag was active, finalise without triggering
-    // the click-toggle and clear timers.
-    if (dotDragging) {
-      cancelDotDrag();
-      return;
-    }
     cancelDotDrag();
+    if (wasDotDrag) return;
     if (!wasClick) return;
-    // Orange-dot click (origin or last-position anchor) — teleport
-    // observer between (lat 90°, lon 0°) and the saved
-    // LastObserver* position. Each click swaps current ↔ last.
-    if (model.state.ShowAxisLine && renderer && renderer.sm && renderer.sm.camera) {
-      const cam = renderer.sm.camera;
-      const ptOrigin = projectToCanvasPixels([0, 0, 0], cam, canvas);
-      let hit = ptOrigin && Math.hypot(ptOrigin.x - e.offsetX, ptOrigin.y - e.offsetY) < 22;
-      if (!hit && renderer._lastDotWorld) {
-        const ptLast = projectToCanvasPixels(renderer._lastDotWorld, cam, canvas);
-        if (ptLast && Math.hypot(ptLast.x - e.offsetX, ptLast.y - e.offsetY) < 22) hit = true;
-      }
-      if (hit) {
-        // Toggle the fictitious-observer flag without touching
-        // ObserverLat / ObserverLong. The user's "surface position"
-        // stays in those fields; the geometric override (in
-        // app.update) places the camera / hemisphere at the disc
-        // centre / globe centre when the flag is on. The orange
-        // anchor dot tracks the live lat / lon so adjustments stay
-        // visible and a re-click returns the observer there.
-        model.setState({
-          ObserverAtCenter: !model.state.ObserverAtCenter,
-          FollowTarget: null, FreeCamActive: false,
-        });
-        return;
-      }
-    }
     // Prefer the hovered hit (the body whose tooltip is currently
     // shown) over a fresh nearest-search — the user clicked the info
     // box they could see, even if another body is slightly nearer
@@ -489,18 +465,11 @@ export function attachMouseHandler(canvas, model, renderer = null) {
 
     if (dragging) {
       dragDist = Math.max(dragDist, Math.hypot(e.offsetX - downX, e.offsetY - downY));
-      // Pre-1-second cursor motion past the click threshold means
-      // the user is panning, not long-pressing — cancel the
-      // pending dot-drag timer.
-      if (dotDragTimer != null && dragDist > CLICK_DRAG_PX) {
-        cancelDotDrag();
-      }
     }
 
-    // Long-press dot drag — once the timer has fired, project the
-    // cursor onto the disc plane / globe sphere and update the
-    // observer's lat / lon. Anchor dot follows in real time via
-    // the existing renderer logic.
+    // Orange-dot drag — project the cursor onto the disc plane /
+    // globe sphere and update the observer's lat / lon. Anchor dot
+    // follows in real time via the existing renderer logic.
     if (dotDragging) {
       const ll = cursorToLatLon(e.offsetX, e.offsetY);
       if (ll) {
@@ -523,7 +492,7 @@ export function attachMouseHandler(canvas, model, renderer = null) {
       }
       if (near) {
         hoverTip.innerHTML = `<div class="celestial-hover-name">Fictitious Teleport</div>`
-          + `<div>Click to swap observer position</div>`;
+          + `<div>Drag to move · double-click to swap</div>`;
         hoverTip.style.left = `${e.offsetX + 14}px`;
         hoverTip.style.top  = `${e.offsetY + 14}px`;
         hoverTip.style.display = '';

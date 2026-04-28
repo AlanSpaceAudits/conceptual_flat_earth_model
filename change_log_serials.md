@@ -7997,3 +7997,28 @@ Format:
     orange-dot drag mode reduced from
     `1000` ms to `500` ms.
 - **Revert:** `git checkout v-s000585 -- .`
+
+## S587 — Orange-dot gesture: drag-on-press + dblclick-to-swap
+
+- **Date:** 2026-04-27
+- **Files changed:** `js/ui/mouseHandler.js`.
+- **Change:**
+  - Replaced the long-press timer with
+    immediate drag-on-press: pressing
+    over the orange origin / anchor dot
+    sets `dotDragging = true` straight
+    away, so any drag relocates the
+    observer's lat / lon under the
+    cursor.
+  - Removed the click-swap branch from
+    `pointerup`. The `ObserverAtCenter`
+    toggle now lives in a new `dblclick`
+    listener that fires only when the
+    cursor is over an orange dot.
+  - Dropped the timer-cancel block in
+    `pointermove` and the
+    `dotDragTimer` variable / setTimeout
+    plumbing — no timers remain.
+  - Hover tooltip text updated to
+    "Drag to move · double-click to swap".
+- **Revert:** `git checkout v-s000586 -- .`

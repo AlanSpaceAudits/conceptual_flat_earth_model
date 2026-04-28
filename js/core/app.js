@@ -439,11 +439,13 @@ export class FeModel extends EventTarget {
     // now persists across InsideVault toggles. Manual teleport
     // via the orange origin-dot click stays available.)
 
-    // While at the fictitious centre observer, keep
-    // LastObserver* in sync with the live ObserverLat / ObserverLong
-    // sliders so the orange anchor dot tracks any adjustments and
-    // a projection toggle pulls the up-to-date surface position.
-    if (s.ObserverAtCenter && s.WorldModel === 'ge') {
+    // While at the fictitious observer position, keep LastObserver*
+    // in sync with the live ObserverLat / ObserverLong sliders so
+    // the orange anchor dot tracks any adjustments and a projection
+    // toggle pulls the up-to-date surface position. Applies to
+    // both FE and GE — the fictitious observer is at the AE pole
+    // / globe centre respectively.
+    if (s.ObserverAtCenter) {
       s.LastObserverLat = s.ObserverLat;
       s.LastObserverLong = s.ObserverLong;
     }

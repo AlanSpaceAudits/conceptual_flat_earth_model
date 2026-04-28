@@ -351,36 +351,25 @@ export function attachMouseHandler(canvas, model, renderer = null) {
       }
       if (hit) {
         const s = model.state;
-        if (s.WorldModel === 'ge') {
-          // GE: toggle the fictitious-observer-at-globe-centre
-          // state. Save current lat/lon so the next click swaps
-          // back; entering centre clears Last only when the user
-          // already had a saved Last (we keep the saved
-          // coordinates so they can return to where they were).
-          if (s.ObserverAtCenter) {
-            const lat = (s.LastObserverLat == null) ? 90 : s.LastObserverLat;
-            const lon = (s.LastObserverLong == null) ? 0 : s.LastObserverLong;
-            model.setState({
-              ObserverAtCenter: false,
-              ObserverLat: lat, ObserverLong: lon,
-              FollowTarget: null, FreeCamActive: false,
-            });
-          } else {
-            model.setState({
-              ObserverAtCenter: true,
-              LastObserverLat: s.ObserverLat,
-              LastObserverLong: s.ObserverLong,
-              FollowTarget: null, FreeCamActive: false,
-            });
-          }
-        } else {
-          // FE: lat/lon swap.
-          const curLat = s.ObserverLat, curLon = s.ObserverLong;
-          const lastLat = (s.LastObserverLat == null) ? 90 : s.LastObserverLat;
-          const lastLon = (s.LastObserverLong == null) ? 0 : s.LastObserverLong;
+        // Toggle the fictitious-observer state in both modes. In GE
+        // this overrides GlobeObserverCoord to the globe centre; in
+        // FE it parks the observer at the AE pole (90°, 0°). Either
+        // way, leaving the state restores the saved surface
+        // position from LastObserver*.
+        if (s.ObserverAtCenter) {
+          const lat = (s.LastObserverLat == null) ? 90 : s.LastObserverLat;
+          const lon = (s.LastObserverLong == null) ? 0 : s.LastObserverLong;
           model.setState({
-            ObserverLat: lastLat, ObserverLong: lastLon,
-            LastObserverLat: curLat, LastObserverLong: curLon,
+            ObserverAtCenter: false,
+            ObserverLat: lat, ObserverLong: lon,
+            FollowTarget: null, FreeCamActive: false,
+          });
+        } else {
+          model.setState({
+            ObserverAtCenter: true,
+            LastObserverLat: s.ObserverLat,
+            LastObserverLong: s.ObserverLong,
+            ObserverLat: 90, ObserverLong: 0,
             FollowTarget: null, FreeCamActive: false,
           });
         }

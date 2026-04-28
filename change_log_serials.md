@@ -7877,3 +7877,35 @@ Format:
     to-date surface position rather than the
     stale value saved at click-time.
 - **Revert:** `git checkout v-s000581 -- .`
+
+## S583 — Fictitious-observer toggle in FE mode
+
+- **Date:** 2026-04-28
+- **Files changed:** `js/ui/mouseHandler.js`,
+  `js/core/app.js`,
+  `js/render/worldObjects.js`.
+- **Change:**
+  - **Click handler unified.** Clicking the
+    orange origin dot now toggles
+    `ObserverAtCenter` in both modes. Enter:
+    save current lat/lon to `LastObserver*`
+    and snap observer to (90°, 0°). Leave:
+    restore observer to `LastObserver*`. In
+    GE the at-centre flag also drives the
+    `GlobeObserverCoord = [0, 0, 0]`
+    geometric override; in FE the flag just
+    parks the observer at the AE pole and
+    enables the same "save/restore /
+    sync-on-adjust" UX.
+  - **Lat/lon sync drops the GE gate** — both
+    modes now mirror `Observer*` to
+    `LastObserver*` while at the fictitious
+    observer.
+  - **Observer-figure hide drops the GE
+    gate** — figure stays hidden whenever
+    `ObserverAtCenter` is on, including at
+    the FE AE pole.
+  - `ObserverAtCenter` still auto-clears on
+    FE↔GE flip (S578) so the flag's
+    semantics don't carry across modes.
+- **Revert:** `git checkout v-s000582 -- .`

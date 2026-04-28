@@ -84,6 +84,59 @@ function makeLabelSprite(text) {
   return sp;
 }
 
+// Pixel-art plane portrait — same chunky 96 × 96 grid the tracker
+// HUD uses for the planet / galaxy / quasar panels, scaled 4× so the
+// pixels read crisply against the dark info-box background. Drawn
+// once on first construction; the box reuses the same canvas across
+// every flight-routes demo.
+function drawFlightArt(ctx) {
+  const SIZE = 96, S = 4;
+  const cx = SIZE / 2, cy = SIZE / 2;
+  const fillRect = (x, y, c) => { ctx.fillStyle = c; ctx.fillRect(x * S, y * S, S, S); };
+  const fillBlock = (x, y, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(x * S, y * S, w * S, h * S); };
+  // Background sky — soft radial fade from indigo to near-black.
+  for (let y = 0; y < SIZE; y++) {
+    const t = y / (SIZE - 1);
+    const r = Math.round(15  + (10 - 15)  * t);
+    const g = Math.round(19  + (14 - 19)  * t);
+    const b = Math.round(40  + (22 - 40)  * t);
+    for (let x = 0; x < SIZE; x++) fillRect(x, y, `rgb(${r}, ${g}, ${b})`);
+  }
+  // Cloud puffs — a scatter of pale pixels behind the plane.
+  ctx.fillStyle = 'rgba(220, 230, 245, 0.28)';
+  const clouds = [
+    [12, 18, 6, 2], [22, 22, 4, 2], [70, 16, 8, 3], [80, 70, 6, 2],
+    [16, 70, 5, 2], [60, 78, 7, 2], [42, 12, 4, 2], [82, 44, 4, 2],
+  ];
+  for (const [x, y, w, h] of clouds) ctx.fillRect(x * S, y * S, w * S, h * S);
+  // Plane body — fuselage centre line + nose taper.
+  fillBlock(cx - 2, cy - 24, 4, 50, '#ffe6c0');   // fuselage
+  fillBlock(cx - 1, cy - 26, 2, 2, '#fff4d8');    // nose tip
+  fillBlock(cx - 3, cy - 22, 6, 4, '#fff4d8');    // cockpit highlight
+  // Main wings — wide diamond shape.
+  fillBlock(cx - 22, cy + 2, 44, 4, '#ffe6c0');
+  fillBlock(cx - 26, cy + 4, 52, 2, '#f4a640');
+  fillBlock(cx - 18, cy + 6, 36, 1, '#cc7a18');
+  // Tail wings.
+  fillBlock(cx - 10, cy + 18, 20, 3, '#ffe6c0');
+  fillBlock(cx - 12, cy + 20, 24, 1, '#f4a640');
+  // Vertical fin.
+  fillBlock(cx - 1, cy + 14, 2, 8, '#ffd698');
+  fillBlock(cx - 1, cy + 22, 2, 2, '#cc7a18');
+  // Window line on fuselage.
+  ctx.fillStyle = '#1a1f30';
+  for (let i = 0; i < 8; i++) fillRect(cx - 1, cy - 14 + i * 3, '#1a1f30');
+  // Engine pods on the wings.
+  fillBlock(cx - 14, cy + 4, 3, 4, '#cc7a18');
+  fillBlock(cx + 11, cy + 4, 3, 4, '#cc7a18');
+  // Thin orange outline along the leading edge.
+  fillBlock(cx - 22, cy + 1, 44, 1, '#ff8040');
+  // Speed marks behind the plane.
+  ctx.fillStyle = 'rgba(255, 184, 90, 0.55)';
+  for (let i = 0; i < 6; i++) fillRect(cx + 4 + i, cy + 12, 'rgba(255, 184, 90, 0.55)');
+  for (let i = 0; i < 6; i++) fillRect(cx - 9 - i, cy + 12, 'rgba(255, 184, 90, 0.55)');
+}
+
 function ensureInfoBox() {
   let el = document.getElementById('flight-info-box');
   if (el) return el;
@@ -91,30 +144,70 @@ function ensureInfoBox() {
   el.id = 'flight-info-box';
   el.style.cssText = [
     'position: absolute',
-    'top: 88px',
-    'left: 16px',
-    'padding: 10px 14px',
-    'font: 12px/1.45 ui-monospace, Menlo, monospace',
-    'color: #ffd6a8',
-    'background: rgba(15, 19, 28, 0.94)',
+    'top: 220px',
+    'left: 12px',
+    'padding: 0',
+    'font: 14px/1.45 ui-monospace, Menlo, monospace',
+    'color: #f4f6fa',
+    'background: rgba(10, 14, 22, 0.94)',
     'border: 1px solid rgba(255, 184, 90, 0.85)',
-    'border-radius: 4px',
+    'border-radius: 8px',
     'z-index: 30',
-    'min-width: 260px',
-    'max-width: 360px',
+    'min-width: 380px',
+    'max-width: 460px',
     'pointer-events: none',
-    'white-space: pre-line',
+    'box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35)',
     'display: none',
   ].join(';');
+  el.innerHTML = `
+    <div class="fi-header">
+      <div class="fi-title"></div>
+    </div>
+    <div class="fi-content">
+      <div class="fi-art-row">
+        <canvas class="fi-art" width="384" height="384"></canvas>
+      </div>
+      <div class="fi-readout"></div>
+    </div>
+  `;
   const styleTag = document.createElement('style');
   styleTag.textContent = `
-    #flight-info-box .flight-info-title { color: #f4a640; font-weight: 700; margin-bottom: 6px; letter-spacing: 0.04em; }
-    #flight-info-box .flight-info-line  { color: #f4f6fa; }
-    #flight-info-box .flight-info-blank { color: #6a7385; font-style: italic; }
+    #flight-info-box .fi-header {
+      display: flex; align-items: center; gap: 8px;
+      padding: 6px 12px;
+      background: rgba(255, 154, 60, 0.10);
+      border-bottom: 1px solid rgba(255, 184, 90, 0.30);
+      border-radius: 8px 8px 0 0;
+    }
+    #flight-info-box .fi-title { color: #f4a640; font-weight: 700; font-size: 14px; letter-spacing: 0.04em; }
+    #flight-info-box .fi-content { padding: 14px 16px; }
+    #flight-info-box .fi-art-row {
+      display: flex; gap: 16px; align-items: center;
+      border-bottom: 1px solid rgba(120, 150, 200, 0.22);
+      padding-bottom: 12px; margin-bottom: 10px;
+    }
+    #flight-info-box .fi-art {
+      width: 160px; height: 160px;
+      background: rgba(0, 0, 0, 0.6);
+      border: 1px solid rgba(120, 150, 200, 0.3);
+      border-radius: 4px;
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+      flex: 0 0 auto;
+    }
+    #flight-info-box .fi-readout { display: flex; flex-direction: column; gap: 3px; }
+    #flight-info-box .fi-line  { color: #f4f6fa; font-size: 14px; padding: 2px 4px; }
+    #flight-info-box .fi-blank { color: #6a7385; font-style: italic; font-size: 14px; padding: 2px 4px; }
   `;
   document.head.appendChild(styleTag);
   const view = document.getElementById('view') || document.body;
   view.appendChild(el);
+  // Paint the plane art once on construction; shared across every
+  // demo since the icon is generic.
+  const cv = el.querySelector('.fi-art');
+  const ctx = cv.getContext('2d');
+  ctx.imageSmoothingEnabled = false;
+  drawFlightArt(ctx);
   return el;
 }
 
@@ -369,17 +462,18 @@ export class FlightRoutes {
       box.style.display = 'none';
       return;
     }
-    const lines = info.lines.map((l) => {
-      if (typeof l !== 'string') return '';
-      // Lines starting with '~' render in a muted italic so the user
-      // sees "no data" entries clearly. Otherwise normal styling.
-      if (l.startsWith('~')) {
-        return `<div class="flight-info-line flight-info-blank">${l.slice(1)}</div>`;
-      }
-      return `<div class="flight-info-line">${l}</div>`;
-    }).join('');
-    box.innerHTML =
-      `<div class="flight-info-title">${info.title || 'Flight'}</div>${lines}`;
+    const titleEl = box.querySelector('.fi-title');
+    const readoutEl = box.querySelector('.fi-readout');
+    if (titleEl) titleEl.textContent = info.title || 'Flight';
+    if (readoutEl) {
+      readoutEl.innerHTML = info.lines.map((l) => {
+        if (typeof l !== 'string') return '';
+        if (l.startsWith('~')) {
+          return `<div class="fi-blank">${l.slice(1)}</div>`;
+        }
+        return `<div class="fi-line">${l}</div>`;
+      }).join('');
+    }
     box.style.display = '';
   }
 

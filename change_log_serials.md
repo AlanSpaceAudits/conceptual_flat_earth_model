@@ -8976,3 +8976,47 @@ Format:
     fictitious-observer mode is
     engaged.
 - **Revert:** `git checkout v-s000614 -- .`
+
+## S616 — Flight info box: tracker-sized panel + plane pixel-art portrait
+
+- **Date:** 2026-04-28
+- **Files changed:**
+  - `js/render/flightRoutes.js`
+- **Change:**
+  - `#flight-info-box` rebuilt to
+    match the existing
+    `#tracking-info-popup` panel: 14
+    px font, 380 px min-width / 460
+    max, rounded 8 px, accent-orange
+    border, header row with title in
+    accent colour. Same dark-blue
+    background and box-shadow.
+  - Added a `<canvas class="fi-art"
+    width="384" height="384">`
+    portrait at 160 × 160 CSS px,
+    `image-rendering: pixelated`,
+    sitting in an `fi-art-row` to
+    the left of the readout column.
+  - New `drawFlightArt(ctx)` paints a
+    pixel-art plane on a 96-cell
+    grid scaled 4× (matching the
+    tracker HUD's
+    `ART_SIZE = 96` / `SCALE = 4`
+    convention from
+    `js/ui/trackingInfoPopup.js`):
+    indigo→ink sky gradient, scatter
+    of cloud puffs, fuselage with
+    cockpit highlight + window
+    line, swept main wings + tail
+    wings + vertical fin, twin
+    engine pods, leading-edge
+    accent stripe, and motion-blur
+    speed marks fanning behind. The
+    canvas is painted once at panel
+    construction time so every demo
+    reuses the same icon.
+  - `_updateInfoBox` rewrites only
+    the title / readout columns each
+    frame; the canvas + structural
+    HTML stay untouched.
+- **Revert:** `git checkout v-s000615 -- .`

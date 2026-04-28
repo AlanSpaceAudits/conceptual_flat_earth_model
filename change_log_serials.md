@@ -7460,3 +7460,32 @@ Format:
     midnight-sun / analemma demo uses it)
     so swapping should resolve.
 - **Revert:** `git checkout v-s000566 -- .`
+
+## S568 — Axis-line toggle + vault-swap moved to right cluster
+
+- **Date:** 2026-04-28
+- **Files changed:** `js/render/worldObjects.js`,
+  `js/core/app.js`,
+  `js/ui/controlPanel.js`.
+- **Change:**
+  - `Observer.update` axis line (formerly
+    GE-only `zenithToCenter`) now visibility-
+    gates on a new state flag
+    `ShowAxisLine` (default `false`) instead
+    of being hard-coded to GE. In FE mode
+    the line lies on the disc plane from the
+    observer to the AE pole at world origin
+    (lat 90°, lon 0°); in GE it goes
+    radially from surface observer to globe
+    centre. Same line resource, mode-
+    independent gating.
+  - New `btnAxis` (`↕`) bottom-bar toggle in
+    the left `time-controls` slot where the
+    vault-swap button used to sit. Click
+    flips `ShowAxisLine`.
+  - `btnVault` (vault-swap, 🌐 / 👁) moved
+    from `time-controls` (left) to
+    `cycleRow` in `compassControls` (right
+    cluster) — sits as the 5th button after
+    map / starfield / az-ring / language.
+- **Revert:** `git checkout v-s000567 -- .`

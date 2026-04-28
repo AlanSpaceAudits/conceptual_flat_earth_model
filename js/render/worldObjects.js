@@ -4094,11 +4094,14 @@ export class Observer {
       this.figureGroup.rotation.set(0, 0, ang + Math.PI - headingRad);
     }
 
-    // Zenith-through-centre line — drawn in world space (visible
-    // GE only). Endpoints: observer position → origin.
+    // Axis line — observer position → origin. In GE this is the
+    // radial line from the surface observer down to the globe
+    // centre; in FE it lies on the disc plane from the observer
+    // to (lat=90, lon=0) at the AE pole. Gated on
+    // `s.ShowAxisLine`.
     if (this.zenithToCenter) {
-      this.zenithToCenter.visible = ge;
-      if (ge) {
+      this.zenithToCenter.visible = !!s.ShowAxisLine;
+      if (this.zenithToCenter.visible) {
         const arr = this.zenithToCenter.geometry.attributes.position.array;
         arr[0] = p[0]; arr[1] = p[1]; arr[2] = p[2];
         arr[3] = 0;    arr[4] = 0;    arr[5] = 0;

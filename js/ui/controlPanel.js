@@ -1881,7 +1881,19 @@ export function buildControlPanel(host, model, demos) {
     makeJumpBtn('+y',  () => stepYears(1),   'Forward 1 year'),
   );
 
-  timeControls.append(btnVault, btnRew, btnPlay, btnFf, btnSlow, btnSpeed, jumpGrid, speedStack);
+  // Axis-line toggle (orange line from observer to disc centre /
+  // globe centre). Sits where the vault-swap button used to live;
+  // vault-swap moved to the right-side compass cluster.
+  const btnAxis = document.createElement('button');
+  btnAxis.className = 'time-btn axis-line-btn';
+  btnAxis.type = 'button';
+  btnAxis.textContent = '↕';
+  btnAxis.title = 'Toggle axis line (observer ↔ centre)';
+  btnAxis.addEventListener('click', () => {
+    model.setState({ ShowAxisLine: !model.state.ShowAxisLine });
+  });
+
+  timeControls.append(btnAxis, btnRew, btnPlay, btnFf, btnSlow, btnSpeed, jumpGrid, speedStack);
   barLeft.appendChild(geoHops);
 
   const compassControls = document.createElement('div');
@@ -2097,7 +2109,7 @@ export function buildControlPanel(host, model, demos) {
   model.addEventListener('update', refreshWorldBtn);
   refreshWorldBtn();
 
-  cycleRow.append(btnMap, btnStarfield, btnAzRing, btnLang);
+  cycleRow.append(btnMap, btnStarfield, btnAzRing, btnLang, btnVault);
   compassControls.appendChild(cycleRow);
 
   // Cardinals live in their own 2×2 sub-grid so the N / S / E / W

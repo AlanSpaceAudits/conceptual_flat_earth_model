@@ -168,6 +168,7 @@ function defaultState() {
     ShowLiveEphemeris:       false,
     MoonPhaseExpanded:       false,
     ShowSatellites:          true,
+    ShowAxisLine:            false,
     ShowGPPath:              false,
     GPPathDays:              1,
     // GE-only inscribed/central-angle helpers. ShowCentralAngle

@@ -10077,3 +10077,22 @@ Format:
       off drops per-frame compute
       to a single pipeline.
 - **Revert:** `git checkout v-s000640 -- .`
+
+## S642 — HUD timestamp shows seconds
+
+- **Date:** 2026-04-28
+- **Files changed:**
+  - `js/core/time.js`
+- **Change:**
+  - `dateTimeToString` appends a
+    `:SS` field to the UTC clock,
+    `Apr 27 2019 / 08:45 UTC →
+    Apr 27 2019 / 08:45:30 UTC`.
+    Same `pad2` formatter used for
+    hours / minutes; seconds taken
+    from `Date.getUTCSeconds()`.
+    HUD strip + tracker block
+    timestamps both pick up the
+    new format automatically since
+    they share this helper.
+- **Revert:** `git checkout v-s000641 -- .`

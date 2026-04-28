@@ -36,7 +36,7 @@ const pad2 = (n) => String(Math.floor(n)).padStart(2, '0');
 
 export function dateTimeToString(dateTime) {
   const d = dateTimeToDate(dateTime);
-  return `${MONTHS[d.getUTCMonth()]} ${pad2(d.getUTCDate())} ${d.getUTCFullYear()} / ${pad2(d.getUTCHours())}:${pad2(d.getUTCMinutes())} UTC`;
+  return `${MONTHS[d.getUTCMonth()]} ${pad2(d.getUTCDate())} ${d.getUTCFullYear()} / ${pad2(d.getUTCHours())}:${pad2(d.getUTCMinutes())}:${pad2(d.getUTCSeconds())} UTC`;
 }
 
 // Parse "HH:MM" or "HH:MM:SS" into decimal hours. Returns null on failure.

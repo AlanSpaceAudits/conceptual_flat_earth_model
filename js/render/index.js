@@ -706,14 +706,13 @@ export class Renderer {
         this.originDot.position.set(0, 0, 0);
       }
     }
-    // Anchor dot — render at the saved LastObserver* lat/lon, in
-    // whichever projection is current. Hidden when no
-    // saved-last value or when ShowAxisLine is off.
+    // Anchor dot — visible only while the fictitious observer is
+    // engaged. Tracks the live `ObserverLat` / `ObserverLong` so
+    // slider adjustments move the surface marker in real time.
     if (this.lastDot) {
-      const haveLast = s.ShowAxisLine
-        && s.LastObserverLat != null && s.LastObserverLong != null;
-      if (haveLast) {
-        const lat = s.LastObserverLat, lon = s.LastObserverLong;
+      const showAnchor = !!s.ShowAxisLine && !!s.ObserverAtCenter;
+      if (showAnchor) {
+        const lat = s.ObserverLat, lon = s.ObserverLong;
         let pos;
         if (s.WorldModel === 'ge') {
           const cl = Math.cos(lat * Math.PI / 180);

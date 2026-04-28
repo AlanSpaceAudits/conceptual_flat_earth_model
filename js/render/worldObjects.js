@@ -4120,25 +4120,21 @@ export class Observer {
       this.zenithToCenter.visible = !!s.ShowAxisLine;
       if (this.zenithToCenter.visible) {
         const arr = this.zenithToCenter.geometry.attributes.position.array;
-        const haveLast = s.LastObserverLat != null && s.LastObserverLong != null;
-        const atGeCenter = ge && s.ObserverAtCenter;
-        const atFePole   = !ge
-          && s.ObserverLat === 90 && s.ObserverLong === 0;
-        if ((atGeCenter || atFePole) && haveLast) {
-          // Anchor the line from observer's "home" position out to
-          // the surface point they came from, so a fictitious-
-          // observer move keeps a visual tie back.
-          arr[0] = p[0]; arr[1] = p[1]; arr[2] = p[2];
+        if (s.ObserverAtCenter) {
+          // At the fictitious observer: line from world origin out
+          // to the live surface lat/lon (= anchor dot). Moves with
+          // slider adjustments.
           let q;
           if (ge) {
-            const lat = s.LastObserverLat * Math.PI / 180;
-            const lon = s.LastObserverLong * Math.PI / 180;
+            const lat = s.ObserverLat * Math.PI / 180;
+            const lon = s.ObserverLong * Math.PI / 180;
             const cl = Math.cos(lat), sl = Math.sin(lat);
             const co = Math.cos(lon), so = Math.sin(lon);
             q = [FE_RADIUS * cl * co, FE_RADIUS * cl * so, FE_RADIUS * sl];
           } else {
-            q = feLatLongToGlobalFeCoord(s.LastObserverLat, s.LastObserverLong, FE_RADIUS);
+            q = feLatLongToGlobalFeCoord(s.ObserverLat, s.ObserverLong, FE_RADIUS);
           }
+          arr[0] = 0; arr[1] = 0; arr[2] = 0;
           arr[3] = q[0]; arr[4] = q[1]; arr[5] = q[2];
         } else {
           arr[0] = p[0]; arr[1] = p[1]; arr[2] = p[2];

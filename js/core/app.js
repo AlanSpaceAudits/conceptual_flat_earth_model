@@ -483,6 +483,17 @@ export class FeModel extends EventTarget {
     c.TransMatLocalFeToGlobalFe = compTransMatLocalFeToGlobalFe(
       c.ObserverFeCoord, s.ObserverLong,
     );
+    // FE fictitious observer: park ObserverFeCoord at the disc
+    // centre regardless of the user's lat / lon. The lat / lon
+    // still drives the optical-vault tilt (TransMatLocalFeToGlobalFe
+    // recomputed at origin) and the orange anchor dot's surface
+    // position.
+    if (s.ObserverAtCenter && s.WorldModel !== 'ge') {
+      c.ObserverFeCoord = [0, 0, 0];
+      c.TransMatLocalFeToGlobalFe = compTransMatLocalFeToGlobalFe(
+        c.ObserverFeCoord, s.ObserverLong,
+      );
+    }
 
     // Globe-Earth observer placement: a unit sphere of radius
     // GLOBE_RADIUS (matching FE_RADIUS so the camera scale is stable).

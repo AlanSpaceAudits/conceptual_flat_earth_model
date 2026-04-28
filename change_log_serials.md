@@ -7909,3 +7909,49 @@ Format:
     FE↔GE flip (S578) so the flag's
     semantics don't carry across modes.
 - **Revert:** `git checkout v-s000582 -- .`
+
+## S584 — Fictitious observer: keep lat/lon untouched, anchor tracks live
+
+- **Date:** 2026-04-28
+- **Files changed:** `js/ui/mouseHandler.js`,
+  `js/core/app.js`,
+  `js/render/index.js`,
+  `js/render/worldObjects.js`.
+- **Change:**
+  - **Click handler simplified.** Toggling
+    `ObserverAtCenter` no longer touches
+    `ObserverLat` / `ObserverLong`. The
+    user's surface position stays in those
+    fields; the geometric override moves
+    the camera / hemisphere to the disc
+    centre / globe centre while the lat /
+    lon represents "where I would be on the
+    surface".
+  - **FE override added.** `app.update()`
+    now sets `ObserverFeCoord = [0, 0, 0]`
+    and recomputes
+    `TransMatLocalFeToGlobalFe` at origin
+    when `ObserverAtCenter && !ge`, so the
+    FE optical-vault hemisphere centres on
+    the disc centre (AE pole). Mirror of
+    the GE `GlobeObserverCoord` override.
+  - **Anchor dot tracks live lat/lon.**
+    The `lastDot` (orange anchor) now
+    renders at the live `ObserverLat` /
+    `ObserverLong` projected to world
+    coords whenever
+    `ShowAxisLine && ObserverAtCenter`.
+    Slider adjustments move the dot in
+    real time without overwriting any
+    saved-snapshot.
+  - **Axis line endpoint.** Same change —
+    when at-centre, the line draws from
+    world origin out to the live lat / lon
+    surface position.
+  - The `LastObserver*` state fields are
+    no longer used for the fictitious-
+    observer mechanic (they remain in
+    state for backwards compatibility but
+    aren't read anywhere significant for
+    this feature).
+- **Revert:** `git checkout v-s000583 -- .`

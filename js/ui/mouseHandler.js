@@ -350,29 +350,17 @@ export function attachMouseHandler(canvas, model, renderer = null) {
         if (ptLast && Math.hypot(ptLast.x - e.offsetX, ptLast.y - e.offsetY) < 22) hit = true;
       }
       if (hit) {
-        const s = model.state;
-        // Toggle the fictitious-observer state in both modes. In GE
-        // this overrides GlobeObserverCoord to the globe centre; in
-        // FE it parks the observer at the AE pole (90°, 0°). Either
-        // way, leaving the state restores the saved surface
-        // position from LastObserver*.
-        if (s.ObserverAtCenter) {
-          const lat = (s.LastObserverLat == null) ? 90 : s.LastObserverLat;
-          const lon = (s.LastObserverLong == null) ? 0 : s.LastObserverLong;
-          model.setState({
-            ObserverAtCenter: false,
-            ObserverLat: lat, ObserverLong: lon,
-            FollowTarget: null, FreeCamActive: false,
-          });
-        } else {
-          model.setState({
-            ObserverAtCenter: true,
-            LastObserverLat: s.ObserverLat,
-            LastObserverLong: s.ObserverLong,
-            ObserverLat: 90, ObserverLong: 0,
-            FollowTarget: null, FreeCamActive: false,
-          });
-        }
+        // Toggle the fictitious-observer flag without touching
+        // ObserverLat / ObserverLong. The user's "surface position"
+        // stays in those fields; the geometric override (in
+        // app.update) places the camera / hemisphere at the disc
+        // centre / globe centre when the flag is on. The orange
+        // anchor dot tracks the live lat / lon so adjustments stay
+        // visible and a re-click returns the observer there.
+        model.setState({
+          ObserverAtCenter: !model.state.ObserverAtCenter,
+          FollowTarget: null, FreeCamActive: false,
+        });
         return;
       }
     }

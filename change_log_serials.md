@@ -9439,3 +9439,64 @@ Format:
     demos, and every QF27/28
     actual-flight playback.
 - **Revert:** `git checkout v-s000624 -- .`
+
+## S626 — Equal Arc demo: side-by-side straight-line race panel
+
+- **Date:** 2026-04-28
+- **Files changed:**
+  - `js/core/app.js`
+  - `js/render/flightRoutes.js`
+  - `js/demos/flightRoutes.js`
+- **Change:**
+  - New default state field
+    `FlightRaceTrack: null | { title,
+    lanes: [{ label, angle, color },
+    ...] }`. Drives a side-panel race
+    track on the right edge of the
+    viewport.
+  - `ensureRacePanel()` builds a fixed
+    `#flight-race-panel` (top:220,
+    right:12, 420 px min-width,
+    accent-orange border) with a
+    400 × 210 CSS-px canvas.
+  - `drawRaceCanvas(ctx, info,
+    progress)` renders one horizontal
+    lane per entry. Pixel length =
+    `(lane.angle / max angle) × track
+    width`, so equal central angles
+    yield equal-length straight
+    lines. Each lane shows: lane
+    label, total arc °, start/end
+    dots, baseline track, accent-
+    coloured swept segment, plane
+    silhouette riding the swept tip,
+    and a live `elapsed° / total°`
+    readout.
+  - `FlightRoutes._updateRacePanel`
+    is called every frame from
+    `update()`; reads
+    `state.FlightRoutesProgress` to
+    drive the swept length on each
+    lane simultaneously, so both
+    planes race at the same
+    proportional rate as the map's
+    great-circle planes.
+  - Both Equal Arc demos
+    (`Equal Arc (mirror)` and
+    `Equal Arc`) populate the
+    `FlightRaceTrack` field in
+    their intros with their two
+    routes' central angles. Mirror
+    pairs the south leg + its
+    reflected northern twin at the
+    same angle; cross-lat pairs
+    Santiago↔Sydney with
+    JFK↔Persian-Gulf at the same
+    angle. Either way the side panel
+    draws two straight lines of the
+    same length, two planes race in
+    lockstep, both finish at the
+    same frame — independent of how
+    distorted the curved AE arcs
+    look on the map.
+- **Revert:** `git checkout v-s000625 -- .`

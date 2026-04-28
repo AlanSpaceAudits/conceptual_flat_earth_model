@@ -394,6 +394,18 @@ function constSpeedDemo({ name, southObj, southAngle, northObj, northLabel, spee
         constSpeedBox(southObj, southAngle, speedDegPerH, 'SOUTH'),
         constSpeedBox(northObj, northAngle, speedDegPerH, northLabel),
       ],
+      // Side panel: both lanes drawn as straight horizontal lines
+      // with pixel-length proportional to their central angle.
+      // Equal central angles → equal-length straight lines, so the
+      // race makes the equality plain even when the AE projection
+      // makes the curves look unequal.
+      FlightRaceTrack: {
+        title: 'Equal Arc — straight-line race',
+        lanes: [
+          { label: `SOUTH · ${southObj.label}`, angle: southAngle, color: '#ff8040' },
+          { label: `${northLabel} · ${northObj.label}`,  angle: northAngle, color: '#66c8ff' },
+        ],
+      },
     }),
     tasks: () => [
       Ttxt(`Equal central angle (${southAngle.toFixed(1)}°) — both routes sweeping at identical ${formatDmsPerHour(speedDegPerH)}. Both reach destination at the same instant despite the projection making them look different.`),

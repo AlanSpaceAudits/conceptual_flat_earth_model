@@ -187,6 +187,13 @@ function defaultState() {
     // HUD overlay populated by flight-routes demos. `null` = hide.
     // Otherwise `{ title, lines: string[] }`.
     FlightInfoBox:           null,
+    // Side panel showing two routes "straightened to scale" so the
+    // user can watch two planes race along straight horizontal
+    // tracks. `null` = hide; otherwise
+    // `{ title, lanes: [{ label, angle, color }, ...] }`. Track
+    // pixel-length scales with the per-lane `angle` so equal central
+    // angles draw equal-length straight lines.
+    FlightRaceTrack:         null,
     ShowGPPath:              false,
     GPPathDays:              1,
     // GE-only inscribed/central-angle helpers. ShowCentralAngle

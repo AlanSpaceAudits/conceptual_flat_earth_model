@@ -176,6 +176,136 @@ function buildInfoBoxEl(id, top, left) {
   return el;
 }
 
+// Side-panel race track. One canvas, redrawn every frame from the
+// active state, showing two straight horizontal tracks whose pixel
+// length is proportional to each lane's central angle. Two plane
+// icons race along the tracks at `FlightRoutesProgress`. Equal-arc
+// demos load both lanes with the same angle, so the straight-line
+// race makes the equality obvious even when the map AE projection
+// makes the curves look unequal.
+function ensureRacePanel() {
+  let el = document.getElementById('flight-race-panel');
+  if (el) return el;
+  el = document.createElement('div');
+  el.id = 'flight-race-panel';
+  el.style.cssText = [
+    'position: absolute',
+    'top: 220px',
+    'right: 12px',
+    'padding: 0',
+    'background: rgba(10, 14, 22, 0.94)',
+    'border: 1px solid rgba(255, 184, 90, 0.85)',
+    'border-radius: 8px',
+    'z-index: 30',
+    'min-width: 420px',
+    'pointer-events: none',
+    'box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35)',
+    'display: none',
+  ].join(';');
+  el.innerHTML = `
+    <div class="fr-header" style="
+      padding: 6px 12px;
+      background: rgba(255, 154, 60, 0.10);
+      border-bottom: 1px solid rgba(255, 184, 90, 0.30);
+      border-radius: 8px 8px 0 0;
+      color: #f4a640;
+      font: 700 14px/1.45 ui-monospace, Menlo, monospace;
+      letter-spacing: 0.04em;
+    "></div>
+    <canvas class="fr-canvas" width="800" height="420"
+      style="width: 400px; height: 210px; display: block; image-rendering: pixelated; padding: 12px;"></canvas>
+  `;
+  const view = document.getElementById('view') || document.body;
+  view.appendChild(el);
+  return el;
+}
+
+function drawRaceCanvas(ctx, info, progress) {
+  const W = 800, H = 420;
+  ctx.clearRect(0, 0, W, H);
+  const lanes = info.lanes || [];
+  if (!lanes.length) return;
+  const padL = 110;
+  const padR = 90;
+  const padTopY = 60;
+  const padBottomY = 60;
+  const trackPxMax = W - padL - padR;
+  const laneSpan = (H - padTopY - padBottomY) / Math.max(1, lanes.length);
+  const maxAngle = Math.max(...lanes.map((l) => l.angle));
+  for (let i = 0; i < lanes.length; i++) {
+    const lane = lanes[i];
+    const trackPx = (lane.angle / maxAngle) * trackPxMax;
+    const yMid = padTopY + laneSpan * (i + 0.5);
+    // Lane label.
+    ctx.fillStyle = lane.color || '#ffd6a8';
+    ctx.font = 'bold 22px ui-monospace, Menlo, monospace';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(lane.label || '', 16, yMid - 38);
+    ctx.fillStyle = '#9aa3b3';
+    ctx.font = '18px ui-monospace, Menlo, monospace';
+    ctx.fillText(`${lane.angle.toFixed(2)}°`, 16, yMid + 28);
+    // Track baseline.
+    ctx.strokeStyle = '#7a8499';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(padL, yMid);
+    ctx.lineTo(padL + trackPx, yMid);
+    ctx.stroke();
+    // Already-traversed segment in accent.
+    const swept = trackPx * Math.max(0, Math.min(1, progress));
+    ctx.strokeStyle = lane.color || '#ff8040';
+    ctx.lineWidth = 5;
+    ctx.beginPath();
+    ctx.moveTo(padL, yMid);
+    ctx.lineTo(padL + swept, yMid);
+    ctx.stroke();
+    // Start / end markers.
+    ctx.fillStyle = lane.color || '#ff8040';
+    ctx.beginPath();
+    ctx.arc(padL, yMid, 10, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(padL + trackPx, yMid, 10, 0, 2 * Math.PI);
+    ctx.fill();
+    // Plane silhouette at the progress point.
+    const px = padL + swept;
+    const ps = 36;
+    ctx.save();
+    ctx.translate(px, yMid);
+    ctx.fillStyle = '#fff5e6';
+    ctx.strokeStyle = '#ff8040';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.moveTo(ps * 0.55, 0);
+    ctx.lineTo(ps * 0.05, -ps * 0.18);
+    ctx.lineTo(-ps * 0.45, -ps * 0.18);
+    ctx.lineTo(-ps * 0.55, -ps * 0.40);
+    ctx.lineTo(-ps * 0.30, -ps * 0.40);
+    ctx.lineTo(-ps * 0.15, -ps * 0.18);
+    ctx.lineTo(0, -ps * 0.10);
+    ctx.lineTo(0, ps * 0.10);
+    ctx.lineTo(-ps * 0.15, ps * 0.18);
+    ctx.lineTo(-ps * 0.30, ps * 0.40);
+    ctx.lineTo(-ps * 0.55, ps * 0.40);
+    ctx.lineTo(-ps * 0.45, ps * 0.18);
+    ctx.lineTo(ps * 0.05, ps * 0.18);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    ctx.restore();
+    // Live progress as elapsed° / total°.
+    ctx.fillStyle = '#ffd698';
+    ctx.font = '18px ui-monospace, Menlo, monospace';
+    ctx.textAlign = 'right';
+    ctx.fillText(
+      `${(lane.angle * progress).toFixed(2)}° / ${lane.angle.toFixed(2)}°`,
+      W - 16, yMid + 28,
+    );
+    ctx.textAlign = 'left';
+  }
+}
+
 function ensureInfoBoxes() {
   let primary   = document.getElementById('flight-info-box');
   let secondary = document.getElementById('flight-info-box-2');
@@ -512,15 +642,31 @@ export class FlightRoutes {
     if (!info) {
       primary.style.display = 'none';
       secondary.style.display = 'none';
-      return;
-    }
-    if (Array.isArray(info)) {
+    } else if (Array.isArray(info)) {
       this._renderInfoBox(primary,   info[0] || null, state);
       this._renderInfoBox(secondary, info[1] || null, state);
     } else {
       this._renderInfoBox(primary, info, state);
       secondary.style.display = 'none';
     }
+    this._updateRacePanel(state);
+  }
+
+  _updateRacePanel(state) {
+    const panel = ensureRacePanel();
+    const race = state.FlightRaceTrack;
+    if (!race || !Array.isArray(race.lanes) || race.lanes.length === 0) {
+      panel.style.display = 'none';
+      return;
+    }
+    const headerEl = panel.querySelector('.fr-header');
+    if (headerEl) headerEl.textContent = race.title || 'Equal Arc — race';
+    const cv = panel.querySelector('.fr-canvas');
+    const ctx = cv.getContext('2d');
+    ctx.imageSmoothingEnabled = false;
+    const progress = Math.max(0, Math.min(1, state.FlightRoutesProgress || 0));
+    drawRaceCanvas(ctx, race, progress);
+    panel.style.display = '';
   }
 
   update(model) {

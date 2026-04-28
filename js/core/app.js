@@ -423,14 +423,13 @@ export class FeModel extends EventTarget {
       s.SunMonthMarkersOpp = [];
       s.EclipseMapSolar = [];
       s.EclipseMapLunar = [];
-      // GE → FE: snap observer to the AE pole (lat 90°, lon 0°)
-      // so the FE projection doesn't inherit a southern-hemisphere
-      // negative-latitude position that maps awkwardly on the disc.
-      if (this._lastWorldModel === 'ge' && s.WorldModel !== 'ge') {
-        s.LastObserverLat = s.ObserverAtCenter ? null : s.ObserverLat;
-        s.LastObserverLong = s.ObserverAtCenter ? null : s.ObserverLong;
-        s.ObserverLat = 90;
-        s.ObserverLong = 0;
+      // ObserverAtCenter is GE-only — collapse it on any mode flip
+      // so an FE switch doesn't inherit a stale "at-centre" flag.
+      // ObserverLat / ObserverLong are intentionally preserved
+      // across the toggle so the user's location persists; the
+      // orange origin-dot click is the explicit way to teleport to
+      // (90°, 0°).
+      if (s.ObserverAtCenter) {
         s.ObserverAtCenter = false;
       }
     }

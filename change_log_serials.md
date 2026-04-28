@@ -7784,3 +7784,20 @@ Format:
     the rendered hemisphere from any angle,
     but no below-horizon objects appear.
 - **Revert:** `git checkout v-s000576 -- .`
+
+## S578 — FE/GE toggle preserves observer lat/lon
+
+- **Date:** 2026-04-28
+- **Files changed:** `js/core/app.js`.
+- **Change:**
+  - Removed the GE→FE auto-snap-to-(90°, 0°)
+    block. `ObserverLat` / `ObserverLong`
+    now persist across FE↔GE toggles, so
+    cycling modes keeps the user at the
+    same lat/lon. Auto-clearing the
+    stale `ObserverAtCenter` flag stays
+    (it's a GE-only state). Manual
+    teleport to (90°, 0°) is still
+    available via the orange origin-dot
+    click.
+- **Revert:** `git checkout v-s000577 -- .`

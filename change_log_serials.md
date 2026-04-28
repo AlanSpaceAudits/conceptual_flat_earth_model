@@ -9844,3 +9844,20 @@ Format:
     canvas isn't blank before the
     first `_renderInfoBox` call.
 - **Revert:** `git checkout v-s000635 -- .`
+
+## S637 — Equal Arc info box: Total arc → Central Angle
+
+- **Date:** 2026-04-28
+- **Files changed:**
+  - `js/demos/flightRoutes.js`
+- **Change:**
+  - `Total arc` row relabelled to
+    `Central Angle` in the
+    `constSpeedBox` builder so the
+    Equal Arc info-box terminology
+    matches the rest of the demo
+    (header line, race-panel
+    overlay, schematic per-route
+    boxes — all use "central
+    angle"). Value unchanged.
+- **Revert:** `git checkout v-s000636 -- .`

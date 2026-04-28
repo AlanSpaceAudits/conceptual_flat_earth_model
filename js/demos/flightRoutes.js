@@ -400,7 +400,7 @@ function constSpeedBox(route, angle, speedDegPerH, label, accent) {
       `Destination : ${b.name}  (${b.lat.toFixed(2)}°, ${b.lon.toFixed(2)}°)`,
       `Takeoff     : ${formatHMS(0)}`,
       `Arrival     : ${formatHMS(arrivalSec)}`,
-      `Total arc   : ${angle.toFixed(2)}°`,
+      `Central Angle : ${angle.toFixed(2)}°`,
       `Speed       : ${formatDmsPerHour(speedDegPerH)}`,
       (s) => {
         const p = Math.max(0, Math.min(1, s.FlightRoutesProgress || 0));

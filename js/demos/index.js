@@ -98,6 +98,13 @@ export class Demos {
     const introWithLinesOff = { ShowConstellationLines: false, ...introState };
     this.model.setState(introWithLinesOff);
     this.animator.play(d.tasks(this.model));
+    // Optional per-demo speedScale override. Default 0.125 from
+    // animator.play() is suitable for slow celestial demos; map /
+    // route demos run faster when the authored cadence already
+    // matches wall time.
+    if (typeof d.speedScale === 'number') {
+      this.animator.setSpeedScale(d.speedScale);
+    }
     // Fire a no-op setState after `animator.play` so the next
     // `update` event sees `animator.running === true` and the
     // controlPanel watchdog suspends autoplay immediately —

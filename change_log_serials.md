@@ -8297,3 +8297,47 @@ Format:
     `WorldModel = 'fe'` /
     `MapProjection = 'ae'`.
 - **Revert:** `git checkout v-s000594 -- .`
+
+## S596 — Flight Routes: faster sweep + hide tracker GPs
+
+- **Date:** 2026-04-28
+- **Files changed:**
+  - `js/demos/index.js`
+  - `js/demos/flightRoutes.js`
+- **Change:**
+  - `_playSingle` now honours an
+    optional `speedScale` field on a
+    demo definition and calls
+    `animator.setSpeedScale` after
+    `play()` so route demos can
+    override the default 0.125
+    slow-celestial cadence.
+  - All flight-route demos declare
+    `speedScale: 1.0` so authored ms
+    ≈ wall ms.
+  - Per-route sweeps shortened to
+    `SWEEP_PER_ROUTE = 4500` ms, the
+    combined / central-angle /
+    constant-speed sweeps to
+    `SWEEP_COMBINED = 6000` ms;
+    FE→GE settle pause shortened to
+    800 ms so the projection swap is
+    snappy.
+  - Demo intro now wipes
+    `TrackerTargets` to `[]` and
+    `FollowTarget` to `null` so the
+    per-tracker GP markers (the
+    catalogued-star + planet ground
+    dots that were painting on top of
+    the route map) stay off for the
+    duration of the demo. Restored
+    automatically when the demo ends
+    via the existing
+    `_savedState` snapshot.
+  - Catalogue toggles
+    (`ShowBlackHoles`, `ShowQuasars`,
+    `ShowGalaxies`, `ShowSatellites`)
+    also forced off in the intro to
+    catch their independent dot
+    layers.
+- **Revert:** `git checkout v-s000595 -- .`

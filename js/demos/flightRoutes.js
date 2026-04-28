@@ -12,6 +12,13 @@ const T1  = 1000;
 const T8  = 8000;
 const T12 = 12000;
 
+// Wall-time-tuned tween durations. The demos run with
+// `speedScale: 1` (overriding the default 0.125 slow-celestial
+// cadence), so authored ms ≈ wall ms.
+const SWEEP_PER_ROUTE = 4500;
+const SWEEP_COMBINED  = 6000;
+const FLIGHT_SPEED_SCALE = 1.0;
+
 // Top-down camera at the AE pole (lat 90°, lon 0°). Heavenly view
 // (InsideVault: false) so the orbit camera centres on the disc /
 // globe, not an observer's eye height.
@@ -28,7 +35,9 @@ const TOP_DOWN_CAMERA = {
 };
 
 // Hide every sky / observer overlay — the demo is a pure
-// map-projection geometry view.
+// map-projection geometry view. TrackerTargets cleared so the
+// per-tracker GP markers (sun / moon / planets / every catalogued
+// star) don't paint dots and dashed lines on top of the route map.
 const SKY_HIDDEN = {
   ShowStars:               false,
   ShowConstellationLines:  false,
@@ -45,6 +54,12 @@ const SKY_HIDDEN = {
   ShowOpticalVaultRays:    false,
   ShowProjectionRays:      false,
   ShowManyRays:            false,
+  TrackerTargets:          [],
+  FollowTarget:            null,
+  ShowBlackHoles:          false,
+  ShowQuasars:             false,
+  ShowGalaxies:            false,
+  ShowSatellites:          false,
 };
 
 // FE grid + GP drops on (the user wanted both visible).
@@ -66,10 +81,10 @@ function sweepRoute(routeId) {
       FlightRoutesSelected: routeId,
       FlightRoutesProgress: 0,
     })),
-    Tval('FlightRoutesProgress', 1, T8, 0, 'linear'),
+    Tval('FlightRoutesProgress', 1, SWEEP_PER_ROUTE, 0, 'linear'),
     Ttxt('FE → GE: same arc, different visual.'),
     Tcall((m) => m.setState({ WorldModel: 'ge' })),
-    Tval('FlightRoutesProgress', 1, 0, T1),
+    Tval('FlightRoutesProgress', 1, 0, 800),
     Tcall((m) => m.setState({ WorldModel: 'fe' })),
   ];
 }
@@ -81,6 +96,7 @@ const PER_ROUTE_DEMOS = FLIGHT_ROUTES.map((r) => {
   return {
     name: `Route — ${r.label}`,
     group: 'flight-routes',
+    speedScale: FLIGHT_SPEED_SCALE,
     intro: baseIntro({
       FlightRoutesSelected: r.id,
       FlightRoutesProgress: 0,
@@ -95,6 +111,7 @@ const PER_ROUTE_DEMOS = FLIGHT_ROUTES.map((r) => {
 const ALL_ROUTES_DEMO = {
   name: 'All routes — combined map',
   group: 'flight-routes',
+  speedScale: FLIGHT_SPEED_SCALE,
   intro: baseIntro({
     FlightRoutesSelected: 'all',
     FlightRoutesProgress: 0,
@@ -106,10 +123,10 @@ const ALL_ROUTES_DEMO = {
       FlightRoutesSelected: 'all',
       FlightRoutesProgress: 0,
     })),
-    Tval('FlightRoutesProgress', 1, T12, 0, 'linear'),
+    Tval('FlightRoutesProgress', 1, SWEEP_COMBINED, 0, 'linear'),
     Ttxt('FE → GE: same legs, spherical view.'),
     Tcall((m) => m.setState({ WorldModel: 'ge' })),
-    Tval('FlightRoutesProgress', 1, 0, T1),
+    Tval('FlightRoutesProgress', 1, 0, 800),
     Tcall((m) => m.setState({ WorldModel: 'fe' })),
   ],
 };
@@ -125,6 +142,7 @@ function mirroredAngle(latA, lonA, latB, lonB) {
 const CENTRAL_ANGLE_DEMO = {
   name: 'Central-angle theorem — north vs south arc length',
   group: 'flight-routes',
+  speedScale: FLIGHT_SPEED_SCALE,
   intro: baseIntro({
     FlightRoutesSelected: 'all',
     FlightRoutesProgress: 0,
@@ -140,7 +158,7 @@ const CENTRAL_ANGLE_DEMO = {
       Ttxt('Each southern leg has the same central angle as its lat-mirrored northern counterpart — the AE projection only stretches the visual length.'),
       ...lines.map((l) => Ttxt(l, 1500)),
       Tcall((m) => m.setState({ ShowFlightRoutes: true, FlightRoutesSelected: 'all', FlightRoutesProgress: 0 })),
-      Tval('FlightRoutesProgress', 1, T12, 0, 'linear'),
+      Tval('FlightRoutesProgress', 1, SWEEP_COMBINED, 0, 'linear'),
       Ttxt('FE → GE: arcs equalise on the sphere.'),
       Tcall((m) => m.setState({ WorldModel: 'ge' })),
     ];
@@ -153,6 +171,7 @@ const CENTRAL_ANGLE_DEMO = {
 const CONST_SPEED_DEMO = {
   name: 'Constant speed — equal arc-length, equal time',
   group: 'flight-routes',
+  speedScale: FLIGHT_SPEED_SCALE,
   intro: baseIntro({
     FlightRoutesSelected: ['jnb-syd', 'jnb-gru'],
     FlightRoutesProgress: 0,
@@ -164,10 +183,10 @@ const CONST_SPEED_DEMO = {
       FlightRoutesSelected: ['jnb-syd', 'jnb-gru'],
       FlightRoutesProgress: 0,
     })),
-    Tval('FlightRoutesProgress', 1, T12, 0, 'linear'),
+    Tval('FlightRoutesProgress', 1, SWEEP_COMBINED, 0, 'linear'),
     Ttxt('Same sweep on the GE sphere — same elapsed time, same arc-length per second.'),
     Tcall((m) => m.setState({ WorldModel: 'ge', FlightRoutesProgress: 0 })),
-    Tval('FlightRoutesProgress', 1, T12, 0, 'linear'),
+    Tval('FlightRoutesProgress', 1, SWEEP_COMBINED, 0, 'linear'),
     Tcall((m) => m.setState({ WorldModel: 'fe' })),
   ],
 };

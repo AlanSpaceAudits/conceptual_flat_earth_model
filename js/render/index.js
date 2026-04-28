@@ -297,6 +297,22 @@ export class Renderer {
       this.sm.world.add(this.observer.zenithToCenter);
     }
 
+    // Top-level origin marker for the axis line — orange dot at
+    // world (0, 0, 0). In GE mode the WorldGlobe's own `center`
+    // dot is visible (inside the globe group); in FE mode that
+    // group is hidden so this top-level dot picks up the FE case.
+    // Gated on `s.ShowAxisLine`.
+    this.originDot = new THREE.Mesh(
+      new THREE.SphereGeometry(0.012, 12, 10),
+      new THREE.MeshBasicMaterial({
+        color: 0xff8040, transparent: true, opacity: 0.95,
+        depthTest: false, depthWrite: false,
+      }),
+    );
+    this.originDot.renderOrder = 70;
+    this.originDot.visible = false;
+    this.sm.world.add(this.originDot);
+
     // Rays as Line objects managed via this.rebuildRays() each frame.
     this.rayGroup = new THREE.Group();
     this.rayGroup.name = 'rays';
@@ -662,6 +678,13 @@ export class Renderer {
     this.toroidalVortex.update(m);
     this.toroidalVortexDual.update(m);
     this.observer.update(m);
+    // Top-level origin dot — in FE the WorldGlobe group (which
+    // hosts its own centre dot) is hidden, so the axis line needs
+    // a visible endpoint at world origin in FE too. Hide in GE
+    // mode (the globe's own dot covers it) to avoid double-paint.
+    if (this.originDot) {
+      this.originDot.visible = !!s.ShowAxisLine && s.WorldModel !== 'ge';
+    }
 
     // In first-person (InsideVault) mode the true-source markers on the
     // heavenly vault must not render — the observer is supposed to see only

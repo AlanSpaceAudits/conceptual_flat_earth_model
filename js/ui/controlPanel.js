@@ -1893,7 +1893,7 @@ export function buildControlPanel(host, model, demos) {
     model.setState({ ShowAxisLine: !model.state.ShowAxisLine });
   });
 
-  timeControls.append(btnAxis, btnRew, btnPlay, btnFf, btnSlow, btnSpeed, jumpGrid, speedStack);
+  timeControls.append(btnRew, btnPlay, btnFf, btnSlow, btnSpeed, jumpGrid, speedStack);
   barLeft.appendChild(geoHops);
 
   const compassControls = document.createElement('div');
@@ -2019,6 +2019,12 @@ export function buildControlPanel(host, model, demos) {
   //   🎛  📍  🎥  🔦     — navigation / camera-mode jumps + rays
   modeGrid.append(btnNight, btnScreenshot, btnTrue, btnStm,
                   btnTrackerOpts, btnObserver, btnFreeCamKb, btnRays);
+  // Vault-swap + axis-line stacked vertically as a 1×2 column to
+  // the left of the modeGrid's first column (the moon icon).
+  const swapStack = document.createElement('div');
+  swapStack.className = 'swap-stack';
+  swapStack.append(btnVault, btnAxis);
+  compassControls.appendChild(swapStack);
   compassControls.appendChild(modeGrid);
 
   // Cycle buttons sit next to the grid — they swap fundamental
@@ -2109,7 +2115,7 @@ export function buildControlPanel(host, model, demos) {
   model.addEventListener('update', refreshWorldBtn);
   refreshWorldBtn();
 
-  cycleRow.append(btnMap, btnStarfield, btnAzRing, btnLang, btnVault);
+  cycleRow.append(btnMap, btnStarfield, btnAzRing, btnLang);
   compassControls.appendChild(cycleRow);
 
   // Cardinals live in their own 2×2 sub-grid so the N / S / E / W

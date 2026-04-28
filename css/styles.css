@@ -1115,3 +1115,12 @@ footer#desc .desc-dynamic { color: var(--fg); }
   #bottom-bar .body-search { width: 110px; }
   #hud { font-size: 10px; }
 }
+
+#bottom-bar .swap-stack {
+  display: grid;
+  grid-template-columns: auto;
+  grid-template-rows: repeat(2, 1fr);
+  gap: 2px;
+  margin-right: 6px;
+}
+#bottom-bar .swap-stack .time-btn { min-width: 30px; padding: 4px 6px; font-size: 13px; }

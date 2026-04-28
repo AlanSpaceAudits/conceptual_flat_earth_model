@@ -735,6 +735,9 @@ export class WorldGlobe {
 
   update(model) {
     this.group.visible = model.state.WorldModel === 'ge';
+    // Centre dot follows the axis-line toggle so it appears only
+    // when the user has the axis line enabled (in either mode).
+    if (this.center) this.center.visible = !!model.state.ShowAxisLine;
     const c = model && model.computed;
     const u = this.sphere.material.uniforms;
     if (c && c.SunCelestLatLong && Number.isFinite(c.SunRA) && Number.isFinite(c.SkyRotAngle)) {

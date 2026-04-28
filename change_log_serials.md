@@ -7489,3 +7489,41 @@ Format:
     cluster) — sits as the 5th button after
     map / starfield / az-ring / language.
 - **Revert:** `git checkout v-s000567 -- .`
+
+## S569 — Axis-line origin dot + swap-stack relocation
+
+- **Date:** 2026-04-28
+- **Files changed:** `js/render/worldObjects.js`,
+  `js/render/index.js`,
+  `js/ui/controlPanel.js`,
+  `css/styles.css`.
+- **Change:**
+  - **Origin dot now follows ShowAxisLine.**
+    `WorldGlobe.update` gates `this.center`
+    visibility on `s.ShowAxisLine` so the
+    GE centre dot only appears when the
+    axis line is on. New top-level
+    `originDot` (orange sphere at world
+    origin) added in the renderer for FE
+    mode, gated on `ShowAxisLine && !ge` so
+    the FE axis line gets a visible
+    endpoint at the AE pole. Avoids
+    double-paint with the GE-only globe
+    centre dot.
+  - **Right-cluster reorg** per "max 2
+    rows": removed `btnVault` from
+    `cycleRow` and `btnAxis` from
+    `time-controls`. Added a new
+    `swap-stack` 1-col × 2-row container
+    holding vault-swap + axis-line, prepended
+    to `compassControls` immediately to the
+    left of the moon icon (modeGrid's first
+    column). Cycle row goes back to its
+    original 4 buttons (map, starfield,
+    az-ring, language); time-controls back
+    to the original 7 (rew, play, ff, ½×,
+    2×, jumpGrid, speedStack).
+  - CSS: `#bottom-bar .swap-stack` styled as
+    a grid (2 rows, 2-px gap) with
+    matching button sizing.
+- **Revert:** `git checkout v-s000568 -- .`

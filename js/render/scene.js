@@ -194,7 +194,11 @@ export class SceneManager {
       const fx = Math.cos(h) * northX + Math.sin(h) * eastX;
       const fy = Math.cos(h) * northY + Math.sin(h) * eastY;
       const fz = Math.cos(h) * northZ + Math.sin(h) * eastZ;
-      const pitch = ToRad(Math.max(0, Math.min(90, s.CameraHeight || 0)));
+      // At the globe centre the fictitious observer has no horizon
+      // obstruction — allow negative pitch so they can look down
+      // and track southern-hemi stars too.
+      const pitchMin = (ge && s.ObserverAtCenter) ? -89 : 0;
+      const pitch = ToRad(Math.max(pitchMin, Math.min(90, s.CameraHeight || 0)));
       const cP = Math.cos(pitch), sP = Math.sin(pitch);
       const pd = 2;
       const tx = obs[0] + eyeH * upX + (cP * fx + sP * upX) * pd;

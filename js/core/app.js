@@ -553,7 +553,11 @@ export class FeModel extends EventTarget {
       const f = c.GlobeObserverFrame;
       const obs = c.GlobeObserverCoord;
       if (!f || !obs) return [0, 0, -1000];
-      if (localGlobe[0] <= 0) return [0, 0, -1000];
+      // At the globe-centre observer there's no surface horizon,
+      // so below-zenith bodies project onto the lower hemisphere
+      // instead of being culled. Surface observers still cull
+      // sub-horizon to match real-sky visibility.
+      if (localGlobe[0] <= 0 && !s.ObserverAtCenter) return [0, 0, -1000];
       const R = FE_RADIUS;
       const ax = localGlobe[2];   // north
       const ay = localGlobe[1];   // east

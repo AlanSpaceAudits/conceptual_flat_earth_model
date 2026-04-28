@@ -4103,14 +4103,29 @@ export class Observer {
     // Axis line — observer position → origin. In GE this is the
     // radial line from the surface observer down to the globe
     // centre; in FE it lies on the disc plane from the observer
-    // to (lat=90, lon=0) at the AE pole. Gated on
-    // `s.ShowAxisLine`.
+    // to (lat=90, lon=0) at the AE pole. When the GE observer is
+    // at the globe centre, both endpoints would coincide; instead
+    // anchor the line from origin out to the original surface
+    // position stored in `LastObserver*` so the user keeps a
+    // visual tie back to where they came from.
     if (this.zenithToCenter) {
       this.zenithToCenter.visible = !!s.ShowAxisLine;
       if (this.zenithToCenter.visible) {
         const arr = this.zenithToCenter.geometry.attributes.position.array;
-        arr[0] = p[0]; arr[1] = p[1]; arr[2] = p[2];
-        arr[3] = 0;    arr[4] = 0;    arr[5] = 0;
+        if (ge && s.ObserverAtCenter
+            && s.LastObserverLat != null && s.LastObserverLong != null) {
+          const lat = s.LastObserverLat * Math.PI / 180;
+          const lon = s.LastObserverLong * Math.PI / 180;
+          const cl = Math.cos(lat), sl = Math.sin(lat);
+          const co = Math.cos(lon), so = Math.sin(lon);
+          arr[0] = 0; arr[1] = 0; arr[2] = 0;
+          arr[3] = FE_RADIUS * cl * co;
+          arr[4] = FE_RADIUS * cl * so;
+          arr[5] = FE_RADIUS * sl;
+        } else {
+          arr[0] = p[0]; arr[1] = p[1]; arr[2] = p[2];
+          arr[3] = 0;    arr[4] = 0;    arr[5] = 0;
+        }
         this.zenithToCenter.geometry.attributes.position.needsUpdate = true;
       }
     }

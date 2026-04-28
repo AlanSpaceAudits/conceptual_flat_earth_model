@@ -7669,3 +7669,43 @@ Format:
     (`up=+z, north=+x, east=+y`) regardless
     of where the user came from.
 - **Revert:** `git checkout v-s000572 -- .`
+
+## S574 — Globe-centre observer: look down + axis-line anchor
+
+- **Date:** 2026-04-28
+- **Files changed:** `js/render/scene.js`,
+  `js/core/app.js`,
+  `js/render/worldObjects.js`.
+- **Change:**
+  - **Negative pitch in GE Optical when at
+    centre.** `scene.js` first-person
+    pitch clamp lower bound flips from `0`
+    to `-89` when `ge && s.ObserverAtCenter`,
+    so the user can tilt the camera below
+    the horizontal plane and look at
+    "lower-hemisphere" stars from the
+    centre. Surface observers still clamp
+    to `[0, 90]` to preserve normal
+    horizon behaviour.
+  - **Sub-zenith bodies project to lower
+    hemisphere when at centre.**
+    `_globeOpticalProject` skips the
+    sentinel rejection
+    (`localGlobe[0] <= 0 → [0, 0, -1000]`)
+    when `s.ObserverAtCenter` is on. With
+    the centre observer there's no surface
+    horizon — bodies that would be sub-
+    horizon at the surface project onto
+    the lower half of the
+    optical-vault hemisphere instead of
+    being culled.
+  - **Axis line stays connected from centre
+    to original surface position.** When
+    `ObserverAtCenter && ge && LastObserver*`
+    are non-null, the axis line draws from
+    world origin out to the
+    (`LastObserverLat`, `LastObserverLong`)
+    surface point at radius `FE_RADIUS` —
+    visual anchor back to where the
+    fictitious centre observer came from.
+- **Revert:** `git checkout v-s000573 -- .`

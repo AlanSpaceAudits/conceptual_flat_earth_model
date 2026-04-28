@@ -153,6 +153,17 @@ header .info-popup.legend-popup a { color: var(--accent); }
   column-gap: 6px;
   zoom: var(--ui-zoom);
 }
+/* Expanded mode (Ephemeris comparison) uses far wider blocks. Stack
+   them vertically into a single column with scroll so the cluster
+   doesn't fan out across the viewport and bleed onto the rendered
+   scene. */
+#tracker-hud.expanded {
+  flex-wrap: nowrap;
+  pointer-events: auto;
+  max-width: 640px;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
 
 /* Tracking-info pop-up: pixel-art portrait + readout for the
    selected body. Default position is upper-left, but the header
@@ -252,7 +263,11 @@ header .info-popup.legend-popup a { color: var(--accent); }
   border-radius: 6px;
   break-inside: avoid;
 }
-#tracker-hud.expanded .tracker-block { width: 460px; }
+/* Expanded mode (Ephemeris comparison on) carries four extra
+   columns per pipeline row — RA / Dec / Az / El — so the block
+   grows wide enough to render each row on a single line at the
+   ui-monospace default size. */
+#tracker-hud.expanded .tracker-block { width: 620px; }
 
 #live-ephem-tab {
   display: block;

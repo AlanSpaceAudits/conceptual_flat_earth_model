@@ -10186,3 +10186,33 @@ Format:
     sky positions land in the
     local horizontal frame.
 - **Revert:** `git checkout v-s000643 -- .`
+
+## S645 — Tracker HUD: wider blocks + single-column scroll when comparison is on
+
+- **Date:** 2026-04-28
+- **Files changed:**
+  - `css/styles.css`
+- **Change:**
+  - `#tracker-hud.expanded
+    .tracker-block` width
+    `460 → 620 px` so the four
+    pipeline rows
+    (RA / Dec / Az / El) fit on a
+    single line each without
+    wrapping at the default
+    monospace size.
+  - `#tracker-hud.expanded`
+    container switches
+    `flex-wrap: nowrap`,
+    `max-width: 640 px`,
+    `overflow-y: auto`. Compact
+    mode keeps the existing
+    multi-column wrap layout.
+    With comparison on the
+    cluster now stacks
+    vertically inside a 640 px
+    band on the left, scrolls
+    when the body list is long,
+    and never spills onto the
+    rendered scene.
+- **Revert:** `git checkout v-s000644 -- .`

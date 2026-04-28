@@ -9086,3 +9086,31 @@ Format:
   - Same swap in the schematic
     blank-data row.
 - **Revert:** `git checkout v-s000617 -- .`
+
+## S619 — Flight Routes: shadows off in demo intros
+
+- **Date:** 2026-04-28
+- **Files changed:**
+  - `js/demos/flightRoutes.js`
+- **Change:**
+  - `SKY_HIDDEN` (the
+    every-flight-routes-demo intro
+    overlay) now also clears the
+    shadow flags so the line-art FE
+    disc / GE sphere stays a clean
+    black backdrop:
+    - `ShowShadow: false` — FE disc
+      shadow / scrim overlay.
+    - `ShowDayNightShadow: false` —
+      GE sphere terminator shader
+      (uDayNightOn off, sphere reads
+      uniformly).
+    - `ShowDayNightSky: false` —
+      optical-vault sky cap (already
+      hidden by `ShowOpticalVault:
+      false`, but explicitly cleared
+      so a FE↔GE flip can't reawaken
+      it).
+    - `ShowEclipseShadow: false` —
+      umbra / penumbra map overlay.
+- **Revert:** `git checkout v-s000618 -- .`

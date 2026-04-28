@@ -94,6 +94,22 @@ export function formatHMS(sec) {
   return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
 }
 
+// Format an angular rate (degrees per hour) as `D° MM' SS.S"/h`.
+// Negative inputs render with a leading `−`. Returns `—` for null /
+// non-finite. The angle-only convention matches the rest of the
+// flight-routes demos: this project stays in central-angle + time
+// units and never reports linear distance / speed.
+export function formatDmsPerHour(degPerHour) {
+  if (degPerHour == null || !isFinite(degPerHour)) return '—';
+  const sign = degPerHour < 0 ? '−' : '';
+  const total = Math.abs(degPerHour);
+  const d = Math.floor(total);
+  const mFloat = (total - d) * 60;
+  const m = Math.floor(mFloat);
+  const s = (mFloat - m) * 60;
+  return `${sign}${d}° ${String(m).padStart(2, '0')}' ${s.toFixed(1).padStart(4, '0')}"/h`;
+}
+
 // Format a signed delta (in seconds) as `+M:SS` / `−M:SS`.
 export function formatHMSDelta(sec) {
   if (sec == null || !isFinite(sec)) return '—';

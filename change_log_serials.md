@@ -8727,3 +8727,50 @@ Format:
     (data-only fields stay as
     blanks for the schematic legs).
 - **Revert:** `git checkout v-s000606 -- .`
+
+## S608 — Flight Routes: angles + DMS/h speeds, drop physical distance
+
+- **Date:** 2026-04-28
+- **Files changed:**
+  - `js/data/flightRoutes.js`
+  - `js/demos/flightRoutes.js`
+- **Change:**
+  - Added `formatDmsPerHour(degPerHour)`
+    helper — renders a central-angle
+    rate as `D° MM' SS.S"/h`. The
+    project stays in pure
+    angle-and-time units, so every
+    speed in the flight-routes demos
+    now reads in DMS/h.
+  - Removed `KM_PER_DEG` and `KM_TO_MI`
+    constants from
+    `js/demos/flightRoutes.js`. New
+    `MI_PER_DEG = 69.0936` constant +
+    `mphToDegPerHour` helper convert
+    KMZ-supplied air speed (mph) to
+    deg/h via the mean Earth
+    great-circle.
+  - **QF27/28 demos:**
+    - `Air speed avg` line now reads
+      DMS/h (e.g. `7° 43' 11.5"/h`)
+      instead of mph.
+    - `Ground speed` line is
+      `central-angle / Flight Time`,
+      rendered DMS/h. Tag updated to
+      `(calc, central-angle / Flight
+      Time)`.
+    - `Great-circle: ## km · ## mi`
+      row removed — physical distance
+      isn't a project unit.
+  - **Schematic per-route demos:**
+    `Great-circle` row removed; rows
+    that were already blank stay
+    blank.
+  - **Combined / central-angle /
+    constant-speed boxes:** km
+    columns dropped, central angle
+    in degrees only. Const-speed
+    title line rewritten to
+    "At identical deg/h, equal
+    central angle = equal time."
+- **Revert:** `git checkout v-s000607 -- .`

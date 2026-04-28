@@ -1117,6 +1117,17 @@ footer#desc .desc-dynamic { color: var(--fg); }
   #hud { font-size: 10px; }
 }
 
+/* Flight-routes demo mode: hide the Live Moon Phases collapsible
+   and the Live Ephemeris side tab so the SOUTH / NORTH info boxes
+   own the top-left of the viewport without clutter. The
+   `.flight-demo-active` class is toggled on `body` by
+   `FlightRoutes.update` whenever `state.ShowFlightRoutes` is on. */
+body.flight-demo-active #hud .moon-phase-wrapper,
+body.flight-demo-active #live-ephem-tab,
+body.flight-demo-active #tracking-info-popup {
+  display: none !important;
+}
+
 #bottom-bar .swap-stack {
   display: grid;
   grid-template-columns: auto;

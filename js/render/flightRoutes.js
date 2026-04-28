@@ -190,8 +190,8 @@ function ensureRacePanel() {
   el.id = 'flight-race-panel';
   el.style.cssText = [
     'position: absolute',
-    'top: 220px',
-    'right: 12px',
+    'top: 540px',
+    'left: 12px',
     'padding: 0',
     'background: rgba(10, 14, 22, 0.94)',
     'border: 1px solid rgba(255, 184, 90, 0.85)',
@@ -367,18 +367,17 @@ function ensureInfoBoxes() {
     document.head.appendChild(styleTag);
   }
   if (!primary) {
-    primary = buildInfoBoxEl('flight-info-box', 220, 12);
+    primary = buildInfoBoxEl('flight-info-box', 80, 12);
     view.appendChild(primary);
     const ctxA = primary.querySelector('.fi-art').getContext('2d');
     ctxA.imageSmoothingEnabled = false;
     drawFlightArt(ctxA);
   }
   if (!secondary) {
-    // Side-by-side layout: 380 px min-width box + 12 px starting
-    // gutter + 16 px breathing room = 408 px. Lands the second box
-    // clear of the first one's right edge instead of overlapping
-    // vertically.
-    secondary = buildInfoBoxEl('flight-info-box-2', 220, 420);
+    // Side-by-side layout: primary box at 380 px min-width + 12 px
+    // starting gutter + 16 px breathing room ≈ 408 px to its right
+    // edge. Secondary lands just clear of that.
+    secondary = buildInfoBoxEl('flight-info-box-2', 80, 420);
     view.appendChild(secondary);
     const ctxB = secondary.querySelector('.fi-art').getContext('2d');
     ctxB.imageSmoothingEnabled = false;
@@ -694,6 +693,15 @@ export class FlightRoutes {
     const s = model.state;
     this._updateInfoBox(s);
     const on = !!s.ShowFlightRoutes;
+    // Body class flips the rest of the HUD (Live Moon Phases panel,
+    // Live Ephemeris side tab) out of the way for the duration of a
+    // flight-routes demo. CSS rules in `styles.css` key off this
+    // class.
+    if (typeof document !== 'undefined' && document.body) {
+      const has = document.body.classList.contains('flight-demo-active');
+      if (on && !has) document.body.classList.add('flight-demo-active');
+      else if (!on && has) document.body.classList.remove('flight-demo-active');
+    }
     this.group.visible = on;
     if (!on) return;
 

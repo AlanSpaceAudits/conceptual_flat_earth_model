@@ -9597,3 +9597,38 @@ Format:
     similar visual size to the
     new race-panel silhouette.
 - **Revert:** `git checkout v-s000627 -- .`
+
+## S629 — Flight Routes demo: top-left layout, hide moon / ephemeris HUD
+
+- **Date:** 2026-04-28
+- **Files changed:**
+  - `js/render/flightRoutes.js`
+  - `css/styles.css`
+- **Change:**
+  - **Info boxes**: anchor moved
+    `top: 220 → 80` so the
+    SOUTH / NORTH panels sit at the
+    top-left, replacing the slot
+    previously occupied by the
+    Live Moon Phases collapsible.
+    `left` unchanged (12 / 420 for
+    primary / secondary).
+  - **Race panel**: anchor moved
+    `top: 220, right: 12 → top: 540,
+    left: 12` so it stacks directly
+    under the two info boxes.
+  - **Body class**:
+    `FlightRoutes.update` toggles
+    `body.flight-demo-active`
+    whenever `state.ShowFlightRoutes`
+    is on. CSS rule
+    hides
+    `#hud .moon-phase-wrapper`,
+    `#live-ephem-tab`, and
+    `#tracking-info-popup` while
+    the class is present, so the
+    Live Moon Phases panel, Live
+    Ephemeris side tab, and the
+    tracker info popup all step
+    out of the way for the demo.
+- **Revert:** `git checkout v-s000628 -- .`

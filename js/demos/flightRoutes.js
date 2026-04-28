@@ -62,10 +62,12 @@ const SKY_HIDDEN = {
   ShowSatellites:          false,
 };
 
-// FE grid + GP drops on (the user wanted both visible).
+// FE grid on; sun/moon GP drops off so the demo isn't visually
+// crowded with celestial ground points the user has already
+// hidden via SKY_HIDDEN.
 const ROUTE_OVERLAYS = {
   ShowFeGrid:        true,
-  ShowGroundPoints:  true,
+  ShowGroundPoints:  false,
   ShowFlightRoutes:  true,
   FlightRoutesProgress: 0,
   WorldModel:        'fe',

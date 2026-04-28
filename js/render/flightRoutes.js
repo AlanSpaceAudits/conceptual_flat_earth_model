@@ -4,8 +4,12 @@
 // disc (azimuthal-equidistant projection at z = 0) and the GE
 // terrestrial sphere (radius FE_RADIUS, lat/lon → cartesian). Each
 // route is sampled at fixed angular cadence so the curve traces a
-// real geodesic on both worlds. City markers + labels render as
-// small orange points + text sprites at the same lat/lon.
+// real geodesic on both worlds.
+//
+// Each city is marked with a flat ground ring at its (lat, lon) and
+// a name-box sprite offset along a radial outward direction so the
+// box sits clear of the route artwork. A thin leader line from the
+// ring centre to the box ties the two together.
 //
 // Visibility is gated by `s.ShowFlightRoutes`; the optional
 // `s.FlightRoutesSelected` filter accepts a route id, an array of
@@ -27,18 +31,27 @@ const FE_LIFT       = 0.0035;
 const GE_LIFT       = 1.003;
 const ROUTE_COLOR   = 0xff8040;
 const CITY_COLOR    = 0xff8040;
+const LABEL_OFFSET_FE = 0.075;
+const LABEL_OFFSET_GE = 0.10;
+const RING_INNER    = 0.0085;
+const RING_OUTER    = 0.0125;
 
-function makeLabel(text) {
+function makeLabelSprite(text) {
   const cv = document.createElement('canvas');
-  cv.width = 256; cv.height = 64;
+  cv.width = 320; cv.height = 72;
   const ctx = cv.getContext('2d');
-  ctx.font = 'bold 32px ui-monospace, Menlo, monospace';
+  ctx.font = 'bold 36px ui-monospace, Menlo, monospace';
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
+  const padX = 14;
+  const w = Math.ceil(ctx.measureText(text).width) + padX * 2;
   ctx.fillStyle = 'rgba(15, 19, 28, 0.92)';
-  ctx.fillRect(0, 0, cv.width, cv.height);
+  ctx.fillRect(0, 0, w, cv.height);
+  ctx.strokeStyle = 'rgba(255, 184, 90, 0.85)';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(1, 1, w - 2, cv.height - 2);
   ctx.fillStyle = '#ffd6a8';
-  ctx.fillText(text, 8, 32);
+  ctx.fillText(text, padX, cv.height / 2);
   const tex = new THREE.CanvasTexture(cv);
   tex.colorSpace = THREE.SRGBColorSpace;
   tex.needsUpdate = true;
@@ -47,7 +60,12 @@ function makeLabel(text) {
     depthTest: false, depthWrite: false,
   });
   const sp = new THREE.Sprite(mat);
-  sp.scale.set(0.18, 0.045, 1);
+  // Aspect-correct scale: width in canvas pixels → world units.
+  const worldH = 0.05;
+  const worldW = (w / cv.height) * worldH;
+  sp.scale.set(worldW, worldH, 1);
+  sp.userData.aspectScale = { worldW, worldH };
+  sp.center.set(0, 0.5);
   sp.renderOrder = 71;
   return sp;
 }
@@ -58,25 +76,43 @@ export class FlightRoutes {
     this.group.name = 'flight-routes';
     this.group.visible = false;
 
-    // City markers + labels — one Mesh + one Sprite per city, both
-    // top-level so visibility can be flipped without rebuilding.
-    this._cityMeshes = new Map();
+    // City artwork — one ring + one label sprite + one leader line per
+    // city, all top-level so visibility flips without rebuilding.
+    this._cityRings  = new Map();
     this._cityLabels = new Map();
+    this._cityLeads  = new Map();
     for (const city of FLIGHT_CITIES) {
-      const mesh = new THREE.Mesh(
-        new THREE.SphereGeometry(0.008, 12, 10),
+      const ringGeom = new THREE.RingGeometry(RING_INNER, RING_OUTER, 36);
+      const ring = new THREE.Mesh(
+        ringGeom,
         new THREE.MeshBasicMaterial({
           color: CITY_COLOR, transparent: true, opacity: 0.95,
+          side: THREE.DoubleSide,
           depthTest: false, depthWrite: false,
         }),
       );
-      mesh.renderOrder = 70;
-      this.group.add(mesh);
-      this._cityMeshes.set(city.id, mesh);
+      ring.renderOrder = 70;
+      this.group.add(ring);
+      this._cityRings.set(city.id, ring);
 
-      const label = makeLabel(city.name);
+      const label = makeLabelSprite(city.name);
       this.group.add(label);
       this._cityLabels.set(city.id, label);
+
+      const leadGeom = new THREE.BufferGeometry();
+      leadGeom.setAttribute('position',
+        new THREE.BufferAttribute(new Float32Array(6), 3));
+      const lead = new THREE.Line(
+        leadGeom,
+        new THREE.LineBasicMaterial({
+          color: CITY_COLOR, transparent: true, opacity: 0.85,
+          depthTest: false, depthWrite: false,
+        }),
+      );
+      lead.renderOrder = 70;
+      lead.frustumCulled = false;
+      this.group.add(lead);
+      this._cityLeads.set(city.id, lead);
     }
 
     // Pre-sample each route's great-circle path (lat/lon list);
@@ -127,6 +163,35 @@ export class FlightRoutes {
     return null;
   }
 
+  _orientRingFE(ring) {
+    ring.quaternion.identity();
+  }
+
+  _orientRingGE(ring, surfacePos) {
+    const n = new THREE.Vector3(surfacePos[0], surfacePos[1], surfacePos[2]).normalize();
+    const z = new THREE.Vector3(0, 0, 1);
+    const q = new THREE.Quaternion().setFromUnitVectors(z, n);
+    ring.quaternion.copy(q);
+  }
+
+  _labelOffsetFE(p) {
+    const r = Math.hypot(p[0], p[1]);
+    if (r < 1e-6) return [LABEL_OFFSET_FE, 0, 0];
+    const ux = p[0] / r;
+    const uy = p[1] / r;
+    return [ux * LABEL_OFFSET_FE, uy * LABEL_OFFSET_FE, 0];
+  }
+
+  _labelOffsetGE(p) {
+    const r = Math.hypot(p[0], p[1], p[2]);
+    if (r < 1e-6) return [0, 0, LABEL_OFFSET_GE];
+    return [
+      (p[0] / r) * LABEL_OFFSET_GE,
+      (p[1] / r) * LABEL_OFFSET_GE,
+      (p[2] / r) * LABEL_OFFSET_GE,
+    ];
+  }
+
   update(model) {
     const s = model.state;
     const on = !!s.ShowFlightRoutes;
@@ -151,24 +216,35 @@ export class FlightRoutes {
     const progress = Math.max(0, Math.min(1, (s.FlightRoutesProgress == null) ? 1 : s.FlightRoutesProgress));
 
     for (const city of FLIGHT_CITIES) {
-      const mesh = this._cityMeshes.get(city.id);
+      const ring  = this._cityRings.get(city.id);
       const label = this._cityLabels.get(city.id);
-      const show = cityVisible(city.id);
-      mesh.visible = show;
+      const lead  = this._cityLeads.get(city.id);
+      const show  = cityVisible(city.id);
+      ring.visible  = show;
       label.visible = show;
+      lead.visible  = show;
       if (!show) continue;
+
       const p = project(city.lat, city.lon);
-      mesh.position.set(p[0], p[1], p[2]);
-      // Float labels just above each marker so they don't sit on top
-      // of the dot sprite. GE places them along the radial outward
-      // direction so the label rides on the surface tangent ring.
+      ring.position.set(p[0], p[1], p[2]);
       if (ge) {
-        const r = Math.hypot(p[0], p[1], p[2]) || 1;
-        const f = 1 + 0.06;
-        label.position.set(p[0] * f, p[1] * f, p[2] * f);
+        this._orientRingGE(ring, p);
       } else {
-        label.position.set(p[0] + 0.01, p[1] + 0.01, p[2] + 0.005);
+        this._orientRingFE(ring);
       }
+
+      const off = ge ? this._labelOffsetGE(p) : this._labelOffsetFE(p);
+      const labelPos = [p[0] + off[0], p[1] + off[1], p[2] + off[2]];
+      label.position.set(labelPos[0], labelPos[1], labelPos[2]);
+
+      const leadBuf = lead.geometry.attributes.position.array;
+      leadBuf[0] = p[0];
+      leadBuf[1] = p[1];
+      leadBuf[2] = p[2];
+      leadBuf[3] = labelPos[0];
+      leadBuf[4] = labelPos[1];
+      leadBuf[5] = labelPos[2];
+      lead.geometry.attributes.position.needsUpdate = true;
     }
 
     for (const r of FLIGHT_ROUTES) {

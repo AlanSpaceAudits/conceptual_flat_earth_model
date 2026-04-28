@@ -8364,3 +8364,40 @@ Format:
     the world-model toggle to
     compare projections.
 - **Revert:** `git checkout v-s000596 -- .`
+
+## S598 — Flight Routes: ground rings + offset labels + leader lines
+
+- **Date:** 2026-04-28
+- **Files changed:**
+  - `js/render/flightRoutes.js`
+  - `js/demos/flightRoutes.js`
+- **Change:**
+  - Replaced the per-city sphere
+    marker with a flat
+    `RingGeometry(0.0085, 0.0125)`
+    sitting on the ground plane (FE)
+    or oriented to the local tangent
+    plane (GE) via a unit-vector
+    rotation aligning the ring's +z
+    normal with the radial outward
+    direction.
+  - Label sprites redrawn with a
+    bordered box, aspect-correct
+    world scale, and `center.set(0,
+    0.5)` so they grow rightward
+    from their anchor point. Labels
+    now offset by `0.075` (FE) or
+    `0.10` (GE) along the radial
+    outward direction so they sit
+    well clear of the ground ring.
+  - Added a per-city leader Line
+    drawn from the ring centre to
+    the label's anchor point,
+    sharing the orange marker
+    colour at 0.85 opacity.
+  - `ROUTE_OVERLAYS.ShowGroundPoints`
+    flipped `true → false`, so the
+    sun / moon GP markers + dashed
+    drop lines stay hidden during a
+    flight-routes demo.
+- **Revert:** `git checkout v-s000597 -- .`

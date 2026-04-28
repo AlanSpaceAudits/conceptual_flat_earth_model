@@ -9204,3 +9204,52 @@ Format:
   equal time, regardless of the
   projection's visual distortion.
 - **Revert:** `git checkout v-s000619 -- .`
+
+## S621 — Flight Routes: Equal Arc demo split into mirror + cross-lat
+
+- **Date:** 2026-04-28
+- **Files changed:**
+  - `js/data/flightRoutes.js`
+  - `js/demos/flightRoutes.js`
+- **Change:**
+  - Renamed the existing
+    constant-speed demo to
+    `Equal Arc (mirror)` — pairs
+    Johannesburg ↔ Sydney with its
+    north-hemisphere reflection so
+    the two arcs are mirror twins
+    (same lat magnitudes, opposite
+    sign).
+  - Added a sibling demo
+    `Equal Arc` immediately
+    underneath. Pairs the same
+    Johannesburg ↔ Sydney leg with a
+    new cross-latitude leg
+    (`eq-cross`):
+    - `Equator Pt` at
+      (0°, −30°)
+    - `Sub-antarctic Pt` at
+      (−50°, 92.7°)
+    Solved analytically so the
+    central angle equals the
+    JNB ↔ SYD value of 110.32°
+    exactly. The endpoints span
+    50° of latitude vs the JNB-
+    SYD pair's ~8°, so the AE
+    projection bends one arc
+    dramatically while the other
+    stays a tighter band.
+  - Refactored `constSpeedBox` /
+    `constSpeedDemo` into reusable
+    builders so the two demos share
+    layout / live-countdown logic.
+- **Result:** Same 110.32° central
+  angle on both demos; the mirror
+  pair looks like rotated twins,
+  the cross-lat pair looks
+  obviously different — yet both
+  loops finish at the same frame,
+  proving projection shape doesn't
+  affect time when speed is
+  constant.
+- **Revert:** `git checkout v-s000620 -- .`

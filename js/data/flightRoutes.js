@@ -19,6 +19,14 @@ export const FLIGHT_CITIES = [
   // Coordinates aren't real airports — they're geometric anchors.
   { id: 'nm_jnb', name: 'N-Mirror (≈ Egypt)',  lat:  26.13939, lon:  28.24679 },
   { id: 'nm_syd', name: 'N-Mirror (≈ Pacific)', lat: 33.95003, lon: 151.18169 },
+  // Equal-central-angle pair at sharply different latitudes, used by
+  // the non-mirror "Equal Arc" demo. (0°, −30°) ↔ (−50°, 92.7°)
+  // works out to the same 110.32° great-circle distance as
+  // jnb-syd, but the spread in latitude means the AE projection
+  // bends one arc dramatically while the JNB-SYD pair stays a
+  // tighter band — same arc length, very different look.
+  { id: 'eq_a', name: 'Equator Pt',     lat:   0.0,    lon:  -30.0   },
+  { id: 'eq_b', name: 'Sub-antarctic Pt', lat: -50.0,    lon:   92.7   },
 ];
 
 export const FLIGHT_ROUTES = [
@@ -29,9 +37,14 @@ export const FLIGHT_ROUTES = [
   { id: 'jnb-per', from: 'jnb', to: 'per', label: 'Johannesburg ↔ Perth' },
   { id: 'jnb-syd', from: 'jnb', to: 'syd', label: 'Johannesburg ↔ Sydney' },
   { id: 'eze-drw', from: 'eze', to: 'drw', label: 'Buenos Aires ↔ Darwin' },
-  // North-hemisphere mirror of jnb-syd, used by the constant-speed
-  // demo as the side-by-side comparison route.
+  // North-hemisphere mirror of jnb-syd, used by the "Equal Arc
+  // (mirror)" constant-speed demo.
   { id: 'nmir-pair', from: 'nm_jnb', to: 'nm_syd', label: 'North mirror' },
+  // Cross-latitude equal-arc pair, used by the non-mirror "Equal Arc"
+  // demo. Same 110.32° central angle as jnb-syd but the spread in
+  // latitude makes the AE projection bend the arc much more
+  // dramatically.
+  { id: 'eq-cross', from: 'eq_a', to: 'eq_b', label: 'Equator ↔ Sub-antarctic' },
 ];
 
 export function cityById(id) {

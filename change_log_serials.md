@@ -8864,3 +8864,42 @@ Format:
     Removed the
     `(±M:SS vs predicted)` suffix.
 - **Revert:** `git checkout v-s000611 -- .`
+
+## S613 — Flight Routes: central-angle legs from each endpoint to centre
+
+- **Date:** 2026-04-28
+- **Files changed:**
+  - `js/render/flightRoutes.js`
+- **Change:**
+  - Per-route `LineSegments`
+    (`_routeAngleLines`) renders two
+    line segments — Departure → world
+    origin and Arrival → world origin
+    — drawn in cyan `#66c8ff` at
+    0.85 opacity with `depthTest:
+    true`, `renderOrder = 67` (under
+    the solid route line so the
+    great-circle arc reads on top).
+  - World origin is the AE pole in
+    FE (north pole at disc centre)
+    and the globe centre in GE — same
+    coordinates either way, but the
+    geometric meaning of the angle at
+    that vertex differs:
+    - FE: the angle at the disc
+      centre is the longitude
+      separation, not the spherical
+      central angle.
+    - GE: the angle at the globe
+      centre IS the great-circle
+      central angle.
+  - Position buffer reprojected per
+    frame so a FE↔GE switch redraws
+    the legs through the active
+    projection. Visibility tracks
+    the existing
+    `FlightRoutesSelected`
+    filter, so each per-route demo
+    only shows its own pair of
+    legs.
+- **Revert:** `git checkout v-s000612 -- .`

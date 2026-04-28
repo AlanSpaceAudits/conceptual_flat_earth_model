@@ -225,6 +225,7 @@ export class FlightRoutes {
     this._routePlanes = new Map();
     this._routeComps = new Map();
     this._routeCompLines = new Map();
+    this._routeAngleLines = new Map();
     this._planeTexture = makePlaneTexture();
     for (const r of FLIGHT_ROUTES) {
       const a = cityById(r.from), b = cityById(r.to);
@@ -273,6 +274,29 @@ export class FlightRoutes {
       compLine.frustumCulled = false;
       this.group.add(compLine);
       this._routeCompLines.set(r.id, compLine);
+
+      // Central-angle visualisation. FE: lines from each endpoint to
+      // the AE pole at world (0, 0, 0) — angle at the disc centre is
+      // the longitude separation, not the spherical central angle.
+      // GE: lines from each endpoint to the globe centre at world
+      // (0, 0, 0) — that angle IS the great-circle central angle.
+      // Drawing both legs shows the geometric difference between
+      // projections at a glance. Two segments per route, written
+      // into one BufferGeometry as a LineSegments call.
+      const angleBuf = new Float32Array(12);
+      const angleGeom = new THREE.BufferGeometry();
+      angleGeom.setAttribute('position', new THREE.BufferAttribute(angleBuf, 3));
+      const angleLine = new THREE.LineSegments(
+        angleGeom,
+        new THREE.LineBasicMaterial({
+          color: 0x66c8ff, transparent: true, opacity: 0.85,
+          depthTest: true, depthWrite: false,
+        }),
+      );
+      angleLine.renderOrder = 67;
+      angleLine.frustumCulled = false;
+      this.group.add(angleLine);
+      this._routeAngleLines.set(r.id, angleLine);
     }
   }
 
@@ -415,11 +439,24 @@ export class FlightRoutes {
       const line = this._routeLines.get(r.id);
       const plane = this._routePlanes.get(r.id);
       const compLine = this._routeCompLines.get(r.id);
+      const angleLine = this._routeAngleLines.get(r.id);
       const show = filterSet ? filterSet.has(r.id) : true;
       line.visible = show;
       plane.visible = show && progress > 0 && progress < 1;
       compLine.visible = show;
+      angleLine.visible = show;
       if (!show) continue;
+      // Central-angle legs — Depart → centre and Arrival → centre.
+      // World origin is the AE pole in FE and the globe centre in GE.
+      const fromCity = cityById(r.from), toCity = cityById(r.to);
+      const fromP = project(fromCity.lat, fromCity.lon);
+      const toP   = project(toCity.lat,   toCity.lon);
+      const angleBuf = angleLine.geometry.attributes.position.array;
+      angleBuf[0] = fromP[0]; angleBuf[1]  = fromP[1]; angleBuf[2]  = fromP[2];
+      angleBuf[3] = 0;        angleBuf[4]  = 0;        angleBuf[5]  = 0;
+      angleBuf[6] = toP[0];   angleBuf[7]  = toP[1];   angleBuf[8]  = toP[2];
+      angleBuf[9] = 0;        angleBuf[10] = 0;        angleBuf[11] = 0;
+      angleLine.geometry.attributes.position.needsUpdate = true;
       // Dashed complementary arc — full set of points refreshed each
       // frame so a FE↔GE switch reprojects the long way correctly.
       const comp = this._routeComps.get(r.id);

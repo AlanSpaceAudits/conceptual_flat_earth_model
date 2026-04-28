@@ -1252,15 +1252,17 @@ export class FeModel extends EventTarget {
     }
     const wrapLon = (x) => ((x + 180) % 360 + 360) % 360 - 180;
 
-    // Per-frame: only walk every comparison pipeline when the
-    // "Ephemeris comparison" toggle is on. With it off, the rendered
-    // sun / moon / planet positions still come from the active
-    // `bodySource` upstream — but the four extra `bodyGeocentric`
-    // calls per body that fed the side-by-side HUD are skipped, so
-    // each frame only touches the pipeline the user actually
-    // selected. NaN sentinels stand in for the unused readings; the
-    // tracker HUD ignores the comparison rows when the toggle is
-    // off anyway.
+    // Per-frame ephemeris loading order:
+    //   • Default (Espenak / DE405) is always loaded — it's what
+    //     `bodySource` resolves to upstream and what every rendered
+    //     sun / moon / planet position comes from.
+    //   • The four comparison pipelines (GeoC, HelioC, VSOP87,
+    //     Ptolemy) only get queried below when the Tracker tab's
+    //     "Ephemeris comparison" toggle (`ShowEphemerisReadings`) is
+    //     on. They effectively unload from the hot path the moment
+    //     the toggle flips off — NaN sentinels stand in for their
+    //     readings and the tracker HUD already hides those rows
+    //     when the toggle is off.
     const compareOn = !!s.ShowEphemerisReadings;
     const NAN_READING = { ra: NaN, dec: NaN };
     const readingsFor = (body) => {

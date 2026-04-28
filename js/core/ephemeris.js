@@ -1,17 +1,54 @@
-// Ephemeris dispatcher — routes body-position queries to one of three
-// structurally distinct pipelines:
+// Ephemeris dispatcher.
 //
-//   'heliocentric' → ephemerisHelio.js   — Schlyter heliocentric Kepler,
-//                                          composed with the Sun's
-//                                          geocentric orbit.
-//   'geocentric'   → ephemerisGeo.js     — single Earth-focus Kepler
-//                                          ellipse per planet.
-//                                          No Sun stage anywhere.
-//   'ptolemy'      → ephemerisPtolemy.js — Ptolemy's deferent+epicycle
-//                                          model, ported from R.H. van
-//                                          Gent's Almagest Ephemeris
-//                                          Calculator. Structurally
-//                                          geocentric throughout.
+// Loading order / runtime contract
+// --------------------------------
+//   • **Default ephem = Fred Espenak (DE405 / AstroPixels).** That's
+//     the only pipeline guaranteed to be queried per frame. State
+//     defaults `BodySource: 'astropixels'`; the rendered sun / moon /
+//     planet positions all come from `apix.bodyGeocentric` for any
+//     date inside Espenak's 2019–2030 window.
+//   • **Comparison ephems (GeoC / HelioC / VSOP87 / Ptolemy) stay
+//     dormant** until the Tracker tab's "Ephemeris comparison" toggle
+//     (`state.ShowEphemerisReadings`) is on. With it off, `app.update`
+//     never invokes them — only the active source runs each frame.
+//     Toggling the comparison off again drops the per-frame calls so
+//     the four extra pipelines effectively "unload" from the hot
+//     path even if the JS engine keeps the module objects cached.
+//   • **Fallback chain** (only triggered when the active source can't
+//     deliver a body / date pair): `astropixels → geocentric →
+//     vsop87 → ptolemy`. GeoC is the seamless fallback when Espenak's
+//     2019–2030 table runs out — its Schlyter Earth-focus Kepler
+//     elements span effectively unlimited dates. VSOP87 catches inner
+//     planets; Ptolemy is the historical last resort.
+//
+// Pipelines
+// ---------
+//   'astropixels'  → ephemerisAstropixels.js — Espenak / DE405 daily
+//                                              tables. Default. The
+//                                              only pipeline ALWAYS
+//                                              loaded.
+//   'geocentric'   → ephemerisGeo.js         — Schlyter Earth-focus
+//                                              Kepler. Wide-date
+//                                              fallback. Loaded by
+//                                              the static import
+//                                              chain so the dispatcher
+//                                              can route to it from
+//                                              the fallback path
+//                                              without an async wait.
+//   'vsop87'       → ephemerisVsop87.js      — Bretagnon & Francou
+//                                              analytical theory.
+//                                              Comparison-mode only.
+//   'heliocentric' → ephemerisHelio.js       — Schlyter heliocentric
+//                                              Kepler, composed with
+//                                              the Sun's geocentric
+//                                              orbit. Comparison-mode
+//                                              only.
+//   'ptolemy'      → ephemerisPtolemy.js     — Almagest deferent +
+//                                              epicycle, ported via
+//                                              R.H. van Gent's
+//                                              Almagest Ephemeris
+//                                              Calculator. Comparison
+//                                              -mode only.
 //
 // Ptolemy port credit:
 //   R.H. van Gent, "Almagest Ephemeris Calculator"
@@ -24,9 +61,11 @@
 // self-contained — it has its own Sun and Moon models drawn from the
 // Almagest.
 //
-// All three pipelines expose the same API shape: `bodyGeocentric`,
-// `planetEquatorial`, `sunEquatorial`, `moonEquatorial`. The router
-// `bodyRADec(name, date, source)` selects one of them.
+// All five pipelines expose the same API shape: `bodyGeocentric`,
+// `planetEquatorial`, `sunEquatorial`, `moonEquatorial`, plus
+// `SUPPORTED_BODIES` / `coversBody` / `coversDate` / `BUILTIN_CORRECTIONS`
+// metadata. The router `bodyRADec(name, date, source)` selects one,
+// walking the fallback chain if the requested source can't deliver.
 //
 // Legacy exports (`bodyGeocentric`, `bodyFromHeliocentric`, single-arg
 // `planetEquatorial`, etc.) are preserved so downstream code can keep

@@ -1,5 +1,13 @@
 // Astropixels pipeline — geocentric RA/Dec by daily lookup + interpolation.
 //
+// **Default loaded ephem.** State default `BodySource: 'astropixels'`
+// makes this the only pipeline that runs per frame for the rendered
+// scene. The four analytical pipelines (GeoC / HelioC / VSOP87 /
+// Ptolemy) only get queried when the Tracker tab's "Ephemeris
+// comparison" toggle is on. With comparison off, this is the
+// single source of sun / moon / planet positions; the analytical
+// modules effectively unload from the hot path.
+//
 // Data source:
 //   Fred Espenak, "AstroPixels — Ephemeris"
 //   https://www.astropixels.com/ephemeris/ephemeris.html

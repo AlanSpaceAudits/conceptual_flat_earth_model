@@ -10216,3 +10216,58 @@ Format:
     and never spills onto the
     rendered scene.
 - **Revert:** `git checkout v-s000644 -- .`
+
+## S646 — Ephemeris module headers spell out the loading-order contract
+
+- **Date:** 2026-04-28
+- **Files changed:**
+  - `js/core/ephemeris.js`
+  - `js/core/ephemerisAstropixels.js`
+  - `js/core/ephemerisGeo.js`
+  - `js/core/ephemerisHelio.js`
+  - `js/core/ephemerisVsop87.js`
+  - `js/core/ephemerisPtolemy.js`
+  - `js/core/app.js`
+- **Change:** comments only — no
+  behaviour change. Each ephemeris
+  module's header now states:
+  - **Default loaded ephem = Fred
+    Espenak's DE405 / AstroPixels
+    tables.** That's the only
+    pipeline that runs per frame
+    for the rendered scene.
+  - **Comparison ephems (GeoC,
+    HelioC, VSOP87, Ptolemy) are
+    dormant** until the Tracker
+    tab's "Ephemeris comparison"
+    toggle (`ShowEphemerisReadings`)
+    is on. Toggling it off drops
+    the per-frame calls so those
+    pipelines effectively unload
+    from the hot path.
+  - **Fallback chain**
+    (`astropixels → geocentric →
+    vsop87 → ptolemy`) only fires
+    when the active source can't
+    cover a (body, date) request.
+    GeoC stays statically loaded as
+    the wide-date fallback for
+    DE405 misses; HelioC sits
+    outside the fallback chain by
+    design.
+  - `ephemerisAstropixels.js`
+    header tagged "Default loaded
+    ephem".
+  - `ephemerisGeo.js` /
+    `ephemerisHelio.js` /
+    `ephemerisVsop87.js` /
+    `ephemerisPtolemy.js` headers
+    each tagged "Comparison-mode
+    only" (Geo + VSOP also tagged
+    "+ fallback"; Ptolemy "+
+    fallback (last resort)").
+  - `app.update`'s `readingsFor`
+    block carries a matching loading
+    -order comment that mirrors
+    the dispatcher header.
+- **Revert:** `git checkout v-s000645 -- .`

@@ -1,5 +1,16 @@
 // VSOP87 pipeline — analytical heliocentric theory of Bretagnon & Francou.
 //
+// **Comparison-mode + fallback only.** Default rendering pipeline
+// is DE405 (`ephemerisAstropixels.js`). This module only runs when:
+//   • The Tracker tab's "Ephemeris comparison" toggle is on, so
+//     the side-by-side RA / Dec / Az / El rows have something to
+//     populate the VSOP87 column with.
+//   • The dispatcher fell back to it after DE405 + GeoC both
+//     declined the (body, date) request — for inner planets
+//     centuries past Espenak's window.
+// With comparison off and the date inside DE405's range, VSOP87 is
+// idle.
+//
 // Theory source:
 //   Bretagnon, P., and Francou, G. (1988). "Planetary theories in
 //   rectangular and spherical variables — VSOP87 solutions."

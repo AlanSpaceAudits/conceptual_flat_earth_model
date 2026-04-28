@@ -1,6 +1,15 @@
 // HelioC pipeline — Schlyter heliocentric Keplerian planets, composed
 // with the Sun's geocentric position to yield geocentric RA/Dec.
 //
+// **Comparison-mode only.** Default rendering pipeline is DE405
+// (`ephemerisAstropixels.js`); HelioC only contributes a row in the
+// side-by-side comparison HUD when
+// `state.ShowEphemerisReadings` is on. With comparison off,
+// `app.update` never invokes this pipeline. It also doesn't sit on
+// the fallback chain (`astropixels → geocentric → vsop87 →
+// ptolemy`), so a stray DE405 miss won't accidentally route here
+// either.
+//
 // Reference: Paul Schlyter, "Computing planetary positions — a tutorial
 // with worked examples" (http://www.stjarnhimlen.se/comp/ppcomp.html).
 // Schlyter's trick: his "earth" row actually encodes the Sun's orbit

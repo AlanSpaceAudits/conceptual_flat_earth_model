@@ -1,5 +1,18 @@
 // Ptolemy pipeline — geocentric deferent + epicycle ephemeris per Almagest.
 //
+// **Comparison-mode + fallback (last-resort) only.** Default
+// rendering pipeline is DE405 (`ephemerisAstropixels.js`). This
+// module only runs when:
+//   • The Tracker tab's "Ephemeris comparison" toggle is on, so
+//     the side-by-side RA / Dec / Az / El rows have a "Ptol" column
+//     to populate.
+//   • The dispatcher fell back to it after DE405 → GeoC → VSOP87
+//     all declined the (body, date) request. Historical last
+//     resort — the Almagest model is intentionally pre-Newtonian
+//     and lands ~5–10° off modern positions.
+// With comparison off and any earlier pipeline able to cover the
+// request, Ptolemy stays idle.
+//
 // Ported from:
 //   R.H. van Gent, "Almagest Ephemeris Calculator"
 //   https://webspace.science.uu.nl/~gent0113/astro/almagestephemeris.htm

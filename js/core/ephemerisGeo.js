@@ -1,5 +1,19 @@
 // GeoC pipeline — Earth-focus Kepler ellipses per planet.
 //
+// **Comparison-mode + fallback only.** Default rendering pipeline
+// is DE405 (`ephemerisAstropixels.js`). GeoC is queried in two
+// scenarios:
+//   • The Tracker tab's "Ephemeris comparison" toggle is on, in
+//     which case `app.update` walks every pipeline so the side-by-
+//     side RA / Dec / Az / El rows have a value to display.
+//   • DE405 can't cover a (body, date) request — typically a
+//     date past Espenak's 2030 table. The dispatcher
+//     (`bodyRADec` in `ephemeris.js`) falls back to GeoC because
+//     its Schlyter Earth-focus elements span effectively
+//     unlimited dates.
+// With comparison off and the date inside DE405's window, GeoC
+// stays idle.
+//
 // restructured the planetary chain in this simulator so that each
 // planet is modelled as a single Keplerian ellipse with the Earth at
 // the focus, evaluated once per planet and rotated ecliptic→equatorial.

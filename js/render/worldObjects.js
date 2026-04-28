@@ -736,9 +736,16 @@ export class WorldGlobe {
 
   update(model) {
     this.group.visible = model.state.WorldModel === 'ge';
-    // Centre dot follows the axis-line toggle so it appears only
-    // when the user has the axis line enabled (in either mode).
-    if (this.center) this.center.visible = !!model.state.ShowAxisLine;
+    // Inner globe-centre dot only shows when the fictitious
+    // observer is at the centre — it represents the centre-
+    // observer's position, not the axis-line endpoint. The
+    // axis-line endpoint is a separate top-level dot rendered at
+    // (lat 90°, lon 0°) of whichever projection is active.
+    if (this.center) {
+      this.center.visible = !!model.state.ShowAxisLine
+        && !!model.state.ObserverAtCenter
+        && model.state.WorldModel === 'ge';
+    }
     const c = model && model.computed;
     const u = this.sphere.material.uniforms;
     if (c && c.SunCelestLatLong && Number.isFinite(c.SunRA) && Number.isFinite(c.SkyRotAngle)) {

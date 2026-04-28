@@ -695,12 +695,20 @@ export class Renderer {
     this.toroidalVortex.update(m);
     this.toroidalVortexDual.update(m);
     this.observer.update(m);
-    // Top-level origin dot — in FE the WorldGlobe group (which
-    // hosts its own centre dot) is hidden, so the axis line needs
-    // a visible endpoint at world origin in FE too. Hide in GE
-    // mode (the globe's own dot covers it) to avoid double-paint.
+    // Top-level orange dot — represents the (lat 90°, lon 0°)
+    // "home" position in both projections so the same location
+    // shows in equivalent screen-space when the user toggles
+    // FE ↔ GE. FE: AE pole at world (0, 0, 0). GE: globe-north
+    // pole at world (0, 0, FE_RADIUS).
     if (this.originDot) {
-      this.originDot.visible = !!s.ShowAxisLine && s.WorldModel !== 'ge';
+      this.originDot.visible = !!s.ShowAxisLine;
+      if (this.originDot.visible) {
+        if (s.WorldModel === 'ge') {
+          this.originDot.position.set(0, 0, FE_RADIUS);
+        } else {
+          this.originDot.position.set(0, 0, 0);
+        }
+      }
     }
     // Anchor dot — render at the saved LastObserver* lat/lon, in
     // whichever projection is current. Hidden when no

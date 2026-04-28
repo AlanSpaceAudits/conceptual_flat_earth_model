@@ -7734,3 +7734,32 @@ Format:
     rules continue to apply at the centre
     observer, no perma-daylight.
 - **Revert:** `git checkout v-s000574 -- .`
+
+## S576 — Origin dot at (lat 90°, lon 0°) in both projections
+
+- **Date:** 2026-04-28
+- **Files changed:** `js/render/index.js`,
+  `js/ui/mouseHandler.js`,
+  `js/render/worldObjects.js`.
+- **Change:**
+  - `Renderer.originDot` now positions per
+    projection: FE → world `(0, 0, 0)` (AE
+    pole at disc centre); GE → world
+    `(0, 0, FE_RADIUS)` (north pole on globe
+    surface). Both correspond to lat 90°,
+    lon 0° in their respective projections
+    so the user sees "the same location" on
+    a mode toggle.
+  - `mouseHandler` click + hover hit-tests
+    use the projection-specific origin
+    position (`[0,0,0]` in FE, `[0,0,1]` in
+    GE).
+  - `WorldGlobe.center` (the inner globe-
+    centre dot) now only renders when
+    `ShowAxisLine && ObserverAtCenter && ge`
+    — represents the fictitious-observer
+    position at globe centre, not the
+    axis-line endpoint. The axis-line
+    endpoint is the new `originDot` at the
+    surface pole.
+- **Revert:** `git checkout v-s000575 -- .`

@@ -552,7 +552,7 @@ header .info-popup.legend-popup a { color: var(--accent); }
 #bottom-bar .compass-controls {
   display: flex;
   align-items: flex-start;
-  gap: 6px;
+  gap: 2px;
   flex: 0 0 auto;
   margin-left: 12px;
   margin-top: -18px;
@@ -1122,7 +1122,7 @@ footer#desc .desc-dynamic { color: var(--fg); }
   grid-template-rows: repeat(2, 1fr);
   grid-auto-rows: 1fr;
   gap: 2px;
-  margin-right: 6px;
+  margin-right: 0;
 }
 #bottom-bar .swap-stack .time-btn {
   min-width: 36px;

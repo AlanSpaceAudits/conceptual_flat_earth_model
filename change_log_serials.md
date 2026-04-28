@@ -8220,3 +8220,27 @@ Format:
     `ObserverAtCenter` collapses the
     vault to the world origin).
 - **Revert:** `git checkout v-s000592 -- .`
+
+## S594 — Compass-controls cluster: uniform 2 px spacing
+
+- **Date:** 2026-04-28
+- **Files changed:** `css/styles.css`.
+- **Change:**
+  - `#bottom-bar .compass-controls` gap
+    `6px → 2px` (swap-stack /
+    mode-grid / cycle-row /
+    cardinal-grid / grids-stack
+    columns now sit at the same
+    spacing the cycle-row buttons
+    use internally).
+  - `#bottom-bar .swap-stack`
+    `margin-right: 6px → 0` so it
+    doesn't re-introduce the old wider
+    gap on its right edge.
+- **Result:** every column in the
+  bottom-right cluster (vault-swap +
+  axis-line, mode-grid, Maps + Starfield
+  + AzRing + Lang, NESW, GP-tracer +
+  FE/GE) is separated by 2 px, matching
+  the Maps↔Starfield spacing.
+- **Revert:** `git checkout v-s000593 -- .`

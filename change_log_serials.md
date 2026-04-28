@@ -8852,3 +8852,15 @@ Format:
     now carry the same two rows as
     blanks (`(no flight data)`).
 - **Revert:** `git checkout v-s000610 -- .`
+
+## S612 — Flight Routes: drop delta suffix from Arrival (measured)
+
+- **Date:** 2026-04-28
+- **Files changed:**
+  - `js/demos/flightRoutes.js`
+- **Change:**
+  - `Arrival (measured)` row now
+    renders just `formatHMS(actualSec)`.
+    Removed the
+    `(±M:SS vs predicted)` suffix.
+- **Revert:** `git checkout v-s000611 -- .`

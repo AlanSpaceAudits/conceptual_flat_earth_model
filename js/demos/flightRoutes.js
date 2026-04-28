@@ -188,7 +188,7 @@ function qfFlightDemo(track) {
           `Destination         : ${dest}  (${endWp.lat.toFixed(2)}°, ${endWp.lon.toFixed(2)}°)`,
           `Central Angle       : ${angle.toFixed(2)}°`,
           `Arrival predicted   : ${formatHMS(predictedSec)}`,
-          `Arrival (measured)  : ${formatHMS(actualSec)}  (${formatHMSDelta(deltaSec)} vs predicted)`,
+          `Arrival (measured)  : ${formatHMS(actualSec)}`,
           `Air Time            : ${formatHMS(actualSec)}`,
           `Air Speed (avg)     : ${formatDmsPerHour(aspAvgDegPerH)}`,
           `Ground Speed (calc) : ${formatDmsPerHour(gsDegPerH)}`,

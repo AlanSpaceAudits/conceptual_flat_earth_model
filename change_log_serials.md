@@ -8149,3 +8149,40 @@ Format:
   starfield / cycle rows on the left
   side of the bottom bar.
 - **Revert:** `git checkout v-s000590 -- .`
+
+## S592 — GE Art — Translucent globe map
+
+- **Date:** 2026-04-28
+- **Files changed:**
+  - `js/render/geArt.js`
+  - `js/core/projections.js`
+  - `js/render/worldObjects.js`
+- **Change:**
+  - Added a new procedural GE art style
+    `ge_translucent` (geArt.js): faint
+    blue continents over a graticuled
+    deep-blue ocean, drawn with semi-
+    transparent fills + strokes so the
+    canvas itself reads as light.
+  - Added projection definition
+    `ge_art_translucent` in
+    `projections.js`
+    (`category: 'ge_art'`,
+    `wrapsSphere: true`,
+    `geOpacity: 0.35`). Picks up the
+    new generated style and sets the
+    GE sphere shell to 35 % opacity.
+  - `WorldGlobe.applyMapTexture` reads
+    the projection's optional
+    `geOpacity` field and writes it to
+    the sphere shader's `uOpacity`
+    uniform; defaults to `0.85` so the
+    other GE maps stay unchanged.
+- **Result:** Selecting *GE Art —
+  Translucent* in the GE Map dropdown
+  renders the terrestrial sphere as a
+  see-through shell — the centre
+  observer can now look out through
+  the globe and watch the celestial
+  sphere on the far side.
+- **Revert:** `git checkout v-s000591 -- .`

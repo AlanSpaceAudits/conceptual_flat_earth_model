@@ -141,6 +141,18 @@ const STYLES = {
     ctx.stroke(path);
   },
 
+  ge_translucent(ctx, geoJson) {
+    ctx.fillStyle = '#1a3550';
+    ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+    drawGraticule(ctx, 30, 30, 'rgba(220, 235, 255, 0.18)', 1);
+    const path = buildLandPath(ctx, geoJson);
+    ctx.fillStyle = 'rgba(110, 170, 220, 0.65)';
+    ctx.fill(path);
+    ctx.strokeStyle = 'rgba(220, 240, 255, 0.85)';
+    ctx.lineWidth = 1.2;
+    ctx.stroke(path);
+  },
+
   ge_neon(ctx, geoJson) {
     ctx.fillStyle = '#0a0014';
     ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);

@@ -778,6 +778,12 @@ export class WorldGlobe {
     const generatedStyle = proj && proj.generatedGeTexture;
     const isEquirect = !!asset && /equirect|world_shaded/i.test(projId);
     const u = this.sphere.material.uniforms;
+    // Per-projection sphere opacity. Default 0.85 (matches the shell's
+    // standard look); a projection can declare `geOpacity` to render
+    // the globe more or less translucent.
+    u.uOpacity.value = (proj && typeof proj.geOpacity === 'number')
+      ? proj.geOpacity
+      : 0.85;
     if (generatedStyle) {
       let tex = this._geArtCache.get(projId);
       if (!tex) {

@@ -459,6 +459,17 @@ export const PROJECTIONS = {
     project: projectEquirect,
   },
 
+  ge_art_translucent: {
+    id: 'ge_art_translucent', name: 'GE Art — Translucent',
+    category: 'ge_art',
+    generatedGeTexture: 'ge_translucent',
+    imageAsset: null, imageInscribedRadius: 0.5,
+    wrapsSphere: true,
+    geOpacity: 0.35,
+    notes: 'See-through globe — faint blue continents, lets the centre observer view the celestial sphere through the shell.',
+    project: projectEquirect,
+  },
+
   hq_ortho: {
     id: 'hq_ortho', name: 'HQ Orthographic Globe',
     category: 'hq',

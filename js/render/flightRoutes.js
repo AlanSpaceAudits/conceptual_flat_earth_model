@@ -31,8 +31,8 @@ const FE_LIFT       = 0.0035;
 const GE_LIFT       = 1.003;
 const ROUTE_COLOR   = 0xff8040;
 const CITY_COLOR    = 0xff8040;
-const LABEL_OFFSET_FE = 0.115;
-const LABEL_OFFSET_GE = 0.16;
+const LABEL_OFFSET_FE = 0.20;
+const LABEL_OFFSET_GE = 0.26;
 const RING_INNER    = 0.0085;
 const RING_OUTER    = 0.0125;
 // Fixed-size label canvas — every city label uses the same bitmap
@@ -146,7 +146,7 @@ export class FlightRoutes {
         new THREE.MeshBasicMaterial({
           color: CITY_COLOR, transparent: true, opacity: 0.95,
           side: THREE.DoubleSide,
-          depthTest: false, depthWrite: false,
+          depthTest: true, depthWrite: false,
         }),
       );
       ring.renderOrder = 70;
@@ -164,7 +164,7 @@ export class FlightRoutes {
         leadGeom,
         new THREE.LineBasicMaterial({
           color: CITY_COLOR, transparent: true, opacity: 0.85,
-          depthTest: false, depthWrite: false,
+          depthTest: true, depthWrite: false,
         }),
       );
       lead.renderOrder = 70;
@@ -191,7 +191,7 @@ export class FlightRoutes {
         geom,
         new THREE.LineBasicMaterial({
           color: ROUTE_COLOR, transparent: true, opacity: 0.95,
-          depthTest: false, depthWrite: false,
+          depthTest: true, depthWrite: false,
         }),
       );
       line.renderOrder = 69;

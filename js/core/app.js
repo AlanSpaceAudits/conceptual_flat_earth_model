@@ -439,6 +439,16 @@ export class FeModel extends EventTarget {
       if (s.ObserverAtCenter) {
         s.ObserverAtCenter = false;
       }
+      // Flight-routes demo lives on the southern hemisphere. The FE
+      // top-down view sits over the AE pole (north up); the GE
+      // top-down equivalent has to look from below the south pole or
+      // the cities all hide behind the globe. Auto-flip camera
+      // pitch on any mode toggle while a flight-routes demo is
+      // active so the manual FE / GE button in the bottom bar keeps
+      // both projections framed.
+      if (s.ShowFlightRoutes) {
+        s.CameraHeight = (s.WorldModel === 'ge') ? -89.9 : 89.9;
+      }
     }
     this._lastWorldModel = s.WorldModel;
 

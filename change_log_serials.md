@@ -8480,3 +8480,34 @@ Format:
     plumbing for an upcoming live
     flight-track playback demo.
 - **Revert:** `git checkout v-s000599 -- .`
+
+## S601 — Flight Routes: GE depth-test + auto-flip camera + bigger label offset
+
+- **Date:** 2026-04-28
+- **Files changed:**
+  - `js/render/flightRoutes.js`
+  - `js/core/app.js`
+- **Change:**
+  - Flight-route ring / line / leader /
+    plane / label materials switched
+    `depthTest: false → true` so the
+    GE terrestrial sphere properly
+    occludes the back-hemisphere
+    artwork (no more routes ghosting
+    through the globe).
+  - `LABEL_OFFSET_FE 0.115 → 0.20`,
+    `LABEL_OFFSET_GE 0.16 → 0.26` so
+    the fixed-size label box
+    (half-width ≈ 0.117) clears the
+    ring on every side regardless of
+    text length.
+  - WorldModel watchdog in
+    `app.update` now auto-flips
+    `CameraHeight` to `-89.9` (GE) /
+    `89.9` (FE) whenever
+    `ShowFlightRoutes` is on, so the
+    manual FE / GE toggle frames the
+    southern-hemisphere routes from
+    the matching top-down direction
+    (south pole in GE, AE pole in FE).
+- **Revert:** `git checkout v-s000600 -- .`

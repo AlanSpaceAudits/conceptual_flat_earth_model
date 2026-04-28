@@ -9718,3 +9718,36 @@ Format:
     plane / rings / race lane in
     cyan.
 - **Revert:** `git checkout v-s000630 -- .`
+
+## S632 — Equal Arc info box: Takeoff / Arrival / Elapsed clock
+
+- **Date:** 2026-04-28
+- **Files changed:**
+  - `js/demos/flightRoutes.js`
+- **Change:**
+  - Added three new lines to each
+    Equal Arc info box, sourced from
+    the same notional duration the
+    angular speed was derived from
+    (`CONST_DURATION_HOURS = 11`):
+    - `Takeoff : 00:00:00` —
+      pinned to the start of every
+      loop iteration so both planes
+      lift off in lockstep.
+    - `Arrival : 11:00:00` —
+      `CONST_DURATION_HOURS · 3600`
+      seconds after takeoff. Both
+      lanes share the value because
+      `FlightRoutesProgress` drives
+      both routes.
+    - Live `Elapsed : HH:MM:SS`
+      counts up from takeoff
+      proportional to
+      `FlightRoutesProgress`. Both
+      lanes hit
+      `Elapsed = Arrival` at the
+      same frame — a clock-time
+      counterpart to the existing
+      `Traversed` / `Remaining`
+      angular readouts.
+- **Revert:** `git checkout v-s000631 -- .`

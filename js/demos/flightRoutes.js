@@ -385,12 +385,21 @@ const NORTH_COLOR = '#66c8ff';
 
 function constSpeedBox(route, angle, speedDegPerH, label, accent) {
   const a = cityById(route.from), b = cityById(route.to);
+  // Demo timing: takeoff pinned at 00:00:00 (start of every loop
+  // iteration) so both planes lift off in lockstep. Arrival lands
+  // CONST_DURATION_HOURS later — the same notional duration the
+  // angular speed (`speedDegPerH = angle / CONST_DURATION_HOURS`)
+  // was derived from. Both lanes share the same takeoff / arrival
+  // because they're driven by the same `FlightRoutesProgress` tween.
+  const arrivalSec = CONST_DURATION_HOURS * 3600;
   return {
     title: `${label} · ${route.label}  ${angle.toFixed(2)}°`,
     accent,
     lines: [
       `Depart      : ${a.name}  (${a.lat.toFixed(2)}°, ${a.lon.toFixed(2)}°)`,
       `Destination : ${b.name}  (${b.lat.toFixed(2)}°, ${b.lon.toFixed(2)}°)`,
+      `Takeoff     : ${formatHMS(0)}`,
+      `Arrival     : ${formatHMS(arrivalSec)}`,
       `Total arc   : ${angle.toFixed(2)}°`,
       `Speed       : ${formatDmsPerHour(speedDegPerH)}`,
       (s) => {
@@ -402,6 +411,12 @@ function constSpeedBox(route, angle, speedDegPerH, label, accent) {
         const p = Math.max(0, Math.min(1, s.FlightRoutesProgress || 0));
         const remaining = angle * (1 - p);
         return `!Remaining   : ${remaining.toFixed(2)}°`;
+      },
+      // Live elapsed flight clock — counts up from Takeoff so the
+      // user can see both lanes hit `Arrival` at the same instant.
+      (s) => {
+        const p = Math.max(0, Math.min(1, s.FlightRoutesProgress || 0));
+        return `!Elapsed     : ${formatHMS(p * arrivalSec)}`;
       },
     ],
   };

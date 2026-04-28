@@ -519,11 +519,19 @@ export class FeModel extends EventTarget {
         eastX:  -so,      eastY:   co,      eastZ:   0,
         upX:     cl * co, upY:     cl * so, upZ:     sl,
       };
-      // Coord: always the surface position. ObserverAtCenter pulls
-      // the camera (not this anchor) to the world origin via
-      // scene.js, leaving the optical vault attached to the surface
-      // so it slides under the dragged orange dot.
-      c.GlobeObserverCoord = [px, py, pz];
+      // GE optical-vault anchor. The terrestrial sphere and celestial
+      // sphere share a common centre, so when ObserverAtCenter is on
+      // we collapse the GE observer coord to the world origin: the
+      // vault hemisphere wraps around the camera and bodies project
+      // at the angles a surface observer at (ObserverLat, ObserverLong)
+      // would see, only re-rooted at the centre. Dragging the orange
+      // dot updates GlobeObserverFrame which in turn rotates those
+      // projections in real time. FE has no such 1:1 sphere pairing,
+      // so its anchor stays at the surface (handled in scene.js via
+      // camObs).
+      c.GlobeObserverCoord = (s.ObserverAtCenter && s.WorldModel === 'ge')
+        ? [0, 0, 0]
+        : [px, py, pz];
       // Celestial sphere expanded to 2·GLOBE_RADIUS so its surface
       // grazes the apex of the observer's optical dome (the dome
       // sits tangent at the observer with radius FE_RADIUS, so its

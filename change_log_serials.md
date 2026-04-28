@@ -8099,3 +8099,31 @@ Format:
   centre observer can watch projected
   bodies shift across the dome.
 - **Revert:** `git checkout v-s000588 -- .`
+
+## S590 — GE-only: vault collapses to centre when ObserverAtCenter
+
+- **Date:** 2026-04-28
+- **Files changed:** `js/core/app.js`.
+- **Change:**
+  - Restored the GE-only
+    `c.GlobeObserverCoord = [0, 0, 0]`
+    override when `ObserverAtCenter` is
+    on, leaving the FE
+    `c.ObserverFeCoord` at its surface
+    lat / lon (S589 behaviour).
+  - GE rationale: the terrestrial
+    sphere and celestial sphere share a
+    common centre, so dropping the
+    optical-vault anchor to the world
+    origin wraps the vault around the
+    camera. Body projections still use
+    `GlobeObserverFrame` from the
+    surface lat / lon, so dragging the
+    orange dot rotates the projections
+    in real time and the centre
+    observer sees what an observer at
+    the orange dot would see.
+  - FE keeps the surface-anchored vault
+    from S589: dragging the dot drags
+    the vault with it.
+- **Revert:** `git checkout v-s000589 -- .`

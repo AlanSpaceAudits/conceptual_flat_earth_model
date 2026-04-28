@@ -60,6 +60,32 @@ export function coordToLatLong(coord) {
   return { lat, lng };
 }
 
+// Equatorial (RA / Dec) → horizontal (az / el) at the observer's
+// (lat, lon) and the supplied Greenwich mean sidereal time.
+// RA / Dec in radians; lat / lon / gmst in degrees. Returns
+// `{ azimuth, elevation }` in degrees, with azimuth measured
+// clockwise from north and elevation 0° at the horizon. Returns
+// NaN/NaN when the input RA / Dec aren't finite — handy when a
+// comparison pipeline reports NaN for an unsupported body.
+export function raDecToAzEl(raRad, decRad, latDeg, lonDeg, gmstDeg) {
+  if (!Number.isFinite(raRad) || !Number.isFinite(decRad)) {
+    return { azimuth: NaN, elevation: NaN };
+  }
+  const DEG = Math.PI / 180;
+  const lat = latDeg * DEG;
+  const lst = (gmstDeg + lonDeg) * DEG;
+  const ha  = lst - raRad;
+  const sinAlt = Math.sin(lat) * Math.sin(decRad)
+              + Math.cos(lat) * Math.cos(decRad) * Math.cos(ha);
+  const alt = Math.asin(Math.max(-1, Math.min(1, sinAlt)));
+  const y = -Math.cos(decRad) * Math.sin(ha);
+  const x = Math.sin(decRad) * Math.cos(lat)
+          - Math.cos(decRad) * Math.sin(lat) * Math.cos(ha);
+  let az = Math.atan2(y, x) * 180 / Math.PI;
+  az = ((az % 360) + 360) % 360;
+  return { azimuth: az, elevation: alt * 180 / Math.PI };
+}
+
 // Local-globe cartesian -> { azimuth, elevation } in degrees.
 // Convention: x=zenith, y=east, z=north.
 export function localGlobeCoordToAngles(coord) {

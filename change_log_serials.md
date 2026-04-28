@@ -10129,3 +10129,60 @@ Format:
     routes the request through
     GeoC / VSOP87 / Ptolemy.
 - **Revert:** `git checkout v-s000642 -- .`
+
+## S644 — Tracking popup pulls active-source RA/Dec, comparison HUD adds az/el
+
+- **Date:** 2026-04-28
+- **Files changed:**
+  - `js/core/transforms.js`
+  - `js/core/app.js`
+  - `js/ui/trackingInfoPopup.js`
+  - `js/ui/controlPanel.js`
+- **Change:**
+  - **`raDecToAzEl(raRad, decRad,
+    latDeg, lonDeg, gmstDeg)`** —
+    new helper in
+    `js/core/transforms.js`. Takes
+    a comparison RA / Dec and
+    converts it to local az / el
+    via standard hour-angle
+    formulas. Returns NaN/NaN on
+    NaN input so the comparison
+    rows for unsupported bodies
+    (e.g. VSOP87 + Uranus) stay
+    "—".
+  - **`TrackerInfos`** entries now
+    carry `ra` / `dec` from the
+    **active** ephemeris pipeline
+    (Sun → `c.SunRA / c.SunDec`,
+    Moon → `c.MoonRA / c.MoonDec`,
+    planets → `p.ra / p.dec`).
+    Independent of
+    `ShowEphemerisReadings`.
+  - **Tracking Info Popup** now
+    prefers `info.ra / dec`
+    (active source) before any
+    `*Reading`. Stops the popup
+    from showing "—" for sun /
+    moon / planet RA / Dec when
+    the comparison toggle is
+    off. Stars still use their
+    catalog-direct
+    `info.ra / info.dec`.
+  - **Live Ephemeris HUD** rows
+    now read
+    `GeoC  : RA HH^MM^SS.s
+    Dec ±DD°MM′SS″   Az
+    DDD°MM′SS.s″   El
+    ±DD°MM′SS.s″`. The az / el
+    columns are computed at
+    display time from each
+    pipeline's RA / Dec via
+    `raDecToAzEl` using the live
+    observer lat / lon and
+    `SkyRotAngle`. Lets the user
+    see directly how each
+    pipeline's slightly different
+    sky positions land in the
+    local horizontal frame.
+- **Revert:** `git checkout v-s000643 -- .`

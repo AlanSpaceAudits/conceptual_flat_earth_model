@@ -4,6 +4,7 @@
 import { dateTimeToString, dateTimeToDate } from '../core/time.js';
 import { TIME_ORIGIN } from '../core/constants.js';
 import { findNextEclipses } from '../core/ephemeris.js';
+import { raDecToAzEl } from '../core/transforms.js';
 import { CEL_NAV_SELECT_OPTIONS, CEL_NAV_STARS } from '../core/celnavStars.js';
 import { CATALOGUED_STARS, CONSTELLATIONS } from '../core/constellations.js';
 import { BLACK_HOLES } from '../core/blackHoles.js';
@@ -2994,14 +2995,24 @@ export function buildTrackerHud(trackerEl, model) {
       rec.astropixels.hidden = !showReadings;
       rec.vsop87.hidden = !showReadings;
       if (showReadings) {
-        rec.geo.textContent =
-          `GeoC  : RA ${fmtHours(info.geoReading.ra)}   Dec ${fmtDms(info.geoReading.dec)}`;
-        rec.ptolemy.textContent =
-          `Ptol  : RA ${fmtHours(info.ptolemyReading.ra)}   Dec ${fmtDms(info.ptolemyReading.dec)}`;
-        rec.astropixels.textContent =
-          `DE405 : RA ${fmtHours(info.astropixelsReading.ra)}   Dec ${fmtDms(info.astropixelsReading.dec)}`;
-        rec.vsop87.textContent =
-          `VSOP87: RA ${fmtHours(info.vsop87Reading.ra)}   Dec ${fmtDms(info.vsop87Reading.dec)}`;
+        // Each pipeline's RA / Dec is followed by its converted
+        // az / el so the user can see how a different RA / Dec
+        // value lands in the local sky frame, not just on the
+        // celestial sphere.
+        const lat = model.state.ObserverLat;
+        const lon = model.state.ObserverLong;
+        const gmst = model.computed.SkyRotAngle || 0;
+        const fmtRow = (label, reading) => {
+          const r = reading || { ra: NaN, dec: NaN };
+          const ae = raDecToAzEl(r.ra, r.dec, lat, lon, gmst);
+          const azStr = Number.isFinite(ae.azimuth)   ? fmtDmsDegAz(ae.azimuth)   : '—';
+          const elStr = Number.isFinite(ae.elevation) ? fmtDmsDegEl(ae.elevation) : '—';
+          return `${label.padEnd(6)}: RA ${fmtHours(r.ra)}   Dec ${fmtDms(r.dec)}   Az ${azStr}   El ${elStr}`;
+        };
+        rec.geo.textContent         = fmtRow('GeoC',   info.geoReading);
+        rec.ptolemy.textContent     = fmtRow('Ptol',   info.ptolemyReading);
+        rec.astropixels.textContent = fmtRow('DE405',  info.astropixelsReading);
+        rec.vsop87.textContent      = fmtRow('VSOP87', info.vsop87Reading);
       }
       const magTag = (info.mag != null) ? `   mag ${info.mag.toFixed(2)}` : '';
       rec.foot.textContent = `${stamp}${magTag}`;

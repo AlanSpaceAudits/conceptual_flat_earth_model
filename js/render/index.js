@@ -819,9 +819,15 @@ export class Renderer {
     // height so they're layered above the starfield. Optical-vault dots
     // are gated on NightFactor so planets only appear in the observer's
     // sky once the sun has dropped far enough for them to be visible.
+    // Hard NightFactor gate — planets are naked-eye-faint, so hide
+    // the marker group entirely in daylight. The downstream
+    // fade-by-elevation × NightFactor logic in CelestialMarker
+    // would already drop opacity to 0, but the explicit group hide
+    // covers any overlay / outline render path that might leak.
+    const planetNightOn = (c.NightFactor || 0) > 0.05;
     for (const [name, mk] of Object.entries(this.planetMarkers)) {
       const p = c.Planets[name];
-      if (!p || !bodyCategoryOn) {
+      if (!p || !bodyCategoryOn || !planetNightOn) {
         mk.group.visible = false;
         continue;
       }

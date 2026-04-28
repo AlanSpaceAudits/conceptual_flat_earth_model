@@ -7821,3 +7821,25 @@ Format:
     use `[0, 0, 0]` unconditionally
     (matches the dot position).
 - **Revert:** `git checkout v-s000578 -- .`
+
+## S580 — Planet markers hard-hide in daylight
+
+- **Date:** 2026-04-28
+- **Files changed:** `js/render/index.js`.
+- **Change:**
+  - Added a `planetNightOn = NightFactor >
+    0.05` gate at the top of the planet-
+    marker loop. When NightFactor is below
+    that threshold (full daylight), the
+    planet's `mk.group.visible` is set to
+    `false` for the whole group regardless
+    of tracker membership or other
+    conditions. The downstream
+    `CelestialMarker` fade math already
+    drops `sphereDot` opacity to 0 in
+    daylight, but an explicit group hide
+    covers any auxiliary planet-render
+    path that might otherwise leak through
+    when the user is at the fictitious
+    centre observer in GE.
+- **Revert:** `git checkout v-s000579 -- .`

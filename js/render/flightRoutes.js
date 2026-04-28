@@ -84,13 +84,16 @@ function makeLabelSprite(text) {
   return sp;
 }
 
-function makePlaneSprite() {
+function makePlaneTexture() {
   const cv = document.createElement('canvas');
   cv.width = 96; cv.height = 96;
   const ctx = cv.getContext('2d');
-  // Simple top-down silhouette pointing along +y in the canvas
-  // (so a 0° rotation = "flying upward in screen space"). Material
-  // rotation is then driven by the route's local tangent.
+  // Top-down silhouette with the nose at canvas y = 14 (toward
+  // canvas top, which lands at texture v ≈ 0.85). The mesh that
+  // wraps this texture is built with its local +y axis pointing in
+  // the same direction so a quaternion that aligns +y with the arc
+  // tangent makes the plane "fly" in that direction without any
+  // billboarded screen-space rotation hacks.
   ctx.translate(48, 48);
   ctx.fillStyle = '#fff5e6';
   ctx.strokeStyle = '#ff8040';
@@ -118,15 +121,21 @@ function makePlaneSprite() {
   const tex = new THREE.CanvasTexture(cv);
   tex.colorSpace = THREE.SRGBColorSpace;
   tex.needsUpdate = true;
-  const mat = new THREE.SpriteMaterial({
-    map: tex, transparent: true,
-    depthTest: false, depthWrite: false,
+  return tex;
+}
+
+function makePlaneMesh(sharedTex) {
+  const geom = new THREE.PlaneGeometry(PLANE_WORLD, PLANE_WORLD);
+  const mat = new THREE.MeshBasicMaterial({
+    map: sharedTex,
+    transparent: true,
+    side: THREE.DoubleSide,
+    depthTest: true, depthWrite: false,
   });
-  const sp = new THREE.Sprite(mat);
-  sp.scale.set(PLANE_WORLD, PLANE_WORLD, 1);
-  sp.center.set(0.5, 0.5);
-  sp.renderOrder = 72;
-  return sp;
+  const m = new THREE.Mesh(geom, mat);
+  m.renderOrder = 72;
+  m.frustumCulled = false;
+  return m;
 }
 
 export class FlightRoutes {
@@ -182,6 +191,7 @@ export class FlightRoutes {
     this._routePlanes = new Map();
     this._routeComps = new Map();
     this._routeCompLines = new Map();
+    this._planeTexture = makePlaneTexture();
     for (const r of FLIGHT_ROUTES) {
       const a = cityById(r.from), b = cityById(r.to);
       const arc = greatCircleArc(a.lat, a.lon, b.lat, b.lon, ARC_SAMPLES);
@@ -202,7 +212,7 @@ export class FlightRoutes {
       this.group.add(line);
       this._routeLines.set(r.id, line);
 
-      const plane = makePlaneSprite();
+      const plane = makePlaneMesh(this._planeTexture);
       plane.visible = false;
       this.group.add(plane);
       this._routePlanes.set(r.id, plane);
@@ -382,20 +392,36 @@ export class FlightRoutes {
       }
       line.geometry.setDrawRange(0, nDraw);
       line.geometry.attributes.position.needsUpdate = true;
-      if (plane.visible && lastP) {
+      if (plane.visible && lastP && prevP) {
+        // Orient the plane mesh in 3-space so its local +y aligns
+        // with the arc tangent (forward) and its local +z aligns
+        // with the surface outward normal. FE: outward = world +z;
+        // GE: outward = unit vector from origin to lastP. Forward is
+        // computed from the previous→current waypoint delta and
+        // re-orthogonalised against outward so a sphere-tangent
+        // direction rides on the surface plane instead of dipping
+        // through it.
+        const ge = s.WorldModel === 'ge';
+        const upX = ge ? lastP[0] : 0;
+        const upY = ge ? lastP[1] : 0;
+        const upZ = ge ? lastP[2] : 1;
+        let upLen = Math.hypot(upX, upY, upZ) || 1;
+        const nUp = new THREE.Vector3(upX / upLen, upY / upLen, upZ / upLen);
+        let fwd = new THREE.Vector3(
+          lastP[0] - prevP[0],
+          lastP[1] - prevP[1],
+          lastP[2] - prevP[2],
+        );
+        const dotF = fwd.dot(nUp);
+        fwd.addScaledVector(nUp, -dotF);
+        if (fwd.lengthSq() < 1e-12) fwd.set(1, 0, 0);
+        fwd.normalize();
+        const right = new THREE.Vector3().crossVectors(fwd, nUp).normalize();
+        const m = new THREE.Matrix4().makeBasis(right, fwd, nUp);
+        plane.quaternion.setFromRotationMatrix(m);
         plane.position.set(lastP[0], lastP[1], lastP[2]);
-        // Rotate the plane sprite so it points along the current
-        // arc tangent. Sprite material rotation is around the
-        // sprite's own axis (perpendicular to the screen), so the
-        // angle is computed in screen-space x/y from the projected
-        // tangent — using world dx/dy here gives the correct heading
-        // for the top-down camera and is close enough for the GE
-        // tilted view that the icon still reads as "flying along".
-        if (prevP) {
-          const dx = lastP[0] - prevP[0];
-          const dy = lastP[1] - prevP[1];
-          plane.material.rotation = Math.atan2(dy, dx) - Math.PI / 2;
-        }
+      } else if (plane.visible && lastP) {
+        plane.position.set(lastP[0], lastP[1], lastP[2]);
       }
     }
   }

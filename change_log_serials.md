@@ -8571,3 +8571,62 @@ Format:
   great circle, completing a closed
   geodesic loop on either projection.
 - **Revert:** `git checkout v-s000602 -- .`
+
+## S604 — Flight Routes: plane mesh orients along arc tangent (FE + GE)
+
+- **Date:** 2026-04-28
+- **Files changed:**
+  - `js/render/flightRoutes.js`
+- **Change:**
+  - Replaced the per-route Sprite plane
+    icon with a `THREE.Mesh` of a
+    `PlaneGeometry(PLANE_WORLD,
+    PLANE_WORLD)` carrying a shared
+    `CanvasTexture` (the previous
+    silhouette). Sprites billboard
+    to camera, so `material.rotation`
+    relied on a screen-space-vs-
+    world-space mapping that broke
+    once the camera tilted; the mesh
+    has a real 3-D orientation.
+  - Per-frame orientation builds a
+    local frame `{ right, fwd, up }`:
+    - `up` = world +z in FE / unit
+      radial outward in GE.
+    - `fwd` = (lastP − prevP)
+      re-orthogonalised against
+      `up` (subtracts the radial
+      component so a sphere-tangent
+      direction stays on the surface
+      plane), then normalised.
+    - `right` = `fwd × up`.
+  - The basis is loaded into a
+    `Matrix4` and converted to a
+    quaternion on the plane mesh.
+    The PlaneGeometry's local +y
+    aligns with `fwd`, so the
+    silhouette nose follows the
+    actual route tangent regardless
+    of camera angle, FE or GE.
+- **Result:** the plane reads as flying
+  along the arc instead of being
+  dragged perpendicular to it.
+- **Revert:** `git checkout v-s000603 -- .`
+
+## S605 — Flight Routes: notes on data + tracker box
+
+- **Date:** 2026-04-28
+- **Files changed:** `change_log_serials.md` (this entry only).
+- **Status:** Per-flight live tracker
+  box (central angle, air speed,
+  predicted vs actual, ground speed)
+  for the QF27/28 actual-flight tracks
+  in `js/data/flightTracks.js` is
+  still pending. The bundled data
+  carries 4 flights × 241 decimated
+  waypoints (per-point lat / lon /
+  altitude / ground speed / air speed
+  / heading / wind speed / wind
+  direction); next serial wires it
+  through to a playback renderer +
+  HUD panel.

@@ -9790,3 +9790,18 @@ Format:
   - Names only; demo behaviour
     unchanged.
 - **Revert:** `git checkout v-s000633 -- .`
+
+## S635 — Flight demos: close the gap between info boxes and race panel
+
+- **Date:** 2026-04-28
+- **Files changed:**
+  - `js/render/flightRoutes.js`
+- **Change:**
+  - Race panel anchor moved
+    `top: 580 → 528` so the panel
+    sits flush under the info
+    boxes' bottom edge with a small
+    breathing gutter instead of the
+    52 px empty band the previous
+    layout left.
+- **Revert:** `git checkout v-s000634 -- .`

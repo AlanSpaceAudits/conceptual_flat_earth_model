@@ -190,7 +190,7 @@ function ensureRacePanel() {
   el.id = 'flight-race-panel';
   el.style.cssText = [
     'position: absolute',
-    'top: 580px',
+    'top: 528px',
     'left: 12px',
     'padding: 0',
     'background: rgba(10, 14, 22, 0.94)',

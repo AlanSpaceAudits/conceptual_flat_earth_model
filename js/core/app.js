@@ -189,6 +189,11 @@ function defaultState() {
     // Equal Arc demos so the side-by-side race lanes own the screen
     // without the centre-pointing legs cluttering the disc / globe.
     HideFlightCentralAngle:  false,
+    // Per-route colour override map: { [routeId]: '#hex' }. Renderer
+    // reads this when colouring the route line, complement dashed
+    // line, ring marker, leader line, and plane texture. Routes not
+    // listed fall back to the default orange.
+    FlightRouteColors:       {},
     // HUD overlay populated by flight-routes demos. `null` = hide.
     // Otherwise `{ title, lines: string[] }`.
     FlightInfoBox:           null,

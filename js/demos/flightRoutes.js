@@ -380,10 +380,14 @@ const CROSS_SOUTH_ANGLE  = angleOf(CROSS_SOUTH_OBJ);
 const MIRROR_SPEED_DEG_PER_HR = MIRROR_SOUTH_ANGLE / CONST_DURATION_HOURS;
 const CROSS_SPEED_DEG_PER_HR  = CROSS_SOUTH_ANGLE  / CONST_DURATION_HOURS;
 
-function constSpeedBox(route, angle, speedDegPerH, label) {
+const SOUTH_COLOR = '#ff8040';
+const NORTH_COLOR = '#66c8ff';
+
+function constSpeedBox(route, angle, speedDegPerH, label, accent) {
   const a = cityById(route.from), b = cityById(route.to);
   return {
     title: `${label} · ${route.label}  ${angle.toFixed(2)}°`,
+    accent,
     lines: [
       `Depart      : ${a.name}  (${a.lat.toFixed(2)}°, ${a.lon.toFixed(2)}°)`,
       `Destination : ${b.name}  (${b.lat.toFixed(2)}°, ${b.lon.toFixed(2)}°)`,
@@ -415,13 +419,21 @@ function constSpeedDemo({ name, southObj, southAngle, northObj, northLabel, spee
       // Hide the cyan endpoint→origin legs — the Equal Arc story is
       // told by the side-by-side race lanes, not the inner legs.
       HideFlightCentralAngle: true,
+      // Per-route colours: south leg in orange, north leg in cyan
+      // — same palette the race panel uses, so the user can see at a
+      // glance which info box, which arc, and which race lane belong
+      // together.
+      FlightRouteColors: {
+        [southObj.id]: SOUTH_COLOR,
+        [northObj.id]: NORTH_COLOR,
+      },
       FlightInfoBox: [
-        constSpeedBox(southObj, southAngle, speedDegPerH, 'SOUTH'),
-        constSpeedBox(northObj, northAngle, speedDegPerH, northLabel),
+        constSpeedBox(southObj, southAngle, speedDegPerH, 'SOUTH', SOUTH_COLOR),
+        constSpeedBox(northObj, northAngle, speedDegPerH, northLabel, NORTH_COLOR),
       ],
       // Side panel: both lanes drawn as straight horizontal lines
-      // with pixel-length proportional to their central angle.
-      // Equal central angles → equal-length straight lines, so the
+      // with pixel-length proportional to their AE-projected arc
+      // length. Equal central angles → equal traversal time, so the
       // race makes the equality plain even when the AE projection
       // makes the curves look unequal.
       FlightRaceTrack: {
@@ -431,13 +443,13 @@ function constSpeedDemo({ name, southObj, southAngle, northObj, northLabel, spee
             label: `SOUTH · ${southObj.label}`,
             angle: southAngle,
             aeLength: aeArcLengthOf(southObj),
-            color: '#ff8040',
+            color: SOUTH_COLOR,
           },
           {
             label: `${northLabel} · ${northObj.label}`,
             angle: northAngle,
             aeLength: aeArcLengthOf(northObj),
-            color: '#66c8ff',
+            color: NORTH_COLOR,
           },
         ],
       },

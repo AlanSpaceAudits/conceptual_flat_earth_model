@@ -386,7 +386,7 @@ function ensureInfoBoxes() {
   return [primary, secondary];
 }
 
-function makePlaneTexture() {
+function makePlaneTexture(strokeHex = '#ff8040', fillHex = '#fff5e6') {
   const cv = document.createElement('canvas');
   cv.width = 96; cv.height = 96;
   const ctx = cv.getContext('2d');
@@ -395,10 +395,11 @@ function makePlaneTexture() {
   // wraps this texture is built with its local +y axis pointing in
   // the same direction so a quaternion that aligns +y with the arc
   // tangent makes the plane "fly" in that direction without any
-  // billboarded screen-space rotation hacks.
+  // billboarded screen-space rotation hacks. Stroke colour is
+  // parameterised so the caller can build a route-tinted texture.
   ctx.translate(48, 48);
-  ctx.fillStyle = '#fff5e6';
-  ctx.strokeStyle = '#ff8040';
+  ctx.fillStyle = fillHex;
+  ctx.strokeStyle = strokeHex;
   ctx.lineWidth = 2.5;
   ctx.beginPath();
   ctx.moveTo(0, -34);
@@ -494,7 +495,9 @@ export class FlightRoutes {
     this._routeComps = new Map();
     this._routeCompLines = new Map();
     this._routeAngleLines = new Map();
-    this._planeTexture = makePlaneTexture();
+    this._planeTextureCache = new Map();
+    this._planeTextureCache.set('#ff8040', makePlaneTexture('#ff8040'));
+    this._planeTexture = this._planeTextureCache.get('#ff8040');
     for (const r of FLIGHT_ROUTES) {
       const a = cityById(r.from), b = cityById(r.to);
       const arc = greatCircleArc(a.lat, a.lon, b.lat, b.lon, ARC_SAMPLES);
@@ -593,6 +596,19 @@ export class FlightRoutes {
     return [-r * cp * Math.cos(λ), -r * cp * Math.sin(λ), r * Math.sin(φ)];
   }
 
+  _routeColor(state, routeId) {
+    const m = state.FlightRouteColors;
+    if (m && typeof m === 'object' && m[routeId]) return m[routeId];
+    return '#ff8040';
+  }
+
+  _planeTextureFor(hex) {
+    if (this._planeTextureCache.has(hex)) return this._planeTextureCache.get(hex);
+    const tex = makePlaneTexture(hex);
+    this._planeTextureCache.set(hex, tex);
+    return tex;
+  }
+
   _resolveSelected(state) {
     const sel = state.FlightRoutesSelected;
     if (sel === 'all' || sel == null) return null;
@@ -636,7 +652,20 @@ export class FlightRoutes {
       return;
     }
     const titleEl = box.querySelector('.fi-title');
+    const headerEl = box.querySelector('.fi-header');
     const readoutEl = box.querySelector('.fi-readout');
+    // Per-box accent colour drives the border, header tint, and
+    // title text. Default keeps the original orange.
+    const accent = info.accent || '#f4a640';
+    box.style.borderColor = accent;
+    if (titleEl) titleEl.style.color = accent;
+    if (headerEl) {
+      // 0x14 alpha ≈ 8 % tint of the accent for the header
+      // background. Browsers accept 8-digit hex; falls back to
+      // straight accent if the colour isn't a 7-char hex.
+      const tint = (/^#([0-9a-f]{6})$/i.test(accent)) ? `${accent}1F` : accent;
+      headerEl.style.background = tint;
+    }
     if (titleEl) titleEl.textContent = info.title || 'Flight';
     if (readoutEl) {
       readoutEl.innerHTML = info.lines.map((l) => {
@@ -769,6 +798,33 @@ export class FlightRoutes {
       // exclusively.
       angleLine.visible = show && !s.HideFlightCentralAngle;
       if (!show) continue;
+      // Per-route colour: solid + dashed lines + plane texture all
+      // pull from `state.FlightRouteColors[r.id]` when set, otherwise
+      // fall back to the default orange.
+      const colorHex = this._routeColor(s, r.id);
+      if (line.material._lastColor !== colorHex) {
+        line.material.color.set(colorHex);
+        line.material._lastColor = colorHex;
+      }
+      if (compLine.material._lastColor !== colorHex) {
+        compLine.material.color.set(colorHex);
+        compLine.material._lastColor = colorHex;
+      }
+      if (plane.material._lastColor !== colorHex) {
+        plane.material.map = this._planeTextureFor(colorHex);
+        plane.material.needsUpdate = true;
+        plane.material._lastColor = colorHex;
+      }
+      const ringFrom = this._cityRings.get(r.from);
+      const ringTo   = this._cityRings.get(r.to);
+      const leadFrom = this._cityLeads.get(r.from);
+      const leadTo   = this._cityLeads.get(r.to);
+      for (const obj of [ringFrom, ringTo, leadFrom, leadTo]) {
+        if (obj && obj.material && obj.material._lastColor !== colorHex) {
+          obj.material.color.set(colorHex);
+          obj.material._lastColor = colorHex;
+        }
+      }
       // Central-angle legs — Depart → centre and Arrival → centre.
       // World origin is the AE pole in FE and the globe centre in GE.
       const fromCity = cityById(r.from), toCity = cityById(r.to);

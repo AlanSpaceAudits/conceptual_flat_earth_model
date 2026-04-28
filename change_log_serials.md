@@ -9664,3 +9664,57 @@ Format:
     the visibility branch before
     the projection split.
 - **Revert:** `git checkout v-s000629 -- .`
+
+## S631 — Equal Arc demos: per-route colours + colour-coded info boxes
+
+- **Date:** 2026-04-28
+- **Files changed:**
+  - `js/core/app.js`
+  - `js/render/flightRoutes.js`
+  - `js/demos/flightRoutes.js`
+- **Change:**
+  - New default state field
+    `FlightRouteColors: {}`. Maps a
+    route id to its display hex
+    colour. Renderer falls back to
+    the original orange when a route
+    isn't listed.
+  - `makePlaneTexture(strokeHex,
+    fillHex)` accepts a stroke
+    colour. Renderer caches one
+    texture per colour
+    (`_planeTextureCache`) so each
+    tinted plane mesh re-uses its
+    own texture without rebuilding
+    every frame. `_routeColor`
+    resolver pulls the hex per
+    route; `_planeTextureFor` returns
+    the matching cached texture.
+  - Per-frame in `update`, each
+    visible route now applies its
+    colour to: the solid arc line,
+    the dashed complement, the
+    plane mesh map, the from/to
+    rings, and the from/to leader
+    lines. Material `_lastColor`
+    cached so the swaps only run
+    when the colour actually
+    changes.
+  - `_renderInfoBox` reads
+    `info.accent` and styles the
+    box's border, header background
+    (8 % tint), and title text
+    accordingly. Default keeps the
+    original `#f4a640` orange.
+  - **Equal Arc demos** now publish:
+    `FlightRouteColors: {
+      [southId]: '#ff8040',
+      [northId]: '#66c8ff',
+    }`, and pass the matching
+    `accent` into each info box.
+    South box / south arc / plane /
+    rings / race lane all read in
+    orange; north box / north arc /
+    plane / rings / race lane in
+    cyan.
+- **Revert:** `git checkout v-s000630 -- .`

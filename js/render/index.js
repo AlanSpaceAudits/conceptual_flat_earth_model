@@ -695,19 +695,15 @@ export class Renderer {
     this.toroidalVortex.update(m);
     this.toroidalVortexDual.update(m);
     this.observer.update(m);
-    // Top-level orange dot — represents the (lat 90°, lon 0°)
-    // "home" position in both projections so the same location
-    // shows in equivalent screen-space when the user toggles
-    // FE ↔ GE. FE: AE pole at world (0, 0, 0). GE: globe-north
-    // pole at world (0, 0, FE_RADIUS).
+    // Top-level orange dot — fictitious-teleport target. Pinned at
+    // world origin in both projections: FE → AE pole at disc
+    // centre; GE → globe centre (visible through the translucent
+    // sphere). Clicking it enters the at-centre observer state in
+    // GE, or jumps to (90°, 0°) in FE.
     if (this.originDot) {
       this.originDot.visible = !!s.ShowAxisLine;
       if (this.originDot.visible) {
-        if (s.WorldModel === 'ge') {
-          this.originDot.position.set(0, 0, FE_RADIUS);
-        } else {
-          this.originDot.position.set(0, 0, 0);
-        }
+        this.originDot.position.set(0, 0, 0);
       }
     }
     // Anchor dot — render at the saved LastObserver* lat/lon, in

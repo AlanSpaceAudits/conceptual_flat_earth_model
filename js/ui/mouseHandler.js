@@ -343,9 +343,7 @@ export function attachMouseHandler(canvas, model, renderer = null) {
     // LastObserver* position. Each click swaps current ↔ last.
     if (model.state.ShowAxisLine && renderer && renderer.sm && renderer.sm.camera) {
       const cam = renderer.sm.camera;
-      const isGe = model.state.WorldModel === 'ge';
-      const originPos = isGe ? [0, 0, 1] : [0, 0, 0];
-      const ptOrigin = projectToCanvasPixels(originPos, cam, canvas);
+      const ptOrigin = projectToCanvasPixels([0, 0, 0], cam, canvas);
       let hit = ptOrigin && Math.hypot(ptOrigin.x - e.offsetX, ptOrigin.y - e.offsetY) < 22;
       if (!hit && renderer._lastDotWorld) {
         const ptLast = projectToCanvasPixels(renderer._lastDotWorld, cam, canvas);
@@ -449,9 +447,7 @@ export function attachMouseHandler(canvas, model, renderer = null) {
     if (!dragging && model.state.ShowAxisLine
         && renderer && renderer.sm && renderer.sm.camera) {
       const cam = renderer.sm.camera;
-      const isGe = model.state.WorldModel === 'ge';
-      const originPos = isGe ? [0, 0, 1] : [0, 0, 0];
-      const ptOrigin = projectToCanvasPixels(originPos, cam, canvas);
+      const ptOrigin = projectToCanvasPixels([0, 0, 0], cam, canvas);
       let near = ptOrigin && Math.hypot(ptOrigin.x - e.offsetX, ptOrigin.y - e.offsetY) < 22;
       if (!near && renderer._lastDotWorld) {
         const ptLast = projectToCanvasPixels(renderer._lastDotWorld, cam, canvas);

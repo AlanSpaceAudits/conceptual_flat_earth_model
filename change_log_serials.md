@@ -7801,3 +7801,23 @@ Format:
     available via the orange origin-dot
     click.
 - **Revert:** `git checkout v-s000577 -- .`
+
+## S579 — GE fictitious teleport target = globe centre
+
+- **Date:** 2026-04-28
+- **Files changed:** `js/render/index.js`,
+  `js/ui/mouseHandler.js`.
+- **Change:**
+  - `Renderer.originDot` reverted to world
+    origin `(0, 0, 0)` in both projections.
+    GE: globe centre (visible through the
+    translucent sphere). FE: AE pole at
+    disc centre. The S576 GE-only offset
+    to `(0, 0, FE_RADIUS)` (globe-north
+    pole) is reverted — the user's
+    fictitious teleport in GE drops them
+    at globe centre, not on the surface.
+  - `mouseHandler` click + hover hit-tests
+    use `[0, 0, 0]` unconditionally
+    (matches the dot position).
+- **Revert:** `git checkout v-s000578 -- .`

@@ -9314,3 +9314,53 @@ Format:
     decoupled from the cross-lat
     demo's variables.
 - **Revert:** `git checkout v-s000621 -- .`
+
+## S623 — Tropics split into 3 toggles + Shadow moves to Ground/Disc
+
+- **Date:** 2026-04-28
+- **Files changed:**
+  - `js/core/app.js`
+  - `js/render/worldObjects.js`
+  - `js/ui/controlPanel.js`
+  - `js/ui/urlState.js`
+- **Change:**
+  - **State**:
+    `ShowTropics` retired in favour
+    of three independent flags:
+    `ShowTropicCancer`,
+    `ShowEquator`,
+    `ShowTropicCapricorn`. Each
+    defaults `false`.
+  - **Renderer**: `LatitudeLines`
+    `_circles` entries now carry a
+    `flag` field naming the state
+    key gating that ring.
+    `update()` reads each ring's
+    own flag, so the user can
+    toggle Cancer, Equator, and
+    Capricorn independently.
+    Group visibility is the OR of
+    every ring flag plus
+    `ShowPolarCircles`.
+  - **UI — Show / Ground / Disc**:
+    replaced single
+    `Tropics` row with three rows
+    (`Tropic of Cancer`,
+    `Equator`,
+    `Tropic of Capricorn`).
+    Pulled the `Shadow` row out of
+    the `Tracker` tab and inserted
+    it just under
+    `Sun / Moon GP` in
+    `Ground / Disc` — shadows are
+    a ground concern, not a
+    tracker concern.
+  - **URL state whitelist**
+    updated in both arrays so the
+    new keys persist across
+    reloads.
+  - **Preset states** in
+    `controlPanel.js` updated to
+    write the three new flags
+    instead of `ShowTropics`.
+- **Revert:** `git checkout v-s000622 -- .`

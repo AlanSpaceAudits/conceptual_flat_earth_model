@@ -151,8 +151,13 @@ function defaultState() {
     ShowOpticalVaultRays: false,
     ShowManyRays:   false,
     ShowProjectionRays: false,
-    ShowTropics:       false,
-    ShowPolarCircles:  false,
+    // Tropics split into three independent toggles (legacy
+    // `ShowTropics` flag retired; old URL params will silently fall
+    // through to the per-line defaults below).
+    ShowTropicCancer:     false,
+    ShowEquator:          false,
+    ShowTropicCapricorn:  false,
+    ShowPolarCircles:     false,
     ShowGroundPoints:  false,
     ShowFacingVector:  false,
     ShowDecCircles:    false,

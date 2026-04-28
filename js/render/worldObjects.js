@@ -864,12 +864,16 @@ export class LatitudeLines {
     this.group = new THREE.Group();
     this.group.name = 'latitude-lines';
     this._feRadius = feRadius;
+    // `flag` field maps each ring to an individual visibility flag
+    // in `state` so the user can toggle Cancer / Equator / Capricorn
+    // independently. `kind` survives only for the existing polar /
+    // antarctic rings, gated on `ShowPolarCircles`.
     this._circles = [
-      { lat:  66.5636, color: 0x66ccff, label: 'Arctic Circle',     kind: 'polar'  },
-      { lat:  23.4392, color: 0xffc844, label: 'Tropic of Cancer',  kind: 'tropic' },
-      { lat:   0.0,    color: 0xff4040, label: 'Equator',           kind: 'tropic' },
-      { lat: -23.4392, color: 0xffc844, label: 'Tropic of Capricorn', kind: 'tropic' },
-      { lat: -66.5636, color: 0x66ccff, label: 'Antarctic Circle',  kind: 'polar'  },
+      { lat:  66.5636, color: 0x66ccff, label: 'Arctic Circle',     kind: 'polar', flag: 'ShowPolarCircles'    },
+      { lat:  23.4392, color: 0xffc844, label: 'Tropic of Cancer',  kind: 'tropic', flag: 'ShowTropicCancer'    },
+      { lat:   0.0,    color: 0xff4040, label: 'Equator',           kind: 'tropic', flag: 'ShowEquator'         },
+      { lat: -23.4392, color: 0xffc844, label: 'Tropic of Capricorn', kind: 'tropic', flag: 'ShowTropicCapricorn' },
+      { lat: -66.5636, color: 0x66ccff, label: 'Antarctic Circle',  kind: 'polar', flag: 'ShowPolarCircles'    },
     ];
     this._lines = [];
     for (const c of this._circles) {
@@ -926,13 +930,14 @@ export class LatitudeLines {
   }
   update(model) {
     const s = model.state;
-    const tropics = !!s.ShowTropics;
-    const polar = !!s.ShowPolarCircles;
-    this.group.visible = tropics || polar;
+    let anyOn = false;
     for (let i = 0; i < this._circles.length; i++) {
       const c = this._circles[i];
-      this._lines[i].visible = c.kind === 'tropic' ? tropics : polar;
+      const on = !!s[c.flag];
+      this._lines[i].visible = on;
+      if (on) anyOn = true;
     }
+    this.group.visible = anyOn;
     const ge = s.WorldModel === 'ge';
     const key = ge ? 'ge' : `fe:${s.MapProjection || 'ae'}`;
     if (key !== this._lastProj) {

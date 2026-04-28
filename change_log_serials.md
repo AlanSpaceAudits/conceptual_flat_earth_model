@@ -7955,3 +7955,35 @@ Format:
     aren't read anywhere significant for
     this feature).
 - **Revert:** `git checkout v-s000583 -- .`
+
+## S585 — Orange dot: long-press drag to teleport
+
+- **Date:** 2026-04-28
+- **Files changed:** `js/ui/mouseHandler.js`.
+- **Change:**
+  - **Long-press 1 s on orange dot enters
+    drag mode.** A 1-second `setTimeout`
+    arms when `pointerdown` lands on either
+    the origin dot or the anchor dot
+    (within 22 px). If the cursor doesn't
+    drag past the click threshold before
+    the timer fires, drag mode engages.
+  - **Drag = teleport.** While dragging,
+    `pointermove` raycasts the cursor
+    against the disc plane (FE) or the
+    globe sphere (GE), converts the hit
+    point to lat / lon, and updates
+    `ObserverLat` / `ObserverLong`. The
+    anchor dot follows live (already
+    tied to live lat/lon per S584).
+  - **Release drops the dot** — `pointerup`
+    cancels drag mode without triggering
+    the short-press click swap.
+  - Pre-1-second cursor motion past
+    `CLICK_DRAG_PX` cancels the pending
+    drag timer so a normal canvas pan
+    still works after pressing on the dot.
+  - Imports `THREE` for `Raycaster` /
+    `Sphere` / `Plane` / `Vector2` /
+    `Vector3`.
+- **Revert:** `git checkout v-s000584 -- .`

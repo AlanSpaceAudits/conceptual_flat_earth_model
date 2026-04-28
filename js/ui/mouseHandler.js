@@ -1,3 +1,5 @@
+import * as THREE from 'three';
+
 // Pointer + wheel events -> FE model mutations.
 //
 // Orbit (default):
@@ -325,18 +327,89 @@ export function attachMouseHandler(canvas, model, renderer = null) {
     hoveredHit = null;
   };
 
+  // Long-press drag state for the orange origin / anchor dot.
+  // After a 1-second hold over a dot, subsequent pointer moves
+  // teleport the observer's lat / lon under the cursor; release
+  // drops them at that position.
+  let dotDragTimer = null;
+  let dotDragging = false;
+  const _ray = new THREE.Raycaster();
+  const _ndc = new THREE.Vector2();
+
+  const cancelDotDrag = () => {
+    if (dotDragTimer != null) { clearTimeout(dotDragTimer); dotDragTimer = null; }
+    dotDragging = false;
+  };
+
+  // Project a canvas pixel to a world hit on the disc plane (FE)
+  // or globe sphere (GE), then convert to lat / lon.
+  const cursorToLatLon = (offsetX, offsetY) => {
+    if (!renderer || !renderer.sm || !renderer.sm.camera) return null;
+    const cam = renderer.sm.camera;
+    const w = canvas.clientWidth || 1;
+    const h = canvas.clientHeight || 1;
+    _ndc.set((offsetX / w) * 2 - 1, -((offsetY / h) * 2 - 1));
+    _ray.setFromCamera(_ndc, cam);
+    const isGe = model.state.WorldModel === 'ge';
+    const hit = new THREE.Vector3();
+    if (isGe) {
+      const sphere = new THREE.Sphere(new THREE.Vector3(0, 0, 0), 1);
+      if (!_ray.ray.intersectSphere(sphere, hit)) return null;
+      const r = Math.hypot(hit.x, hit.y, hit.z) || 1;
+      const lat = Math.asin(Math.max(-1, Math.min(1, hit.z / r))) * 180 / Math.PI;
+      const lon = Math.atan2(hit.y, hit.x) * 180 / Math.PI;
+      return { lat, lon };
+    }
+    const plane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
+    if (!_ray.ray.intersectPlane(plane, hit)) return null;
+    const r = Math.hypot(hit.x, hit.y);
+    const lat = Math.max(-90, Math.min(90, 90 - 180 * r));
+    const lon = Math.atan2(hit.y, hit.x) * 180 / Math.PI;
+    return { lat, lon };
+  };
+
+  // True if the cursor is within hit radius of either the origin
+  // or anchor dot.
+  const overOrangeDot = (offsetX, offsetY) => {
+    if (!model.state.ShowAxisLine) return false;
+    if (!renderer || !renderer.sm || !renderer.sm.camera) return false;
+    const cam = renderer.sm.camera;
+    const ptOrigin = projectToCanvasPixels([0, 0, 0], cam, canvas);
+    if (ptOrigin && Math.hypot(ptOrigin.x - offsetX, ptOrigin.y - offsetY) < 22) return true;
+    if (renderer._lastDotWorld) {
+      const ptLast = projectToCanvasPixels(renderer._lastDotWorld, cam, canvas);
+      if (ptLast && Math.hypot(ptLast.x - offsetX, ptLast.y - offsetY) < 22) return true;
+    }
+    return false;
+  };
+
   canvas.addEventListener('pointerdown', (e) => {
     dragging = true;
     canvas.setPointerCapture(e.pointerId);
     lastX = e.offsetX; lastY = e.offsetY;
     downX = e.offsetX; downY = e.offsetY;
     dragDist = 0;
+    // Long-press the orange dot to enter drag mode.
+    if (overOrangeDot(e.offsetX, e.offsetY)) {
+      cancelDotDrag();
+      dotDragTimer = setTimeout(() => {
+        dotDragTimer = null;
+        dotDragging = true;
+      }, 1000);
+    }
   });
 
   canvas.addEventListener('pointerup', (e) => {
     const wasClick = dragging && dragDist < CLICK_DRAG_PX;
     dragging = false;
     try { canvas.releasePointerCapture(e.pointerId); } catch {}
+    // If a long-press drag was active, finalise without triggering
+    // the click-toggle and clear timers.
+    if (dotDragging) {
+      cancelDotDrag();
+      return;
+    }
+    cancelDotDrag();
     if (!wasClick) return;
     // Orange-dot click (origin or last-position anchor) — teleport
     // observer between (lat 90°, lon 0°) and the saved
@@ -416,6 +489,24 @@ export function attachMouseHandler(canvas, model, renderer = null) {
 
     if (dragging) {
       dragDist = Math.max(dragDist, Math.hypot(e.offsetX - downX, e.offsetY - downY));
+      // Pre-1-second cursor motion past the click threshold means
+      // the user is panning, not long-pressing — cancel the
+      // pending dot-drag timer.
+      if (dotDragTimer != null && dragDist > CLICK_DRAG_PX) {
+        cancelDotDrag();
+      }
+    }
+
+    // Long-press dot drag — once the timer has fired, project the
+    // cursor onto the disc plane / globe sphere and update the
+    // observer's lat / lon. Anchor dot follows in real time via
+    // the existing renderer logic.
+    if (dotDragging) {
+      const ll = cursorToLatLon(e.offsetX, e.offsetY);
+      if (ll) {
+        model.setState({ ObserverLat: ll.lat, ObserverLong: ll.lon });
+      }
+      return;
     }
 
     // Orange-dot hover tooltip ("Fictitious Teleport") — checked

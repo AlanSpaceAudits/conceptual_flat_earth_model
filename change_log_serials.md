@@ -8428,3 +8428,55 @@ Format:
     fills a usable chunk of the view
     when a flight-routes demo opens.
 - **Revert:** `git checkout v-s000598 -- .`
+
+## S600 — Flight Routes: uniform labels, plane icon at trace tip, KML data
+
+- **Date:** 2026-04-28
+- **Files added:**
+  - `js/data/flightTracks.js`
+- **Files changed:**
+  - `js/render/flightRoutes.js`
+- **Change:**
+  - Label sprites switched to a fixed
+    canvas (`360 × 80`) and a fixed
+    world scale (`LABEL_WORLD_W` /
+    `LABEL_WORLD_H`). Long names auto-
+    shrink the font size to fit; every
+    box is the same on-screen size
+    regardless of city, killing the
+    "different resolution" look the
+    user flagged.
+  - Text now centred in the canvas
+    (`textAlign: 'center'`) and the
+    sprite still anchors at
+    `(0.5, 0.5)`, so the label box
+    sits the same distance from the
+    ring on every side and the leader
+    line lands on the box centre.
+  - New `makePlaneSprite()` draws a
+    small top-down plane silhouette;
+    one sprite per route lives in the
+    renderer and gets repositioned
+    each frame to the current
+    `nDraw - 1` waypoint, with
+    `material.rotation` set from the
+    local arc tangent
+    (`atan2(dy, dx) − π/2`). Visible
+    only while
+    `0 < FlightRoutesProgress < 1`,
+    so the icon disappears at
+    departure (no progress) and
+    landing (progress = 1).
+  - Added auto-generated
+    `js/data/flightTracks.js` (4
+    flights × 241 decimated waypoints
+    each) parsed from
+    `/home/alan/Downloads/QF27-28.kml`
+    via `/tmp/parse_qf_kml.js`. Holds
+    per-waypoint lat / lon /
+    altitude (m), ground speed (mph),
+    air speed (mph), heading,
+    wind speed and wind direction —
+    plumbing for an upcoming live
+    flight-track playback demo.
+- **Revert:** `git checkout v-s000599 -- .`

@@ -35,23 +35,40 @@ const LABEL_OFFSET_FE = 0.115;
 const LABEL_OFFSET_GE = 0.16;
 const RING_INNER    = 0.0085;
 const RING_OUTER    = 0.0125;
+// Fixed-size label canvas — every city label uses the same bitmap
+// dimensions so the on-screen size doesn't drift between
+// long-named and short-named airports. World scale is then a single
+// constant for every label, removing the "different resolution"
+// look the user flagged.
+const LABEL_CANVAS_W = 360;
+const LABEL_CANVAS_H = 80;
+const LABEL_WORLD_H  = 0.052;
+const LABEL_WORLD_W  = LABEL_WORLD_H * (LABEL_CANVAS_W / LABEL_CANVAS_H);
+const PLANE_WORLD    = 0.034;
 
 function makeLabelSprite(text) {
   const cv = document.createElement('canvas');
-  cv.width = 320; cv.height = 72;
+  cv.width = LABEL_CANVAS_W;
+  cv.height = LABEL_CANVAS_H;
   const ctx = cv.getContext('2d');
-  ctx.font = 'bold 36px ui-monospace, Menlo, monospace';
-  ctx.textAlign = 'left';
+  // Pick the largest font size that fits the longest city name in
+  // the fixed-width canvas. Same visual scale for every label, so
+  // they all read uniformly across demos.
+  let fontPx = 38;
+  ctx.font = `bold ${fontPx}px ui-monospace, Menlo, monospace`;
+  while (ctx.measureText(text).width > LABEL_CANVAS_W - 32 && fontPx > 18) {
+    fontPx -= 1;
+    ctx.font = `bold ${fontPx}px ui-monospace, Menlo, monospace`;
+  }
+  ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  const padX = 14;
-  const w = Math.ceil(ctx.measureText(text).width) + padX * 2;
   ctx.fillStyle = 'rgba(15, 19, 28, 0.92)';
-  ctx.fillRect(0, 0, w, cv.height);
+  ctx.fillRect(0, 0, LABEL_CANVAS_W, LABEL_CANVAS_H);
   ctx.strokeStyle = 'rgba(255, 184, 90, 0.85)';
   ctx.lineWidth = 2;
-  ctx.strokeRect(1, 1, w - 2, cv.height - 2);
+  ctx.strokeRect(1, 1, LABEL_CANVAS_W - 2, LABEL_CANVAS_H - 2);
   ctx.fillStyle = '#ffd6a8';
-  ctx.fillText(text, padX, cv.height / 2);
+  ctx.fillText(text, LABEL_CANVAS_W / 2, LABEL_CANVAS_H / 2);
   const tex = new THREE.CanvasTexture(cv);
   tex.colorSpace = THREE.SRGBColorSpace;
   tex.needsUpdate = true;
@@ -60,17 +77,54 @@ function makeLabelSprite(text) {
     depthTest: false, depthWrite: false,
   });
   const sp = new THREE.Sprite(mat);
-  // Aspect-correct scale: width in canvas pixels → world units.
-  const worldH = 0.05;
-  const worldW = (w / cv.height) * worldH;
-  sp.scale.set(worldW, worldH, 1);
-  sp.userData.aspectScale = { worldW, worldH };
-  // Anchor at sprite centre so the label box clears the ring on
-  // every side (and the leader line lands on the box centre rather
-  // than one edge, which would let the box cover the ring on the
-  // far side).
+  sp.scale.set(LABEL_WORLD_W, LABEL_WORLD_H, 1);
   sp.center.set(0.5, 0.5);
   sp.renderOrder = 71;
+  return sp;
+}
+
+function makePlaneSprite() {
+  const cv = document.createElement('canvas');
+  cv.width = 96; cv.height = 96;
+  const ctx = cv.getContext('2d');
+  // Simple top-down silhouette pointing along +y in the canvas
+  // (so a 0° rotation = "flying upward in screen space"). Material
+  // rotation is then driven by the route's local tangent.
+  ctx.translate(48, 48);
+  ctx.fillStyle = '#fff5e6';
+  ctx.strokeStyle = '#ff8040';
+  ctx.lineWidth = 2.5;
+  ctx.beginPath();
+  ctx.moveTo(0, -34);
+  ctx.lineTo(8, -10);
+  ctx.lineTo(36, 4);
+  ctx.lineTo(36, 12);
+  ctx.lineTo(8, 6);
+  ctx.lineTo(6, 22);
+  ctx.lineTo(14, 28);
+  ctx.lineTo(14, 32);
+  ctx.lineTo(0, 28);
+  ctx.lineTo(-14, 32);
+  ctx.lineTo(-14, 28);
+  ctx.lineTo(-6, 22);
+  ctx.lineTo(-8, 6);
+  ctx.lineTo(-36, 12);
+  ctx.lineTo(-36, 4);
+  ctx.lineTo(-8, -10);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+  const tex = new THREE.CanvasTexture(cv);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.needsUpdate = true;
+  const mat = new THREE.SpriteMaterial({
+    map: tex, transparent: true,
+    depthTest: false, depthWrite: false,
+  });
+  const sp = new THREE.Sprite(mat);
+  sp.scale.set(PLANE_WORLD, PLANE_WORLD, 1);
+  sp.center.set(0.5, 0.5);
+  sp.renderOrder = 72;
   return sp;
 }
 
@@ -124,6 +178,7 @@ export class FlightRoutes {
     // FE↔GE switches don't pay the spherical-interp cost again.
     this._routeArcs = new Map();
     this._routeLines = new Map();
+    this._routePlanes = new Map();
     for (const r of FLIGHT_ROUTES) {
       const a = cityById(r.from), b = cityById(r.to);
       const arc = greatCircleArc(a.lat, a.lon, b.lat, b.lon, ARC_SAMPLES);
@@ -143,6 +198,11 @@ export class FlightRoutes {
       line.frustumCulled = false;
       this.group.add(line);
       this._routeLines.set(r.id, line);
+
+      const plane = makePlaneSprite();
+      plane.visible = false;
+      this.group.add(plane);
+      this._routePlanes.set(r.id, plane);
     }
   }
 
@@ -253,21 +313,41 @@ export class FlightRoutes {
 
     for (const r of FLIGHT_ROUTES) {
       const line = this._routeLines.get(r.id);
+      const plane = this._routePlanes.get(r.id);
       const show = filterSet ? filterSet.has(r.id) : true;
       line.visible = show;
+      plane.visible = show && progress > 0 && progress < 1;
       if (!show) continue;
       const arc = this._routeArcs.get(r.id);
       const buf = line.geometry.attributes.position.array;
       const nDraw = Math.max(2, Math.round(progress * arc.length));
+      let lastP = null, prevP = null;
       for (let i = 0; i < nDraw; i++) {
         const { lat, lon } = arc[i];
         const p = project(lat, lon);
         buf[i * 3]     = p[0];
         buf[i * 3 + 1] = p[1];
         buf[i * 3 + 2] = p[2];
+        prevP = lastP;
+        lastP = p;
       }
       line.geometry.setDrawRange(0, nDraw);
       line.geometry.attributes.position.needsUpdate = true;
+      if (plane.visible && lastP) {
+        plane.position.set(lastP[0], lastP[1], lastP[2]);
+        // Rotate the plane sprite so it points along the current
+        // arc tangent. Sprite material rotation is around the
+        // sprite's own axis (perpendicular to the screen), so the
+        // angle is computed in screen-space x/y from the projected
+        // tangent — using world dx/dy here gives the correct heading
+        // for the top-down camera and is close enough for the GE
+        // tilted view that the icon still reads as "flying along".
+        if (prevP) {
+          const dx = lastP[0] - prevP[0];
+          const dy = lastP[1] - prevP[1];
+          plane.material.rotation = Math.atan2(dy, dx) - Math.PI / 2;
+        }
+      }
     }
   }
 }

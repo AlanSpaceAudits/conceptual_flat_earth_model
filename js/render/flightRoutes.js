@@ -212,11 +212,19 @@ export class FlightRoutes {
   }
 
   _projectLatLonGE(lat, lon) {
+    // The WorldGlobe sphere is built from `SphereGeometry(...).rotateX(π/2)`
+    // and sampled with `u_sampled = vUv.x + 0.5`. That UV layout puts
+    // texture longitude 0° at world `-x` and longitude 180° at world
+    // `+x`, so the geographically-correct cartesian for the texture is
+    // `(-cos(lat)cos(lon), -cos(lat)sin(lon), sin(lat))`. Without the
+    // sign flip a city renders 180° around the globe from where the
+    // texture draws it (Sydney over the South Atlantic, Santiago over
+    // Indonesia, etc.).
     const φ = lat * Math.PI / 180;
     const λ = lon * Math.PI / 180;
     const cp = Math.cos(φ);
     const r = FE_RADIUS * GE_LIFT;
-    return [r * cp * Math.cos(λ), r * cp * Math.sin(λ), r * Math.sin(φ)];
+    return [-r * cp * Math.cos(λ), -r * cp * Math.sin(λ), r * Math.sin(φ)];
   }
 
   _resolveSelected(state) {

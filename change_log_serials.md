@@ -8511,3 +8511,27 @@ Format:
     the matching top-down direction
     (south pole in GE, AE pole in FE).
 - **Revert:** `git checkout v-s000600 -- .`
+
+## S602 — Flight Routes: GE projection sign-flip to match texture
+
+- **Date:** 2026-04-28
+- **Files changed:**
+  - `js/render/flightRoutes.js`
+- **Change:**
+  - `_projectLatLonGE` now returns
+    `(-cos(lat)cos(lon), -cos(lat)sin(lon),
+     sin(lat))` × radius. The
+    `WorldGlobe` sphere is
+    `SphereGeometry(...).rotateX(π/2)`
+    sampled with
+    `u_sampled = vUv.x + 0.5`, so the
+    texture's longitude 0° lands at
+    world −x and longitude 180° at
+    world +x. The previous unsigned
+    formula put cities 180° around
+    the globe from where the
+    equirectangular map drew them,
+    which is why the user saw Santiago
+    over Australia and Melbourne
+    over South America.
+- **Revert:** `git checkout v-s000601 -- .`

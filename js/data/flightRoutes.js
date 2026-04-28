@@ -83,3 +83,47 @@ export function centralAngleDeg(latA, lonA, latB, lonB) {
             + Math.cos(φa) * Math.cos(φb) * Math.cos(λa - λb);
   return Math.acos(Math.max(-1, Math.min(1, dot))) * 180 / Math.PI;
 }
+
+// Complementary half of the full great circle through (A, B): the
+// long way from B back to A, passing through −A and −B. Returns `n`
+// samples along that arc, including endpoints (B at i=0, A at i=n−1)
+// — paired with `greatCircleArc(A, B, n)` you have the entire 360°
+// of the great circle (route + complement) without overlap.
+export function greatCircleComplement(latA, lonA, latB, lonB, n = 192) {
+  const toR = Math.PI / 180;
+  const toD = 180 / Math.PI;
+  const φa = latA * toR, λa = lonA * toR;
+  const φb = latB * toR, λb = lonB * toR;
+  const ax = Math.cos(φa) * Math.cos(λa);
+  const ay = Math.cos(φa) * Math.sin(λa);
+  const az = Math.sin(φa);
+  const bx = Math.cos(φb) * Math.cos(λb);
+  const by = Math.cos(φb) * Math.sin(λb);
+  const bz = Math.sin(φb);
+  let dot = ax * bx + ay * by + az * bz;
+  dot = Math.max(-1, Math.min(1, dot));
+  const ω = Math.acos(dot);
+  const sinω = Math.sin(ω) || 1e-9;
+  // In-plane unit vector perpendicular to A: N = (B − cos(ω)·A) / sin(ω).
+  const nx = (bx - ax * Math.cos(ω)) / sinω;
+  const ny = (by - ay * Math.cos(ω)) / sinω;
+  const nz = (bz - az * Math.cos(ω)) / sinω;
+  // Parameterise the great circle by `s` ∈ [0, 2π] where `s=ω`
+  // is at B; the complement runs from `s = ω` back round to
+  // `s = 2π` (which is A again).
+  const span = 2 * Math.PI - ω;
+  const out = new Array(n);
+  for (let i = 0; i < n; i++) {
+    const t = n === 1 ? 0 : i / (n - 1);
+    const s = ω + t * span;
+    const cs = Math.cos(s), ss = Math.sin(s);
+    const cx = ax * cs + nx * ss;
+    const cy = ay * cs + ny * ss;
+    const cz = az * cs + nz * ss;
+    const r = Math.hypot(cx, cy, cz) || 1;
+    const lat = Math.asin(cz / r) * toD;
+    const lon = Math.atan2(cy, cx) * toD;
+    out[i] = { lat, lon };
+  }
+  return out;
+}

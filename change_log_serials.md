@@ -8535,3 +8535,39 @@ Format:
     over Australia and Melbourne
     over South America.
 - **Revert:** `git checkout v-s000601 -- .`
+
+## S603 — Flight Routes: dashed complementary great-circle half
+
+- **Date:** 2026-04-28
+- **Files changed:**
+  - `js/data/flightRoutes.js`
+  - `js/render/flightRoutes.js`
+- **Change:**
+  - New `greatCircleComplement(latA,
+    lonA, latB, lonB, n=192)` helper.
+    Builds the in-plane unit vector
+    `N = (B − cos(ω)·A) / sin(ω)` and
+    samples the great-circle
+    parameterisation `C(s) = A·cos(s) +
+    N·sin(s)` over `s ∈ [ω, 2π]` so the
+    output traces the long way back
+    from B → −A → −B → A.
+  - Each route gets a second
+    `THREE.Line` rendered with a
+    `LineDashedMaterial` (dash 0.025,
+    gap 0.018, opacity 0.55,
+    `depthTest: true`). Position
+    buffer is reprojected per frame
+    so a FE↔GE switch redraws the
+    long way through the active
+    projection.
+  - `computeLineDistances()` is called
+    each frame after the buffer
+    update so the dash pattern
+    survives reprojection.
+- **Result:** the solid orange line still
+  marks the flight leg; the dashed
+  partner line traces the rest of the
+  great circle, completing a closed
+  geodesic loop on either projection.
+- **Revert:** `git checkout v-s000602 -- .`

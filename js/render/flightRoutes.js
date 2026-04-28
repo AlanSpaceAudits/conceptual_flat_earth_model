@@ -23,10 +23,11 @@ import { FE_RADIUS } from '../core/constants.js';
 import { canonicalLatLongToDisc } from '../core/canonical.js';
 import {
   FLIGHT_CITIES, FLIGHT_ROUTES,
-  cityById, greatCircleArc,
+  cityById, greatCircleArc, greatCircleComplement,
 } from '../data/flightRoutes.js';
 
 const ARC_SAMPLES   = 96;
+const COMP_SAMPLES  = 192;
 const FE_LIFT       = 0.0035;
 const GE_LIFT       = 1.003;
 const ROUTE_COLOR   = 0xff8040;
@@ -179,6 +180,8 @@ export class FlightRoutes {
     this._routeArcs = new Map();
     this._routeLines = new Map();
     this._routePlanes = new Map();
+    this._routeComps = new Map();
+    this._routeCompLines = new Map();
     for (const r of FLIGHT_ROUTES) {
       const a = cityById(r.from), b = cityById(r.to);
       const arc = greatCircleArc(a.lat, a.lon, b.lat, b.lon, ARC_SAMPLES);
@@ -203,6 +206,29 @@ export class FlightRoutes {
       plane.visible = false;
       this.group.add(plane);
       this._routePlanes.set(r.id, plane);
+
+      // Complementary great-circle half — the long way around from B
+      // back to A. Drawn as a dashed line so the user can see the
+      // full geodesic loop while the solid line marks the actual
+      // flight leg.
+      const comp = greatCircleComplement(a.lat, a.lon, b.lat, b.lon, COMP_SAMPLES);
+      this._routeComps.set(r.id, comp);
+      const compBuf = new Float32Array(COMP_SAMPLES * 3);
+      const compGeom = new THREE.BufferGeometry();
+      compGeom.setAttribute('position', new THREE.BufferAttribute(compBuf, 3));
+      compGeom.setDrawRange(0, COMP_SAMPLES);
+      const compLine = new THREE.Line(
+        compGeom,
+        new THREE.LineDashedMaterial({
+          color: ROUTE_COLOR, transparent: true, opacity: 0.55,
+          dashSize: 0.025, gapSize: 0.018,
+          depthTest: true, depthWrite: false,
+        }),
+      );
+      compLine.renderOrder = 68;
+      compLine.frustumCulled = false;
+      this.group.add(compLine);
+      this._routeCompLines.set(r.id, compLine);
     }
   }
 
@@ -322,10 +348,25 @@ export class FlightRoutes {
     for (const r of FLIGHT_ROUTES) {
       const line = this._routeLines.get(r.id);
       const plane = this._routePlanes.get(r.id);
+      const compLine = this._routeCompLines.get(r.id);
       const show = filterSet ? filterSet.has(r.id) : true;
       line.visible = show;
       plane.visible = show && progress > 0 && progress < 1;
+      compLine.visible = show;
       if (!show) continue;
+      // Dashed complementary arc — full set of points refreshed each
+      // frame so a FE↔GE switch reprojects the long way correctly.
+      const comp = this._routeComps.get(r.id);
+      const compBuf = compLine.geometry.attributes.position.array;
+      for (let i = 0; i < comp.length; i++) {
+        const { lat, lon } = comp[i];
+        const cp = project(lat, lon);
+        compBuf[i * 3]     = cp[0];
+        compBuf[i * 3 + 1] = cp[1];
+        compBuf[i * 3 + 2] = cp[2];
+      }
+      compLine.geometry.attributes.position.needsUpdate = true;
+      compLine.computeLineDistances();
       const arc = this._routeArcs.get(r.id);
       const buf = line.geometry.attributes.position.array;
       const nDraw = Math.max(2, Math.round(progress * arc.length));

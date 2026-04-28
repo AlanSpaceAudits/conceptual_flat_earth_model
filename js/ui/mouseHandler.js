@@ -395,7 +395,7 @@ export function attachMouseHandler(canvas, model, renderer = null) {
       dotDragTimer = setTimeout(() => {
         dotDragTimer = null;
         dotDragging = true;
-      }, 1000);
+      }, 500);
     }
   });
 

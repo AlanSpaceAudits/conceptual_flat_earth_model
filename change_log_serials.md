@@ -7987,3 +7987,13 @@ Format:
     `Sphere` / `Plane` / `Vector2` /
     `Vector3`.
 - **Revert:** `git checkout v-s000584 -- .`
+
+## S586 — Orange-dot drag threshold: 0.5 s
+
+- **Date:** 2026-04-28
+- **Files changed:** `js/ui/mouseHandler.js`.
+- **Change:**
+  - Long-press threshold to enter
+    orange-dot drag mode reduced from
+    `1000` ms to `500` ms.
+- **Revert:** `git checkout v-s000585 -- .`

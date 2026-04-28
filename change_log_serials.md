@@ -9884,3 +9884,71 @@ Format:
     text treatment that follows
     the arc on FE and GE.
 - **Revert:** `git checkout v-s000637 -- .`
+
+## S639 — README + about.md updates, race-panel persistence patch
+
+- **Date:** 2026-04-28
+- **Files changed:**
+  - `README.md`
+  - `about.md`
+  - `js/demos/index.js`
+- **Change:**
+  - **README.md** "Special Thanks"
+    section gains a `Roohif` entry
+    citing the Southern Non-Stop +
+    QF27/28 KMZ datasets that
+    drive the Flight Routes demo
+    group.
+  - **about.md** "Credits" gets the
+    same Roohif acknowledgement.
+  - **about.md** Bottom-bar icon
+    legend rewritten to cover the
+    swap-stack (vault-swap +
+    Toggle Fictitious Observer)
+    and the expanded mode grid
+    (now includes 🔦 Rays cycle and
+    ⌫ Clear Trace).
+  - **about.md** Show / Ground /
+    Disc section updated for the
+    Tropics → 3-toggle split
+    (Tropic of Cancer / Equator /
+    Tropic of Capricorn) plus the
+    relocated Shadow row, and
+    notes the white curved labels
+    on every named ring.
+  - **about.md** Map Projection
+    section adds the new
+    `AE Line Art` FE projection
+    and the `GE Art —
+    Translucent` GE projection.
+  - **about.md** Demos tab grows
+    a Flight Routes section
+    documenting the entire group:
+    All routes / Central-angle /
+    Equal Arc Flight (N/S)
+    (Mirror lat) / Equal Arc
+    Flight (N/S) / four QF27/28
+    actual-flight playbacks /
+    seven per-route demos. Notes
+    the side-by-side race panel,
+    the colour-coded SOUTH
+    (orange) / NORTH (cyan)
+    HUD, and the looped
+    landing-pause cadence.
+  - **`js/demos/index.js`
+    `_playSingle`** now resets
+    `ShowFlightRoutes`,
+    `FlightRoutesSelected`,
+    `FlightRoutesProgress`,
+    `FlightInfoBox`,
+    `FlightRaceTrack`,
+    `FlightRouteColors`, and
+    `HideFlightCentralAngle`
+    alongside the existing
+    eclipse cleanup. Fixes the
+    bug where the race panel +
+    info boxes lingered after
+    switching from a flight-
+    routes demo to a non-flight
+    demo.
+- **Revert:** `git checkout v-s000638 -- .`

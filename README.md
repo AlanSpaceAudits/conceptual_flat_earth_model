@@ -47,6 +47,14 @@ pointed the way:
   only tabulates daily RA/Dec for sun, moon, and the five classical
   planets. See `js/core/ephemerisAstropixels.js` for the runtime
   attribution and `js/data/astropixels.js` for the extracted data.
+* **Roohif** — for the flight-path KMZ data behind the
+  Flight Routes demo group. The `Southern Non-Stop` city / leg list
+  and the QF27/28 actual-flight-track waypoints (lat / lon /
+  altitude / per-point air speed / ground speed / heading / wind)
+  bundled in `js/data/flightRoutes.js` and
+  `js/data/flightTracks.js` are parsed straight from his KMZ
+  archive. The Equal Arc demos and the QF27/28 actual-flight
+  playbacks lean entirely on that dataset.
 
 Additional credits baked into the ephemeris pipelines:
 

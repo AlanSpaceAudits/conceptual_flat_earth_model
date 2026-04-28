@@ -75,13 +75,22 @@ export class Demos {
     }
     this.currentIndex = index;
     const d = this.list[index];
-    // reset eclipse state before each demo's intro so the
-    // shadow doesn't linger when switching from an eclipse demo to
-    // a general demo.
+    // reset eclipse + flight-routes state before each demo's intro
+    // so panels left over from the previous demo (eclipse shadow,
+    // flight info boxes, race track, per-route colours, central-
+    // angle suppression) don't bleed into the next one when the user
+    // switches.
     this.model.setState({
       EclipseActive: false, EclipseKind: null,
       EclipseEventUTMS: null, EclipsePipeline: null,
       EclipseMinSepDeg: null, EclipseMagnitude: null, EclipseEventType: null,
+      ShowFlightRoutes: false,
+      FlightRoutesSelected: 'all',
+      FlightRoutesProgress: 1,
+      FlightInfoBox: null,
+      FlightRaceTrack: null,
+      FlightRouteColors: {},
+      HideFlightCentralAngle: false,
     });
     const introState = typeof d.intro === 'function' ? d.intro(this.model) : d.intro;
     // An intro function may return null/false to refuse to load (for

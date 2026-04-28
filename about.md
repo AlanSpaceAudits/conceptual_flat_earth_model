@@ -51,7 +51,14 @@ One click sets `ObserverLat` / `ObserverLong` to that country's representative c
 
 ## Compass cluster (centre-right)
 
-Two-row sub-grids: a 3 × 2 mode grid, a 2 × 2 cycle row, and a 2 × 2 cardinal grid.
+Three vertical sub-stacks: a swap-stack (1 × 2), a mode grid (4 × 2), a cycle row (2 × 2), and a cardinal grid (2 × 2). Spacing between every column is uniform 2 px so the cluster reads as a single unit.
+
+### Swap stack
+
+| Icon | Meaning |
+| --- | --- |
+| 👁 / 🌐 | **Vault swap.** 👁 = Optical first-person; 🌐 = Heavenly orbit. Lights up an accent border while in Optical view. |
+| ↕ | **Toggle Fictitious Observer.** Shows the orange axis line + origin / anchor dots on the disc / globe. While the marker is active, double-clicking the orange dot teleports the observer between the surface lat / lon and the AE pole / globe centre; click + drag relocates the surface lat / lon under the cursor. The button takes an accent border while engaged. |
 
 ### Mode grid
 
@@ -63,6 +70,8 @@ Two-row sub-grids: a 3 × 2 mode grid, a 2 × 2 cycle row, and a 2 × 2 cardinal
 | ▦ | Combined grid toggle — flips **FE grid + Optical-vault grid + heavenly-vault azimuth ring + longitude ring** together. |
 | 📍 | Jump to the **Observer** group in the View tab (lat / lon / heading / elevation). |
 | 🎥 | **Free-camera** mode. Arrow keys rotate / tilt the orbit camera instead of moving the observer. |
+| 🔦 | Cycle the **Rays** layer (Vault / Optical Vault / Projection / Many). |
+| ⌫ | **Clear Trace** — wipes any active GP-tracer / optical-vault trace polylines. |
 
 ### Cycle row
 
@@ -157,12 +166,12 @@ Visibility groups, mutually exclusive collapse:
 
 - **Heavenly Vault** — vault, vault grid, sun / moon tracks.
 - **Optical Vault** — vault, grid, azimuth ring, facing vector, celestial poles, declination circles.
-- **Ground / Disc** — FE grid, tropics / polar circles, sun / moon GP, longitude ring, shadow.
+- **Ground / Disc** — FE grid, **Tropic of Cancer**, **Equator**, **Tropic of Capricorn** (each toggleable independently — split out of the old single "Tropics" row), Polar Circles, Sun / Moon GP, **Shadow** (moved here from the Tracker tab), Heavenly Vault Azi (longitude ring). Each tropic / equator / polar / antarctic ring carries a curved white label that traces the arc on both FE and GE.
 - **Rays** — vault rays, optical vault rays, projection rays, many rays.
 - **Cosmology** — Axis Mundi: none / Yggdrasil / Mt. Meru / vortex / vortex 2 / Discworld.
 - **Map Projection** — two side-by-side selectors:
-  - **HQ Map Art** — bundled raster maps: Blank, Equirect Day / Night, AE Equatorial dual-pole, AE Polar Day / Night, Gleason's, World Shaded Relief, Orthographic Globe.
-  - **Generated** — math projections: Default AE, Hellerick, Proportional AE, AE Equatorial, Equirect, Mercator, Mollweide, Robinson, Winkel Tripel, Hammer, Aitoff, Sinusoidal, Equal Earth, Eckert IV, Orthographic, Blank.
+  - **FE Map** — generated math projections (Default AE, **AE Line Art** [black disc with white coastlines], Hellerick, Proportional AE, AE Equatorial, Equirect, Mercator, Mollweide, Robinson, Winkel Tripel, Hammer, Aitoff, Sinusoidal, Equal Earth, Eckert IV, Orthographic, Blank) plus HQ raster maps (Blank, Equirect Day / Night, AE Equatorial dual-pole, AE Polar Day / Night, Gleason's, World Shaded Relief, Orthographic Globe).
+  - **GE Map** — sphere-friendly equirectangular maps: HQ Equirect Day / Night, World Shaded Relief, plus the GE Art procedural set (Line Art, Blueprint, Topo, Sepia, Neon, **Translucent** — see-through shell so the centre observer can look out through the globe at the celestial sphere).
 - **Misc** — Planets, Dark Background, Logo.
 
 ---
@@ -241,6 +250,13 @@ Sections:
 - **Solar Eclipses (44 entries, 2021–2040)** — one per real solar eclipse (Espenak). Demo refines syzygy time using the active pipeline's own sun + moon and plants the observer at that pipeline's subsolar point.
 - **Lunar Eclipses (67 entries, 2021–2040)** — same structure, including 22 penumbrals.
 - **FE Eclipse Predictions** — placeholder for a future Saros-harmonic predictor.
+- **Flight Routes — Southern Non-Stop** — flight-path demos drawn from Roohif's KMZ. Every demo opens with an outline-only line-art map (FE: black disc with white coastlines, GE: line-art globe), the Tropics / Polar / Sun-Moon-GP / Tracker-GP overlays cleared, shadows off, and the observer parked at the south-pole-facing camera angle. Per-route great-circle arcs sweep at constant angular speed; an orange plane silhouette flies the trace tip and rotates along the local arc tangent. The dashed complement line traces the rest of each great circle for context. Top-left HUD info boxes carry **Depart / Destination / Takeoff / Arrival / Central Angle / Air Time / Air Speed / Ground Speed / Traversed / Remaining / Elapsed** rows, with live-countdown rows updating per frame. Demos:
+  - **All routes — combined map** — every leg sweeping in lockstep.
+  - **Central-angle theorem — north vs south arc length** — numeric south-vs-mirrored-north parity per leg, drawn alongside the sweep.
+  - **Equal Arc Flight (N/S) (Mirror lat)** — Johannesburg ↔ Sydney paired with its lat-mirrored northern reflection. Both legs at the same central angle; right-side race panel shows two straight horizontal tracks whose pixel length is proportional to each route's AE-projected arc length, with twin plane silhouettes racing along them at the same `FlightRoutesProgress`. Equal arc → equal time, regardless of projection distortion.
+  - **Equal Arc Flight (N/S)** — Santiago ↔ Sydney (south, traces over the South Pacific) paired with JFK ↔ Persian Gulf (north, traces over the North Atlantic / Mediterranean) at the same 102° central angle. Opposite hemispheres, non-intersecting arcs. South leg in orange, north leg in cyan — info boxes, route lines, planes, rings, leaders, and race lanes are all colour-matched.
+  - **Actual flight — QF27/28** (4 entries: 2024-06-25 SCL→SYD, 2024-06-25 SYD→SCL, 2024-06-26 SYD→SCL, 2024-06-26 SCL→SYD). Pulled from the bundled KMZ track (241 decimated waypoints each, with per-point air speed / ground speed / heading / wind). Info box shows actual vs predicted flight time + average air speed + calculated ground speed (= central-angle ÷ flight time, in DMS/h).
+  - **Per-route demos** — one demo per Southern Non-Stop leg (Melbourne ↔ Santiago, Santiago ↔ Sydney, Auckland ↔ Santiago, Johannesburg ↔ São Paulo / Perth / Sydney, Buenos Aires ↔ Darwin).
 
 ---
 
@@ -321,3 +337,4 @@ The sim ships a PWA `manifest.webmanifest`, `theme-color`, and the `mobile-web-a
 - **OpenNGC** (Mattia Verga) — galaxy catalog.
 - **VizieR / CDS** (Véron-Cetty & Véron 2010) — quasar catalog.
 - **CelesTrak** (Dr. T.S. Kelso) — TLE feeds for satellites.
+- **Roohif** — flight-path KMZ data (Southern Non-Stop city/leg list and the QF27/28 actual-flight tracks with per-waypoint air speed, ground speed, heading, wind, and altitude). Powers the Flight Routes demo group and every QF27/28 actual-flight playback.

@@ -1888,10 +1888,15 @@ export function buildControlPanel(host, model, demos) {
   btnAxis.className = 'time-btn axis-line-btn';
   btnAxis.type = 'button';
   btnAxis.textContent = '↕';
-  btnAxis.title = 'Toggle axis line (observer ↔ centre)';
+  btnAxis.title = 'Toggle Fictitious Observer';
   btnAxis.addEventListener('click', () => {
     model.setState({ ShowAxisLine: !model.state.ShowAxisLine });
   });
+  const refreshAxisBtn = () => {
+    btnAxis.setAttribute('aria-pressed', model.state.ShowAxisLine ? 'true' : 'false');
+  };
+  model.addEventListener('update', refreshAxisBtn);
+  refreshAxisBtn();
 
   timeControls.append(btnRew, btnPlay, btnFf, btnSlow, btnSpeed, jumpGrid, speedStack);
   barLeft.appendChild(geoHops);

@@ -8944,3 +8944,35 @@ Format:
     proper see-through shell instead
     of a solid blue ball.
 - **Revert:** `git checkout v-s000613 -- .`
+
+## S615 — Bottom bar: rename Toggle Axis → Toggle Fictitious Observer + active highlight
+
+- **Date:** 2026-04-28
+- **Files changed:**
+  - `js/ui/controlPanel.js`
+  - `css/styles.css`
+- **Change:**
+  - `btnAxis.title`
+    `'Toggle axis line (observer ↔
+    centre)' → 'Toggle Fictitious
+    Observer'`. The button still
+    toggles `ShowAxisLine` in state;
+    only the user-facing label
+    changes.
+  - Added a `refreshAxisBtn` watcher
+    on the model `update` event that
+    sets `aria-pressed="true"` when
+    `ShowAxisLine` is on. Initial
+    state synced on construction.
+  - CSS rule extended:
+    `.axis-line-btn[aria-pressed=
+    "true"]` now shares the same
+    accent border / colour /
+    rgba(255, 154, 60, 0.10)
+    background as
+    `.vault-swap[aria-pressed=
+    "true"]`, so the button
+    visibly highlights while the
+    fictitious-observer mode is
+    engaged.
+- **Revert:** `git checkout v-s000614 -- .`

@@ -9751,3 +9751,27 @@ Format:
       `Traversed` / `Remaining`
       angular readouts.
 - **Revert:** `git checkout v-s000631 -- .`
+
+## S633 — Flight demos: tighter HUD layout + 2× world planes
+
+- **Date:** 2026-04-28
+- **Files changed:**
+  - `js/render/flightRoutes.js`
+- **Change:**
+  - Info boxes anchor pushed up
+    `top: 80 → 8` so the SOUTH /
+    NORTH panels sit flush in the
+    top-left corner.
+  - Race panel anchor pushed down
+    `top: 540 → 580` so the now
+    taller info boxes
+    (Takeoff / Arrival / Elapsed
+    rows added in S632) clear the
+    race panel's top edge with
+    a small gutter.
+  - World plane mesh size
+    `PLANE_WORLD 0.058 → 0.116` —
+    twice as large, so the planes
+    flying along the route arcs
+    read clearly without zooming.
+- **Revert:** `git checkout v-s000632 -- .`

@@ -45,7 +45,7 @@ const LABEL_CANVAS_W = 360;
 const LABEL_CANVAS_H = 80;
 const LABEL_WORLD_H  = 0.052;
 const LABEL_WORLD_W  = LABEL_WORLD_H * (LABEL_CANVAS_W / LABEL_CANVAS_H);
-const PLANE_WORLD    = 0.058;
+const PLANE_WORLD    = 0.116;
 
 function makeLabelSprite(text) {
   const cv = document.createElement('canvas');
@@ -190,7 +190,7 @@ function ensureRacePanel() {
   el.id = 'flight-race-panel';
   el.style.cssText = [
     'position: absolute',
-    'top: 540px',
+    'top: 580px',
     'left: 12px',
     'padding: 0',
     'background: rgba(10, 14, 22, 0.94)',
@@ -367,7 +367,7 @@ function ensureInfoBoxes() {
     document.head.appendChild(styleTag);
   }
   if (!primary) {
-    primary = buildInfoBoxEl('flight-info-box', 80, 12);
+    primary = buildInfoBoxEl('flight-info-box', 8, 12);
     view.appendChild(primary);
     const ctxA = primary.querySelector('.fi-art').getContext('2d');
     ctxA.imageSmoothingEnabled = false;
@@ -377,7 +377,7 @@ function ensureInfoBoxes() {
     // Side-by-side layout: primary box at 380 px min-width + 12 px
     // starting gutter + 16 px breathing room ≈ 408 px to its right
     // edge. Secondary lands just clear of that.
-    secondary = buildInfoBoxEl('flight-info-box-2', 80, 420);
+    secondary = buildInfoBoxEl('flight-info-box-2', 8, 420);
     view.appendChild(secondary);
     const ctxB = secondary.querySelector('.fi-art').getContext('2d');
     ctxB.imageSmoothingEnabled = false;

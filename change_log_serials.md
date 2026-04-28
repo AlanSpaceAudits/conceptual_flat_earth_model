@@ -8774,3 +8774,39 @@ Format:
     "At identical deg/h, equal
     central angle = equal time."
 - **Revert:** `git checkout v-s000607 -- .`
+
+## S609 — Flight Routes: info box trimmed to user spec
+
+- **Date:** 2026-04-28
+- **Files changed:**
+  - `js/demos/flightRoutes.js`
+- **Change:**
+  - QF27/28 info box rebuilt to the
+    seven-line spec the user dictated.
+    Title:
+    `<flight> · <date> · <Depart> →
+    <Destination>`. Body:
+    - `Takeoff             : N/A`
+      (KMZ doesn't carry the
+      timestamp)
+    - `Depart              : Sydney`
+      / `Santiago`
+    - `Destination         : Santiago`
+      / `Sydney`
+    - `Central Angle       : DD.DD°`
+    - `Air Time            : HH:MM:SS`
+    - `Air Speed (avg)     : DMS/h`
+    - `Ground Speed (calc) : DMS/h`
+  - Dropped the `Date`, `Predicted`,
+    `Departure (lat / lon)`, and
+    `Arrival (lat / lon)` rows from
+    the box (date now in the title;
+    predicted / delta moved to the
+    Description ribbon
+    `Ttxt(…)` instead).
+  - Schematic per-route info boxes
+    mirror the same seven-line
+    layout with `Air Time` /
+    `Air Speed` / `Ground Speed`
+    blanked.
+- **Revert:** `git checkout v-s000608 -- .`

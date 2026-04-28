@@ -105,15 +105,13 @@ function schematicInfoBox(route) {
   return {
     title: route.label,
     lines: [
-      '~Date          : (no flight data)',
-      '~Takeoff       : (no flight data)',
-      '~Flight Time   : (no flight data)',
-      '~Predicted     : (no flight data)',
-      `Departure     : ${a.name} (${a.lat.toFixed(2)}°, ${a.lon.toFixed(2)}°)`,
-      `Arrival       : ${b.name} (${b.lat.toFixed(2)}°, ${b.lon.toFixed(2)}°)`,
-      `Central angle : ${angle.toFixed(2)}°`,
-      '~Air speed    : (no flight data)',
-      '~Ground speed : (no flight data)',
+      '~Takeoff             : (no flight data)',
+      `Depart              : ${a.name}`,
+      `Destination         : ${b.name}`,
+      `Central Angle       : ${angle.toFixed(2)}°`,
+      '~Air Time            : (no flight data)',
+      '~Air Speed (avg)     : (no flight data)',
+      '~Ground Speed (calc) : (no flight data)',
     ],
   };
 }
@@ -166,9 +164,11 @@ function qfFlightDemo(track) {
     if (dPerH != null) { aspSum += dPerH; aspN += 1; }
   }
   const aspAvgDegPerH = aspN > 0 ? (aspSum / aspN) : null;
-  // Eastbound (lon increases) = QF27 SYD→SCL. Westbound = QF28
-  // SCL→SYD. Same physical great circle either direction.
-  const dir = (track.flight === 'QF27') ? 'Sydney → Santiago' : 'Santiago → Sydney';
+  // QF27 = SYD→SCL, QF28 = SCL→SYD. Same great circle either way.
+  const isQf27 = track.flight === 'QF27';
+  const depart = isQf27 ? 'Sydney' : 'Santiago';
+  const dest   = isQf27 ? 'Santiago' : 'Sydney';
+  const dir = `${depart} → ${dest}`;
   return {
     name: `Actual flight — ${track.label}`,
     group: 'flight-routes',
@@ -177,22 +177,20 @@ function qfFlightDemo(track) {
       FlightRoutesSelected: 'scl-syd',
       FlightRoutesProgress: 0,
       FlightInfoBox: {
-        title: `${track.flight} · ${track.date} (${dir})`,
+        title: `${track.flight} · ${track.date} · ${dir}`,
         lines: [
-          `Date          : ${track.date}`,
-          '~Takeoff       : (not in KMZ)',
-          `Flight Time   : ${formatHMS(actualSec)}  (actual, time in the air)`,
-          `Predicted     : ${formatHMS(predictedSec)}  (${formatHMSDelta(deltaSec)})`,
-          `Departure     : (${startWp.lat.toFixed(2)}°, ${startWp.lon.toFixed(2)}°)`,
-          `Arrival       : (${endWp.lat.toFixed(2)}°, ${endWp.lon.toFixed(2)}°)`,
-          `Central angle : ${angle.toFixed(2)}°`,
-          `Air speed avg : ${formatDmsPerHour(aspAvgDegPerH)}`,
-          `Ground speed  : ${formatDmsPerHour(gsDegPerH)}  (calc, central-angle / Flight Time)`,
+          'Takeoff             : N/A',
+          `Depart              : ${depart}`,
+          `Destination         : ${dest}`,
+          `Central Angle       : ${angle.toFixed(2)}°`,
+          `Air Time            : ${formatHMS(actualSec)}`,
+          `Air Speed (avg)     : ${formatDmsPerHour(aspAvgDegPerH)}`,
+          `Ground Speed (calc) : ${formatDmsPerHour(gsDegPerH)}`,
         ],
       },
     }),
     tasks: () => [
-      Ttxt(`${track.label}: ${dir} · ${angle.toFixed(2)}° along the great circle.`),
+      Ttxt(`${track.label}: ${dir} · ${angle.toFixed(2)}° central angle, predicted ${formatHMS(predictedSec)} (${formatHMSDelta(deltaSec)}).`),
       ...sweepRoute('scl-syd'),
     ],
   };

@@ -9412,3 +9412,30 @@ Format:
   upright (billboarded to camera) so
   every character reads cleanly.
 - **Revert:** `git checkout v-s000623 -- .`
+
+## S625 — Flight Routes: 4 s landing pause before each loop restart
+
+- **Date:** 2026-04-28
+- **Files changed:**
+  - `js/demos/flightRoutes.js`
+- **Change:**
+  - Added `POST_LAND_PAUSE_MS = 4000`
+    constant.
+  - Every flight-routes demo's
+    `Trepeat` body now appends a
+    final `Tpse(POST_LAND_PAUSE_MS)`
+    after the
+    `Tval('FlightRoutesProgress', 1, …)`
+    sweep. The animator's existing
+    repeat handling resets
+    `pause.remaining` on each loop
+    iteration, so the planes hold
+    at touchdown for 4 seconds
+    before the next reset / sweep.
+  - Applies across per-route
+    sweeps, the all-routes /
+    central-angle / mirror /
+    cross-lat constant-speed
+    demos, and every QF27/28
+    actual-flight playback.
+- **Revert:** `git checkout v-s000624 -- .`

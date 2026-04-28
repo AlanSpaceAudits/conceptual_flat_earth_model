@@ -3,7 +3,13 @@
 // demo. Each entry sweeps `FlightRoutesProgress` 0 → 1 over a fixed
 // window so the great-circle line draws out across the disc / sphere.
 
-import { Ttxt, Tval, Tcall, Thold, Trepeat } from './animation.js';
+import { Ttxt, Tval, Tcall, Thold, Trepeat, Tpse } from './animation.js';
+
+// Pause held at the destination after every plane finishes its
+// sweep, before the route resets and the next iteration starts.
+// Same value across every flight-route demo so the user gets a
+// consistent breath at touchdown.
+const POST_LAND_PAUSE_MS = 4000;
 import {
   FLIGHT_ROUTES, FLIGHT_CITIES, cityById, centralAngleDeg,
   formatHMS, formatHMSDelta, formatDmsPerHour,
@@ -108,6 +114,7 @@ function sweepRoute(routeId) {
     Trepeat([
       Tcall((m) => m.setState({ FlightRoutesProgress: 0 })),
       Tval('FlightRoutesProgress', 1, SWEEP_PER_ROUTE, 0, 'linear'),
+      Tpse(POST_LAND_PAUSE_MS),
     ]),
   ];
 }
@@ -218,6 +225,7 @@ function qfFlightDemo(track) {
       Trepeat([
         Tcall((m) => m.setState({ FlightRoutesProgress: 0 })),
         Tval('FlightRoutesProgress', 1, SWEEP_PER_ROUTE, 0, 'linear'),
+        Tpse(POST_LAND_PAUSE_MS),
       ]),
     ],
   };
@@ -255,6 +263,7 @@ const ALL_ROUTES_DEMO = {
     Trepeat([
       Tcall((m) => m.setState({ FlightRoutesProgress: 0 })),
       Tval('FlightRoutesProgress', 1, SWEEP_COMBINED, 0, 'linear'),
+      Tpse(POST_LAND_PAUSE_MS),
     ]),
   ],
 };
@@ -302,6 +311,7 @@ const CENTRAL_ANGLE_DEMO = {
       Trepeat([
         Tcall((m) => m.setState({ FlightRoutesProgress: 0 })),
         Tval('FlightRoutesProgress', 1, SWEEP_COMBINED, 0, 'linear'),
+        Tpse(POST_LAND_PAUSE_MS),
       ]),
     ];
   },
@@ -395,6 +405,7 @@ function constSpeedDemo({ name, southObj, southAngle, northObj, northLabel, spee
       Trepeat([
         Tcall((m) => m.setState({ FlightRoutesProgress: 0 })),
         Tval('FlightRoutesProgress', 1, CONST_SWEEP_MS, 0, 'linear'),
+        Tpse(POST_LAND_PAUSE_MS),
       ]),
     ],
   };

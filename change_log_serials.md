@@ -8022,3 +8022,32 @@ Format:
   - Hover tooltip text updated to
     "Drag to move · double-click to swap".
 - **Revert:** `git checkout v-s000586 -- .`
+
+## S588 — Orange-dot gesture: click-to-swap, hold+drag-to-move
+
+- **Date:** 2026-04-28
+- **Files changed:** `js/ui/mouseHandler.js`.
+- **Change:**
+  - Reworked the orange-dot gesture to
+    distinguish click vs drag from a
+    single press. `pointerdown` over a
+    dot arms `pressedOnDot`; `pointermove`
+    promotes that to `dotDragging` once
+    motion crosses `CLICK_DRAG_PX`.
+  - Drag (held + moved) updates
+    `ObserverLat` / `ObserverLong` from
+    the cursor's lat / lon as before.
+  - Click (released without crossing
+    threshold) toggles `ObserverAtCenter`
+    in `pointerup`.
+  - Removed the prior `dblclick`
+    listener — the toggle now lives in
+    the unified `pointerup` branch.
+  - `pointermove` early-returns from the
+    camera-pan block while
+    `pressedOnDot` is armed so the
+    camera doesn't drift a few pixels
+    before the gesture promotes.
+  - Hover tooltip text updated to
+    "Click to swap · hold + drag to move".
+- **Revert:** `git checkout v-s000587 -- .`

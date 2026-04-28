@@ -327,16 +327,18 @@ export function attachMouseHandler(canvas, model, renderer = null) {
     hoveredHit = null;
   };
 
-  // Drag-on-press state for the orange origin / anchor dot. A
-  // single click + drag teleports the observer's lat / lon under
-  // the cursor; release drops it. A double-click toggles the
-  // ObserverAtCenter flag (the swap-to-fictitious-observer
-  // action).
+  // Press-and-move on the orange origin / anchor dot drags the
+  // observer's lat / lon under the cursor; a clean click (press +
+  // release without crossing CLICK_DRAG_PX) toggles ObserverAtCenter.
+  // pressedOnDot arms both gestures on pointerdown; dotDragging only
+  // turns on once the cursor has moved past the click threshold.
+  let pressedOnDot = false;
   let dotDragging = false;
   const _ray = new THREE.Raycaster();
   const _ndc = new THREE.Vector2();
 
   const cancelDotDrag = () => {
+    pressedOnDot = false;
     dotDragging = false;
   };
 
@@ -388,30 +390,29 @@ export function attachMouseHandler(canvas, model, renderer = null) {
     lastX = e.offsetX; lastY = e.offsetY;
     downX = e.offsetX; downY = e.offsetY;
     dragDist = 0;
-    // Press on the orange dot enters drag mode immediately. A
-    // double-click on the same dot toggles ObserverAtCenter (handled
-    // by the dblclick listener below).
+    // Arm the orange-dot gesture. Drag promotes to dotDragging on
+    // first move past CLICK_DRAG_PX; a release without crossing the
+    // threshold counts as a click and toggles ObserverAtCenter.
     if (overOrangeDot(e.offsetX, e.offsetY)) {
-      dotDragging = true;
+      pressedOnDot = true;
     }
-  });
-
-  canvas.addEventListener('dblclick', (e) => {
-    if (!overOrangeDot(e.offsetX, e.offsetY)) return;
-    cancelDotDrag();
-    model.setState({
-      ObserverAtCenter: !model.state.ObserverAtCenter,
-      FollowTarget: null, FreeCamActive: false,
-    });
   });
 
   canvas.addEventListener('pointerup', (e) => {
     const wasClick = dragging && dragDist < CLICK_DRAG_PX;
     const wasDotDrag = dotDragging;
+    const wasDotClick = pressedOnDot && wasClick;
     dragging = false;
     try { canvas.releasePointerCapture(e.pointerId); } catch {}
     cancelDotDrag();
     if (wasDotDrag) return;
+    if (wasDotClick) {
+      model.setState({
+        ObserverAtCenter: !model.state.ObserverAtCenter,
+        FollowTarget: null, FreeCamActive: false,
+      });
+      return;
+    }
     if (!wasClick) return;
     // Prefer the hovered hit (the body whose tooltip is currently
     // shown) over a fresh nearest-search — the user clicked the info
@@ -465,6 +466,11 @@ export function attachMouseHandler(canvas, model, renderer = null) {
 
     if (dragging) {
       dragDist = Math.max(dragDist, Math.hypot(e.offsetX - downX, e.offsetY - downY));
+      // Promote an armed orange-dot press to drag mode the moment
+      // motion crosses the click threshold.
+      if (pressedOnDot && !dotDragging && dragDist > CLICK_DRAG_PX) {
+        dotDragging = true;
+      }
     }
 
     // Orange-dot drag — project the cursor onto the disc plane /
@@ -492,7 +498,7 @@ export function attachMouseHandler(canvas, model, renderer = null) {
       }
       if (near) {
         hoverTip.innerHTML = `<div class="celestial-hover-name">Fictitious Teleport</div>`
-          + `<div>Drag to move · double-click to swap</div>`;
+          + `<div>Click to swap · hold + drag to move</div>`;
         hoverTip.style.left = `${e.offsetX + 14}px`;
         hoverTip.style.top  = `${e.offsetY + 14}px`;
         hoverTip.style.display = '';
@@ -565,6 +571,13 @@ export function attachMouseHandler(canvas, model, renderer = null) {
     }
 
     if (!dragging) return;
+    // While an orange-dot press is armed (sub-threshold motion), keep
+    // the cursor pinned so the camera doesn't pan a few pixels before
+    // the gesture promotes to drag mode.
+    if (pressedOnDot) {
+      lastX = e.offsetX; lastY = e.offsetY;
+      return;
+    }
     const dx = e.offsetX - lastX;
     const dy = e.offsetY - lastY;
     lastX = e.offsetX; lastY = e.offsetY;

@@ -7603,3 +7603,45 @@ Format:
     transition. Mirrors "leave the orange
     dot behind for them to swap back".
 - **Revert:** `git checkout v-s000570 -- .`
+
+## S572 — GE: fictitious observer at globe centre
+
+- **Date:** 2026-04-28
+- **Files changed:** `js/core/app.js`,
+  `js/ui/mouseHandler.js`,
+  `js/render/worldObjects.js`.
+- **Change:**
+  - **State `ObserverAtCenter`** (default
+    `false`). When `true` and `WorldModel ===
+    'ge'`, `app.update()` overrides
+    `c.GlobeObserverCoord` to `[0, 0, 0]`
+    and `c.GlobeObserverFrame` to a world-
+    aligned identity-ish basis
+    (`up = +z, north = +x, east = +y`).
+    The optical-vault hemisphere mesh
+    inherits `GlobeObserverCoord`, so it
+    centres on world origin with radius
+    `FE_RADIUS` — coinciding with the upper
+    half of the terrestrial globe surface.
+    The fictitious observer at the centre
+    "sees" the inside of that hemisphere as
+    their optical vault.
+  - **Click swap is mode-aware now.** In
+    GE: clicking the orange origin / anchor
+    dot toggles `ObserverAtCenter` and
+    saves / restores
+    `LastObserverLat`/`LastObserverLong`
+    so the surface position is remembered.
+    In FE: existing lat/lon swap (S571).
+  - **Observer figure hidden at centre** —
+    `Observer.update` sets
+    `this.group.visible = false` when
+    `ObserverAtCenter && ge` so the figure
+    isn't buried inside the opaque sphere.
+  - **GE → FE auto-snap**
+    (`_lastWorldModel === 'ge' →
+    !== 'ge'`) now also clears
+    `ObserverAtCenter` and only saves a
+    surface lat/lon to `LastObserver*` if
+    the GE observer wasn't at centre.
+- **Revert:** `git checkout v-s000571 -- .`

@@ -171,6 +171,7 @@ function defaultState() {
     ShowAxisLine:            false,
     LastObserverLat:         null,
     LastObserverLong:        null,
+    ObserverAtCenter:        false,
     ShowGPPath:              false,
     GPPathDays:              1,
     // GE-only inscribed/central-angle helpers. ShowCentralAngle
@@ -426,10 +427,11 @@ export class FeModel extends EventTarget {
       // so the FE projection doesn't inherit a southern-hemisphere
       // negative-latitude position that maps awkwardly on the disc.
       if (this._lastWorldModel === 'ge' && s.WorldModel !== 'ge') {
-        s.LastObserverLat = s.ObserverLat;
-        s.LastObserverLong = s.ObserverLong;
+        s.LastObserverLat = s.ObserverAtCenter ? null : s.ObserverLat;
+        s.LastObserverLong = s.ObserverAtCenter ? null : s.ObserverLong;
         s.ObserverLat = 90;
         s.ObserverLong = 0;
+        s.ObserverAtCenter = false;
       }
     }
     this._lastWorldModel = s.WorldModel;
@@ -504,12 +506,26 @@ export class FeModel extends EventTarget {
       //   up    = ( cl*co,  cl*so,  sl)   radial outward
       //   north = (-sl*co, -sl*so,  cl)   along ∂/∂lat
       //   east  = (-so,     co,     0 )   along ∂/∂lon at the equator
-      c.GlobeObserverCoord = [px, py, pz];
-      c.GlobeObserverFrame = {
-        northX: -sl * co, northY: -sl * so, northZ:  cl,
-        eastX:  -so,      eastY:   co,      eastZ:   0,
-        upX:     cl * co, upY:     cl * so, upZ:     sl,
-      };
+      if (s.ObserverAtCenter && s.WorldModel === 'ge') {
+        // Fictitious observer at the globe's centre — optical vault
+        // hemisphere centres at world origin and coincides with the
+        // upper hemisphere of the terrestrial globe at radius
+        // GLOBE_RADIUS. Local frame is world-aligned (up = +z,
+        // north = +x, east = +y).
+        c.GlobeObserverCoord = [0, 0, 0];
+        c.GlobeObserverFrame = {
+          northX: 1, northY: 0, northZ: 0,
+          eastX:  0, eastY: 1, eastZ:  0,
+          upX:    0, upY:   0, upZ:    1,
+        };
+      } else {
+        c.GlobeObserverCoord = [px, py, pz];
+        c.GlobeObserverFrame = {
+          northX: -sl * co, northY: -sl * so, northZ:  cl,
+          eastX:  -so,      eastY:   co,      eastZ:   0,
+          upX:     cl * co, upY:     cl * so, upZ:     sl,
+        };
+      }
       // Celestial sphere expanded to 2·GLOBE_RADIUS so its surface
       // grazes the apex of the observer's optical dome (the dome
       // sits tangent at the observer with radius FE_RADIUS, so its

@@ -4052,6 +4052,9 @@ export class Observer {
     const ge = s.WorldModel === 'ge';
     const p = ge ? c.GlobeObserverCoord : c.ObserverFeCoord;
     this.group.position.set(p[0], p[1], p[2]);
+    // Hide the figure when the observer sits at the globe centre —
+    // it'd be buried inside the opaque sphere otherwise.
+    this.group.visible = !(ge && s.ObserverAtCenter);
 
     const kind = s.ObserverFigure || 'male';
     if (kind !== this._currentFigure) this._buildFigure(kind);

@@ -102,14 +102,16 @@ function schematicInfoBox(route) {
   return {
     title: route.label,
     lines: [
-      `Departure : ${a.name} (${a.lat.toFixed(2)}°, ${a.lon.toFixed(2)}°)`,
-      `Arrival   : ${b.name} (${b.lat.toFixed(2)}°, ${b.lon.toFixed(2)}°)`,
+      '~Date          : (no flight data)',
+      '~Takeoff       : (no flight data)',
+      '~Flight Time   : (no flight data)',
+      '~Predicted     : (no flight data)',
+      `Departure     : ${a.name} (${a.lat.toFixed(2)}°, ${a.lon.toFixed(2)}°)`,
+      `Arrival       : ${b.name} (${b.lat.toFixed(2)}°, ${b.lon.toFixed(2)}°)`,
       `Central angle : ${angle.toFixed(2)}°`,
       `Great-circle  : ${km.toFixed(0)} km · ${mi.toFixed(0)} mi`,
       '~Air speed    : (no flight data)',
       '~Ground speed : (no flight data)',
-      '~Actual time  : (no flight data)',
-      '~Predicted    : (no flight data)',
     ],
   };
 }
@@ -181,14 +183,16 @@ function qfFlightDemo(track) {
       FlightInfoBox: {
         title: `${track.flight} · ${track.date} (${dir})`,
         lines: [
-          `Departure : (${startWp.lat.toFixed(2)}°, ${startWp.lon.toFixed(2)}°)`,
-          `Arrival   : (${endWp.lat.toFixed(2)}°, ${endWp.lon.toFixed(2)}°)`,
+          `Date          : ${track.date}`,
+          '~Takeoff       : (not in KMZ)',
+          `Flight Time   : ${formatHMS(actualSec)}  (actual, time in the air)`,
+          `Predicted     : ${formatHMS(predictedSec)}  (${formatHMSDelta(deltaSec)})`,
+          `Departure     : (${startWp.lat.toFixed(2)}°, ${startWp.lon.toFixed(2)}°)`,
+          `Arrival       : (${endWp.lat.toFixed(2)}°, ${endWp.lon.toFixed(2)}°)`,
           `Central angle : ${angle.toFixed(2)}°`,
           `Great-circle  : ${km.toFixed(0)} km · ${mi.toFixed(0)} mi`,
           `Air speed avg : ${aspAvgMph != null ? aspAvgMph.toFixed(1) + ' mph' : '—'}`,
           `Ground speed  : ${gsAvgMph  != null ? gsAvgMph.toFixed(1)  + ' mph (calc, gc/actual)' : '—'}`,
-          `Actual time   : ${formatHMS(actualSec)}`,
-          `Predicted     : ${formatHMS(predictedSec)}  (${formatHMSDelta(deltaSec)})`,
         ],
       },
     }),

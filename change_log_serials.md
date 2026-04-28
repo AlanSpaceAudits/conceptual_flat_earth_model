@@ -8697,3 +8697,33 @@ Format:
     automatically via the existing
     `_savedState` snapshot.
 - **Revert:** `git checkout v-s000604 -- .`
+
+## S607 — Flight Routes: info box adds Date / Takeoff / Flight Time
+
+- **Date:** 2026-04-28
+- **Files changed:**
+  - `js/demos/flightRoutes.js`
+- **Change:**
+  - QF27/28 actual-flight info box
+    relabeled `Actual time` →
+    `Flight Time` (clearer that this
+    is the wheels-up to wheels-down
+    duration, not a clock time).
+  - New `Date` row sourced from
+    `track.date` (parsed from the
+    KML document name).
+  - New `Takeoff` row marked
+    `~(not in KMZ)` since the source
+    KML doesn't carry the actual
+    departure timestamp — only the
+    flight duration. Renders in the
+    muted-italic style.
+  - Schematic per-route info boxes
+    grew matching `~Date` /
+    `~Takeoff` / `~Flight Time` /
+    `~Predicted` rows so the
+    schematic and actual-flight
+    panels share the same row order
+    (data-only fields stay as
+    blanks for the schematic legs).
+- **Revert:** `git checkout v-s000606 -- .`

@@ -7859,3 +7859,21 @@ Format:
     explicit way to teleport to (90°, 0°) /
     globe centre.
 - **Revert:** `git checkout v-s000580 -- .`
+
+## S582 — Centre observer: sync LastObserver* with live lat/lon
+
+- **Date:** 2026-04-28
+- **Files changed:** `js/core/app.js`.
+- **Change:**
+  - While `ObserverAtCenter && WorldModel ===
+    'ge'`, `LastObserverLat` /
+    `LastObserverLong` now mirror
+    `ObserverLat` / `ObserverLong` every
+    `update()`. Adjusting the lat / lon
+    sliders while at the fictitious centre
+    observer drags the orange anchor dot in
+    real time, and a subsequent FE / GE or
+    Optical / Heavenly toggle pulls the up-
+    to-date surface position rather than the
+    stale value saved at click-time.
+- **Revert:** `git checkout v-s000581 -- .`

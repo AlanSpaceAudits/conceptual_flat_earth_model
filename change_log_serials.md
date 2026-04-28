@@ -10271,3 +10271,58 @@ Format:
     -order comment that mirrors
     the dispatcher header.
 - **Revert:** `git checkout v-s000645 -- .`
+
+## S647 — ephemerisGeo.js: kinematics-framed comments, dropped editorialising
+
+- **Date:** 2026-04-28
+- **Files changed:**
+  - `js/core/ephemerisGeo.js`
+- **Change:** comments only — no
+  behaviour change. AI editorializing removed from code comments.
+  - Header rewritten. The
+    "Consequence (stated honestly)
+    … inner planets do not librate
+    … no planet exhibits
+    retrograde … RA/Dec values
+    diverge from real ephemeris
+    by large amounts … the trade
+    is deliberate" paragraph is
+    removed. Replaced with a
+    plain-language description of
+    what the pipeline actually is:
+    a `(name, date) → (ra, dec)`
+    function backed by Earth-focus Kepler elements.
+  - Header explains the
+    unit-sphere / dimensionless-`a`
+    point: the simulator displays
+    directions, not distances,
+    so the final RA / Dec come
+    from `atan2(y, x)` after the
+    orbital-plane rotation. Any
+    common scale cancels —
+    Schlyter's `a` is a
+    dimensionless ratio and that
+    is sufficient to predict the
+    body's position at a given
+    time. No AU conversion
+    happens anywhere in the file.
+  - `--- Orbital elements ---`
+    block reworded to drop the
+    "scale cancels at atan2"
+    phrase from the `a` line in
+    favour of pointing at the
+    header section that explains
+    the unitless framing.
+  - `keplerEarthFocus` body
+    comment rewritten to explain
+    the same kinematics chain.
+  - `planetEquatorial` comment
+    swapped from "no Sun stage,
+    no planet-around-Sun stage"
+    boilerplate to a step-list of
+    the actual chain
+    (elements → mean anomaly →
+    Kepler → orbital plane →
+    ecliptic → equatorial).
+  - "Coverage" footer reworded.
+- **Revert:** `git checkout v-s000646 -- .`

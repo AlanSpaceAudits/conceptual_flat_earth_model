@@ -1,36 +1,29 @@
-// GeoC pipeline — Earth-focus Kepler ellipses per planet.
+// GeoC pipeline — kinematic position-over-time function for each
+// planet, parameterised by Schlyter's Earth-focus Kepler elements.
 //
-// **Comparison-mode + fallback only.** Default rendering pipeline
-// is DE405 (`ephemerisAstropixels.js`). GeoC is queried in two
-// scenarios:
-//   • The Tracker tab's "Ephemeris comparison" toggle is on, in
-//     which case `app.update` walks every pipeline so the side-by-
-//     side RA / Dec / Az / El rows have a value to display.
-//   • DE405 can't cover a (body, date) request — typically a
-//     date past Espenak's 2030 table. The dispatcher
-//     (`bodyRADec` in `ephemeris.js`) falls back to GeoC because
-//     its Schlyter Earth-focus elements span effectively
-//     unlimited dates.
-// With comparison off and the date inside DE405's window, GeoC
-// stays idle.
+// Comparison-mode + fallback only. Default rendering pipeline is
+// DE405 (`ephemerisAstropixels.js`). GeoC runs when:
+//   • The Tracker tab's "Ephemeris comparison" toggle is on, so the
+//     side-by-side RA / Dec / Az / El rows have a "GeoC" column to
+//     populate.
+//   • The dispatcher (`bodyRADec` in `ephemeris.js`) fell back here
+//     after DE405 declined the (body, date) request — typically a
+//     date past Espenak's 2030 table. Schlyter's elements span
+//     effectively unlimited dates.
 //
-// restructured the planetary chain in this simulator so that each
-// planet is modelled as a single Keplerian ellipse with the Earth at
-// the focus, evaluated once per planet and rotated ecliptic→equatorial.
-// The Schlyter element values (a, e, i, Ω, ω, M, n) are retained as
-// conceptual ratio parameters; they are not interpreted as Sun-relative
-// orbits inside this module. No Sun-around-Earth row, no `sun + planet`
-// composition, no heliocentric intermediate of any kind.
+// What the pipeline computes: a function `(name, date) → (ra, dec)`.
+// Each planet has a single Keplerian ellipse with Earth at the
+// focus, evaluated once per call and rotated into ecliptic →
+// equatorial. Sun and Moon delegate to Meeus
+// (`ephemerisCommon.js`).
 //
-// Consequence (stated honestly): inner planets (Mercury, Venus) do not
-// librate about the Sun in this model, and no planet exhibits retrograde
-// motion. RA/Dec values diverge from real ephemeris positions by large
-// amounts. The trade is deliberate: this pipeline is *structurally*
-// geocentric at every stage.
-//
-// split this code out of the former monolithic `ephemeris.js`
-// into its own module so the router can pick it as the `'geocentric'`
-// pipeline alongside Helio and Ptolemy.
+// Why unitless `a` is sufficient: the simulator displays bodies as
+// directions on a unit sphere, not at real-world distances. The
+// final RA / Dec come from `atan2(y, x)` after the orbital-plane
+// rotation — any common scale factor on (x, y, z) cancels. Keeping
+// Schlyter's `a` as a dimensionless ratio is enough to predict
+// where each body lands at a given time; converting to AU adds
+// nothing to the angles.
 
 import { DEG, julianDay, sunEquatorial, moonEquatorial } from './ephemerisCommon.js';
 
@@ -40,13 +33,15 @@ import { DEG, julianDay, sunEquatorial, moonEquatorial } from './ephemerisCommon
 //   N = longitude of ascending node (deg)
 //   i = inclination to ecliptic (deg)
 //   w = argument of perihelion (deg)
-//   a = semi-major axis (unitless ratio; scale cancels at atan2)
+//   a = semi-major axis (unitless ratio — see header)
 //   e = eccentricity
 //   M = mean anomaly (deg)
 // Rates are per day.
 //
-// In this module these parameters specify a Keplerian ellipse with the
-// **Earth at the focus** for each planet. See module header.
+// In this module the elements specify a Keplerian ellipse with Earth
+// at the focus per planet. The values are dimensionless ratios; they
+// drive the position-over-time math but no AU conversion happens
+// anywhere in this file.
 const ORBIT_EL = {
   mercury: [ 48.3313,  3.24587e-5,   7.0047,    5.00e-8,    29.1241, 1.01444e-5, 0.387098, 0,         0.205635,  5.59e-10,  168.6562, 4.0923344368],
   venus:   [ 76.6799,  2.46590e-5,   3.3946,    2.75e-8,    54.8910, 1.38374e-5, 0.723330, 0,         0.006773, -1.302e-9,   48.0052, 1.6021302244],
@@ -84,9 +79,11 @@ function solveKepler(M, e) {
   return E;
 }
 
-// Evaluate a planet's Earth-focus Kepler ellipse at day `d` and return
-// the geocentric ecliptic position (x, y, z). Unit of length is the
-// tabulated `a`; absolute scale cancels at atan2 in planetEquatorial.
+// Evaluate the Earth-focus Kepler ellipse at day `d`. Returns
+// (x, y, z) in ecliptic coordinates expressed in units of the
+// tabulated `a` — the magnitude is irrelevant for downstream
+// RA / Dec because `planetEquatorial` reduces (x, y, z) to a
+// direction via atan2, and any common scale cancels.
 function keplerEarthFocus(name, d) {
   const { N, i, w, a, e, M } = elementsAt(name, d);
   const Mr = (M * DEG);
@@ -104,12 +101,13 @@ function keplerEarthFocus(name, d) {
   };
 }
 
-// Geocentric equatorial coordinates of a planet (radians).
-// Single Earth-focus Kepler evaluation + ecliptic→equatorial rotation.
-// No Sun-around-Earth stage, no planet-around-Sun stage.
+// Geocentric equatorial coordinates of a planet (radians). The
+// kinematic chain is: Schlyter elements → mean anomaly at `d` →
+// solve Kepler → orbital-plane (x, y) → ecliptic (x, y, z) →
+// equatorial (RA, Dec).
 export function planetEquatorial(name, date) {
-  // uranus, neptune, pluto aren't in this Earth-focus element
-  // table; signal "no data" with NaN so the tracker HUD renders "—".
+  // uranus, neptune, pluto aren't in the Schlyter element table;
+  // return NaN so the tracker HUD renders "—".
   if (!ORBIT_EL[name]) return { ra: NaN, dec: NaN };
   const d = schlyterDay(date);
   const p = keplerEarthFocus(name, d);
@@ -135,9 +133,9 @@ export function bodyGeocentric(name, date) {
 // module interfaces; the GeoC planet math uses schlyterDay directly.
 export { julianDay };
 
-// Coverage. Schlyter Earth-focus elements ship the 5 classical
-// planets; sun / moon delegate to the Meeus pair in ephemerisCommon.
-// Date span effectively unlimited within Schlyter's century-scale
+// Coverage. Schlyter elements ship the 5 classical planets; sun /
+// moon delegate to the Meeus pair in `ephemerisCommon.js`. Date
+// span effectively unlimited within Schlyter's century-scale
 // element validity. Built-in corrections come from Meeus, which
 // already applies precession + nutation + aberration to its sun /
 // moon outputs.

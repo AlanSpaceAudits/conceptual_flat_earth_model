@@ -10029,3 +10029,51 @@ Format:
     fallback chain can detect the
     miss without a magic number.
 - **Revert:** `git checkout v-s000639 -- .`
+
+## S641 — Ephemeris: BodySource transition prunes unsupported planets + about.md guidelines
+
+- **Date:** 2026-04-28
+- **Files changed:**
+  - `js/core/app.js`
+  - `about.md`
+- **Change:**
+  - **`app.update`** gains a
+    BodySource-transition watchdog
+    paralleling the WorldModel
+    watchdog. Whenever
+    `state.BodySource` changes,
+    `TrackerTargets` is filtered
+    against the new pipeline's
+    `SUPPORTED_BODIES` set; sun /
+    moon / planet ids drop out if
+    unsupported, stars + black
+    holes + galaxies + satellites
+    pass through untouched.
+    `FollowTarget` clears too if
+    it points at an unsupported
+    body. Switching back to DE405
+    does **not** auto-restore the
+    pruned ids — the user picks
+    them back deliberately. Demo
+    intros that set BodySource fire
+    the same watchdog (intentional —
+    "manual" includes scripted
+    intent).
+  - **about.md Tracker /
+    Ephemeris** gains a guideline
+    block:
+    - Per-pipeline built-in
+      corrections (DE405 / GeoC /
+      HelioC = full apparent;
+      VSOP87 = precession + FK5
+      only, no nutation, no
+      aberration; Ptolemy =
+      historical, none).
+    - Source-coverage + fallback
+      chain documentation
+      (DE405 → GeoC → VSOP87 →
+      Ptolemy).
+    - Note that flipping comparison
+      off drops per-frame compute
+      to a single pipeline.
+- **Revert:** `git checkout v-s000640 -- .`

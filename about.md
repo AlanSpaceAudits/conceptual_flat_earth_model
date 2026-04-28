@@ -194,6 +194,16 @@ The Tracker is the single source of truth for body visibility. Each sub-menu's *
 - **Aberration** — annual aberration: stars apparently shift up to ~20″ in the direction of Earth's motion through the year. Off = catalog-mean positions.
 - **Trepidation** — historical pre-Newtonian model of an oscillating obliquity. Provided alongside precession so users can compare how that older framework predicted the same phenomenon. Off by default.
 
+> **Note**: the **Precession / Nutation / Aberration** checkboxes apply to *fixed-star* RA/Dec only. Planet pipelines bake in their own corrections:
+> - **DE405 (Fred Espenak)**: apparent geocentric — precession + nutation + aberration all included. Default source.
+> - **GeoC / HelioC** (Meeus): apparent-of-date — precession + nutation + aberration all included.
+> - **VSOP87**: mean equinox of date — **precession built-in**, **nutation NOT applied**, **aberration NOT applied**. FK5 frame correction is included. Use this if you want a clean theoretical reference position that you can layer your own nutation / aberration on.
+> - **Ptolemy**: deferent + epicycle (Almagest) — none of the modern corrections apply; readings are intentionally historical.
+
+> **Source coverage + fallback chain.** Each pipeline reports its supported bodies and date range. `bodyRADec(name, date, source)` tries the active source first; if it can't deliver (body not in its set or date out of range), it walks the fallback chain `DE405 → GeoC → VSOP87 → Ptolemy` until something covers the request. Manually picking a pipeline that doesn't cover Uranus / Neptune (VSOP87 / GeoC / HelioC / Ptolemy — only DE405 ships them) auto-prunes those planets from `TrackerTargets`; switching back to DE405 doesn't auto-restore. Comparison-mode auto-loads of all five pipelines are independent of `TrackerTargets`.
+
+> **Comparison off → only one pipeline runs.** With `Ephemeris comparison` unchecked the tracker HUD only computes the active source. The other four pipelines stay imported but aren't queried per frame, so the per-frame compute drops to a single `bodyGeocentric` call per body. Toggle the comparison row on to bring the side-by-side rows back.
+
 ## Starfield
 
 Selects the active starfield render and mode (random, three chart variants, Cel Nav, three AE Aries variants), Dynamic / Static fade, Permanent Night.

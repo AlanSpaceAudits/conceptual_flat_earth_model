@@ -480,6 +480,34 @@ export class FeModel extends EventTarget {
     }
     this._lastWorldModel = s.WorldModel;
 
+    // BodySource transition: when the user picks a pipeline that
+    // doesn't cover certain planets (VSOP87 / GeoC / HelioC /
+    // Ptolemy = no Uranus / Neptune; only DE405 has them), drop
+    // those bodies from `TrackerTargets` so they stop appearing in
+    // the tracker HUD + per-frame compute. Switching back to
+    // DE405 doesn't auto-restore them — the user picks them back
+    // explicitly.
+    if (this._lastBodySource !== undefined && this._lastBodySource !== s.BodySource) {
+      const src = (s.BodySource === 'heliocentric') ? 'heliocentric' : (s.BodySource || 'astropixels');
+      const supported =
+        src === 'astropixels'  ? ephApix.SUPPORTED_BODIES :
+        src === 'vsop87'       ? ephVsop.SUPPORTED_BODIES :
+        src === 'ptolemy'      ? ephPtol.SUPPORTED_BODIES :
+        src === 'heliocentric' ? new Set(['sun','moon','mercury','venus','mars','jupiter','saturn']) :
+                                 ephGeo.SUPPORTED_BODIES;
+      const arr = Array.isArray(s.TrackerTargets) ? s.TrackerTargets : [];
+      const pruned = arr.filter((t) => {
+        if (t === 'sun' || t === 'moon') return supported.has(t);
+        if (PLANET_NAMES.includes(t))    return supported.has(t);
+        return true;
+      });
+      if (pruned.length !== arr.length) s.TrackerTargets = pruned;
+      if (s.FollowTarget && (s.FollowTarget === 'sun' || s.FollowTarget === 'moon' || PLANET_NAMES.includes(s.FollowTarget))) {
+        if (!supported.has(s.FollowTarget)) s.FollowTarget = null;
+      }
+    }
+    this._lastBodySource = s.BodySource;
+
     // (Removed Optical → Heavenly auto-snap — observer position
     // now persists across InsideVault toggles. Manual teleport
     // via the orange origin-dot click stays available.)

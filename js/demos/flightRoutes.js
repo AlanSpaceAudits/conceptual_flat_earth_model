@@ -319,26 +319,36 @@ const CENTRAL_ANGLE_DEMO = {
 //     leg. Same arc length, dramatically different AE projection
 //     shape — visual proof that projection distortion is decoupled
 //     from real flight time.
-const SOUTH_ROUTE_ID = 'jnb-syd';
+// Mirror demo uses Johannesburg ↔ Sydney (south) paired with its
+// reflected northern twin. Cross-lat demo uses Santiago ↔ Sydney
+// (south, traces over the Pacific) paired with New York ↔ Persian
+// Gulf (north, traces over the North Atlantic). Both north and south
+// arcs in the cross-lat demo sit firmly in opposite hemispheres so
+// the routes never share the same lat / lon band.
+const MIRROR_SOUTH_ROUTE_ID = 'jnb-syd';
 const NORTH_MIRROR_ROUTE_ID = 'nmir-pair';
-const CROSS_LAT_ROUTE_ID = 'eq-cross';
+const CROSS_SOUTH_ROUTE_ID = 'scl-syd';
+const CROSS_NORTH_ROUTE_ID = 'ny-pgulf';
 const CONST_SWEEP_MS = 9000;
 const CONST_DURATION_HOURS = 11; // notional flight duration per loop
-const SOUTH_ROUTE_OBJ = FLIGHT_ROUTES.find((r) => r.id === SOUTH_ROUTE_ID);
+const MIRROR_SOUTH_OBJ = FLIGHT_ROUTES.find((r) => r.id === MIRROR_SOUTH_ROUTE_ID);
 const NORTH_MIRROR_OBJ = FLIGHT_ROUTES.find((r) => r.id === NORTH_MIRROR_ROUTE_ID);
-const CROSS_LAT_OBJ = FLIGHT_ROUTES.find((r) => r.id === CROSS_LAT_ROUTE_ID);
+const CROSS_SOUTH_OBJ = FLIGHT_ROUTES.find((r) => r.id === CROSS_SOUTH_ROUTE_ID);
+const CROSS_NORTH_OBJ = FLIGHT_ROUTES.find((r) => r.id === CROSS_NORTH_ROUTE_ID);
 const angleOf = (route) => {
   const a = cityById(route.from), b = cityById(route.to);
   return centralAngleDeg(a.lat, a.lon, b.lat, b.lon);
 };
-const SOUTH_ANGLE = angleOf(SOUTH_ROUTE_OBJ);
-const NORTH_MIRROR_ANGLE = angleOf(NORTH_MIRROR_OBJ);
-const CROSS_LAT_ANGLE = angleOf(CROSS_LAT_OBJ);
-// Notional angular speed = central angle / duration. Both demos
-// share the same speed since the routes share central angles.
-const CONST_SPEED_DEG_PER_HR = SOUTH_ANGLE / CONST_DURATION_HOURS;
+const MIRROR_SOUTH_ANGLE = angleOf(MIRROR_SOUTH_OBJ);
+const CROSS_SOUTH_ANGLE  = angleOf(CROSS_SOUTH_OBJ);
+// Notional angular speed = central angle / duration. Each demo
+// computes its own speed from the south leg's central angle so the
+// mirror demo (110° class) and cross-lat demo (102° class) loop in
+// equal time on their own scale.
+const MIRROR_SPEED_DEG_PER_HR = MIRROR_SOUTH_ANGLE / CONST_DURATION_HOURS;
+const CROSS_SPEED_DEG_PER_HR  = CROSS_SOUTH_ANGLE  / CONST_DURATION_HOURS;
 
-function constSpeedBox(route, angle, label) {
+function constSpeedBox(route, angle, speedDegPerH, label) {
   const a = cityById(route.from), b = cityById(route.to);
   return {
     title: `${label} · ${route.label}  ${angle.toFixed(2)}°`,
@@ -346,7 +356,7 @@ function constSpeedBox(route, angle, label) {
       `Depart      : ${a.name}  (${a.lat.toFixed(2)}°, ${a.lon.toFixed(2)}°)`,
       `Destination : ${b.name}  (${b.lat.toFixed(2)}°, ${b.lon.toFixed(2)}°)`,
       `Total arc   : ${angle.toFixed(2)}°`,
-      `Speed       : ${formatDmsPerHour(CONST_SPEED_DEG_PER_HR)}`,
+      `Speed       : ${formatDmsPerHour(speedDegPerH)}`,
       (s) => {
         const p = Math.max(0, Math.min(1, s.FlightRoutesProgress || 0));
         const elapsed = angle * p;
@@ -361,26 +371,25 @@ function constSpeedBox(route, angle, label) {
   };
 }
 
-function constSpeedDemo(name, secondRouteId, secondLabel) {
-  const secondRouteObj = FLIGHT_ROUTES.find((r) => r.id === secondRouteId);
-  const secondAngle = angleOf(secondRouteObj);
+function constSpeedDemo({ name, southObj, southAngle, northObj, northLabel, speedDegPerH }) {
+  const northAngle = angleOf(northObj);
   return {
     name,
     group: 'flight-routes',
     speedScale: FLIGHT_SPEED_SCALE,
     intro: baseIntro({
-      FlightRoutesSelected: [SOUTH_ROUTE_ID, secondRouteId],
+      FlightRoutesSelected: [southObj.id, northObj.id],
       FlightRoutesProgress: 0,
       FlightInfoBox: [
-        constSpeedBox(SOUTH_ROUTE_OBJ, SOUTH_ANGLE, 'SOUTH'),
-        constSpeedBox(secondRouteObj, secondAngle, secondLabel),
+        constSpeedBox(southObj, southAngle, speedDegPerH, 'SOUTH'),
+        constSpeedBox(northObj, northAngle, speedDegPerH, northLabel),
       ],
     }),
     tasks: () => [
-      Ttxt(`Equal central angle (${SOUTH_ANGLE.toFixed(1)}°) — both routes sweeping at identical ${formatDmsPerHour(CONST_SPEED_DEG_PER_HR)}. Both reach destination at the same instant despite the projection making them look different.`),
+      Ttxt(`Equal central angle (${southAngle.toFixed(1)}°) — both routes sweeping at identical ${formatDmsPerHour(speedDegPerH)}. Both reach destination at the same instant despite the projection making them look different.`),
       Tcall((m) => m.setState({
         ShowFlightRoutes: true,
-        FlightRoutesSelected: [SOUTH_ROUTE_ID, secondRouteId],
+        FlightRoutesSelected: [southObj.id, northObj.id],
         FlightRoutesProgress: 0,
       })),
       Trepeat([
@@ -391,16 +400,22 @@ function constSpeedDemo(name, secondRouteId, secondLabel) {
   };
 }
 
-const CONST_SPEED_MIRROR_DEMO   = constSpeedDemo(
-  'Equal Arc (mirror)',
-  NORTH_MIRROR_ROUTE_ID,
-  'NORTH (mirror)',
-);
-const CONST_SPEED_CROSS_DEMO    = constSpeedDemo(
-  'Equal Arc',
-  CROSS_LAT_ROUTE_ID,
-  'CROSS-LAT',
-);
+const CONST_SPEED_MIRROR_DEMO = constSpeedDemo({
+  name: 'Equal Arc (mirror)',
+  southObj: MIRROR_SOUTH_OBJ,
+  southAngle: MIRROR_SOUTH_ANGLE,
+  northObj: NORTH_MIRROR_OBJ,
+  northLabel: 'NORTH (mirror)',
+  speedDegPerH: MIRROR_SPEED_DEG_PER_HR,
+});
+const CONST_SPEED_CROSS_DEMO = constSpeedDemo({
+  name: 'Equal Arc',
+  southObj: CROSS_SOUTH_OBJ,
+  southAngle: CROSS_SOUTH_ANGLE,
+  northObj: CROSS_NORTH_OBJ,
+  northLabel: 'NORTH',
+  speedDegPerH: CROSS_SPEED_DEG_PER_HR,
+});
 
 export const FLIGHT_ROUTES_DEMOS = [
   ALL_ROUTES_DEMO,

@@ -19,14 +19,16 @@ export const FLIGHT_CITIES = [
   // Coordinates aren't real airports — they're geometric anchors.
   { id: 'nm_jnb', name: 'N-Mirror (≈ Egypt)',  lat:  26.13939, lon:  28.24679 },
   { id: 'nm_syd', name: 'N-Mirror (≈ Pacific)', lat: 33.95003, lon: 151.18169 },
-  // Equal-central-angle pair at sharply different latitudes, used by
-  // the non-mirror "Equal Arc" demo. (0°, −30°) ↔ (−50°, 92.7°)
-  // works out to the same 110.32° great-circle distance as
-  // jnb-syd, but the spread in latitude means the AE projection
-  // bends one arc dramatically while the JNB-SYD pair stays a
-  // tighter band — same arc length, very different look.
-  { id: 'eq_a', name: 'Equator Pt',     lat:   0.0,    lon:  -30.0   },
-  { id: 'eq_b', name: 'Sub-antarctic Pt', lat: -50.0,    lon:   92.7   },
+  // Northern equal-arc anchor for the non-mirror "Equal Arc" demo.
+  // New York real coords + a synthetic Persian-Gulf-region
+  // anchor (25°N, 60.82°E). JFK ↔ persian-pt has a central angle of
+  // 102.0°, matching the southern Santiago ↔ Sydney leg, so both
+  // routes traverse the same arc length but trace opposite
+  // hemispheres (NY arcs over the North Atlantic + Mediterranean
+  // toward the Persian Gulf; Santiago↔Sydney arcs over the South
+  // Pacific). They never touch the same lat / lon band.
+  { id: 'jfk_n',     name: 'New York (JFK)', lat: 40.6398, lon: -73.7789 },
+  { id: 'persian_n', name: 'Persian Gulf',   lat: 25.0,    lon:  60.82   },
 ];
 
 export const FLIGHT_ROUTES = [
@@ -40,11 +42,10 @@ export const FLIGHT_ROUTES = [
   // North-hemisphere mirror of jnb-syd, used by the "Equal Arc
   // (mirror)" constant-speed demo.
   { id: 'nmir-pair', from: 'nm_jnb', to: 'nm_syd', label: 'North mirror' },
-  // Cross-latitude equal-arc pair, used by the non-mirror "Equal Arc"
-  // demo. Same 110.32° central angle as jnb-syd but the spread in
-  // latitude makes the AE projection bend the arc much more
-  // dramatically.
-  { id: 'eq-cross', from: 'eq_a', to: 'eq_b', label: 'Equator ↔ Sub-antarctic' },
+  // Northern equal-arc partner for the non-mirror "Equal Arc" demo.
+  // Same 102° central angle as Santiago ↔ Sydney but in the northern
+  // hemisphere over the Atlantic / Mediterranean / Middle East.
+  { id: 'ny-pgulf', from: 'jfk_n', to: 'persian_n', label: 'New York ↔ Persian Gulf' },
 ];
 
 export function cityById(id) {

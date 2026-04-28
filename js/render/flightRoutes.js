@@ -141,14 +141,14 @@ function drawFlightArt(ctx) {
 // vertically by `_updateInfoBox` so the constant-speed demo can show
 // a north-leg + south-leg side-by-side comparison; single-box demos
 // only ever populate the first one.
-function buildInfoBoxEl(id, top) {
+function buildInfoBoxEl(id, top, left) {
   const el = document.createElement('div');
   el.id = id;
   el.className = 'flight-info-box';
   el.style.cssText = [
     'position: absolute',
     `top: ${top}px`,
-    'left: 12px',
+    `left: ${left}px`,
     'padding: 0',
     'font: 14px/1.45 ui-monospace, Menlo, monospace',
     'color: #f4f6fa',
@@ -216,14 +216,18 @@ function ensureInfoBoxes() {
     document.head.appendChild(styleTag);
   }
   if (!primary) {
-    primary = buildInfoBoxEl('flight-info-box', 220);
+    primary = buildInfoBoxEl('flight-info-box', 220, 12);
     view.appendChild(primary);
     const ctxA = primary.querySelector('.fi-art').getContext('2d');
     ctxA.imageSmoothingEnabled = false;
     drawFlightArt(ctxA);
   }
   if (!secondary) {
-    secondary = buildInfoBoxEl('flight-info-box-2', 460);
+    // Side-by-side layout: 380 px min-width box + 12 px starting
+    // gutter + 16 px breathing room = 408 px. Lands the second box
+    // clear of the first one's right edge instead of overlapping
+    // vertically.
+    secondary = buildInfoBoxEl('flight-info-box-2', 220, 420);
     view.appendChild(secondary);
     const ctxB = secondary.querySelector('.fi-art').getContext('2d');
     ctxB.imageSmoothingEnabled = false;

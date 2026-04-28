@@ -9253,3 +9253,64 @@ Format:
   affect time when speed is
   constant.
 - **Revert:** `git checkout v-s000620 -- .`
+
+## S622 — Flight Routes: side-by-side info boxes + cross-lat = NY-Persian Gulf
+
+- **Date:** 2026-04-28
+- **Files changed:**
+  - `js/render/flightRoutes.js`
+  - `js/data/flightRoutes.js`
+  - `js/demos/flightRoutes.js`
+- **Change:**
+  - **Info boxes side-by-side**:
+    `buildInfoBoxEl` accepts a `left`
+    arg; secondary box now anchors at
+    `top:220, left:420` instead of
+    `top:460, left:12`. Stops the
+    two boxes from vertically
+    overlapping on the same screen.
+  - **Cross-lat demo retargeted**:
+    swapped from `jnb-syd` +
+    `eq-cross` (both southern arcs
+    that visually overlap) to
+    `scl-syd` (south, traces over
+    the South Pacific) +
+    `ny-pgulf` (north, traces from
+    JFK over the North Atlantic /
+    Mediterranean toward the
+    Persian Gulf). Same 102°
+    central angle for both routes,
+    opposite hemispheres, never
+    share a lat / lon band.
+  - **Removed** the old `eq_a` /
+    `eq_b` synthetic anchors and
+    the `eq-cross` route from
+    `FLIGHT_CITIES` /
+    `FLIGHT_ROUTES`. Replaced with
+    real `jfk_n` (40.6398°N,
+    -73.7789°W) and synthetic
+    `persian_n` at
+    (25°N, 60.82°E) — the
+    Persian-Gulf endpoint solved
+    analytically so the central
+    angle from JFK lands on
+    102.0°.
+  - **Per-demo speed**: each
+    constant-speed demo now
+    computes its own angular
+    speed from its south leg
+    (`MIRROR_SPEED_DEG_PER_HR` =
+    110°/11h, `CROSS_SPEED_DEG_PER_HR`
+    = 102°/11h). `constSpeedDemo`
+    factory rewritten to take an
+    options object so each demo
+    threads its own south /
+    north / speed cleanly.
+  - The mirror demo
+    (`Equal Arc (mirror)`) keeps
+    Johannesburg ↔ Sydney + its
+    reflected northern twin —
+    unchanged behaviour, just
+    decoupled from the cross-lat
+    demo's variables.
+- **Revert:** `git checkout v-s000621 -- .`

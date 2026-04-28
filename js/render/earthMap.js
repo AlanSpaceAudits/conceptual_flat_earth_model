@@ -138,6 +138,59 @@ export function buildGeoJsonLand(geojson, projection, {
 // coordinate shell (graticule, tropics, longitude ring, azimuth grid)
 // without any geographic art on top.
 
+// Black FE disc with continent outlines — pairs with the
+// `ae_lineart` projection. Builds a solid-black backdrop circle then
+// stitches Natural Earth ring vertices through `projection.project`
+// and lays them down as white `LineSegments`. No filled continent
+// shapes; the disc reads as "outline-only" art, matching the
+// `ge_art_line` style on the GE side so flight-route demos can swap
+// projections without the user losing the white-on-black look.
+export function buildLineArtMap(geojson, projection, {
+  feRadius = 1,
+  backgroundColor = 0x000000,
+  strokeColor = 0xe8eef5,
+  strokeOpacity = 1.0,
+} = {}) {
+  const group = new THREE.Group();
+  group.name = 'land';
+  // Backdrop disc.
+  const bgMat = new THREE.MeshBasicMaterial({
+    color: backgroundColor, transparent: false,
+    side: THREE.DoubleSide, depthWrite: false,
+  });
+  const bg = new THREE.Mesh(new THREE.CircleGeometry(feRadius, 128), bgMat);
+  bg.position.z = EPS_LIFT;
+  bg.name = 'lineart-disc';
+  group.add(bg);
+  // Coastlines.
+  const lineSegs = [];
+  for (const feat of (geojson && geojson.features) || []) {
+    const g = feat.geometry;
+    if (!g) continue;
+    const polys = g.type === 'Polygon' ? [g.coordinates]
+                : g.type === 'MultiPolygon' ? g.coordinates
+                : [];
+    for (const poly of polys) {
+      for (const ring of poly) {
+        const pts = ringToDiscPoints(ring, projection, feRadius);
+        for (let i = 0; i < pts.length - 1; i++) {
+          lineSegs.push(pts[i].x,     pts[i].y,     EPS_LIFT * 2);
+          lineSegs.push(pts[i + 1].x, pts[i + 1].y, EPS_LIFT * 2);
+        }
+      }
+    }
+  }
+  const lineMat = new THREE.LineBasicMaterial({
+    color: strokeColor, transparent: strokeOpacity < 1, opacity: strokeOpacity,
+  });
+  const lineGeo = new THREE.BufferGeometry();
+  lineGeo.setAttribute('position', new THREE.Float32BufferAttribute(lineSegs, 3));
+  const lines = new THREE.LineSegments(lineGeo, lineMat);
+  lines.name = 'coastlines';
+  group.add(lines);
+  return group;
+}
+
 export function buildBlankMap({ feRadius = 1, color = 0x000000 } = {}) {
   const group = new THREE.Group();
   group.name = 'land';

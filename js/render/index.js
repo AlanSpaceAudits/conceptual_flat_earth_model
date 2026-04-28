@@ -12,7 +12,7 @@ import {
   CentralAngleArcs, MoonOpticalBody, SunOpticalBody,
   MonthMarkers, WorldGlobe, GlobeHeavenlyVault, DomeCausticOverlay,
 } from './worldObjects.js';
-import { loadLandGeo, buildGeoJsonLand, buildImageMap, buildBlankMap } from './earthMap.js';
+import { loadLandGeo, buildGeoJsonLand, buildImageMap, buildBlankMap, buildLineArtMap } from './earthMap.js';
 import { Constellations } from './constellations.js';
 import { FlightRoutes } from './flightRoutes.js';
 import { StarfieldChart } from './starfieldChart.js';
@@ -424,6 +424,7 @@ export class Renderer {
   _rebuildLand(projectionId) {
     const projection = getProjection(projectionId);
     const isBlank = projection.renderStyle === 'blank';
+    const isLineArt = projection.renderStyle === 'lineart';
     if (!this._landGeo && !projection.imageAsset && !isBlank) return;
     if (this.land) {
       this.sm.world.remove(this.land);
@@ -437,6 +438,11 @@ export class Renderer {
     }
     this.land = isBlank
       ? buildBlankMap({ feRadius: FE_RADIUS })
+      : isLineArt
+      ? buildLineArtMap(this._landGeo, projection, {
+          feRadius: FE_RADIUS,
+          ...(projection.landStyle || {}),
+        })
       : projection.imageAsset
       ? buildImageMap(projection, { feRadius: FE_RADIUS })
       : buildGeoJsonLand(this._landGeo, projection, { feRadius: FE_RADIUS });

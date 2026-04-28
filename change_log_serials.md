@@ -9020,3 +9020,53 @@ Format:
     frame; the canvas + structural
     HTML stay untouched.
 - **Revert:** `git checkout v-s000615 -- .`
+
+## S617 — FE Line Art map + flight demos default to outline-only projections
+
+- **Date:** 2026-04-28
+- **Files changed:**
+  - `js/core/projections.js`
+  - `js/render/earthMap.js`
+  - `js/render/index.js`
+  - `js/demos/flightRoutes.js`
+- **Change:**
+  - New FE projection
+    `ae_lineart` (`AE Line Art (black
+    + white outlines)`) — same AE
+    polar math as the default, but
+    flagged `renderStyle: 'lineart'`
+    with a `landStyle` of
+    `{ strokeColor: 0xe8eef5,
+       strokeOpacity: 1.0 }`.
+  - New
+    `buildLineArtMap(geojson,
+    projection, opts)` builder in
+    `earthMap.js`: paints a black
+    backdrop disc (
+    `MeshBasicMaterial(0x000000)`),
+    then projects each Natural Earth
+    ring through `projection.project`
+    and stitches the vertices into
+    a white `LineSegments` outline.
+    No filled continents — matches
+    the GE Line Art aesthetic
+    (`ge_art_line`) for FE.
+  - `js/render/index.js`
+    `_updateLand` now branches on
+    `renderStyle === 'lineart'` and
+    routes through `buildLineArtMap`
+    with the projection's
+    `landStyle` overrides.
+  - Flight-route demos
+    (`ROUTE_OVERLAYS`) default
+    `MapProjection: 'ae' →
+    'ae_lineart'` and add
+    `MapProjectionGe: 'ge_art_line'`,
+    so every demo opens with both
+    FE and GE rendering as
+    white-on-black coastlines —
+    orange route artwork and cyan
+    central-angle legs read clean
+    against a flat backdrop on
+    either projection.
+- **Revert:** `git checkout v-s000616 -- .`

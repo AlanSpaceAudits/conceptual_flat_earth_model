@@ -74,14 +74,17 @@ const SKY_HIDDEN = {
 
 // FE grid on; sun/moon GP drops off so the demo isn't visually
 // crowded with celestial ground points the user has already
-// hidden via SKY_HIDDEN.
+// hidden via SKY_HIDDEN. FE map and GE map both default to the
+// line-art / outline-only styles so the orange flight artwork and
+// cyan central-angle legs read clean against a black backdrop.
 const ROUTE_OVERLAYS = {
   ShowFeGrid:        true,
   ShowGroundPoints:  false,
   ShowFlightRoutes:  true,
   FlightRoutesProgress: 0,
   WorldModel:        'fe',
-  MapProjection:     'ae',
+  MapProjection:     'ae_lineart',
+  MapProjectionGe:   'ge_art_line',
 };
 
 const baseIntro = (extra) => Object.assign({}, SKY_HIDDEN, ROUTE_OVERLAYS, TOP_DOWN_CAMERA, extra || {});

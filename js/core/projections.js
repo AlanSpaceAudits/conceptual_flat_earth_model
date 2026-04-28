@@ -207,6 +207,16 @@ export const PROJECTIONS = {
     project(lat, lon, r = 1) { return polarFromRadial(lat, lon, r, RADIAL_AE); },
   },
 
+  ae_lineart: {
+    id: 'ae_lineart', name: 'AE Line Art (black + white outlines)',
+    category: 'generated',
+    imageAsset: null, imageInscribedRadius: 0.5,
+    renderStyle: 'lineart',
+    landStyle: { strokeColor: 0xe8eef5, strokeOpacity: 1.0 },
+    notes: 'Solid-black AE disc with Natural Earth continents traced in white. Matches the GE Line Art aesthetic so flight-route demos read clean across both projections.',
+    project(lat, lon, r = 1) { return polarFromRadial(lat, lon, r, RADIAL_AE); },
+  },
+
   hellerick: {
     id: 'hellerick', name: 'Hellerick boreal',
     category: 'generated',

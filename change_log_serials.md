@@ -10096,3 +10096,36 @@ Format:
     new format automatically since
     they share this helper.
 - **Revert:** `git checkout v-s000641 -- .`
+
+## S643 — Default DateTime resolves to "now" instead of 2019-03-25 placeholder
+
+- **Date:** 2026-04-28
+- **Files changed:**
+  - `js/core/app.js`
+- **Change:**
+  - `defaultState()` now computes
+    its initial `DateTime` /
+    `DayOfYear` / `Time` from
+    `Date.now()` minus
+    `Date.UTC(2017, 0, 1)` (days
+    since 2017-01-01) instead of
+    the hard-coded
+    `812.88 / 812 / 21.07` triple
+    that resolved to 2019-03-25.
+  - Helper `_todayDateTime()`
+    returns days since the epoch
+    so each component is derived
+    from the same moment without
+    re-reading the clock per
+    assignment.
+  - With DE405 covering
+    2019–2030, today's date sits
+    well inside Fred's window —
+    no fallback needed for normal
+    "load right now" usage. When
+    the wall clock eventually
+    exceeds 2030, the
+    fallback chain from S640
+    routes the request through
+    GeoC / VSOP87 / Ptolemy.
+- **Revert:** `git checkout v-s000642 -- .`

@@ -107,7 +107,19 @@ function _fitDomeVaultHeight(sunPos, domeR, obs, targetElDeg) {
   return isFinite(loss(best)) ? best : NaN;
 }
 
+// Default DateTime = days since 2017-01-01 at the moment the page
+// loads, so the app opens on the user's current real-world date —
+// well inside DE405's 2019–2030 coverage instead of the old hard-
+// coded 2019-03-25 placeholder.
+function _todayDateTime() {
+  const ZERO = Date.UTC(2017, 0, 1, 0, 0, 0, 0);
+  return (Date.now() - ZERO) / 86_400_000;
+}
+
 function defaultState() {
+  const _now = _todayDateTime();
+  const _doy = Math.floor(_now);
+  const _hr  = (_now - _doy) * 24;
   return {
     ObserverLat:  32.0,
     ObserverLong: -100.8387,
@@ -121,10 +133,12 @@ function defaultState() {
     // Optical-only. fov = 75° / OpticalZoom.
     OpticalZoom:      1.0,
 
-    // Days since 2017-01-01.
-    DateTime:    812.88,
-    DayOfYear:   812,
-    Time:        21.07,
+    // Days since 2017-01-01. Computed at load so the app opens on
+    // the current real-world UTC date (inside DE405's 2019–2030
+    // window for now; fallback chain handles dates beyond it).
+    DateTime:    _now,
+    DayOfYear:   _doy,
+    Time:        _hr,
 
     VaultSize:   GEOMETRY.VaultSizeDefault,
     VaultHeight: 0.75,

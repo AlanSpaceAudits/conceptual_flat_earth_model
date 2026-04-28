@@ -9114,3 +9114,93 @@ Format:
     - `ShowEclipseShadow: false` —
       umbra / penumbra map overlay.
 - **Revert:** `git checkout v-s000618 -- .`
+
+## S620 — Flight Routes: looping sweeps + dual N/S const-speed demo
+
+- **Date:** 2026-04-28
+- **Files changed:**
+  - `js/demos/animation.js`
+  - `js/data/flightRoutes.js`
+  - `js/demos/flightRoutes.js`
+  - `js/render/flightRoutes.js`
+- **Change:**
+  - **Animator:** new `Trepeat(body)`
+    primitive. `_stepTask`'s
+    `'repeat'` branch pushes a fresh
+    deep-copy of every body task
+    (resetting per-task internal
+    state — `startValue` / `elapsed`
+    on `val`, `remaining` on `pause`)
+    plus a fresh repeat task at the
+    end of the queue, then marks
+    itself done. Loop runs forever
+    until the user clicks Stop.
+  - **All flight-route demos** swap
+    their trailing `Thold()` for a
+    `Trepeat([Tcall(reset
+    FlightRoutesProgress),
+    Tval(progress 0 → 1)])` so the
+    sweep restarts the moment the
+    plane reaches its destination.
+    Applies to per-route, all-routes,
+    central-angle, constant-speed,
+    and every QF27/28 actual-flight
+    demo.
+  - **Northern-mirror data:** added
+    `nm_jnb` (lat 26.14°, lon
+    28.25°) and `nm_syd` (lat
+    33.95°, lon 151.18°) to
+    `FLIGHT_CITIES` plus a
+    `nmir-pair` route in
+    `FLIGHT_ROUTES`. These are
+    reflected coordinates of
+    Johannesburg / Sydney across
+    the equator — not real airports
+    — so the constant-speed demo
+    can compare equal-central-angle
+    legs in both hemispheres.
+  - **Constant-speed demo
+    rebuilt:** picks `jnb-syd` (south)
+    and `nmir-pair` (north). One
+    `FlightRoutesProgress` driver
+    sweeps both routes in lockstep
+    over `CONST_SWEEP_MS = 9000` ms
+    per loop. `CONST_DURATION_HOURS`
+    = 11 fixes a notional flight
+    duration so the angular speed
+    constant `CONST_SPEED_DEG_PER_HR
+    = SOUTH_ANGLE / 11` is shared
+    between the two info boxes.
+  - **Dual info box:**
+    `FlightInfoBox` state can now be
+    a single `{title, lines}` object
+    OR an array of two. Renderer
+    builds primary at `top:220px`
+    and secondary at `top:460px`,
+    both 380 × min, both with the
+    plane portrait painted on the
+    fi-art canvas.
+  - **Live countdown lines:** lines
+    can be functions
+    `(state) => string`. Strings
+    starting with `!` render in a
+    new highlighted style
+    (`#ffd698`, tabular numerals).
+    The const-speed boxes use this
+    to show
+    `Traversed: X° / total°` and
+    `Remaining: X°` in real time
+    from `state.FlightRoutesProgress`.
+- **Result:** Pressing the constant-speed
+  demo opens with two info boxes
+  stacked top-left, two cyan-lined
+  routes (south + north mirror), two
+  orange planes flying in lockstep.
+  Both planes hit destination at the
+  same frame; both info boxes hit
+  `Remaining: 0.00°` at the same
+  frame; both reset to `0.00° /
+  total°` and start over. Equal arc,
+  equal time, regardless of the
+  projection's visual distortion.
+- **Revert:** `git checkout v-s000619 -- .`

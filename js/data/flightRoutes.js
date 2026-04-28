@@ -13,6 +13,12 @@ export const FLIGHT_CITIES = [
   { id: 'gru', name: 'Sao Paulo',    lat: -23.43022, lon:  -46.47167 },
   { id: 'eze', name: 'Buenos Aires', lat: -34.81653, lon:  -58.53727 },
   { id: 'per', name: 'Perth',        lat: -31.93855, lon:  115.96725 },
+  // Synthetic northern-hemisphere mirrors of Johannesburg ↔ Sydney
+  // (lat → −lat) so the constant-speed demo can compare a southern
+  // leg to an equal-central-angle northern leg side-by-side.
+  // Coordinates aren't real airports — they're geometric anchors.
+  { id: 'nm_jnb', name: 'N-Mirror (≈ Egypt)',  lat:  26.13939, lon:  28.24679 },
+  { id: 'nm_syd', name: 'N-Mirror (≈ Pacific)', lat: 33.95003, lon: 151.18169 },
 ];
 
 export const FLIGHT_ROUTES = [
@@ -23,6 +29,9 @@ export const FLIGHT_ROUTES = [
   { id: 'jnb-per', from: 'jnb', to: 'per', label: 'Johannesburg ↔ Perth' },
   { id: 'jnb-syd', from: 'jnb', to: 'syd', label: 'Johannesburg ↔ Sydney' },
   { id: 'eze-drw', from: 'eze', to: 'drw', label: 'Buenos Aires ↔ Darwin' },
+  // North-hemisphere mirror of jnb-syd, used by the constant-speed
+  // demo as the side-by-side comparison route.
+  { id: 'nmir-pair', from: 'nm_jnb', to: 'nm_syd', label: 'North mirror' },
 ];
 
 export function cityById(id) {

@@ -137,14 +137,17 @@ function drawFlightArt(ctx) {
   for (let i = 0; i < 6; i++) fillRect(cx - 9 - i, cy + 12, 'rgba(255, 184, 90, 0.55)');
 }
 
-function ensureInfoBox() {
-  let el = document.getElementById('flight-info-box');
-  if (el) return el;
-  el = document.createElement('div');
-  el.id = 'flight-info-box';
+// Build a single info-box DOM node. Two of these are stacked
+// vertically by `_updateInfoBox` so the constant-speed demo can show
+// a north-leg + south-leg side-by-side comparison; single-box demos
+// only ever populate the first one.
+function buildInfoBoxEl(id, top) {
+  const el = document.createElement('div');
+  el.id = id;
+  el.className = 'flight-info-box';
   el.style.cssText = [
     'position: absolute',
-    'top: 220px',
+    `top: ${top}px`,
     'left: 12px',
     'padding: 0',
     'font: 14px/1.45 ui-monospace, Menlo, monospace',
@@ -170,45 +173,63 @@ function ensureInfoBox() {
       <div class="fi-readout"></div>
     </div>
   `;
-  const styleTag = document.createElement('style');
-  styleTag.textContent = `
-    #flight-info-box .fi-header {
-      display: flex; align-items: center; gap: 8px;
-      padding: 6px 12px;
-      background: rgba(255, 154, 60, 0.10);
-      border-bottom: 1px solid rgba(255, 184, 90, 0.30);
-      border-radius: 8px 8px 0 0;
-    }
-    #flight-info-box .fi-title { color: #f4a640; font-weight: 700; font-size: 14px; letter-spacing: 0.04em; }
-    #flight-info-box .fi-content { padding: 14px 16px; }
-    #flight-info-box .fi-art-row {
-      display: flex; gap: 16px; align-items: center;
-      border-bottom: 1px solid rgba(120, 150, 200, 0.22);
-      padding-bottom: 12px; margin-bottom: 10px;
-    }
-    #flight-info-box .fi-art {
-      width: 160px; height: 160px;
-      background: rgba(0, 0, 0, 0.6);
-      border: 1px solid rgba(120, 150, 200, 0.3);
-      border-radius: 4px;
-      image-rendering: pixelated;
-      image-rendering: crisp-edges;
-      flex: 0 0 auto;
-    }
-    #flight-info-box .fi-readout { display: flex; flex-direction: column; gap: 3px; }
-    #flight-info-box .fi-line  { color: #f4f6fa; font-size: 14px; padding: 2px 4px; }
-    #flight-info-box .fi-blank { color: #6a7385; font-style: italic; font-size: 14px; padding: 2px 4px; }
-  `;
-  document.head.appendChild(styleTag);
-  const view = document.getElementById('view') || document.body;
-  view.appendChild(el);
-  // Paint the plane art once on construction; shared across every
-  // demo since the icon is generic.
-  const cv = el.querySelector('.fi-art');
-  const ctx = cv.getContext('2d');
-  ctx.imageSmoothingEnabled = false;
-  drawFlightArt(ctx);
   return el;
+}
+
+function ensureInfoBoxes() {
+  let primary   = document.getElementById('flight-info-box');
+  let secondary = document.getElementById('flight-info-box-2');
+  if (primary && secondary) return [primary, secondary];
+  const view = document.getElementById('view') || document.body;
+  if (!document.getElementById('flight-info-box-style')) {
+    const styleTag = document.createElement('style');
+    styleTag.id = 'flight-info-box-style';
+    styleTag.textContent = `
+      .flight-info-box .fi-header {
+        display: flex; align-items: center; gap: 8px;
+        padding: 6px 12px;
+        background: rgba(255, 154, 60, 0.10);
+        border-bottom: 1px solid rgba(255, 184, 90, 0.30);
+        border-radius: 8px 8px 0 0;
+      }
+      .flight-info-box .fi-title { color: #f4a640; font-weight: 700; font-size: 14px; letter-spacing: 0.04em; }
+      .flight-info-box .fi-content { padding: 14px 16px; }
+      .flight-info-box .fi-art-row {
+        display: flex; gap: 16px; align-items: center;
+        border-bottom: 1px solid rgba(120, 150, 200, 0.22);
+        padding-bottom: 12px; margin-bottom: 10px;
+      }
+      .flight-info-box .fi-art {
+        width: 160px; height: 160px;
+        background: rgba(0, 0, 0, 0.6);
+        border: 1px solid rgba(120, 150, 200, 0.3);
+        border-radius: 4px;
+        image-rendering: pixelated;
+        image-rendering: crisp-edges;
+        flex: 0 0 auto;
+      }
+      .flight-info-box .fi-readout { display: flex; flex-direction: column; gap: 3px; }
+      .flight-info-box .fi-line  { color: #f4f6fa; font-size: 14px; padding: 2px 4px; }
+      .flight-info-box .fi-blank { color: #6a7385; font-style: italic; font-size: 14px; padding: 2px 4px; }
+      .flight-info-box .fi-live  { color: #ffd698; font-size: 14px; padding: 2px 4px; font-variant-numeric: tabular-nums; }
+    `;
+    document.head.appendChild(styleTag);
+  }
+  if (!primary) {
+    primary = buildInfoBoxEl('flight-info-box', 220);
+    view.appendChild(primary);
+    const ctxA = primary.querySelector('.fi-art').getContext('2d');
+    ctxA.imageSmoothingEnabled = false;
+    drawFlightArt(ctxA);
+  }
+  if (!secondary) {
+    secondary = buildInfoBoxEl('flight-info-box-2', 460);
+    view.appendChild(secondary);
+    const ctxB = secondary.querySelector('.fi-art').getContext('2d');
+    ctxB.imageSmoothingEnabled = false;
+    drawFlightArt(ctxB);
+  }
+  return [primary, secondary];
 }
 
 function makePlaneTexture() {
@@ -455,9 +476,7 @@ export class FlightRoutes {
     ];
   }
 
-  _updateInfoBox(state) {
-    const box = ensureInfoBox();
-    const info = state.FlightInfoBox;
+  _renderInfoBox(box, info, state) {
     if (!info || !info.lines) {
       box.style.display = 'none';
       return;
@@ -467,14 +486,37 @@ export class FlightRoutes {
     if (titleEl) titleEl.textContent = info.title || 'Flight';
     if (readoutEl) {
       readoutEl.innerHTML = info.lines.map((l) => {
-        if (typeof l !== 'string') return '';
-        if (l.startsWith('~')) {
-          return `<div class="fi-blank">${l.slice(1)}</div>`;
-        }
-        return `<div class="fi-line">${l}</div>`;
+        // Function lines are evaluated per-frame against the live
+        // state — used for the constant-speed demo's live
+        // remaining-central-angle countdown. Returning a string
+        // starting with '!' marks it as a "live" highlighted row;
+        // '~' marks blanks; everything else is the normal foreground.
+        let val = l;
+        if (typeof l === 'function') val = l(state) || '';
+        if (typeof val !== 'string') return '';
+        if (val.startsWith('~')) return `<div class="fi-blank">${val.slice(1)}</div>`;
+        if (val.startsWith('!')) return `<div class="fi-live">${val.slice(1)}</div>`;
+        return `<div class="fi-line">${val}</div>`;
       }).join('');
     }
     box.style.display = '';
+  }
+
+  _updateInfoBox(state) {
+    const [primary, secondary] = ensureInfoBoxes();
+    const info = state.FlightInfoBox;
+    if (!info) {
+      primary.style.display = 'none';
+      secondary.style.display = 'none';
+      return;
+    }
+    if (Array.isArray(info)) {
+      this._renderInfoBox(primary,   info[0] || null, state);
+      this._renderInfoBox(secondary, info[1] || null, state);
+    } else {
+      this._renderInfoBox(primary, info, state);
+      secondary.style.display = 'none';
+    }
   }
 
   update(model) {

@@ -3,7 +3,7 @@
 // demo. Each entry sweeps `FlightRoutesProgress` 0 → 1 over a fixed
 // window so the great-circle line draws out across the disc / sphere.
 
-import { Ttxt, Tval, Tcall, Thold } from './animation.js';
+import { Ttxt, Tval, Tcall, Thold, Trepeat } from './animation.js';
 import {
   FLIGHT_ROUTES, FLIGHT_CITIES, cityById, centralAngleDeg,
   formatHMS, formatHMSDelta, formatDmsPerHour,
@@ -104,9 +104,11 @@ function sweepRoute(routeId) {
       FlightRoutesSelected: routeId,
       FlightRoutesProgress: 0,
     })),
-    Tval('FlightRoutesProgress', 1, SWEEP_PER_ROUTE, 0, 'linear'),
-    Ttxt('Route connected — toggle FE / GE freely; press Stop when done.'),
-    Thold(),
+    Ttxt('Route looping — toggle FE / GE freely; press Stop when done.'),
+    Trepeat([
+      Tcall((m) => m.setState({ FlightRoutesProgress: 0 })),
+      Tval('FlightRoutesProgress', 1, SWEEP_PER_ROUTE, 0, 'linear'),
+    ]),
   ];
 }
 
@@ -208,7 +210,15 @@ function qfFlightDemo(track) {
     }),
     tasks: () => [
       Ttxt(`${track.label}: ${dir} · ${angle.toFixed(2)}° central angle, predicted ${formatHMS(predictedSec)} (${formatHMSDelta(deltaSec)}).`),
-      ...sweepRoute('scl-syd'),
+      Tcall((m) => m.setState({
+        ShowFlightRoutes: true,
+        FlightRoutesSelected: 'scl-syd',
+        FlightRoutesProgress: 0,
+      })),
+      Trepeat([
+        Tcall((m) => m.setState({ FlightRoutesProgress: 0 })),
+        Tval('FlightRoutesProgress', 1, SWEEP_PER_ROUTE, 0, 'linear'),
+      ]),
     ],
   };
 }
@@ -236,15 +246,16 @@ const ALL_ROUTES_DEMO = {
     FlightInfoBox: combinedInfoBox(),
   }),
   tasks: () => [
-    Ttxt('All seven Southern Non-Stop legs sweeping out together.'),
+    Ttxt('All seven Southern Non-Stop legs sweeping out together — looping.'),
     Tcall((m) => m.setState({
       ShowFlightRoutes: true,
       FlightRoutesSelected: 'all',
       FlightRoutesProgress: 0,
     })),
-    Tval('FlightRoutesProgress', 1, SWEEP_COMBINED, 0, 'linear'),
-    Ttxt('Combined map ready — toggle FE / GE freely; press Stop when done.'),
-    Thold(),
+    Trepeat([
+      Tcall((m) => m.setState({ FlightRoutesProgress: 0 })),
+      Tval('FlightRoutesProgress', 1, SWEEP_COMBINED, 0, 'linear'),
+    ]),
   ],
 };
 
@@ -285,12 +296,13 @@ const CENTRAL_ANGLE_DEMO = {
       return `${r.label}: south ${south.toFixed(2)}° = mirrored north ${north.toFixed(2)}°`;
     });
     return [
-      Ttxt('Each southern leg has the same central angle as its lat-mirrored northern counterpart — the AE projection only stretches the visual length.'),
+      Ttxt('Each southern leg has the same central angle as its lat-mirrored northern counterpart — looping; press Stop when done.'),
       ...lines.map((l) => Ttxt(l, 1500)),
       Tcall((m) => m.setState({ ShowFlightRoutes: true, FlightRoutesSelected: 'all', FlightRoutesProgress: 0 })),
-      Tval('FlightRoutesProgress', 1, SWEEP_COMBINED, 0, 'linear'),
-      Ttxt('Toggle FE / GE to compare — arcs equalise on the sphere. Press Stop when done.'),
-      Thold(),
+      Trepeat([
+        Tcall((m) => m.setState({ FlightRoutesProgress: 0 })),
+        Tval('FlightRoutesProgress', 1, SWEEP_COMBINED, 0, 'linear'),
+      ]),
     ];
   },
 };
@@ -298,40 +310,80 @@ const CENTRAL_ANGLE_DEMO = {
 // Constant-speed demo — sweep two routes (one short, one long) at the
 // same `Progress / second` rate so the user sees the per-second arc
 // length is constant regardless of which projection is showing.
-function constSpeedInfoBox() {
-  const lines = ['At identical deg/h, equal central angle = equal time.'];
-  for (const id of ['jnb-syd', 'jnb-gru']) {
-    const r = FLIGHT_ROUTES.find((x) => x.id === id);
-    const a = cityById(r.from), b = cityById(r.to);
-    const ang = centralAngleDeg(a.lat, a.lon, b.lat, b.lon);
-    lines.push(`  ${r.label}  ${ang.toFixed(2)}°`);
-  }
-  lines.push('~Air / ground speed: (no flight data)');
-  return { title: 'Constant-speed parity', lines };
+// Constant-speed demo: south-leg (Johannesburg ↔ Sydney) paired with
+// a north-hemisphere mirror of the same central angle so the user
+// sees two flights crossing equal arc length at identical angular
+// speed. FlightRoutesProgress drives both routes in lockstep, so
+// they reach destination simultaneously — visual proof that
+// projection distortion never changes flight time at constant speed.
+const SOUTH_ROUTE_ID = 'jnb-syd';
+const NORTH_ROUTE_ID = 'nmir-pair';
+const CONST_SWEEP_MS = 9000;
+const CONST_DURATION_HOURS = 11; // notional flight duration per loop
+const SOUTH_ROUTE_OBJ = FLIGHT_ROUTES.find((r) => r.id === SOUTH_ROUTE_ID);
+const NORTH_ROUTE_OBJ = FLIGHT_ROUTES.find((r) => r.id === NORTH_ROUTE_ID);
+const SOUTH_ANGLE = (() => {
+  const a = cityById(SOUTH_ROUTE_OBJ.from), b = cityById(SOUTH_ROUTE_OBJ.to);
+  return centralAngleDeg(a.lat, a.lon, b.lat, b.lon);
+})();
+const NORTH_ANGLE = (() => {
+  const a = cityById(NORTH_ROUTE_OBJ.from), b = cityById(NORTH_ROUTE_OBJ.to);
+  return centralAngleDeg(a.lat, a.lon, b.lat, b.lon);
+})();
+// Notional angular speed = central angle / duration. Same for both
+// routes since they share the same central angle. Computed once and
+// shown statically in each info box; the renderer reads
+// `FlightRoutesProgress` per frame to compute remaining angle.
+const CONST_SPEED_DEG_PER_HR = SOUTH_ANGLE / CONST_DURATION_HOURS;
+
+function constSpeedBox(route, angle, hemisphere) {
+  const a = cityById(route.from), b = cityById(route.to);
+  return {
+    title: `${hemisphere} · ${route.label}  ${angle.toFixed(2)}°`,
+    lines: [
+      `Depart      : ${a.name}  (${a.lat.toFixed(2)}°, ${a.lon.toFixed(2)}°)`,
+      `Destination : ${b.name}  (${b.lat.toFixed(2)}°, ${b.lon.toFixed(2)}°)`,
+      `Total arc   : ${angle.toFixed(2)}°`,
+      `Speed       : ${formatDmsPerHour(CONST_SPEED_DEG_PER_HR)}`,
+      // Live: remaining = total · (1 − progress).
+      (s) => {
+        const p = Math.max(0, Math.min(1, s.FlightRoutesProgress || 0));
+        const remaining = angle * (1 - p);
+        const elapsed = angle * p;
+        return `!Traversed   : ${elapsed.toFixed(2)}° / ${angle.toFixed(2)}°`;
+      },
+      (s) => {
+        const p = Math.max(0, Math.min(1, s.FlightRoutesProgress || 0));
+        const remaining = angle * (1 - p);
+        return `!Remaining   : ${remaining.toFixed(2)}°`;
+      },
+    ],
+  };
 }
 
 const CONST_SPEED_DEMO = {
-  name: 'Constant speed — equal arc-length, equal time',
+  name: 'Constant speed — equal arc, equal time (N vs S)',
   group: 'flight-routes',
   speedScale: FLIGHT_SPEED_SCALE,
   intro: baseIntro({
-    FlightRoutesSelected: ['jnb-syd', 'jnb-gru'],
+    FlightRoutesSelected: [SOUTH_ROUTE_ID, NORTH_ROUTE_ID],
     FlightRoutesProgress: 0,
-    FlightInfoBox: constSpeedInfoBox(),
+    FlightInfoBox: [
+      constSpeedBox(SOUTH_ROUTE_OBJ, SOUTH_ANGLE, 'SOUTH'),
+      constSpeedBox(NORTH_ROUTE_OBJ, NORTH_ANGLE, 'NORTH'),
+    ],
   }),
   tasks: () => [
-    Ttxt('Two routes from Johannesburg — Sydney (long) and Sao Paulo (short). At constant speed, time per arc-unit is the same on both projections.'),
+    Ttxt(`Equal central angle (${SOUTH_ANGLE.toFixed(1)}°) — north and south sweeping at identical ${formatDmsPerHour(CONST_SPEED_DEG_PER_HR)}. Both reach destination at the same instant despite the projection making one look longer.`),
     Tcall((m) => m.setState({
       ShowFlightRoutes: true,
-      FlightRoutesSelected: ['jnb-syd', 'jnb-gru'],
+      FlightRoutesSelected: [SOUTH_ROUTE_ID, NORTH_ROUTE_ID],
       FlightRoutesProgress: 0,
     })),
-    Tval('FlightRoutesProgress', 1, SWEEP_COMBINED, 0, 'linear'),
-    Ttxt('Same sweep on the GE sphere — same elapsed time, same arc-length per second.'),
-    Tcall((m) => m.setState({ WorldModel: 'ge', FlightRoutesProgress: 0 })),
-    Tval('FlightRoutesProgress', 1, SWEEP_COMBINED, 0, 'linear'),
-    Ttxt('Both sweeps complete — toggle FE / GE freely; press Stop when done.'),
-    Thold(),
+    Trepeat([
+      Tcall((m) => m.setState({ FlightRoutesProgress: 0 })),
+      Tval('FlightRoutesProgress', 1, CONST_SWEEP_MS, 0, 'linear'),
+    ]),
   ],
 };
 

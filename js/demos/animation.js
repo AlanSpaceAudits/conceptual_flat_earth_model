@@ -123,6 +123,27 @@ export class Animator {
       task.fn(this.model);
       return true;
     }
+    if (task.kind === 'repeat') {
+      // Re-queue a fresh copy of the loop body PLUS this task itself
+      // at the END of the queue, then mark the current instance done
+      // so the animator shifts it off and the body runs from scratch
+      // again. Resets per-task internal state (`startValue` /
+      // `elapsed` for `val`, `remaining` for `pause`) so each loop
+      // iteration starts from the original authored configuration.
+      for (const orig of task.body) {
+        const copy = { ...orig };
+        if (copy.kind === 'val') {
+          copy.startValue = undefined;
+          copy.elapsed = 0;
+        }
+        if (copy.kind === 'pause') {
+          copy.remaining = copy.duration;
+        }
+        this.queue.push(copy);
+      }
+      this.queue.push({ kind: 'repeat', body: task.body, delay: 0 });
+      return true;
+    }
     return true;
   }
 }
@@ -134,3 +155,4 @@ export const Ttxt = (txt, delay = 0) => ({ kind: 'text', text: txt, delay });
 export const Tval = (key, endValue, duration = 500, delay = 0, ease = 'cosine') =>
   ({ kind: 'val', key, endValue, duration, delay, ease });
 export const Tcall = (fn) => ({ kind: 'call', fn, delay: 0 });
+export const Trepeat = (body) => ({ kind: 'repeat', body, delay: 0 });

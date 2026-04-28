@@ -9952,3 +9952,80 @@ Format:
     routes demo to a non-flight
     demo.
 - **Revert:** `git checkout v-s000638 -- .`
+
+## S640 — Ephemeris: comparison-gated + fallback chain + DE405 default
+
+- **Date:** 2026-04-28
+- **Files changed:**
+  - `js/core/app.js`
+  - `js/core/ephemeris.js`
+  - `js/core/ephemerisAstropixels.js`
+  - `js/core/ephemerisGeo.js`
+  - `js/core/ephemerisHelio.js`
+  - `js/core/ephemerisVsop87.js`
+  - `js/core/ephemerisPtolemy.js`
+- **Change:**
+  - **Default load: DE405** — no
+    state change required (already
+    `BodySource: 'astropixels'`),
+    confirmed and re-anchored as
+    the reference path in the
+    fallback chain.
+  - **Per-frame comparison-gated.**
+    `app.update`'s `TrackerInfos`
+    loop now only walks every
+    pipeline (`ephGeo`, `ephPtol`,
+    `ephApix`, `ephVsop`) when
+    `state.ShowEphemerisReadings`
+    is on. With the toggle off, the
+    four extra `bodyGeocentric`
+    calls per body per frame are
+    skipped — only the active
+    `bodySource` (single pipeline)
+    runs to drive the rendered
+    sun / moon / planet positions.
+    Comparison readings get NaN
+    sentinels; the HUD already
+    hides those rows when the
+    toggle is off.
+  - **Per-pipeline coverage
+    metadata.** Each pipeline now
+    exports `SUPPORTED_BODIES`,
+    `coversBody(name)`, and
+    `coversDate(date)`. Plus a
+    `BUILTIN_CORRECTIONS` summary
+    documenting which apparent-
+    place corrections each one
+    bakes in (see VSOP87 note in
+    the about.md update).
+  - **Fallback chain in
+    `bodyRADec`.** The dispatcher
+    now tries the requested
+    `source` first; if the pipeline
+    can't deliver (body not in
+    `SUPPORTED_BODIES` or date out
+    of range), it walks
+    `FALLBACK_ORDER = ['astropixels',
+    'geocentric', 'vsop87',
+    'ptolemy']` until something
+    returns a finite reading.
+    Surfaces `NaN` only when no
+    pipeline can deliver — instead
+    of returning a misleading
+    vernal-equinox `(0, 0)`.
+  - **`bodyRADecRoute(name, date,
+    source)`** — sibling that also
+    reports which pipeline
+    supplied the value, so the UI
+    can light up a fallback
+    indicator if the active
+    selection got routed
+    elsewhere.
+  - **DE405 NaN sentinel.**
+    `ephemerisAstropixels.bodyGeocentric`
+    returns `{ ra: NaN, dec: NaN }`
+    on out-of-range lookup
+    (was `(0, 0)`), so the
+    fallback chain can detect the
+    miss without a magic number.
+- **Revert:** `git checkout v-s000639 -- .`

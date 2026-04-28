@@ -119,3 +119,8 @@ export function bodyGeocentric(name, date) {
   if (name === 'earth') return { ra: 0, dec: 0 };
   return planetEquatorial(name, date);
 }
+
+export const SUPPORTED_BODIES = new Set(['sun', 'moon', 'mercury', 'venus', 'mars', 'jupiter', 'saturn']);
+export function coversBody(name) { return SUPPORTED_BODIES.has(name); }
+export function coversDate(_date) { return true; }
+export const BUILTIN_CORRECTIONS = { precession: true, nutation: true, aberration: true, fk5: false };

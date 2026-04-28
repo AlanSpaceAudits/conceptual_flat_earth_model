@@ -161,3 +161,20 @@ export function bodyGeocentric(name, date) {
   if (name === 'earth') return { ra: 0, dec: 0 };
   return planetEquatorial(name, date);
 }
+
+// Coverage. VSOP87D ships coefficient sets for the inner six planets
+// + Earth (Earth used internally for the geocentric subtraction).
+// Moon delegates to Meeus, so it stays in the list. Uranus / Neptune
+// never had VSOP87 sets bundled here. Date span is roughly ±4000 yr
+// from J2000 — we keep the predicate generous so the fallback
+// chain only routes around the missing planets, not date.
+export const SUPPORTED_BODIES = new Set(['sun', 'moon', 'mercury', 'venus', 'mars', 'jupiter', 'saturn']);
+export function coversBody(name) { return SUPPORTED_BODIES.has(name); }
+export function coversDate(_date) { return true; }
+// Built-in corrections summary:
+//   precession : YES (mean equinox of date — VSOP87D output frame)
+//   nutation   : NO  (mean obliquity, not true obliquity)
+//   aberration : NO  (no light-time / annual-aberration correction)
+// FK5 correction is applied (Meeus 32.3) so the output is FK5
+// geocentric apparent for everything except nutation + aberration.
+export const BUILTIN_CORRECTIONS = { precession: true, nutation: false, aberration: false, fk5: true };

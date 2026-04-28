@@ -427,3 +427,14 @@ export function bodyGeocentric(name, date) {
   if (name === 'earth') return { ra: 0, dec: 0 };
   return planetEquatorial(name, date);
 }
+
+// Coverage. Almagest predates Uranus / Neptune / Pluto, so the
+// Ptolemy pipeline only ships deferent + epicycle parameters for
+// the 5 classical planets + sun + moon. Modern corrections
+// (precession, nutation, aberration) aren't part of the original
+// theory and aren't applied here — readings are intentionally
+// historical.
+export const SUPPORTED_BODIES = new Set(['sun', 'moon', 'mercury', 'venus', 'mars', 'jupiter', 'saturn']);
+export function coversBody(name) { return SUPPORTED_BODIES.has(name); }
+export function coversDate(_date) { return true; }
+export const BUILTIN_CORRECTIONS = { precession: false, nutation: false, aberration: false, fk5: false };

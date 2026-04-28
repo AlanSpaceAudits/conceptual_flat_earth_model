@@ -1210,14 +1210,34 @@ export class FeModel extends EventTarget {
     }
     const wrapLon = (x) => ((x + 180) % 360 + 360) % 360 - 180;
 
+    // Per-frame: only walk every comparison pipeline when the
+    // "Ephemeris comparison" toggle is on. With it off, the rendered
+    // sun / moon / planet positions still come from the active
+    // `bodySource` upstream — but the four extra `bodyGeocentric`
+    // calls per body that fed the side-by-side HUD are skipped, so
+    // each frame only touches the pipeline the user actually
+    // selected. NaN sentinels stand in for the unused readings; the
+    // tracker HUD ignores the comparison rows when the toggle is
+    // off anyway.
+    const compareOn = !!s.ShowEphemerisReadings;
+    const NAN_READING = { ra: NaN, dec: NaN };
+    const readingsFor = (body) => {
+      if (!compareOn) {
+        return { rGeo: NAN_READING, rPtol: NAN_READING, rApix: NAN_READING, rVsop: NAN_READING };
+      }
+      return {
+        rGeo:  ephGeo.bodyGeocentric(body, utcDate),
+        rPtol: ephPtol.bodyGeocentric(body, utcDate),
+        rApix: ephApix.bodyGeocentric(body, utcDate),
+        rVsop: ephVsop.bodyGeocentric(body, utcDate),
+      };
+    };
+
     for (const target of targets) {
       let info = null;
 
       if (target === 'sun') {
-        const rGeo   = ephGeo.bodyGeocentric('sun', utcDate);
-        const rPtol  = ephPtol.bodyGeocentric('sun', utcDate);
-        const rApix  = ephApix.bodyGeocentric('sun', utcDate);
-        const rVsop  = ephVsop.bodyGeocentric('sun', utcDate);
+        const { rGeo, rPtol, rApix, rVsop } = readingsFor('sun');
         info = {
           target, name: 'Sun', category: 'luminary',
           azimuth: c.SunAnglesGlobe.azimuth,
@@ -1231,10 +1251,7 @@ export class FeModel extends EventTarget {
           vaultCoord: c.SunVaultCoord,
         };
       } else if (target === 'moon') {
-        const rGeo   = ephGeo.bodyGeocentric('moon', utcDate);
-        const rPtol  = ephPtol.bodyGeocentric('moon', utcDate);
-        const rApix  = ephApix.bodyGeocentric('moon', utcDate);
-        const rVsop  = ephVsop.bodyGeocentric('moon', utcDate);
+        const { rGeo, rPtol, rApix, rVsop } = readingsFor('moon');
         info = {
           target, name: 'Moon', category: 'luminary',
           azimuth: c.MoonAnglesGlobe.azimuth,
@@ -1250,10 +1267,7 @@ export class FeModel extends EventTarget {
       } else if (PLANET_NAMES.includes(target)) {
         const p = c.Planets[target];
         if (p) {
-          const rGeo   = ephGeo.bodyGeocentric(target, utcDate);
-          const rPtol  = ephPtol.bodyGeocentric(target, utcDate);
-          const rApix  = ephApix.bodyGeocentric(target, utcDate);
-          const rVsop  = ephVsop.bodyGeocentric(target, utcDate);
+          const { rGeo, rPtol, rApix, rVsop } = readingsFor(target);
           const gpColor = PLANET_GP_COLORS[target] || TRACKED_GP_COLORS_PLANET_DEFAULT;
           info = {
             target,

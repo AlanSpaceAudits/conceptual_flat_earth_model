@@ -107,23 +107,31 @@ function lookup(body, date) {
 // Public API — matches other pipelines (ephemerisHelio / Geo / Ptolemy).
 export function planetEquatorial(name, date) {
   const r = lookup(name, date);
-  return r || { ra: 0, dec: 0 };
+  return r || { ra: NaN, dec: NaN };
 }
 
 export function sunEquatorial(date) {
   const r = lookup('sun', date);
-  return r || { ra: 0, dec: 0 };
+  return r || { ra: NaN, dec: NaN };
 }
 
 export function moonEquatorial(date) {
   const r = lookup('moon', date);
-  return r || { ra: 0, dec: 0 };
+  return r || { ra: NaN, dec: NaN };
 }
 
 export function bodyGeocentric(name, date) {
   if (name === 'earth') return { ra: 0, dec: 0 };
   const r = lookup(name, date);
-  return r || { ra: 0, dec: 0 };
+  return r || { ra: NaN, dec: NaN };
+}
+
+// Coverage: bodies + year span.
+export const SUPPORTED_BODIES = new Set(ASTROPIXELS.meta.bodies);
+export function coversBody(name) { return SUPPORTED_BODIES.has(name); }
+export function coversDate(date) {
+  const y = date.getUTCFullYear();
+  return y >= ASTROPIXELS.meta.yearMin && y <= ASTROPIXELS.meta.yearMax;
 }
 
 export const META = ASTROPIXELS.meta;

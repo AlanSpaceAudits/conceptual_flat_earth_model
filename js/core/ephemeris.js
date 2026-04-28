@@ -68,13 +68,79 @@ export const EPHEMERIS_SOURCES = ['geocentric', 'heliocentric', 'ptolemy', 'astr
 export const PLANET_NAMES = ['mercury', 'venus', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune'];
 export const BODY_NAMES   = ['sun', 'moon', 'mercury', 'venus', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune'];
 
+// Pipeline registry — id, namespace, supported-body predicate,
+// supported-date predicate. Used by the fallback chain below to
+// route around pipelines that can't deliver a given body / date.
+const PIPES = {
+  astropixels:  { ns: apix,  cb: (n) => apix.coversBody(n),  cd: (d) => apix.coversDate(d) },
+  geocentric:   { ns: geo,   cb: (n) => geo.coversBody(n),   cd: (d) => geo.coversDate(d) },
+  vsop87:       { ns: vsop,  cb: (n) => vsop.coversBody(n),  cd: (d) => vsop.coversDate(d) },
+  heliocentric: { ns: helio, cb: (n) => helio.coversBody(n), cd: (d) => helio.coversDate(d) },
+  ptolemy:      { ns: ptol,  cb: (n) => ptol.coversBody(n),  cd: (d) => ptol.coversDate(d) },
+};
+
+// Fallback order when the requested source can't deliver a given
+// body/date pair. DE405 first (it covers all 9 bodies in 2019–2030),
+// then GeoC (the wide-range Earth-focus Kepler with the 7 inner
+// bodies), then VSOP87 for analytical inner-planet coverage, then
+// Ptolemy as the last historical resort.
+const FALLBACK_ORDER = ['astropixels', 'geocentric', 'vsop87', 'ptolemy'];
+
+function _readingValid(r) {
+  return r && Number.isFinite(r.ra) && Number.isFinite(r.dec);
+}
+
+function _tryPipeline(id, name, date) {
+  const p = PIPES[id];
+  if (!p) return null;
+  if (!p.cb(name) || !p.cd(date)) return null;
+  const r = p.ns.bodyGeocentric(name, date);
+  return _readingValid(r) ? r : null;
+}
+
 // Primary router. Returns `{ ra, dec }` in radians, geocentric-apparent.
-export function bodyRADec(name, date, source = 'geocentric') {
-  if (source === 'heliocentric') return helio.bodyGeocentric(name, date);
-  if (source === 'ptolemy')      return ptol.bodyGeocentric(name, date);
-  if (source === 'astropixels')  return apix.bodyGeocentric(name, date);
-  if (source === 'vsop87')       return vsop.bodyGeocentric(name, date);
-  return geo.bodyGeocentric(name, date);
+// Tries the requested source first; if it can't deliver (body not
+// supported or date out of range), walks the fallback chain so the
+// caller always gets a usable reading. The exact pipeline that
+// produced the value can be retrieved via `bodyRADecRoute(...)`.
+export function bodyRADec(name, date, source = 'astropixels') {
+  if (name === 'earth') return { ra: 0, dec: 0 };
+  const tried = new Set();
+  if (source) {
+    const r = _tryPipeline(source, name, date);
+    if (r) return r;
+    tried.add(source);
+  }
+  for (const id of FALLBACK_ORDER) {
+    if (tried.has(id)) continue;
+    const r = _tryPipeline(id, name, date);
+    if (r) return r;
+    tried.add(id);
+  }
+  // Nothing covered the request — surface NaN so downstream renderers
+  // can hide the body cleanly instead of pinning it at the vernal
+  // equinox.
+  return { ra: NaN, dec: NaN };
+}
+
+// Same as `bodyRADec` but also reports which pipeline supplied the
+// value, so the UI can light up a fallback indicator when DE405
+// dropped to GeoC etc.
+export function bodyRADecRoute(name, date, source = 'astropixels') {
+  if (name === 'earth') return { reading: { ra: 0, dec: 0 }, used: source };
+  const tried = new Set();
+  if (source) {
+    const r = _tryPipeline(source, name, date);
+    if (r) return { reading: r, used: source };
+    tried.add(source);
+  }
+  for (const id of FALLBACK_ORDER) {
+    if (tried.has(id)) continue;
+    const r = _tryPipeline(id, name, date);
+    if (r) return { reading: r, used: id };
+    tried.add(id);
+  }
+  return { reading: { ra: NaN, dec: NaN }, used: null };
 }
 
 // Per-pipeline planet API (callers who already know which source they

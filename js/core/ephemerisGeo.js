@@ -120,3 +120,14 @@ export function bodyGeocentric(name, date) {
 // julianDay is imported solely for parity with the other pipelines'
 // module interfaces; the GeoC planet math uses schlyterDay directly.
 export { julianDay };
+
+// Coverage. Schlyter Earth-focus elements ship the 5 classical
+// planets; sun / moon delegate to the Meeus pair in ephemerisCommon.
+// Date span effectively unlimited within Schlyter's century-scale
+// element validity. Built-in corrections come from Meeus, which
+// already applies precession + nutation + aberration to its sun /
+// moon outputs.
+export const SUPPORTED_BODIES = new Set(['sun', 'moon', 'mercury', 'venus', 'mars', 'jupiter', 'saturn']);
+export function coversBody(name) { return SUPPORTED_BODIES.has(name); }
+export function coversDate(_date) { return true; }
+export const BUILTIN_CORRECTIONS = { precession: true, nutation: true, aberration: true, fk5: false };

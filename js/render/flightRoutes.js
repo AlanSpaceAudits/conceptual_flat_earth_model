@@ -220,21 +220,63 @@ function ensureRacePanel() {
   return el;
 }
 
+// Silhouette matching the world-plane sprite (`makePlaneTexture` —
+// nose at canvas y = -34, tail at y = +32). `headingRad` rotates the
+// figure so it can fly in any direction; race lanes pass +π/2 so the
+// nose points to canvas +x ("right" along the lane).
+function drawPlaneSilhouette(ctx, cx, cy, scale, headingRad = 0) {
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate(headingRad);
+  ctx.scale(scale, scale);
+  ctx.fillStyle = '#fff5e6';
+  ctx.strokeStyle = '#ff8040';
+  ctx.lineWidth = 2.5 / scale;
+  ctx.beginPath();
+  ctx.moveTo(0, -34);
+  ctx.lineTo(8, -10);
+  ctx.lineTo(36, 4);
+  ctx.lineTo(36, 12);
+  ctx.lineTo(8, 6);
+  ctx.lineTo(6, 22);
+  ctx.lineTo(14, 28);
+  ctx.lineTo(14, 32);
+  ctx.lineTo(0, 28);
+  ctx.lineTo(-14, 32);
+  ctx.lineTo(-14, 28);
+  ctx.lineTo(-6, 22);
+  ctx.lineTo(-8, 6);
+  ctx.lineTo(-36, 12);
+  ctx.lineTo(-36, 4);
+  ctx.lineTo(-8, -10);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+  ctx.restore();
+}
+
 function drawRaceCanvas(ctx, info, progress) {
   const W = 800, H = 420;
   ctx.clearRect(0, 0, W, H);
   const lanes = info.lanes || [];
   if (!lanes.length) return;
-  const padL = 110;
-  const padR = 90;
+  const padL = 130;
+  const padR = 130;
   const padTopY = 60;
   const padBottomY = 60;
   const trackPxMax = W - padL - padR;
   const laneSpan = (H - padTopY - padBottomY) / Math.max(1, lanes.length);
-  const maxAngle = Math.max(...lanes.map((l) => l.angle));
+  // Track lengths scale with each lane's AE-projected arc length so
+  // the side panel preserves the same visual length difference the
+  // main FE map shows. `angle` (central angle) drives the
+  // elapsed° / total° readout — equal angles still finish at the
+  // same `progress=1` instant since the route line is parameterised
+  // 0..1 regardless of pixel length.
+  const lengths = lanes.map((l) => (l.aeLength != null ? l.aeLength : l.angle));
+  const maxLength = Math.max(...lengths);
   for (let i = 0; i < lanes.length; i++) {
     const lane = lanes[i];
-    const trackPx = (lane.angle / maxAngle) * trackPxMax;
+    const lenPx = (lengths[i] / maxLength) * trackPxMax;
     const yMid = padTopY + laneSpan * (i + 0.5);
     // Lane label.
     ctx.fillStyle = lane.color || '#ffd6a8';
@@ -250,10 +292,10 @@ function drawRaceCanvas(ctx, info, progress) {
     ctx.lineWidth = 3;
     ctx.beginPath();
     ctx.moveTo(padL, yMid);
-    ctx.lineTo(padL + trackPx, yMid);
+    ctx.lineTo(padL + lenPx, yMid);
     ctx.stroke();
     // Already-traversed segment in accent.
-    const swept = trackPx * Math.max(0, Math.min(1, progress));
+    const swept = lenPx * Math.max(0, Math.min(1, progress));
     ctx.strokeStyle = lane.color || '#ff8040';
     ctx.lineWidth = 5;
     ctx.beginPath();
@@ -266,34 +308,13 @@ function drawRaceCanvas(ctx, info, progress) {
     ctx.arc(padL, yMid, 10, 0, 2 * Math.PI);
     ctx.fill();
     ctx.beginPath();
-    ctx.arc(padL + trackPx, yMid, 10, 0, 2 * Math.PI);
+    ctx.arc(padL + lenPx, yMid, 10, 0, 2 * Math.PI);
     ctx.fill();
-    // Plane silhouette at the progress point.
+    // World-plane silhouette riding the swept tip — same shape as
+    // the planes flying around the FE map (`makePlaneTexture`),
+    // rotated +π/2 so the nose points along the lane.
     const px = padL + swept;
-    const ps = 36;
-    ctx.save();
-    ctx.translate(px, yMid);
-    ctx.fillStyle = '#fff5e6';
-    ctx.strokeStyle = '#ff8040';
-    ctx.lineWidth = 2.5;
-    ctx.beginPath();
-    ctx.moveTo(ps * 0.55, 0);
-    ctx.lineTo(ps * 0.05, -ps * 0.18);
-    ctx.lineTo(-ps * 0.45, -ps * 0.18);
-    ctx.lineTo(-ps * 0.55, -ps * 0.40);
-    ctx.lineTo(-ps * 0.30, -ps * 0.40);
-    ctx.lineTo(-ps * 0.15, -ps * 0.18);
-    ctx.lineTo(0, -ps * 0.10);
-    ctx.lineTo(0, ps * 0.10);
-    ctx.lineTo(-ps * 0.15, ps * 0.18);
-    ctx.lineTo(-ps * 0.30, ps * 0.40);
-    ctx.lineTo(-ps * 0.55, ps * 0.40);
-    ctx.lineTo(-ps * 0.45, ps * 0.18);
-    ctx.lineTo(ps * 0.05, ps * 0.18);
-    ctx.closePath();
-    ctx.fill();
-    ctx.stroke();
-    ctx.restore();
+    drawPlaneSilhouette(ctx, px, yMid, 0.6, Math.PI / 2);
     // Live progress as elapsed° / total°.
     ctx.fillStyle = '#ffd698';
     ctx.font = '18px ui-monospace, Menlo, monospace';

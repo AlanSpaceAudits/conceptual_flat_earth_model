@@ -9500,3 +9500,62 @@ Format:
     distorted the curved AE arcs
     look on the map.
 - **Revert:** `git checkout v-s000625 -- .`
+
+## S627 — Equal Arc race panel: AE-scaled lane lengths + world plane art
+
+- **Date:** 2026-04-28
+- **Files changed:**
+  - `js/demos/flightRoutes.js`
+  - `js/render/flightRoutes.js`
+- **Change:**
+  - New `aeArcLengthOf(route)` helper
+    in `js/demos/flightRoutes.js`:
+    samples the great-circle arc at
+    192 points, projects each point
+    through `canonicalLatLongToDisc`,
+    and sums the consecutive chord
+    lengths in disc space. The
+    returned scalar is the AE-
+    projected arc length on the FE
+    disc — i.e. the same length the
+    user sees the curve trace on the
+    map.
+  - `FlightRaceTrack.lanes` now
+    carries `aeLength` per lane.
+    `drawRaceCanvas` uses the
+    AE-projected length (not central
+    angle) to compute pixel lengths,
+    so the south lane remains visibly
+    longer than the north lane —
+    matching the FE map's projection
+    distortion. `angle` still drives
+    the elapsed° / total° readout, so
+    both planes hit `Remaining: 0` at
+    the same `progress=1` instant.
+  - New `drawPlaneSilhouette(ctx, cx,
+    cy, scale, headingRad)` renders
+    the same silhouette
+    `makePlaneTexture` paints onto
+    the world-plane sprite — fuselage
+    with cockpit highlight, swept
+    main wings, tail wings, vertical
+    fin. Race lanes pass +π/2 so the
+    nose points down the lane;
+    replaces the placeholder triangle
+    icon. World map and race panel
+    now share the same plane art.
+- **Result:** Equal Arc demos display
+  two straight horizontal lanes whose
+  pixel lengths preserve the FE-map
+  visual length difference (south is
+  longer than north because AE
+  stretches arcs near the south
+  pole). Both planes ride
+  `FlightRoutesProgress` 0 → 1 in
+  lockstep, finishing the lane at the
+  same instant despite the visible
+  length difference — visual proof
+  that AE distortion is independent
+  of true central-angle traversal
+  time.
+- **Revert:** `git checkout v-s000626 -- .`

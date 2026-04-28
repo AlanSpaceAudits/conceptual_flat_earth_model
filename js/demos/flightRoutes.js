@@ -12,9 +12,31 @@ import { Ttxt, Tval, Tcall, Thold, Trepeat, Tpse } from './animation.js';
 const POST_LAND_PAUSE_MS = 4000;
 import {
   FLIGHT_ROUTES, FLIGHT_CITIES, cityById, centralAngleDeg,
+  greatCircleArc,
   formatHMS, formatHMSDelta, formatDmsPerHour,
 } from '../data/flightRoutes.js';
 import { FLIGHT_TRACKS } from '../data/flightTracks.js';
+import { canonicalLatLongToDisc } from '../core/canonical.js';
+
+// Pixel length of a route's great-circle arc as drawn on the
+// FE_RADIUS = 1 AE disc. Sample at 192 points and sum consecutive
+// chord lengths in disc space — preserves the AE projection's
+// per-route distortion so the side-panel race lanes can be scaled
+// to the same visual ratio the main map shows. Equal central angle
+// arcs at very different latitudes will return very different
+// values here.
+function aeArcLengthOf(route) {
+  const a = cityById(route.from), b = cityById(route.to);
+  const arc = greatCircleArc(a.lat, a.lon, b.lat, b.lon, 192);
+  let total = 0;
+  let prev = canonicalLatLongToDisc(arc[0].lat, arc[0].lon, 1);
+  for (let i = 1; i < arc.length; i++) {
+    const cur = canonicalLatLongToDisc(arc[i].lat, arc[i].lon, 1);
+    total += Math.hypot(cur[0] - prev[0], cur[1] - prev[1]);
+    prev = cur;
+  }
+  return total;
+}
 
 // Convert linear mph to central-angle deg/h. The KML carries air
 // speed in mph; this project displays everything in pure angle-and-
@@ -402,8 +424,18 @@ function constSpeedDemo({ name, southObj, southAngle, northObj, northLabel, spee
       FlightRaceTrack: {
         title: 'Equal Arc — straight-line race',
         lanes: [
-          { label: `SOUTH · ${southObj.label}`, angle: southAngle, color: '#ff8040' },
-          { label: `${northLabel} · ${northObj.label}`,  angle: northAngle, color: '#66c8ff' },
+          {
+            label: `SOUTH · ${southObj.label}`,
+            angle: southAngle,
+            aeLength: aeArcLengthOf(southObj),
+            color: '#ff8040',
+          },
+          {
+            label: `${northLabel} · ${northObj.label}`,
+            angle: northAngle,
+            aeLength: aeArcLengthOf(northObj),
+            color: '#66c8ff',
+          },
         ],
       },
     }),

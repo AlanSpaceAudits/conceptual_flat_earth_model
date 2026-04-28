@@ -84,6 +84,26 @@ export function centralAngleDeg(latA, lonA, latB, lonB) {
   return Math.acos(Math.max(-1, Math.min(1, dot))) * 180 / Math.PI;
 }
 
+// Format a duration (in seconds) as `HH:MM:SS`.
+export function formatHMS(sec) {
+  if (sec == null || !isFinite(sec)) return '—';
+  const total = Math.round(sec);
+  const h = Math.floor(total / 3600);
+  const m = Math.floor((total % 3600) / 60);
+  const s = total % 60;
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+}
+
+// Format a signed delta (in seconds) as `+M:SS` / `−M:SS`.
+export function formatHMSDelta(sec) {
+  if (sec == null || !isFinite(sec)) return '—';
+  const sign = sec < 0 ? '−' : '+';
+  const abs = Math.abs(Math.round(sec));
+  const m = Math.floor(abs / 60);
+  const s = abs % 60;
+  return `${sign}${m}:${String(s).padStart(2, '0')}`;
+}
+
 // Complementary half of the full great circle through (A, B): the
 // long way from B back to A, passing through −A and −B. Returns `n`
 // samples along that arc, including endpoints (B at i=0, A at i=n−1)

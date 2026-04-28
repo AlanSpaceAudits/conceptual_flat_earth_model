@@ -8630,3 +8630,70 @@ Format:
   direction); next serial wires it
   through to a playback renderer +
   HUD panel.
+
+## S606 — Flight Routes: HUD info box + QF27/28 actual-flight demos
+
+- **Date:** 2026-04-28
+- **Files changed:**
+  - `js/core/app.js`
+  - `js/render/flightRoutes.js`
+  - `js/data/flightRoutes.js`
+  - `js/demos/flightRoutes.js`
+- **Change:**
+  - New default state field
+    `FlightInfoBox: null | { title,
+    lines[] }` consumed by the
+    flight-routes renderer.
+  - `FlightRoutes._updateInfoBox`
+    creates / updates a fixed-position
+    HUD div (`#flight-info-box`,
+    top-left, orange-bordered) every
+    frame from the active state.
+    Lines starting with `~` render in
+    a muted italic so blank-data rows
+    read as "no data".
+  - Added `formatHMS` /
+    `formatHMSDelta` helpers in
+    `js/data/flightRoutes.js` for
+    actual-vs-predicted display.
+  - **Per-route demos** (the seven
+    schematic Southern Non-Stop legs
+    + the combined / central-angle /
+    constant-speed demos) now set
+    `FlightInfoBox` in their intros
+    with central angle + great-
+    circle distance, leaving
+    `Air speed` and `Ground speed`
+    rows blank (italic muted).
+  - **QF27/28 demos** added — one
+    per flight in
+    `js/data/flightTracks.js`
+    (4 total: QF28 2024-06-25,
+    QF27 2024-06-25, QF27 2024-06-26,
+    QF28 2024-06-26). Each demo:
+    - reuses the `'scl-syd'`
+      schematic great-circle visual,
+    - computes central angle / km / mi
+      from the first / last waypoint,
+    - reads `actualSec` /
+      `predictedSec` from the track
+      and renders `Actual time`,
+      `Predicted` (with `±M:SS`
+      delta),
+    - averages per-waypoint air speed
+      across the 241 decimated
+      waypoints,
+    - reports the
+      `great-circle ÷ actualSec`
+      ground speed in mph (the
+      "as-the-crow-flies" speed the
+      user asked for).
+  - Demo group order:
+    All / Central-angle / Const-speed,
+    then the four QF flights, then
+    the seven schematic per-route
+    entries. State restoration on
+    `Stop` clears `FlightInfoBox`
+    automatically via the existing
+    `_savedState` snapshot.
+- **Revert:** `git checkout v-s000604 -- .`

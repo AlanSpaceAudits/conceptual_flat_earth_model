@@ -179,6 +179,9 @@ function defaultState() {
     ShowFlightRoutes:        false,
     FlightRoutesSelected:    'all',
     FlightRoutesProgress:    1,
+    // HUD overlay populated by flight-routes demos. `null` = hide.
+    // Otherwise `{ title, lines: string[] }`.
+    FlightInfoBox:           null,
     ShowGPPath:              false,
     GPPathDays:              1,
     // GE-only inscribed/central-angle helpers. ShowCentralAngle

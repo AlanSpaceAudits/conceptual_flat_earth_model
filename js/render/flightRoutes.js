@@ -84,6 +84,40 @@ function makeLabelSprite(text) {
   return sp;
 }
 
+function ensureInfoBox() {
+  let el = document.getElementById('flight-info-box');
+  if (el) return el;
+  el = document.createElement('div');
+  el.id = 'flight-info-box';
+  el.style.cssText = [
+    'position: absolute',
+    'top: 88px',
+    'left: 16px',
+    'padding: 10px 14px',
+    'font: 12px/1.45 ui-monospace, Menlo, monospace',
+    'color: #ffd6a8',
+    'background: rgba(15, 19, 28, 0.94)',
+    'border: 1px solid rgba(255, 184, 90, 0.85)',
+    'border-radius: 4px',
+    'z-index: 30',
+    'min-width: 260px',
+    'max-width: 360px',
+    'pointer-events: none',
+    'white-space: pre-line',
+    'display: none',
+  ].join(';');
+  const styleTag = document.createElement('style');
+  styleTag.textContent = `
+    #flight-info-box .flight-info-title { color: #f4a640; font-weight: 700; margin-bottom: 6px; letter-spacing: 0.04em; }
+    #flight-info-box .flight-info-line  { color: #f4f6fa; }
+    #flight-info-box .flight-info-blank { color: #6a7385; font-style: italic; }
+  `;
+  document.head.appendChild(styleTag);
+  const view = document.getElementById('view') || document.body;
+  view.appendChild(el);
+  return el;
+}
+
 function makePlaneTexture() {
   const cv = document.createElement('canvas');
   cv.width = 96; cv.height = 96;
@@ -300,8 +334,30 @@ export class FlightRoutes {
     ];
   }
 
+  _updateInfoBox(state) {
+    const box = ensureInfoBox();
+    const info = state.FlightInfoBox;
+    if (!info || !info.lines) {
+      box.style.display = 'none';
+      return;
+    }
+    const lines = info.lines.map((l) => {
+      if (typeof l !== 'string') return '';
+      // Lines starting with '~' render in a muted italic so the user
+      // sees "no data" entries clearly. Otherwise normal styling.
+      if (l.startsWith('~')) {
+        return `<div class="flight-info-line flight-info-blank">${l.slice(1)}</div>`;
+      }
+      return `<div class="flight-info-line">${l}</div>`;
+    }).join('');
+    box.innerHTML =
+      `<div class="flight-info-title">${info.title || 'Flight'}</div>${lines}`;
+    box.style.display = '';
+  }
+
   update(model) {
     const s = model.state;
+    this._updateInfoBox(s);
     const on = !!s.ShowFlightRoutes;
     this.group.visible = on;
     if (!on) return;

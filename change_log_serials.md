@@ -7763,3 +7763,24 @@ Format:
     endpoint is the new `originDot` at the
     surface pole.
 - **Revert:** `git checkout v-s000575 -- .`
+
+## S577 — Centre observer respects surface horizon
+
+- **Date:** 2026-04-28
+- **Files changed:** `js/core/app.js`.
+- **Change:**
+  - Reverted the S574 below-horizon-pass-
+    through in `_globeOpticalProject`. The
+    centre-observer view now culls sub-
+    horizon bodies the same way a surface
+    observer at (`ObserverLat`,
+    `ObserverLong`) would — only objects
+    in the surface hemisphere render in the
+    optical vault, matching what the real-
+    location observer would actually see at
+    the current time. The camera can still
+    pitch below the horizontal plane (S574
+    pitch clamp kept) so the view can scan
+    the rendered hemisphere from any angle,
+    but no below-horizon objects appear.
+- **Revert:** `git checkout v-s000576 -- .`

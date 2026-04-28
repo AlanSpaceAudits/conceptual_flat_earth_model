@@ -8810,3 +8810,24 @@ Format:
     `Air Speed` / `Ground Speed`
     blanked.
 - **Revert:** `git checkout v-s000608 -- .`
+
+## S610 — Flight Routes: Depart / Destination lines carry lat / lon
+
+- **Date:** 2026-04-28
+- **Files changed:**
+  - `js/demos/flightRoutes.js`
+- **Change:**
+  - Schematic info box now reads
+    `Depart : <City>  (lat°, lon°)`
+    and the matching Destination
+    line. Coordinates pulled from the
+    `FLIGHT_CITIES` table.
+  - QF27/28 actual-flight info box
+    appends the first/last
+    waypoint's lat / lon (already
+    parsed from the KMZ) to the same
+    line so the user sees the city
+    plus its actual coordinates
+    without needing the old separate
+    lat / lon row.
+- **Revert:** `git checkout v-s000609 -- .`

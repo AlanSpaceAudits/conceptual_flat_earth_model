@@ -102,12 +102,14 @@ function sweepRoute(routeId) {
 function schematicInfoBox(route) {
   const a = cityById(route.from), b = cityById(route.to);
   const angle = centralAngleDeg(a.lat, a.lon, b.lat, b.lon);
+  const aCoord = `(${a.lat.toFixed(2)}°, ${a.lon.toFixed(2)}°)`;
+  const bCoord = `(${b.lat.toFixed(2)}°, ${b.lon.toFixed(2)}°)`;
   return {
     title: route.label,
     lines: [
       '~Takeoff             : (no flight data)',
-      `Depart              : ${a.name}`,
-      `Destination         : ${b.name}`,
+      `Depart              : ${a.name}  ${aCoord}`,
+      `Destination         : ${b.name}  ${bCoord}`,
       `Central Angle       : ${angle.toFixed(2)}°`,
       '~Air Time            : (no flight data)',
       '~Air Speed (avg)     : (no flight data)',
@@ -180,8 +182,8 @@ function qfFlightDemo(track) {
         title: `${track.flight} · ${track.date} · ${dir}`,
         lines: [
           'Takeoff             : N/A',
-          `Depart              : ${depart}`,
-          `Destination         : ${dest}`,
+          `Depart              : ${depart}  (${startWp.lat.toFixed(2)}°, ${startWp.lon.toFixed(2)}°)`,
+          `Destination         : ${dest}  (${endWp.lat.toFixed(2)}°, ${endWp.lon.toFixed(2)}°)`,
           `Central Angle       : ${angle.toFixed(2)}°`,
           `Air Time            : ${formatHMS(actualSec)}`,
           `Air Speed (avg)     : ${formatDmsPerHour(aspAvgDegPerH)}`,

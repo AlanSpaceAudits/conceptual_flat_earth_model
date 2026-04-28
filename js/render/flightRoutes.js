@@ -763,7 +763,11 @@ export class FlightRoutes {
       line.visible = show;
       plane.visible = show && progress > 0 && progress < 1;
       compLine.visible = show;
-      angleLine.visible = show;
+      // `HideFlightCentralAngle` suppresses the endpoint→origin legs
+      // even on selected routes — Equal Arc demos use this so the
+      // side-by-side race lanes carry the central-angle story
+      // exclusively.
+      angleLine.visible = show && !s.HideFlightCentralAngle;
       if (!show) continue;
       // Central-angle legs — Depart → centre and Arrival → centre.
       // World origin is the AE pole in FE and the globe centre in GE.

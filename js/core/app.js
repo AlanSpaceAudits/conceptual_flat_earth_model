@@ -184,6 +184,11 @@ function defaultState() {
     ShowFlightRoutes:        false,
     FlightRoutesSelected:    'all',
     FlightRoutesProgress:    1,
+    // Per-demo override that suppresses the cyan endpoint→origin
+    // central-angle legs even when a route is selected. Used by the
+    // Equal Arc demos so the side-by-side race lanes own the screen
+    // without the centre-pointing legs cluttering the disc / globe.
+    HideFlightCentralAngle:  false,
     // HUD overlay populated by flight-routes demos. `null` = hide.
     // Otherwise `{ title, lines: string[] }`.
     FlightInfoBox:           null,

@@ -9632,3 +9632,35 @@ Format:
     tracker info popup all step
     out of the way for the demo.
 - **Revert:** `git checkout v-s000628 -- .`
+
+## S630 — Equal Arc demos: hide central-angle inner legs
+
+- **Date:** 2026-04-28
+- **Files changed:**
+  - `js/core/app.js`
+  - `js/render/flightRoutes.js`
+  - `js/demos/flightRoutes.js`
+- **Change:**
+  - New default state field
+    `HideFlightCentralAngle: false`.
+    When `true` the FlightRoutes
+    renderer suppresses every
+    selected route's endpoint→origin
+    cyan leg (the central-angle
+    inner lines). Default false so
+    other demos keep showing the
+    legs.
+  - Both Equal Arc demos
+    (`Equal Arc (mirror)` and
+    `Equal Arc`) set
+    `HideFlightCentralAngle: true`
+    in their `baseIntro`. The
+    side-by-side race panel already
+    carries the central-angle
+    story; the inner legs were just
+    cluttering the disc / globe.
+  - Applies in both FE and GE since
+    the renderer flag short-circuits
+    the visibility branch before
+    the projection split.
+- **Revert:** `git checkout v-s000629 -- .`

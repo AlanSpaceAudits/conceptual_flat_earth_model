@@ -412,6 +412,9 @@ function constSpeedDemo({ name, southObj, southAngle, northObj, northLabel, spee
     intro: baseIntro({
       FlightRoutesSelected: [southObj.id, northObj.id],
       FlightRoutesProgress: 0,
+      // Hide the cyan endpoint→origin legs — the Equal Arc story is
+      // told by the side-by-side race lanes, not the inner legs.
+      HideFlightCentralAngle: true,
       FlightInfoBox: [
         constSpeedBox(southObj, southAngle, speedDegPerH, 'SOUTH'),
         constSpeedBox(northObj, northAngle, speedDegPerH, northLabel),

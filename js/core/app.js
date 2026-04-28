@@ -483,17 +483,11 @@ export class FeModel extends EventTarget {
     c.TransMatLocalFeToGlobalFe = compTransMatLocalFeToGlobalFe(
       c.ObserverFeCoord, s.ObserverLong,
     );
-    // FE fictitious observer: park ObserverFeCoord at the disc
-    // centre regardless of the user's lat / lon. The lat / lon
-    // still drives the optical-vault tilt (TransMatLocalFeToGlobalFe
-    // recomputed at origin) and the orange anchor dot's surface
-    // position.
-    if (s.ObserverAtCenter && s.WorldModel !== 'ge') {
-      c.ObserverFeCoord = [0, 0, 0];
-      c.TransMatLocalFeToGlobalFe = compTransMatLocalFeToGlobalFe(
-        c.ObserverFeCoord, s.ObserverLong,
-      );
-    }
+    // ObserverAtCenter teleports the camera to the world origin via
+    // scene.js but keeps ObserverFeCoord / GlobeObserverCoord at the
+    // surface lat / lon — the optical vault therefore stays anchored
+    // to the surface position, and dragging the orange dot drags the
+    // vault with it so the centre observer can watch projections shift.
 
     // Globe-Earth observer placement: a unit sphere of radius
     // GLOBE_RADIUS (matching FE_RADIUS so the camera scale is stable).
@@ -525,12 +519,11 @@ export class FeModel extends EventTarget {
         eastX:  -so,      eastY:   co,      eastZ:   0,
         upX:     cl * co, upY:     cl * so, upZ:     sl,
       };
-      // Coord: surface position normally; world origin when the
-      // user has clicked the orange dot to enter the centre-
-      // observer view in GE mode.
-      c.GlobeObserverCoord = (s.ObserverAtCenter && s.WorldModel === 'ge')
-        ? [0, 0, 0]
-        : [px, py, pz];
+      // Coord: always the surface position. ObserverAtCenter pulls
+      // the camera (not this anchor) to the world origin via
+      // scene.js, leaving the optical vault attached to the surface
+      // so it slides under the dragged orange dot.
+      c.GlobeObserverCoord = [px, py, pz];
       // Celestial sphere expanded to 2·GLOBE_RADIUS so its surface
       // grazes the apex of the observer's optical dome (the dome
       // sits tangent at the observer with radius FE_RADIUS, so its

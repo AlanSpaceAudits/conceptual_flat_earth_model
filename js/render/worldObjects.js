@@ -742,9 +742,14 @@ export class WorldGlobe {
     // axis-line endpoint is a separate top-level dot rendered at
     // (lat 90°, lon 0°) of whichever projection is active.
     if (this.center) {
+      // Hide the inner centre dot while the camera is parked at the
+      // globe centre in Optical view — the marker would otherwise
+      // dominate the foreground at the camera's eye.
+      const camAtOrigin = !!model.state.ObserverAtCenter && !!model.state.InsideVault;
       this.center.visible = !!model.state.ShowAxisLine
         && !!model.state.ObserverAtCenter
-        && model.state.WorldModel === 'ge';
+        && model.state.WorldModel === 'ge'
+        && !camAtOrigin;
     }
     const c = model && model.computed;
     const u = this.sphere.material.uniforms;

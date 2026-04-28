@@ -106,6 +106,11 @@ export class SceneManager {
     const c = this.model.computed;
     const ge = s.WorldModel === 'ge';
     const obs = ge ? (c.GlobeObserverCoord || c.ObserverFeCoord) : c.ObserverFeCoord;
+    // ObserverAtCenter drops the camera to the world origin while
+    // leaving `obs` (the optical-vault anchor) at the surface lat /
+    // lon. Camera math uses `camObs`; vault placement still uses
+    // `obs` everywhere else.
+    const camObs = s.ObserverAtCenter ? [0, 0, 0] : obs;
     // Disc clip plane is FE-specific (cuts world z < 0 to hide
     // anything beneath the FE disc). GE has no flat ground plane, so
     // toggle clipping off — sub-horizon bodies, the lower half of
@@ -185,25 +190,25 @@ export class SceneManager {
       const elev = ge ? 0 : Math.max(0, Math.min(0.5, s.ObserverElevation || 0));
       const lift = eyeH + elev;
       this.camera.position.set(
-        obs[0] + lift * upX,
-        obs[1] + lift * upY,
-        obs[2] + lift * upZ,
+        camObs[0] + lift * upX,
+        camObs[1] + lift * upY,
+        camObs[2] + lift * upZ,
       );
 
       const h = ToRad(s.ObserverHeading || 0);
       const fx = Math.cos(h) * northX + Math.sin(h) * eastX;
       const fy = Math.cos(h) * northY + Math.sin(h) * eastY;
       const fz = Math.cos(h) * northZ + Math.sin(h) * eastZ;
-      // At the globe centre the fictitious observer has no horizon
+      // At the centre the fictitious observer has no horizon
       // obstruction — allow negative pitch so they can look down
-      // and track southern-hemi stars too.
-      const pitchMin = (ge && s.ObserverAtCenter) ? -89 : 0;
+      // and track southern-hemi bodies too.
+      const pitchMin = s.ObserverAtCenter ? -89 : 0;
       const pitch = ToRad(Math.max(pitchMin, Math.min(90, s.CameraHeight || 0)));
       const cP = Math.cos(pitch), sP = Math.sin(pitch);
       const pd = 2;
-      const tx = obs[0] + eyeH * upX + (cP * fx + sP * upX) * pd;
-      const ty = obs[1] + eyeH * upY + (cP * fy + sP * upY) * pd;
-      const tz = obs[2] + eyeH * upZ + (cP * fz + sP * upZ) * pd;
+      const tx = camObs[0] + eyeH * upX + (cP * fx + sP * upX) * pd;
+      const ty = camObs[1] + eyeH * upY + (cP * fy + sP * upY) * pd;
+      const tz = camObs[2] + eyeH * upZ + (cP * fz + sP * upZ) * pd;
       this.camera.up.set(upX, upY, upZ);
       this.camera.lookAt(tx, ty, tz);
       return;
@@ -249,8 +254,8 @@ export class SceneManager {
       // In InsideVault, orbit the observer so the optical-vault dome
       // stays in frame; in Heavenly, orbit the disc origin.
       if (s.InsideVault) {
-        this.camera.position.set(obs[0] + x, obs[1] + y, obs[2] + z);
-        this.camera.lookAt(obs[0], obs[1], obs[2]);
+        this.camera.position.set(camObs[0] + x, camObs[1] + y, camObs[2] + z);
+        this.camera.lookAt(camObs[0], camObs[1], camObs[2]);
       } else {
         this.camera.lookAt(0, 0, 0);
       }
@@ -259,9 +264,9 @@ export class SceneManager {
 
     const domeH = s.VaultHeight;
     const zoomParam = Math.max(0, Math.min(1, (s.Zoom - 1) / (10 - 1)));
-    const tx = obs[0] + (0 - obs[0]) * zoomParam;
-    const ty = obs[1] + (0 - obs[1]) * zoomParam;
-    const tz = obs[2] + (domeH * 0.5 - obs[2]) * zoomParam;
+    const tx = camObs[0] + (0 - camObs[0]) * zoomParam;
+    const ty = camObs[1] + (0 - camObs[1]) * zoomParam;
+    const tz = camObs[2] + (domeH * 0.5 - camObs[2]) * zoomParam;
     this.camera.lookAt(tx, ty, tz);
   }
 

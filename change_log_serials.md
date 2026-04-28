@@ -8051,3 +8051,51 @@ Format:
   - Hover tooltip text updated to
     "Click to swap · hold + drag to move".
 - **Revert:** `git checkout v-s000587 -- .`
+
+## S589 — Centre observer: optical vault stays at surface
+
+- **Date:** 2026-04-28
+- **Files changed:**
+  - `js/core/app.js`
+  - `js/render/scene.js`
+  - `js/render/index.js`
+  - `js/render/worldObjects.js`
+- **Change:**
+  - Removed the `ObserverAtCenter` (0, 0, 0)
+    overrides on `c.GlobeObserverCoord`
+    and `c.ObserverFeCoord` in
+    `app.update`. Both anchors stay at
+    the live surface lat / lon, so the
+    optical vault and every downstream
+    body projection follow the surface
+    position.
+  - In `scene.js` the camera now reads
+    a separate `camObs` vector
+    (`= [0, 0, 0]` when
+    `ObserverAtCenter`, else `obs`)
+    while the optical-vault frame still
+    comes from the surface lat / lon.
+    All four camera branches
+    (Optical, FreeCameraMode, FreeCam
+    follow, Heavenly orbit) use
+    `camObs` for position / look-at.
+  - Pitch-min relaxation
+    (`-89` for `ObserverAtCenter`)
+    now applies in both FE and GE,
+    not just GE.
+  - `index.js` hides the world-origin
+    orange dot whenever the camera is
+    parked there (Optical view +
+    `ObserverAtCenter`); same hide for
+    `WorldGlobe.center` in
+    `worldObjects.js`. Avoids a
+    foreground blob right at the eye.
+- **Result:** Single-clicking the orange dot
+  TPs the camera to the disc / globe
+  centre while the optical vault stays
+  at the surface lat / lon. Hold + drag
+  on the dot moves the surface position,
+  and the vault slides with it so the
+  centre observer can watch projected
+  bodies shift across the dome.
+- **Revert:** `git checkout v-s000588 -- .`

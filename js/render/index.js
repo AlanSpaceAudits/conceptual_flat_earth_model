@@ -701,7 +701,11 @@ export class Renderer {
     // sphere). Clicking it enters the at-centre observer state in
     // GE, or jumps to (90°, 0°) in FE.
     if (this.originDot) {
-      this.originDot.visible = !!s.ShowAxisLine;
+      // Hide the world-origin marker while the camera is sitting on
+      // it (Optical view + ObserverAtCenter); otherwise it fills the
+      // foreground at near-zero distance.
+      const camAtOrigin = !!s.ObserverAtCenter && !!s.InsideVault;
+      this.originDot.visible = !!s.ShowAxisLine && !camAtOrigin;
       if (this.originDot.visible) {
         this.originDot.position.set(0, 0, 0);
       }

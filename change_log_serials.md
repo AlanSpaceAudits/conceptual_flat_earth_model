@@ -7527,3 +7527,33 @@ Format:
     a grid (2 rows, 2-px gap) with
     matching button sizing.
 - **Revert:** `git checkout v-s000568 -- .`
+
+## S570 — Origin-dot click teleport + GE→FE snap to AE pole
+
+- **Date:** 2026-04-28
+- **Files changed:** `js/main.js`,
+  `js/ui/mouseHandler.js`,
+  `js/core/app.js`.
+- **Change:**
+  - **Origin-dot click teleport.**
+    `attachMouseHandler` now takes an
+    optional `renderer` arg so the
+    `pointerup` handler can access
+    `sm.camera`. When `ShowAxisLine` is on
+    and the user clicks within 22 px of
+    world (0, 0, 0)'s screen-space
+    projection, the observer snaps to
+    (lat 90°, lon 0°) and any
+    `FollowTarget` / `FreeCam` is cleared.
+    Works in both FE (origin = AE pole at
+    disc centre) and GE (origin = globe
+    centre, observer hops to the pole).
+  - **GE → FE auto-pole snap.** The
+    WorldModel watchdog in `app.update()`
+    now detects `ge → fe` transitions and
+    forces `ObserverLat: 90, ObserverLong:
+    0`. Avoids carrying a southern-
+    hemisphere negative-latitude position
+    onto the FE disc where it'd map to a
+    rim point with no obvious orientation.
+- **Revert:** `git checkout v-s000569 -- .`

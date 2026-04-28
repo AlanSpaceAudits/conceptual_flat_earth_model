@@ -58,7 +58,7 @@ try {
   renderer.loadLand().catch((err) => {
     console.warn('Failed to load land data:', err);
   });
-  attachMouseHandler(canvas, model);
+  attachMouseHandler(canvas, model, renderer);
   attachKeyboardHandler(model);
 } catch (err) {
   console.error('WebGL unavailable — 3D view disabled:', err);

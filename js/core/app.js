@@ -420,6 +420,13 @@ export class FeModel extends EventTarget {
       s.SunMonthMarkersOpp = [];
       s.EclipseMapSolar = [];
       s.EclipseMapLunar = [];
+      // GE → FE: snap observer to the AE pole (lat 90°, lon 0°)
+      // so the FE projection doesn't inherit a southern-hemisphere
+      // negative-latitude position that maps awkwardly on the disc.
+      if (this._lastWorldModel === 'ge' && s.WorldModel !== 'ge') {
+        s.ObserverLat = 90;
+        s.ObserverLong = 0;
+      }
     }
     this._lastWorldModel = s.WorldModel;
 

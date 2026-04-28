@@ -308,7 +308,7 @@ function ensureHoverTooltip() {
   return el;
 }
 
-export function attachMouseHandler(canvas, model) {
+export function attachMouseHandler(canvas, model, renderer = null) {
   let dragging = false;
   let lastX = 0, lastY = 0;
   let downX = 0, downY = 0;
@@ -338,6 +338,22 @@ export function attachMouseHandler(canvas, model) {
     dragging = false;
     try { canvas.releasePointerCapture(e.pointerId); } catch {}
     if (!wasClick) return;
+    // Origin-dot click: when the axis line is on and the user
+    // clicks the orange dot at world origin, teleport observer to
+    // (lat 90°, lon 0°) — the AE pole / globe-north position.
+    if (model.state.ShowAxisLine && renderer && renderer.sm && renderer.sm.camera) {
+      const pt = projectToCanvasPixels([0, 0, 0], renderer.sm.camera, canvas);
+      if (pt) {
+        const d = Math.hypot(pt.x - e.offsetX, pt.y - e.offsetY);
+        if (d < 22) {
+          model.setState({
+            ObserverLat: 90, ObserverLong: 0,
+            FollowTarget: null, FreeCamActive: false,
+          });
+          return;
+        }
+      }
+    }
     // Prefer the hovered hit (the body whose tooltip is currently
     // shown) over a fresh nearest-search — the user clicked the info
     // box they could see, even if another body is slightly nearer

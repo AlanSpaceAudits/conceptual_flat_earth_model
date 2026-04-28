@@ -506,26 +506,23 @@ export class FeModel extends EventTarget {
       //   up    = ( cl*co,  cl*so,  sl)   radial outward
       //   north = (-sl*co, -sl*so,  cl)   along ∂/∂lat
       //   east  = (-so,     co,     0 )   along ∂/∂lon at the equator
-      if (s.ObserverAtCenter && s.WorldModel === 'ge') {
-        // Fictitious observer at the globe's centre — optical vault
-        // hemisphere centres at world origin and coincides with the
-        // upper hemisphere of the terrestrial globe at radius
-        // GLOBE_RADIUS. Local frame is world-aligned (up = +z,
-        // north = +x, east = +y).
-        c.GlobeObserverCoord = [0, 0, 0];
-        c.GlobeObserverFrame = {
-          northX: 1, northY: 0, northZ: 0,
-          eastX:  0, eastY: 1, eastZ:  0,
-          upX:    0, upY:   0, upZ:    1,
-        };
-      } else {
-        c.GlobeObserverCoord = [px, py, pz];
-        c.GlobeObserverFrame = {
-          northX: -sl * co, northY: -sl * so, northZ:  cl,
-          eastX:  -so,      eastY:   co,      eastZ:   0,
-          upX:     cl * co, upY:     cl * so, upZ:     sl,
-        };
-      }
+      // Local frame is always computed from the surface lat/lon —
+      // even when the observer is fictitiously placed at the globe
+      // centre, the optical vault keeps its surface tilt so the
+      // hemisphere "wraps inside" the globe in the same orientation
+      // it would have on the surface (zenith aligned with the GP's
+      // radial direction).
+      c.GlobeObserverFrame = {
+        northX: -sl * co, northY: -sl * so, northZ:  cl,
+        eastX:  -so,      eastY:   co,      eastZ:   0,
+        upX:     cl * co, upY:     cl * so, upZ:     sl,
+      };
+      // Coord: surface position normally; world origin when the
+      // user has clicked the orange dot to enter the centre-
+      // observer view in GE mode.
+      c.GlobeObserverCoord = (s.ObserverAtCenter && s.WorldModel === 'ge')
+        ? [0, 0, 0]
+        : [px, py, pz];
       // Celestial sphere expanded to 2·GLOBE_RADIUS so its surface
       // grazes the apex of the observer's optical dome (the dome
       // sits tangent at the observer with radius FE_RADIUS, so its

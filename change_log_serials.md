@@ -7645,3 +7645,27 @@ Format:
     surface lat/lon to `LastObserver*` if
     the GE observer wasn't at centre.
 - **Revert:** `git checkout v-s000571 -- .`
+
+## S573 — Globe-centre observer keeps surface frame tilt
+
+- **Date:** 2026-04-28
+- **Files changed:** `js/core/app.js`.
+- **Change:**
+  - At-centre override now only swaps
+    `c.GlobeObserverCoord` to world origin
+    while leaving `c.GlobeObserverFrame`
+    computed from the surface
+    `ObserverLat`/`ObserverLong` exactly
+    as it would be if the observer were
+    standing on the sphere. The optical-
+    vault hemisphere therefore tilts to
+    match the surface position's zenith
+    direction even when geometrically
+    nested inside the globe — the
+    fictitious centre observer keeps the
+    same wrap orientation a surface
+    observer at that lat/lon would have.
+  - Was: world-aligned identity frame
+    (`up=+z, north=+x, east=+y`) regardless
+    of where the user came from.
+- **Revert:** `git checkout v-s000572 -- .`

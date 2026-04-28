@@ -859,6 +859,29 @@ export class DiscBase {
 // the year: at summer solstice the sun's GP sits on the Tropic of Cancer,
 // at winter solstice on the Tropic of Capricorn; the moon's GP oscillates
 // around a similar band offset by the lunar node precession.
+function makeCharSprite(ch, hexColor) {
+  const cv = document.createElement('canvas');
+  cv.width = 64; cv.height = 64;
+  const ctx = cv.getContext('2d');
+  ctx.font = 'bold 44px ui-monospace, Menlo, monospace';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = hexColor;
+  ctx.shadowColor = 'rgba(0, 0, 0, 0.85)';
+  ctx.shadowBlur = 6;
+  ctx.fillText(ch, 32, 32);
+  const tex = new THREE.CanvasTexture(cv);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.needsUpdate = true;
+  const mat = new THREE.SpriteMaterial({
+    map: tex, transparent: true,
+    depthTest: false, depthWrite: false,
+  });
+  const sp = new THREE.Sprite(mat);
+  sp.renderOrder = 31;
+  return sp;
+}
+
 export class LatitudeLines {
   constructor(feRadius = FE_RADIUS) {
     this.group = new THREE.Group();
@@ -876,6 +899,7 @@ export class LatitudeLines {
       { lat: -66.5636, color: 0x66ccff, label: 'Antarctic Circle',  kind: 'polar', flag: 'ShowPolarCircles'    },
     ];
     this._lines = [];
+    this._labelGroups = [];
     for (const c of this._circles) {
       const geo = new THREE.BufferGeometry();
       const mat = new THREE.LineBasicMaterial({
@@ -888,6 +912,30 @@ export class LatitudeLines {
       line.name = c.label;
       this.group.add(line);
       this._lines.push(line);
+      // Per-character sprites laid along each named ring's arc.
+      // Each sprite carries its `charLat` / `charLon` in `userData`
+      // so `_rebuild` can reposition the row when projection
+      // changes. Polar rings get no labels (they read fine without).
+      const lg = new THREE.Group();
+      lg.name = `label-${c.label}`;
+      lg.visible = false;
+      if (c.kind === 'tropic') {
+        const text = c.label.toUpperCase();
+        const charSize = 0.028;
+        const charDegSpacing = 4.5;
+        const colorHex = '#' + c.color.toString(16).padStart(6, '0');
+        const span = text.length * charDegSpacing;
+        const startLon = -span / 2;
+        for (let i = 0; i < text.length; i++) {
+          const sp = makeCharSprite(text[i], colorHex);
+          sp.scale.set(charSize, charSize, 1);
+          sp.userData.charLon = startLon + (i + 0.5) * charDegSpacing;
+          sp.userData.charLat = c.lat;
+          lg.add(sp);
+        }
+      }
+      this._labelGroups.push(lg);
+      this.group.add(lg);
     }
     this._lastProj = null;
     this._rebuild();
@@ -926,6 +974,32 @@ export class LatitudeLines {
       const m = line.material;
       const wantDT = ge;
       if (m.depthTest !== wantDT) { m.depthTest = wantDT; m.needsUpdate = true; }
+      // Reposition each label sprite along the arc.
+      const lg = this._labelGroups[i];
+      if (lg) {
+        for (const sp of lg.children) {
+          const cLat = sp.userData.charLat;
+          const cLon = sp.userData.charLon;
+          if (ge) {
+            const phi = cLat * Math.PI / 180;
+            const lam = cLon * Math.PI / 180;
+            const cp = Math.cos(phi);
+            const r = Rge * 1.005;
+            sp.position.set(
+              r * cp * Math.cos(lam),
+              r * cp * Math.sin(lam),
+              r * Math.sin(phi),
+            );
+            const matSp = sp.material;
+            if (matSp.depthTest !== true) { matSp.depthTest = true; matSp.needsUpdate = true; }
+          } else {
+            const p = canonicalLatLongToDisc(cLat, cLon, feRadius);
+            sp.position.set(p[0], p[1], 1.5e-3);
+            const matSp = sp.material;
+            if (matSp.depthTest !== false) { matSp.depthTest = false; matSp.needsUpdate = true; }
+          }
+        }
+      }
     }
   }
   update(model) {
@@ -935,6 +1009,8 @@ export class LatitudeLines {
       const c = this._circles[i];
       const on = !!s[c.flag];
       this._lines[i].visible = on;
+      const lg = this._labelGroups[i];
+      if (lg) lg.visible = on;
       if (on) anyOn = true;
     }
     this.group.visible = anyOn;

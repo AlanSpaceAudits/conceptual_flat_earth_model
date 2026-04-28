@@ -9364,3 +9364,51 @@ Format:
     write the three new flags
     instead of `ShowTropics`.
 - **Revert:** `git checkout v-s000622 -- .`
+
+## S624 — Tropics: curved per-character labels along each ring's arc
+
+- **Date:** 2026-04-28
+- **Files changed:**
+  - `js/render/worldObjects.js`
+- **Change:**
+  - New `makeCharSprite(ch, hexColor)`
+    helper renders a single character
+    onto a 64 × 64 canvas (bold mono,
+    drop-shadow for legibility) and
+    wraps it in a `THREE.Sprite`.
+  - `LatitudeLines` constructor now
+    builds a `_labelGroups` parallel
+    to `_lines`. Each tropic / equator
+    ring gets `text.length` character
+    sprites; each carries
+    `userData.charLat` /
+    `charLon` so the row lays out
+    along the ring's arc (4.5° of
+    longitude per character, label
+    centred at lon = 0). Polar /
+    antarctic rings stay unlabelled.
+  - `_rebuild` repositions every
+    sprite per projection — FE drops
+    the row onto the AE disc plane
+    via `canonicalLatLongToDisc`; GE
+    lifts each character to the
+    sphere surface at
+    `1.005 × FE_RADIUS` and toggles
+    `depthTest: true` so the back-
+    hemisphere row is occluded by
+    the globe.
+  - `update` syncs each label group's
+    visibility to its ring's flag, so
+    toggling Tropic of Cancer flips
+    the line + the labelled "TROPIC
+    OF CANCER" text together.
+- **Result:** Each named ring (Cancer /
+  Equator / Capricorn) carries a
+  yellow / red / yellow row of
+  characters that traces the arc on
+  both projections. Curvature is
+  achieved by per-character placement
+  along the lat circle — sprites stay
+  upright (billboarded to camera) so
+  every character reads cleanly.
+- **Revert:** `git checkout v-s000623 -- .`

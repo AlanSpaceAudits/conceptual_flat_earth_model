@@ -9559,3 +9559,41 @@ Format:
   of true central-angle traversal
   time.
 - **Revert:** `git checkout v-s000626 -- .`
+
+## S628 — Flight Routes: bigger race panel + bigger world planes
+
+- **Date:** 2026-04-28
+- **Files changed:**
+  - `js/render/flightRoutes.js`
+- **Change:**
+  - **Race panel sized up:**
+    - Container `min-width 420 →
+      620 px`.
+    - Backing canvas
+      `800 × 420 → 1100 × 560`,
+      CSS-displayed at
+      `600 × 305 px` (was
+      `400 × 210`).
+    - Header padding doubled and
+      title font bumped
+      `14 → 18 px`.
+    - Inside the canvas: lane
+      label
+      `22 → 30 px`, total-arc /
+      live-progress readouts
+      `18 → 24 px`, baseline
+      stroke `3 → 4 px`, swept
+      stroke `5 → 7 px`, marker
+      dots `10 → 14 px` radius,
+      plane silhouette scale
+      `0.6 → 1.0`. Padding
+      adjusted (`130/60 →
+      180/70`) to keep margins
+      proportional.
+  - **World planes**:
+    `PLANE_WORLD 0.034 → 0.058`
+    so the planes flying along
+    the route arcs read at a
+    similar visual size to the
+    new race-panel silhouette.
+- **Revert:** `git checkout v-s000627 -- .`

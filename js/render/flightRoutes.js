@@ -45,7 +45,7 @@ const LABEL_CANVAS_W = 360;
 const LABEL_CANVAS_H = 80;
 const LABEL_WORLD_H  = 0.052;
 const LABEL_WORLD_W  = LABEL_WORLD_H * (LABEL_CANVAS_W / LABEL_CANVAS_H);
-const PLANE_WORLD    = 0.034;
+const PLANE_WORLD    = 0.058;
 
 function makeLabelSprite(text) {
   const cv = document.createElement('canvas');
@@ -197,23 +197,23 @@ function ensureRacePanel() {
     'border: 1px solid rgba(255, 184, 90, 0.85)',
     'border-radius: 8px',
     'z-index: 30',
-    'min-width: 420px',
+    'min-width: 620px',
     'pointer-events: none',
     'box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35)',
     'display: none',
   ].join(';');
   el.innerHTML = `
     <div class="fr-header" style="
-      padding: 6px 12px;
+      padding: 10px 16px;
       background: rgba(255, 154, 60, 0.10);
       border-bottom: 1px solid rgba(255, 184, 90, 0.30);
       border-radius: 8px 8px 0 0;
       color: #f4a640;
-      font: 700 14px/1.45 ui-monospace, Menlo, monospace;
+      font: 700 18px/1.45 ui-monospace, Menlo, monospace;
       letter-spacing: 0.04em;
     "></div>
-    <canvas class="fr-canvas" width="800" height="420"
-      style="width: 400px; height: 210px; display: block; image-rendering: pixelated; padding: 12px;"></canvas>
+    <canvas class="fr-canvas" width="1100" height="560"
+      style="width: 600px; height: 305px; display: block; image-rendering: pixelated; padding: 16px;"></canvas>
   `;
   const view = document.getElementById('view') || document.body;
   view.appendChild(el);
@@ -256,14 +256,14 @@ function drawPlaneSilhouette(ctx, cx, cy, scale, headingRad = 0) {
 }
 
 function drawRaceCanvas(ctx, info, progress) {
-  const W = 800, H = 420;
+  const W = 1100, H = 560;
   ctx.clearRect(0, 0, W, H);
   const lanes = info.lanes || [];
   if (!lanes.length) return;
-  const padL = 130;
-  const padR = 130;
-  const padTopY = 60;
-  const padBottomY = 60;
+  const padL = 180;
+  const padR = 180;
+  const padTopY = 70;
+  const padBottomY = 70;
   const trackPxMax = W - padL - padR;
   const laneSpan = (H - padTopY - padBottomY) / Math.max(1, lanes.length);
   // Track lengths scale with each lane's AE-projected arc length so
@@ -280,16 +280,16 @@ function drawRaceCanvas(ctx, info, progress) {
     const yMid = padTopY + laneSpan * (i + 0.5);
     // Lane label.
     ctx.fillStyle = lane.color || '#ffd6a8';
-    ctx.font = 'bold 22px ui-monospace, Menlo, monospace';
+    ctx.font = 'bold 30px ui-monospace, Menlo, monospace';
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
-    ctx.fillText(lane.label || '', 16, yMid - 38);
+    ctx.fillText(lane.label || '', 20, yMid - 56);
     ctx.fillStyle = '#9aa3b3';
-    ctx.font = '18px ui-monospace, Menlo, monospace';
-    ctx.fillText(`${lane.angle.toFixed(2)}°`, 16, yMid + 28);
+    ctx.font = '24px ui-monospace, Menlo, monospace';
+    ctx.fillText(`${lane.angle.toFixed(2)}°`, 20, yMid + 42);
     // Track baseline.
     ctx.strokeStyle = '#7a8499';
-    ctx.lineWidth = 3;
+    ctx.lineWidth = 4;
     ctx.beginPath();
     ctx.moveTo(padL, yMid);
     ctx.lineTo(padL + lenPx, yMid);
@@ -297,7 +297,7 @@ function drawRaceCanvas(ctx, info, progress) {
     // Already-traversed segment in accent.
     const swept = lenPx * Math.max(0, Math.min(1, progress));
     ctx.strokeStyle = lane.color || '#ff8040';
-    ctx.lineWidth = 5;
+    ctx.lineWidth = 7;
     ctx.beginPath();
     ctx.moveTo(padL, yMid);
     ctx.lineTo(padL + swept, yMid);
@@ -305,23 +305,23 @@ function drawRaceCanvas(ctx, info, progress) {
     // Start / end markers.
     ctx.fillStyle = lane.color || '#ff8040';
     ctx.beginPath();
-    ctx.arc(padL, yMid, 10, 0, 2 * Math.PI);
+    ctx.arc(padL, yMid, 14, 0, 2 * Math.PI);
     ctx.fill();
     ctx.beginPath();
-    ctx.arc(padL + lenPx, yMid, 10, 0, 2 * Math.PI);
+    ctx.arc(padL + lenPx, yMid, 14, 0, 2 * Math.PI);
     ctx.fill();
     // World-plane silhouette riding the swept tip — same shape as
     // the planes flying around the FE map (`makePlaneTexture`),
     // rotated +π/2 so the nose points along the lane.
     const px = padL + swept;
-    drawPlaneSilhouette(ctx, px, yMid, 0.6, Math.PI / 2);
+    drawPlaneSilhouette(ctx, px, yMid, 1.0, Math.PI / 2);
     // Live progress as elapsed° / total°.
     ctx.fillStyle = '#ffd698';
-    ctx.font = '18px ui-monospace, Menlo, monospace';
+    ctx.font = '24px ui-monospace, Menlo, monospace';
     ctx.textAlign = 'right';
     ctx.fillText(
       `${(lane.angle * progress).toFixed(2)}° / ${lane.angle.toFixed(2)}°`,
-      W - 16, yMid + 28,
+      W - 20, yMid + 42,
     );
     ctx.textAlign = 'left';
   }

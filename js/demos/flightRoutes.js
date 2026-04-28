@@ -486,7 +486,7 @@ function constSpeedDemo({ name, southObj, southAngle, northObj, northLabel, spee
 }
 
 const CONST_SPEED_MIRROR_DEMO = constSpeedDemo({
-  name: 'Equal Arc (mirror)',
+  name: 'Equal Arc Flight (N/S) (Mirror lat)',
   southObj: MIRROR_SOUTH_OBJ,
   southAngle: MIRROR_SOUTH_ANGLE,
   northObj: NORTH_MIRROR_OBJ,
@@ -494,7 +494,7 @@ const CONST_SPEED_MIRROR_DEMO = constSpeedDemo({
   speedDegPerH: MIRROR_SPEED_DEG_PER_HR,
 });
 const CONST_SPEED_CROSS_DEMO = constSpeedDemo({
-  name: 'Equal Arc',
+  name: 'Equal Arc Flight (N/S)',
   southObj: CROSS_SOUTH_OBJ,
   southAngle: CROSS_SOUTH_ANGLE,
   northObj: CROSS_NORTH_OBJ,

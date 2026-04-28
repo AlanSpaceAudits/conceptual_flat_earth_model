@@ -9775,3 +9775,18 @@ Format:
     flying along the route arcs
     read clearly without zooming.
 - **Revert:** `git checkout v-s000632 -- .`
+
+## S634 — Equal Arc demos: rename to Equal Arc Flight (N/S) variants
+
+- **Date:** 2026-04-28
+- **Files changed:**
+  - `js/demos/flightRoutes.js`
+- **Change:**
+  - `Equal Arc (mirror)` →
+    `Equal Arc Flight (N/S) (Mirror
+    lat)`.
+  - `Equal Arc` →
+    `Equal Arc Flight (N/S)`.
+  - Names only; demo behaviour
+    unchanged.
+- **Revert:** `git checkout v-s000633 -- .`

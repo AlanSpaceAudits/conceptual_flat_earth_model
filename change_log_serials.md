@@ -7843,3 +7843,19 @@ Format:
     when the user is at the fictitious
     centre observer in GE.
 - **Revert:** `git checkout v-s000579 -- .`
+
+## S581 — Optical/Heavenly toggle preserves observer lat/lon
+
+- **Date:** 2026-04-28
+- **Files changed:** `js/core/app.js`.
+- **Change:**
+  - Removed the S571 Optical → Heavenly
+    auto-snap that forced the observer to
+    (90°, 0°) on view-mode toggle. Observer
+    position now persists across the
+    InsideVault toggle the same way it
+    persists across FE/GE toggles after S578.
+    The orange origin-dot click is still the
+    explicit way to teleport to (90°, 0°) /
+    globe centre.
+- **Revert:** `git checkout v-s000580 -- .`

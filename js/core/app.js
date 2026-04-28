@@ -435,22 +435,9 @@ export class FeModel extends EventTarget {
     }
     this._lastWorldModel = s.WorldModel;
 
-    // Optical → Heavenly transition: save current position to
-    // LastObserver* and snap observer to (90°, 0°) so the user can
-    // click the orange anchor dot to teleport back. Mirrors the
-    // GE → FE auto-snap above.
-    if (this._lastInsideVault !== undefined
-        && this._lastInsideVault !== s.InsideVault
-        && this._lastInsideVault === true
-        && s.InsideVault === false) {
-      if (s.ObserverLat !== 90 || s.ObserverLong !== 0) {
-        s.LastObserverLat = s.ObserverLat;
-        s.LastObserverLong = s.ObserverLong;
-        s.ObserverLat = 90;
-        s.ObserverLong = 0;
-      }
-    }
-    this._lastInsideVault = s.InsideVault;
+    // (Removed Optical → Heavenly auto-snap — observer position
+    // now persists across InsideVault toggles. Manual teleport
+    // via the orange origin-dot click stays available.)
 
     // date/time sync
     s.DayOfYear = Math.round(s.DayOfYear);

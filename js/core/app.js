@@ -169,6 +169,8 @@ function defaultState() {
     MoonPhaseExpanded:       false,
     ShowSatellites:          true,
     ShowAxisLine:            false,
+    LastObserverLat:         null,
+    LastObserverLong:        null,
     ShowGPPath:              false,
     GPPathDays:              1,
     // GE-only inscribed/central-angle helpers. ShowCentralAngle
@@ -424,11 +426,30 @@ export class FeModel extends EventTarget {
       // so the FE projection doesn't inherit a southern-hemisphere
       // negative-latitude position that maps awkwardly on the disc.
       if (this._lastWorldModel === 'ge' && s.WorldModel !== 'ge') {
+        s.LastObserverLat = s.ObserverLat;
+        s.LastObserverLong = s.ObserverLong;
         s.ObserverLat = 90;
         s.ObserverLong = 0;
       }
     }
     this._lastWorldModel = s.WorldModel;
+
+    // Optical → Heavenly transition: save current position to
+    // LastObserver* and snap observer to (90°, 0°) so the user can
+    // click the orange anchor dot to teleport back. Mirrors the
+    // GE → FE auto-snap above.
+    if (this._lastInsideVault !== undefined
+        && this._lastInsideVault !== s.InsideVault
+        && this._lastInsideVault === true
+        && s.InsideVault === false) {
+      if (s.ObserverLat !== 90 || s.ObserverLong !== 0) {
+        s.LastObserverLat = s.ObserverLat;
+        s.LastObserverLong = s.ObserverLong;
+        s.ObserverLat = 90;
+        s.ObserverLong = 0;
+      }
+    }
+    this._lastInsideVault = s.InsideVault;
 
     // date/time sync
     s.DayOfYear = Math.round(s.DayOfYear);

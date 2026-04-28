@@ -19,7 +19,7 @@ import { getProjection } from '../core/projections.js';
 import { FE_RADIUS } from '../core/constants.js';
 import { ToRad } from '../math/utils.js';
 import { V } from '../math/vect3.js';
-import { celestLatLongToVaultCoord } from '../core/feGeometry.js';
+import { celestLatLongToVaultCoord, feLatLongToGlobalFeCoord } from '../core/feGeometry.js';
 import { vaultCoordToGlobalFeCoord } from '../core/transforms.js';
 
 export class Renderer {
@@ -312,6 +312,23 @@ export class Renderer {
     this.originDot.renderOrder = 70;
     this.originDot.visible = false;
     this.sm.world.add(this.originDot);
+
+    // Anchor dot — orange dot left at the previous observer
+    // position when the user teleports via the origin click.
+    // Click again to swap back. Tracked world coord lives at
+    // `this._lastDotWorld` so the click handler in mouseHandler
+    // can hit-test it.
+    this.lastDot = new THREE.Mesh(
+      new THREE.SphereGeometry(0.012, 12, 10),
+      new THREE.MeshBasicMaterial({
+        color: 0xff8040, transparent: true, opacity: 0.95,
+        depthTest: false, depthWrite: false,
+      }),
+    );
+    this.lastDot.renderOrder = 70;
+    this.lastDot.visible = false;
+    this._lastDotWorld = null;
+    this.sm.world.add(this.lastDot);
 
     // Rays as Line objects managed via this.rebuildRays() each frame.
     this.rayGroup = new THREE.Group();
@@ -684,6 +701,32 @@ export class Renderer {
     // mode (the globe's own dot covers it) to avoid double-paint.
     if (this.originDot) {
       this.originDot.visible = !!s.ShowAxisLine && s.WorldModel !== 'ge';
+    }
+    // Anchor dot — render at the saved LastObserver* lat/lon, in
+    // whichever projection is current. Hidden when no
+    // saved-last value or when ShowAxisLine is off.
+    if (this.lastDot) {
+      const haveLast = s.ShowAxisLine
+        && s.LastObserverLat != null && s.LastObserverLong != null;
+      if (haveLast) {
+        const lat = s.LastObserverLat, lon = s.LastObserverLong;
+        let pos;
+        if (s.WorldModel === 'ge') {
+          const cl = Math.cos(lat * Math.PI / 180);
+          const sl = Math.sin(lat * Math.PI / 180);
+          const co = Math.cos(lon * Math.PI / 180);
+          const so = Math.sin(lon * Math.PI / 180);
+          pos = [FE_RADIUS * cl * co, FE_RADIUS * cl * so, FE_RADIUS * sl];
+        } else {
+          pos = feLatLongToGlobalFeCoord(lat, lon, FE_RADIUS);
+        }
+        this.lastDot.position.set(pos[0], pos[1], pos[2]);
+        this._lastDotWorld = pos;
+        this.lastDot.visible = true;
+      } else {
+        this.lastDot.visible = false;
+        this._lastDotWorld = null;
+      }
     }
 
     // In first-person (InsideVault) mode the true-source markers on the

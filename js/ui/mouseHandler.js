@@ -338,20 +338,28 @@ export function attachMouseHandler(canvas, model, renderer = null) {
     dragging = false;
     try { canvas.releasePointerCapture(e.pointerId); } catch {}
     if (!wasClick) return;
-    // Origin-dot click: when the axis line is on and the user
-    // clicks the orange dot at world origin, teleport observer to
-    // (lat 90°, lon 0°) — the AE pole / globe-north position.
+    // Orange-dot click (origin or last-position anchor) — teleport
+    // observer between (lat 90°, lon 0°) and the saved
+    // LastObserver* position. Each click swaps current ↔ last.
     if (model.state.ShowAxisLine && renderer && renderer.sm && renderer.sm.camera) {
-      const pt = projectToCanvasPixels([0, 0, 0], renderer.sm.camera, canvas);
-      if (pt) {
-        const d = Math.hypot(pt.x - e.offsetX, pt.y - e.offsetY);
-        if (d < 22) {
-          model.setState({
-            ObserverLat: 90, ObserverLong: 0,
-            FollowTarget: null, FreeCamActive: false,
-          });
-          return;
-        }
+      const cam = renderer.sm.camera;
+      const ptOrigin = projectToCanvasPixels([0, 0, 0], cam, canvas);
+      let hit = ptOrigin && Math.hypot(ptOrigin.x - e.offsetX, ptOrigin.y - e.offsetY) < 22;
+      if (!hit && renderer._lastDotWorld) {
+        const ptLast = projectToCanvasPixels(renderer._lastDotWorld, cam, canvas);
+        if (ptLast && Math.hypot(ptLast.x - e.offsetX, ptLast.y - e.offsetY) < 22) hit = true;
+      }
+      if (hit) {
+        const s = model.state;
+        const curLat = s.ObserverLat, curLon = s.ObserverLong;
+        const lastLat = (s.LastObserverLat == null) ? 90 : s.LastObserverLat;
+        const lastLon = (s.LastObserverLong == null) ? 0 : s.LastObserverLong;
+        model.setState({
+          ObserverLat: lastLat, ObserverLong: lastLon,
+          LastObserverLat: curLat, LastObserverLong: curLon,
+          FollowTarget: null, FreeCamActive: false,
+        });
+        return;
       }
     }
     // Prefer the hovered hit (the body whose tooltip is currently
@@ -406,6 +414,28 @@ export function attachMouseHandler(canvas, model, renderer = null) {
 
     if (dragging) {
       dragDist = Math.max(dragDist, Math.hypot(e.offsetX - downX, e.offsetY - downY));
+    }
+
+    // Orange-dot hover tooltip ("Fictitious Teleport") — checked
+    // before the mode-specific celestial-hover branches so it
+    // wins regardless of Optical / Heavenly view.
+    if (!dragging && model.state.ShowAxisLine
+        && renderer && renderer.sm && renderer.sm.camera) {
+      const cam = renderer.sm.camera;
+      const ptOrigin = projectToCanvasPixels([0, 0, 0], cam, canvas);
+      let near = ptOrigin && Math.hypot(ptOrigin.x - e.offsetX, ptOrigin.y - e.offsetY) < 22;
+      if (!near && renderer._lastDotWorld) {
+        const ptLast = projectToCanvasPixels(renderer._lastDotWorld, cam, canvas);
+        near = ptLast && Math.hypot(ptLast.x - e.offsetX, ptLast.y - e.offsetY) < 22;
+      }
+      if (near) {
+        hoverTip.innerHTML = `<div class="celestial-hover-name">Fictitious Teleport</div>`
+          + `<div>Click to swap observer position</div>`;
+        hoverTip.style.left = `${e.offsetX + 14}px`;
+        hoverTip.style.top  = `${e.offsetY + 14}px`;
+        hoverTip.style.display = '';
+        return;
+      }
     }
 
     // Cursor elevation + azimuth readouts (Optical only).

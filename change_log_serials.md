@@ -7557,3 +7557,49 @@ Format:
     onto the FE disc where it'd map to a
     rim point with no obvious orientation.
 - **Revert:** `git checkout v-s000569 -- .`
+
+## S571 — Fictitious-Teleport swap mechanic + Last anchor dot
+
+- **Date:** 2026-04-28
+- **Files changed:** `js/core/app.js`,
+  `js/render/index.js`,
+  `js/ui/mouseHandler.js`.
+- **Change:**
+  - **State adds `LastObserverLat` /
+    `LastObserverLong`** (default `null`).
+    Stores the previous observer position
+    so a swap can return to it.
+  - **`Renderer.lastDot`** — new top-level
+    orange sphere mesh placed at the world
+    coord of `LastObserver*` (FE: AE-disc
+    projection; GE: spherical lat/lon →
+    cartesian on `FE_RADIUS`). Visible only
+    when `ShowAxisLine` is on and
+    `LastObserver*` are non-null. World coord
+    cached in `renderer._lastDotWorld` for
+    the click hit-test.
+  - **Click swap.** Click within 22 px of
+    either the origin dot OR the anchor dot
+    swaps `(ObserverLat, ObserverLong)` ↔
+    `(LastObserverLat, LastObserverLong)`.
+    Defaults the "last" side to (90°, 0°)
+    when nothing is saved. Clears
+    `FollowTarget` / `FreeCamActive` so the
+    new position lands cleanly. Works in
+    Optical and Heavenly views.
+  - **Hover tooltip "Fictitious Teleport"**
+    in `pointermove` — checks both dots'
+    screen projections; tooltip floats next
+    to the cursor and short-circuits the
+    mode-specific celestial hover so it
+    wins regardless of Optical / Heavenly
+    branch.
+  - **Optical → Heavenly auto-snap.**
+    `app.update()` now tracks
+    `_lastInsideVault`. On `true → false`
+    transition, save current to
+    `LastObserver*` and snap observer to
+    (90°, 0°) — same as the GE → FE
+    transition. Mirrors "leave the orange
+    dot behind for them to swap back".
+- **Revert:** `git checkout v-s000570 -- .`

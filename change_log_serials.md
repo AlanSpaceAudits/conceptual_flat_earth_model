@@ -8186,3 +8186,37 @@ Format:
   the globe and watch the celestial
   sphere on the far side.
 - **Revert:** `git checkout v-s000591 -- .`
+
+## S593 — Constellation lines: clip at horizon, bump render order
+
+- **Date:** 2026-04-28
+- **Files changed:** `js/render/constellations.js`.
+- **Change:**
+  - Optical-vault constellation segments
+    that straddle the horizon are now
+    linearly interpolated to the horizon
+    plane (using the local-zenith
+    components of the two endpoints)
+    instead of being parked entirely.
+    Below-horizon endpoint replaced by
+    the chord-horizon intersection so
+    the visible portion of a partly-
+    risen constellation still draws.
+  - World-space `sphPos[i]` now stored
+    for every star (above or below
+    horizon) so the line builder can
+    interpolate. Star-sprite buffer
+    still parks below-horizon entries
+    so they don't paint as dots.
+  - New `localUp[i]` array caches the
+    local-zenith component per star.
+  - `sphereLines.renderOrder` bumped
+    `56 → 66`,
+    `sphereStars.renderOrder` bumped
+    `57 → 67`, so optical-vault
+    constellations sit clearly above
+    any same-radius geometry (notably
+    the GE terrestrial sphere when
+    `ObserverAtCenter` collapses the
+    vault to the world origin).
+- **Revert:** `git checkout v-s000592 -- .`

@@ -88,7 +88,7 @@ export class Constellations {
         depthTest: false, depthWrite: false,
       }),
     );
-    this.sphereStars.renderOrder = 57;
+    this.sphereStars.renderOrder = 67;
     this.sphereStars.frustumCulled = false;
     this.group.add(this.sphereStars);
 
@@ -118,7 +118,7 @@ export class Constellations {
         depthTest: false, depthWrite: false,
       }),
     );
-    this.sphereLines.renderOrder = 56;
+    this.sphereLines.renderOrder = 66;
     this.sphereLines.frustumCulled = false;
     this.group.add(this.sphereLines);
   }
@@ -179,6 +179,11 @@ export class Constellations {
     const domePos = new Array(this._nStars);
     const sphPos  = new Array(this._nStars);
     const aboveHorizon = new Array(this._nStars);
+    // Local-zenith component per star. Used to clip line segments at
+    // the horizon when one endpoint is below: with both endpoints
+    // computed in world space, t = upA / (upA - upB) gives the
+    // chord-horizon parameter for linear interpolation.
+    const localUp = new Array(this._nStars);
 
     // Tracker-as-source-of-truth: constellation stars always filter
     // by TrackerTargets membership. When STM is on the effective set
@@ -249,58 +254,36 @@ export class Constellations {
         this._domeStarPos[i * 3 + 2] = gd[2];
       }
 
-      // Optical vault. Sub-horizon stars (zenith ≤ 0) park below
-      // the sphere in both modes so they vanish as elevation
-      // crosses 0°.
+      // Optical vault. Sub-horizon stars (zenith ≤ 0) park their
+      // sprite below the disc but still record a world-space chord
+      // endpoint so partial-visibility constellation lines can be
+      // clipped at the horizon by the line builder below.
       const localGlobe = M.Trans(c.TransMatCelestToGlobe, vect);
+      localUp[i] = localGlobe[0];
+      aboveHorizon[i] = localGlobe[0] > 0;
+      let gs;
       if (ge && c.GlobeObserverFrame && c.GlobeObserverCoord) {
-        if (localGlobe[0] <= 0) {
-          aboveHorizon[i] = false;
-          sphPos[i] = [0, 0, -1000];
-          this._sphStarPos[i * 3]     = 0;
-          this._sphStarPos[i * 3 + 1] = 0;
-          this._sphStarPos[i * 3 + 2] = -1000;
-          continue;
-        }
-        aboveHorizon[i] = true;
         const f = c.GlobeObserverFrame;
         const obsG = c.GlobeObserverCoord;
         const ax = localGlobe[2], ay = localGlobe[1], az = localGlobe[0];
-        const gs = [
+        gs = [
           obsG[0] + opticalR * (ax * f.northX + ay * f.eastX + az * f.upX),
           obsG[1] + opticalR * (ax * f.northY + ay * f.eastY + az * f.upY),
           obsG[2] + opticalR * (ax * f.northZ + ay * f.eastZ + az * f.upZ),
         ];
-        sphPos[i] = gs;
-        if (skipPoint) {
-          this._sphStarPos[i * 3]     = 0;
-          this._sphStarPos[i * 3 + 1] = 0;
-          this._sphStarPos[i * 3 + 2] = -1000;
-        } else {
-          this._sphStarPos[i * 3]     = gs[0];
-          this._sphStarPos[i * 3 + 1] = gs[1];
-          this._sphStarPos[i * 3 + 2] = gs[2];
-        }
-      } else if (localGlobe[0] <= 0) {
-        aboveHorizon[i] = false;
-        sphPos[i] = [0, 0, -1000];
+      } else {
+        const feLocal = [-localGlobe[2] * opticalR, localGlobe[1] * opticalR, localGlobe[0] * opticalH];
+        gs = M.Trans(c.TransMatLocalFeToGlobalFe, feLocal);
+      }
+      sphPos[i] = gs;
+      if (!aboveHorizon[i] || skipPoint) {
         this._sphStarPos[i * 3]     = 0;
         this._sphStarPos[i * 3 + 1] = 0;
         this._sphStarPos[i * 3 + 2] = -1000;
       } else {
-        aboveHorizon[i] = true;
-        const feLocal = [-localGlobe[2] * opticalR, localGlobe[1] * opticalR, localGlobe[0] * opticalH];
-        const gs = M.Trans(c.TransMatLocalFeToGlobalFe, feLocal);
-        sphPos[i] = gs;
-        if (skipPoint) {
-          this._sphStarPos[i * 3]     = 0;
-          this._sphStarPos[i * 3 + 1] = 0;
-          this._sphStarPos[i * 3 + 2] = -1000;
-        } else {
-          this._sphStarPos[i * 3]     = gs[0];
-          this._sphStarPos[i * 3 + 1] = gs[1];
-          this._sphStarPos[i * 3 + 2] = gs[2];
-        }
+        this._sphStarPos[i * 3]     = gs[0];
+        this._sphStarPos[i * 3 + 1] = gs[1];
+        this._sphStarPos[i * 3 + 2] = gs[2];
       }
     }
     this.domeStars.geometry.attributes.position.needsUpdate   = true;
@@ -319,23 +302,39 @@ export class Constellations {
         this._domeLinePos[o + 4] = db[1];
         this._domeLinePos[o + 5] = db[2];
 
-        // Hide optical-vault line segments where either endpoint is below
-        // the observer's horizon — collapse to a single point so the
-        // segment doesn't shoot off to the parked -1000 position.
-        if (!aboveHorizon[a] || !aboveHorizon[b]) {
+        // Optical-vault line clipping: segments fully below horizon
+        // get parked; segments straddling the horizon get clipped at
+        // the horizon plane (linear interp of world-space endpoints
+        // by their local-zenith components) so the visible portion
+        // of the constellation still draws.
+        if (!aboveHorizon[a] && !aboveHorizon[b]) {
           for (let j = 0; j < 6; j++) this._sphLinePos[o + j] = 0;
-          // park the segment below the clip plane
           this._sphLinePos[o + 2] = -1000;
           this._sphLinePos[o + 5] = -1000;
           continue;
         }
         const sa = sphPos[a], sb = sphPos[b];
-        this._sphLinePos[o]     = sa[0];
-        this._sphLinePos[o + 1] = sa[1];
-        this._sphLinePos[o + 2] = sa[2];
-        this._sphLinePos[o + 3] = sb[0];
-        this._sphLinePos[o + 4] = sb[1];
-        this._sphLinePos[o + 5] = sb[2];
+        let ax = sa[0], ay = sa[1], az = sa[2];
+        let bx = sb[0], by = sb[1], bz = sb[2];
+        if (!aboveHorizon[a] || !aboveHorizon[b]) {
+          const upA = localUp[a], upB = localUp[b];
+          const t = upA / (upA - upB);
+          if (!aboveHorizon[a]) {
+            ax = sa[0] + t * (sb[0] - sa[0]);
+            ay = sa[1] + t * (sb[1] - sa[1]);
+            az = sa[2] + t * (sb[2] - sa[2]);
+          } else {
+            bx = sa[0] + t * (sb[0] - sa[0]);
+            by = sa[1] + t * (sb[1] - sa[1]);
+            bz = sa[2] + t * (sb[2] - sa[2]);
+          }
+        }
+        this._sphLinePos[o]     = ax;
+        this._sphLinePos[o + 1] = ay;
+        this._sphLinePos[o + 2] = az;
+        this._sphLinePos[o + 3] = bx;
+        this._sphLinePos[o + 4] = by;
+        this._sphLinePos[o + 5] = bz;
       }
       this.domeLines.geometry.attributes.position.needsUpdate   = true;
       this.sphereLines.geometry.attributes.position.needsUpdate = true;

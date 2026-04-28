@@ -915,24 +915,24 @@ export class LatitudeLines {
       // Per-character sprites laid along each named ring's arc.
       // Each sprite carries its `charLat` / `charLon` in `userData`
       // so `_rebuild` can reposition the row when projection
-      // changes. Polar rings get no labels (they read fine without).
+      // changes. Both tropic / equator and polar / antarctic rings
+      // get labels; text always renders white so the label stays
+      // legible against any backdrop and reads as a separate piece
+      // of UI rather than blending with the ring itself.
       const lg = new THREE.Group();
       lg.name = `label-${c.label}`;
       lg.visible = false;
-      if (c.kind === 'tropic') {
-        const text = c.label.toUpperCase();
-        const charSize = 0.028;
-        const charDegSpacing = 4.5;
-        const colorHex = '#' + c.color.toString(16).padStart(6, '0');
-        const span = text.length * charDegSpacing;
-        const startLon = -span / 2;
-        for (let i = 0; i < text.length; i++) {
-          const sp = makeCharSprite(text[i], colorHex);
-          sp.scale.set(charSize, charSize, 1);
-          sp.userData.charLon = startLon + (i + 0.5) * charDegSpacing;
-          sp.userData.charLat = c.lat;
-          lg.add(sp);
-        }
+      const text = c.label.toUpperCase();
+      const charSize = 0.028;
+      const charDegSpacing = 4.5;
+      const span = text.length * charDegSpacing;
+      const startLon = -span / 2;
+      for (let i = 0; i < text.length; i++) {
+        const sp = makeCharSprite(text[i], '#ffffff');
+        sp.scale.set(charSize, charSize, 1);
+        sp.userData.charLon = startLon + (i + 0.5) * charDegSpacing;
+        sp.userData.charLat = c.lat;
+        lg.add(sp);
       }
       this._labelGroups.push(lg);
       this.group.add(lg);

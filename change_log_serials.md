@@ -9861,3 +9861,26 @@ Format:
     boxes — all use "central
     angle"). Value unchanged.
 - **Revert:** `git checkout v-s000636 -- .`
+
+## S638 — Latitude rings: white labels for every ring
+
+- **Date:** 2026-04-28
+- **Files changed:**
+  - `js/render/worldObjects.js`
+- **Change:**
+  - `LatitudeLines` builds curved
+    label rows for **every** named
+    ring instead of skipping the
+    polar / antarctic circles.
+    Sprite character colour
+    always `#ffffff` so the label
+    text reads as a separate
+    legend layer instead of
+    blending with the ring's own
+    colour. Cancer / Equator /
+    Capricorn / Arctic Circle /
+    Antarctic Circle now all
+    carry the same white-curved-
+    text treatment that follows
+    the arc on FE and GE.
+- **Revert:** `git checkout v-s000637 -- .`

@@ -8831,3 +8831,24 @@ Format:
     without needing the old separate
     lat / lon row.
 - **Revert:** `git checkout v-s000609 -- .`
+
+## S611 — Flight Routes: Arrival predicted / measured rows under Central Angle
+
+- **Date:** 2026-04-28
+- **Files changed:**
+  - `js/demos/flightRoutes.js`
+- **Change:**
+  - Added two new info-box rows under
+    `Central Angle`:
+    - `Arrival predicted   : HH:MM:SS`
+    - `Arrival (measured)  : HH:MM:SS
+       (±M:SS vs predicted)`
+    Source for the QF27/28 demos is
+    the bundled
+    `track.predictedSec` /
+    `track.actualSec` from the KMZ
+    parser.
+  - Schematic per-route info boxes
+    now carry the same two rows as
+    blanks (`(no flight data)`).
+- **Revert:** `git checkout v-s000610 -- .`

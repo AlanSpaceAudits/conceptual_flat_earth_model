@@ -664,6 +664,7 @@ export class WorldGlobe {
         }
       `,
       transparent: true,
+      side: THREE.DoubleSide,
     });
     this.sphere = new THREE.Mesh(sphereGeom, sphereMat);
     this.group.position.set(0, 0, 0);
@@ -4112,16 +4113,26 @@ export class Observer {
       this.zenithToCenter.visible = !!s.ShowAxisLine;
       if (this.zenithToCenter.visible) {
         const arr = this.zenithToCenter.geometry.attributes.position.array;
-        if (ge && s.ObserverAtCenter
-            && s.LastObserverLat != null && s.LastObserverLong != null) {
-          const lat = s.LastObserverLat * Math.PI / 180;
-          const lon = s.LastObserverLong * Math.PI / 180;
-          const cl = Math.cos(lat), sl = Math.sin(lat);
-          const co = Math.cos(lon), so = Math.sin(lon);
-          arr[0] = 0; arr[1] = 0; arr[2] = 0;
-          arr[3] = FE_RADIUS * cl * co;
-          arr[4] = FE_RADIUS * cl * so;
-          arr[5] = FE_RADIUS * sl;
+        const haveLast = s.LastObserverLat != null && s.LastObserverLong != null;
+        const atGeCenter = ge && s.ObserverAtCenter;
+        const atFePole   = !ge
+          && s.ObserverLat === 90 && s.ObserverLong === 0;
+        if ((atGeCenter || atFePole) && haveLast) {
+          // Anchor the line from observer's "home" position out to
+          // the surface point they came from, so a fictitious-
+          // observer move keeps a visual tie back.
+          arr[0] = p[0]; arr[1] = p[1]; arr[2] = p[2];
+          let q;
+          if (ge) {
+            const lat = s.LastObserverLat * Math.PI / 180;
+            const lon = s.LastObserverLong * Math.PI / 180;
+            const cl = Math.cos(lat), sl = Math.sin(lat);
+            const co = Math.cos(lon), so = Math.sin(lon);
+            q = [FE_RADIUS * cl * co, FE_RADIUS * cl * so, FE_RADIUS * sl];
+          } else {
+            q = feLatLongToGlobalFeCoord(s.LastObserverLat, s.LastObserverLong, FE_RADIUS);
+          }
+          arr[3] = q[0]; arr[4] = q[1]; arr[5] = q[2];
         } else {
           arr[0] = p[0]; arr[1] = p[1]; arr[2] = p[2];
           arr[3] = 0;    arr[4] = 0;    arr[5] = 0;

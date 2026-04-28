@@ -7709,3 +7709,28 @@ Format:
     visual anchor back to where the
     fictitious centre observer came from.
 - **Revert:** `git checkout v-s000573 -- .`
+
+## S575 — FE axis-line anchor + globe inside-day/night
+
+- **Date:** 2026-04-28
+- **Files changed:** `js/render/worldObjects.js`.
+- **Change:**
+  - **FE axis-line at-pole anchor.** When in
+    FE mode at `(ObserverLat, ObserverLong)
+    === (90, 0)` AND `LastObserver*` is set,
+    the axis line draws from world origin
+    (the AE pole) out to the AE-projected
+    `LastObserver*` position. Mirrors the
+    GE centre-observer behaviour so the
+    fictitious observer keeps a visual tie
+    back to the original surface position.
+  - **Globe sphere material flipped to
+    `DoubleSide`.** Inside-view from the
+    centre observer now renders the day/
+    night terminator on the inside of the
+    globe surface — looking toward the sub-
+    solar direction shows the day side,
+    looking away shows night. Day/night
+    rules continue to apply at the centre
+    observer, no perma-daylight.
+- **Revert:** `git checkout v-s000574 -- .`

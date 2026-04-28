@@ -84,57 +84,35 @@ function makeLabelSprite(text) {
   return sp;
 }
 
-// Pixel-art plane portrait — same chunky 96 × 96 grid the tracker
-// HUD uses for the planet / galaxy / quasar panels, scaled 4× so the
-// pixels read crisply against the dark info-box background. Drawn
-// once on first construction; the box reuses the same canvas across
-// every flight-routes demo.
-function drawFlightArt(ctx) {
-  const SIZE = 96, S = 4;
-  const cx = SIZE / 2, cy = SIZE / 2;
-  const fillRect = (x, y, c) => { ctx.fillStyle = c; ctx.fillRect(x * S, y * S, S, S); };
-  const fillBlock = (x, y, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(x * S, y * S, w * S, h * S); };
-  // Background sky — soft radial fade from indigo to near-black.
-  for (let y = 0; y < SIZE; y++) {
-    const t = y / (SIZE - 1);
+// Info-box plane portrait — uses the same silhouette path as
+// `drawPlaneSilhouette` (the planes flying on the map) so the
+// info-box art matches the in-world art. Rendered onto a
+// 384 × 384 canvas with an indigo sky gradient + scattered cloud
+// puffs; the silhouette is painted in the supplied accent
+// colour so the SOUTH (orange) and NORTH (cyan) panels each get a
+// route-coloured plane.
+function drawFlightArt(ctx, strokeHex = '#ff8040') {
+  const W = 384, H = 384;
+  // Sky background — vertical fade indigo → ink.
+  for (let y = 0; y < H; y++) {
+    const t = y / (H - 1);
     const r = Math.round(15  + (10 - 15)  * t);
     const g = Math.round(19  + (14 - 19)  * t);
     const b = Math.round(40  + (22 - 40)  * t);
-    for (let x = 0; x < SIZE; x++) fillRect(x, y, `rgb(${r}, ${g}, ${b})`);
+    ctx.fillStyle = `rgb(${r}, ${g}, ${b})`;
+    ctx.fillRect(0, y, W, 1);
   }
-  // Cloud puffs — a scatter of pale pixels behind the plane.
-  ctx.fillStyle = 'rgba(220, 230, 245, 0.28)';
+  // Cloud puffs scattered behind the plane.
+  ctx.fillStyle = 'rgba(220, 230, 245, 0.22)';
   const clouds = [
-    [12, 18, 6, 2], [22, 22, 4, 2], [70, 16, 8, 3], [80, 70, 6, 2],
-    [16, 70, 5, 2], [60, 78, 7, 2], [42, 12, 4, 2], [82, 44, 4, 2],
+    [44, 60,  28, 10], [80,  84, 18, 8], [260, 50, 36, 12],
+    [300, 280, 24, 10], [60, 270, 22, 9], [220, 320, 30, 10],
+    [150, 38,  18, 8],  [310, 168, 18, 8],
   ];
-  for (const [x, y, w, h] of clouds) ctx.fillRect(x * S, y * S, w * S, h * S);
-  // Plane body — fuselage centre line + nose taper.
-  fillBlock(cx - 2, cy - 24, 4, 50, '#ffe6c0');   // fuselage
-  fillBlock(cx - 1, cy - 26, 2, 2, '#fff4d8');    // nose tip
-  fillBlock(cx - 3, cy - 22, 6, 4, '#fff4d8');    // cockpit highlight
-  // Main wings — wide diamond shape.
-  fillBlock(cx - 22, cy + 2, 44, 4, '#ffe6c0');
-  fillBlock(cx - 26, cy + 4, 52, 2, '#f4a640');
-  fillBlock(cx - 18, cy + 6, 36, 1, '#cc7a18');
-  // Tail wings.
-  fillBlock(cx - 10, cy + 18, 20, 3, '#ffe6c0');
-  fillBlock(cx - 12, cy + 20, 24, 1, '#f4a640');
-  // Vertical fin.
-  fillBlock(cx - 1, cy + 14, 2, 8, '#ffd698');
-  fillBlock(cx - 1, cy + 22, 2, 2, '#cc7a18');
-  // Window line on fuselage.
-  ctx.fillStyle = '#1a1f30';
-  for (let i = 0; i < 8; i++) fillRect(cx - 1, cy - 14 + i * 3, '#1a1f30');
-  // Engine pods on the wings.
-  fillBlock(cx - 14, cy + 4, 3, 4, '#cc7a18');
-  fillBlock(cx + 11, cy + 4, 3, 4, '#cc7a18');
-  // Thin orange outline along the leading edge.
-  fillBlock(cx - 22, cy + 1, 44, 1, '#ff8040');
-  // Speed marks behind the plane.
-  ctx.fillStyle = 'rgba(255, 184, 90, 0.55)';
-  for (let i = 0; i < 6; i++) fillRect(cx + 4 + i, cy + 12, 'rgba(255, 184, 90, 0.55)');
-  for (let i = 0; i < 6; i++) fillRect(cx - 9 - i, cy + 12, 'rgba(255, 184, 90, 0.55)');
+  for (const [x, y, w, h] of clouds) ctx.fillRect(x, y, w, h);
+  // Plane silhouette — same path as the in-world planes, just at a
+  // bigger scale and centred on the canvas.
+  drawPlaneSilhouette(ctx, W / 2, H / 2, 4.2, 0, strokeHex);
 }
 
 // Build a single info-box DOM node. Two of these are stacked
@@ -224,13 +202,13 @@ function ensureRacePanel() {
 // nose at canvas y = -34, tail at y = +32). `headingRad` rotates the
 // figure so it can fly in any direction; race lanes pass +π/2 so the
 // nose points to canvas +x ("right" along the lane).
-function drawPlaneSilhouette(ctx, cx, cy, scale, headingRad = 0) {
+function drawPlaneSilhouette(ctx, cx, cy, scale, headingRad = 0, strokeHex = '#ff8040') {
   ctx.save();
   ctx.translate(cx, cy);
   ctx.rotate(headingRad);
   ctx.scale(scale, scale);
   ctx.fillStyle = '#fff5e6';
-  ctx.strokeStyle = '#ff8040';
+  ctx.strokeStyle = strokeHex;
   ctx.lineWidth = 2.5 / scale;
   ctx.beginPath();
   ctx.moveTo(0, -34);
@@ -369,9 +347,12 @@ function ensureInfoBoxes() {
   if (!primary) {
     primary = buildInfoBoxEl('flight-info-box', 8, 12);
     view.appendChild(primary);
+    // Initial art with the default accent so the canvas isn't blank
+    // before `_renderInfoBox` paints over with the per-box accent.
     const ctxA = primary.querySelector('.fi-art').getContext('2d');
     ctxA.imageSmoothingEnabled = false;
-    drawFlightArt(ctxA);
+    drawFlightArt(ctxA, '#ff8040');
+    primary._lastArtAccent = '#ff8040';
   }
   if (!secondary) {
     // Side-by-side layout: primary box at 380 px min-width + 12 px
@@ -381,7 +362,8 @@ function ensureInfoBoxes() {
     view.appendChild(secondary);
     const ctxB = secondary.querySelector('.fi-art').getContext('2d');
     ctxB.imageSmoothingEnabled = false;
-    drawFlightArt(ctxB);
+    drawFlightArt(ctxB, '#ff8040');
+    secondary._lastArtAccent = '#ff8040';
   }
   return [primary, secondary];
 }
@@ -654,8 +636,9 @@ export class FlightRoutes {
     const titleEl = box.querySelector('.fi-title');
     const headerEl = box.querySelector('.fi-header');
     const readoutEl = box.querySelector('.fi-readout');
-    // Per-box accent colour drives the border, header tint, and
-    // title text. Default keeps the original orange.
+    // Per-box accent colour drives the border, header tint, title
+    // text, and the plane portrait stroke. Default keeps the
+    // original orange.
     const accent = info.accent || '#f4a640';
     box.style.borderColor = accent;
     if (titleEl) titleEl.style.color = accent;
@@ -665,6 +648,15 @@ export class FlightRoutes {
       // straight accent if the colour isn't a 7-char hex.
       const tint = (/^#([0-9a-f]{6})$/i.test(accent)) ? `${accent}1F` : accent;
       headerEl.style.background = tint;
+    }
+    if (box._lastArtAccent !== accent) {
+      const cv = box.querySelector('.fi-art');
+      if (cv) {
+        const ctx = cv.getContext('2d');
+        ctx.imageSmoothingEnabled = false;
+        drawFlightArt(ctx, accent);
+        box._lastArtAccent = accent;
+      }
     }
     if (titleEl) titleEl.textContent = info.title || 'Flight';
     if (readoutEl) {

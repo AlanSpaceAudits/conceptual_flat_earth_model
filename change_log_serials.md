@@ -9805,3 +9805,42 @@ Format:
     52 px empty band the previous
     layout left.
 - **Revert:** `git checkout v-s000634 -- .`
+
+## S636 — Info box plane art now matches the in-world plane silhouette
+
+- **Date:** 2026-04-28
+- **Files changed:**
+  - `js/render/flightRoutes.js`
+- **Change:**
+  - `drawPlaneSilhouette(ctx, cx, cy,
+    scale, headingRad, strokeHex)`
+    now accepts an optional stroke
+    colour. Race-panel callers still
+    pass the default orange; info-
+    box art passes the per-box
+    accent.
+  - `drawFlightArt(ctx, strokeHex)`
+    rewritten: paints the indigo →
+    ink sky gradient + scattered
+    cloud puffs, then stamps the
+    same silhouette path
+    `drawPlaneSilhouette` uses for
+    the in-world planes. Scaled 4.2×
+    to fill the 384 × 384 portrait
+    canvas. The chunky pixel-art
+    panel is gone — the SOUTH /
+    NORTH portraits now read as the
+    same plane that's flying around
+    the map.
+  - `_renderInfoBox` repaints the
+    art canvas whenever
+    `info.accent` differs from the
+    cached `box._lastArtAccent`,
+    so SOUTH stays orange and
+    NORTH stays cyan even when the
+    accent flips.
+  - Initial paint at construction
+    uses the default orange so the
+    canvas isn't blank before the
+    first `_renderInfoBox` call.
+- **Revert:** `git checkout v-s000635 -- .`

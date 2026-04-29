@@ -1333,16 +1333,30 @@ export class FeModel extends EventTarget {
     //     when the toggle is off.
     const compareOn = !!s.ShowEphemerisReadings;
     const NAN_READING = { ra: NaN, dec: NaN };
+    // Comparison-mode readings depend only on (body, date) — none of
+    // the four pipelines is observer-aware. Cache the per-body
+    // bundle keyed on dateMs and reuse across drag ticks. Cache is
+    // rebuilt whenever the date changes (key miss).
+    const _compareKey = utcDate.getTime();
+    if (compareOn && (!this._compareReadingsCache || this._compareReadingsCache.key !== _compareKey)) {
+      this._compareReadingsCache = { key: _compareKey, byBody: Object.create(null) };
+    }
     const readingsFor = (body) => {
       if (!compareOn) {
         return { rGeo: NAN_READING, rPtol: NAN_READING, rApix: NAN_READING, rVsop: NAN_READING };
       }
-      return {
-        rGeo:  ephGeo.bodyGeocentric(body, utcDate),
-        rPtol: ephPtol.bodyGeocentric(body, utcDate),
-        rApix: ephApix.bodyGeocentric(body, utcDate),
-        rVsop: ephVsop.bodyGeocentric(body, utcDate),
-      };
+      const cache = this._compareReadingsCache.byBody;
+      let entry = cache[body];
+      if (!entry) {
+        entry = {
+          rGeo:  ephGeo.bodyGeocentric(body, utcDate),
+          rPtol: ephPtol.bodyGeocentric(body, utcDate),
+          rApix: ephApix.bodyGeocentric(body, utcDate),
+          rVsop: ephVsop.bodyGeocentric(body, utcDate),
+        };
+        cache[body] = entry;
+      }
+      return entry;
     };
 
     for (const target of targets) {

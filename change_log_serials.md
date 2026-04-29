@@ -10527,3 +10527,40 @@ Format:
   pattern used for satellites in
   the block immediately below.
 - **Revert:** `git checkout v-s000651 -- .`
+
+## S653 — app.update: cache comparison-mode readings by (body, date)
+
+- **Date:** 2026-04-28
+- **Files changed:**
+  - `js/core/app.js`
+- **Change:**
+  - Added
+    `this._compareReadingsCache`
+    keyed by `utcDate.getTime()`.
+    Cache body is a per-body
+    object holding the four
+    comparison readings
+    (`rGeo`, `rPtol`, `rApix`,
+    `rVsop`).
+  - `readingsFor(body)` consults
+    the cache when
+    `ShowEphemerisReadings` is
+    on; on a miss it queries the
+    four pipelines once and
+    stores the bundle, on a hit
+    it returns the cached object.
+  - Cache resets whenever the
+    date changes. Comparison
+    toggle off is unchanged —
+    still returns the
+    `NAN_READING` short-circuit.
+- **Why:** with comparison on, the
+  tracker target loop calls four
+  pipelines per body per frame;
+  for the seven supported bodies
+  that's 28 calls every drag
+  tick even though the date
+  hasn't moved. The cache cuts
+  that to one round per date
+  change.
+- **Revert:** `git checkout v-s000652 -- .`

@@ -612,7 +612,7 @@ export class FeModel extends EventTarget {
     c.TransMatVaultToFe = compTransMatVaultToFe(c.SkyRotAngle);
     c.ObserverFeCoord   = feLatLongToGlobalFeCoord(s.ObserverLat, s.ObserverLong, FE_RADIUS);
     c.TransMatLocalFeToGlobalFe = compTransMatLocalFeToGlobalFe(
-      c.ObserverFeCoord, s.ObserverLong,
+      c.ObserverFeCoord, s.ObserverLong, s.ObserverLat,
     );
     // ObserverAtCenter teleports the camera to the world origin via
     // scene.js but keeps ObserverFeCoord / GlobeObserverCoord at the

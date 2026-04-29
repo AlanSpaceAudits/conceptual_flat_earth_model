@@ -13,6 +13,7 @@
 import { ToRad, ToDeg, Limit1 } from '../math/utils.js';
 import { M } from '../math/mat3.js';
 import { V } from '../math/vect3.js';
+import { canonicalLatLongToDisc } from './canonical.js';
 
 // Celest -> local-globe: rotate by -(observer-longitude + skyRotAngle) about Z,
 // then by +latitude about Y.
@@ -21,10 +22,57 @@ export function compTransMatCelestToGlobe(obsLatDeg, obsLongDeg, skyRotAngleDeg)
   return M.RotatingY(ToRad(obsLatDeg), first);
 }
 
-// Local-fe -> global-fe: rotate by observer longitude about Z, then translate
-// to the observer's disc coord.
-export function compTransMatLocalFeToGlobalFe(observerCoord, observerLongDeg) {
-  const rot = M.RotatingZ(ToRad(observerLongDeg));
+// Local-fe -> global-fe.
+//
+// Local-FE convention: +x = south, +y = east, +z = up. The rotation
+// is built from the active projection's gradient at (obsLat, obsLon)
+// so a non-AE projection (currently only DP) gets the right
+// curved-meridian tangent for "north". Sampling
+// `canonicalLatLongToDisc` keeps this in lockstep with the
+// projection-dispatch in canonical.js (S680).
+//
+// For AE polar, the gradient collapses to `-(cos λ, sin λ)` for the
+// "north" direction — i.e. `RotatingZ(λ)` — so behaviour is unchanged
+// when no override is active. At the canonical AE pole (lat = 90°)
+// the gradient is singular; fall back to the longitude rotation so
+// the meridian picked by ObserverLong continues to drive the frame.
+export function compTransMatLocalFeToGlobalFe(observerCoord, observerLongDeg, observerLatDeg = null) {
+  let ax, ay, bx, by;
+  if (observerLatDeg === null) {
+    const lr = ToRad(observerLongDeg);
+    const cl = Math.cos(lr), sl = Math.sin(lr);
+    ax = cl;  ay = sl;       // local +x (south) → global
+    bx = -sl; by = cl;       // local +y (east)  → global
+  } else {
+    const eps = 1e-3;
+    const lat = observerLatDeg;
+    const lon = observerLongDeg;
+    const pHere = canonicalLatLongToDisc(lat, lon, 1);
+    const latProbe = lat >= 90 - eps ? lat - eps : lat + eps;
+    const sign = lat >= 90 - eps ? -1 : 1;
+    const pN = canonicalLatLongToDisc(latProbe, lon, 1);
+    const dnx = (pN[0] - pHere[0]) * sign;
+    const dny = (pN[1] - pHere[1]) * sign;
+    const nLen = Math.hypot(dnx, dny);
+    if (nLen < 1e-9) {
+      const lr = ToRad(observerLongDeg);
+      const cl = Math.cos(lr), sl = Math.sin(lr);
+      ax = cl;  ay = sl;
+      bx = -sl; by = cl;
+    } else {
+      const nx = dnx / nLen, ny = dny / nLen;
+      ax = -nx; ay = -ny;       // south = -north
+      bx =  ny; by = -nx;       // east  = north rotated −90° in disc plane
+    }
+  }
+  const rot = {
+    r: [
+      [ax, bx, 0],
+      [ay, by, 0],
+      [0,  0,  1],
+    ],
+    t: [0, 0, 0],
+  };
   return M.Moving(observerCoord[0], observerCoord[1], observerCoord[2], rot);
 }
 

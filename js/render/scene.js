@@ -192,16 +192,31 @@ export class SceneManager {
         eastX  = f.eastX;  eastY  = f.eastY;  eastZ  = f.eastZ;
         upX    = f.upX;    upY    = f.upY;    upZ    = f.upZ;
       } else {
-        const ox = obs[0], oy = obs[1];
-        const obsLen = Math.hypot(ox, oy);
-        if (obsLen > 1e-6) {
-          northX = -ox / obsLen;
-          northY = -oy / obsLen;
-        } else {
-          const longR = ToRad(s.ObserverLong || 0);
-          northX = -Math.cos(longR);
-          northY = -Math.sin(longR);
+        // Local north = gradient of latitude on the disc, sampled
+        // through `canonicalLatLongToDisc`. In canonical AE that's
+        // the radial direction toward the disc centre; in DP the
+        // meridians curve so the gradient picks up the per-position
+        // tangent. East = north rotated −90° in the disc plane so the
+        // basis stays orthonormal even when the projection isn't
+        // conformal.
+        const lat = s.ObserverLat || 0;
+        const lon = s.ObserverLong || 0;
+        const eps = 1e-3;
+        const pHere = canonicalLatLongToDisc(lat, lon, 1);
+        const latProbe = lat >= 90 - eps ? lat - eps : lat + eps;
+        const sign = lat >= 90 - eps ? -1 : 1;
+        const pN = canonicalLatLongToDisc(latProbe, lon, 1);
+        let dnx = (pN[0] - pHere[0]) * sign;
+        let dny = (pN[1] - pHere[1]) * sign;
+        let nLen = Math.hypot(dnx, dny);
+        if (nLen < 1e-9) {
+          const longR = ToRad(lon);
+          dnx = -Math.cos(longR);
+          dny = -Math.sin(longR);
+          nLen = 1;
         }
+        northX = dnx / nLen;
+        northY = dny / nLen;
         northZ = 0;
         eastX  =  northY;
         eastY  = -northX;

@@ -11789,3 +11789,72 @@ Format:
   projected sky matches
   the DP ground.
 - **Revert:** `git checkout v-s000679 -- .`
+
+## S681 — DP: projection-aware local-FE frame (NESW + vault orientation)
+
+- **Date:** 2026-04-29
+- **Files changed:**
+  - `js/core/transforms.js`
+  - `js/core/app.js`
+  - `js/render/scene.js`
+- **Change:**
+  - `compTransMatLocalFeToGlobalFe`
+    now takes an optional
+    `observerLatDeg` and
+    builds the local-FE
+    rotation from the
+    active projection's
+    gradient via
+    `canonicalLatLongToDisc`.
+    Local +x (south) = -north,
+    local +y (east) =
+    north rotated −90° in
+    the disc plane. AE
+    polar collapses to the
+    previous
+    `RotatingZ(λ)` formula;
+    DP picks up the curved-
+    meridian tangent at
+    `(obsLat, obsLon)`.
+    Singular point fallback
+    keeps the old longitude
+    rotation.
+  - `app.js` passes
+    `s.ObserverLat` to that
+    builder.
+  - `scene.js`
+    InsideVault FE camera
+    now derives its
+    north/east basis from
+    the same gradient
+    sample (was the
+    AE-only "vector from
+    observer toward disc
+    centre"). Cardinals on
+    the optical-vault
+    hemisphere now align
+    with DP-correct
+    meridian tangents.
+- **Why:** user reported
+  NESW buttons were
+  mis-oriented in DP and
+  the optical vault wasn't
+  framed against the DP
+  ground. The local frame
+  was still built with
+  AE-polar assumptions
+  (radial-toward-centre =
+  north) even after S680
+  routed observer
+  placement through DP.
+  Note: body apparent
+  motion within the
+  optical vault is still
+  sphere-model
+  (celestial→local-globe
+  via standard
+  RA/Dec/lat/lon trig),
+  not FE-conceptual rays
+  — that's a separate
+  architectural change.
+- **Revert:** `git checkout v-s000680 -- .`

@@ -11244,3 +11244,58 @@ Format:
   authored file readable while
   shipping a minified copy.
 - **Revert:** `git checkout v-s000667 -- .`
+
+## S669 — service worker: aggressive client-side asset cache
+
+- **Date:** 2026-04-28
+- **Files changed:**
+  - `sw.js` (new)
+  - `js/main.js`
+- **Change:**
+  - New `sw.js` at the repo
+    root. Cache name
+    `fe-model-v1`. Strategy:
+    - `assets/` (textures,
+      vendored libs, geojson,
+      images): cache-first.
+    - `*.js` / `*.css`:
+      stale-while-revalidate
+      (return cached, refresh
+      in background).
+    - HTML / navigation
+      requests: network-first
+      with cached fallback.
+    Cross-origin GETs and any
+    non-GET stay on the
+    network path.
+  - `js/main.js` registers
+    `sw.js` after the `load`
+    event so install work
+    doesn't compete with the
+    cold-start budget.
+  - Bumping `CACHE_VERSION`
+    in `sw.js` invalidates
+    the prior cache on next
+    activate.
+- **Why:** Lighthouse mobile
+  flagged "Use efficient
+  cache lifetimes" with
+  10,760 KiB of estimated
+  savings on starfields,
+  vendored JS, and the local
+  module graph — all subject
+  to GitHub Pages' 10-minute
+  default Cache-Control TTL.
+  A client-side service
+  worker overrides that TTL
+  for repeat visits and
+  serves cached assets
+  offline.
+- **Revert:** `git checkout v-s000668 -- .` Note: existing
+  installed workers persist
+  in browsers — bumping
+  `CACHE_VERSION` to evict
+  cached copies, or the
+  user can clear site data,
+  if a roll-back leaves
+  stale assets active.

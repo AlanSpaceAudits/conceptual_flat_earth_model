@@ -10,11 +10,14 @@
   --accent: #ff9a3c;
   --border: #272c36;
   --row: #1a1f2a;
-  /* UI zoom factor: 1.0 at a 1920-px-wide viewport, scales linearly
-     with viewport width and clamps at narrow / wide extremes so the
-     bottom bar + popup panels stay legible on every monitor. The
-     browser's zoom level multiplies on top automatically. */
-  --ui-zoom: clamp(0.65, calc(100vw / 1920), 1.5);
+  /* UI zoom factor: 1.0 at a 1920×1080 viewport, scales by the
+     more-constrained of (width / 1920) and (height / 1080) so a tall
+     narrow window doesn't oversize the bottom bar horizontally and a
+     short wide window doesn't push the bottom bar off-screen. The
+     clamp band runs from 0.5 (phones / very small windows) up to 1.6
+     (4K monitors). The browser's zoom level multiplies on top
+     automatically. */
+  --ui-zoom: clamp(0.5, min(calc(100vw / 1920), calc(100vh / 1080)), 1.6);
 }
 
 * { box-sizing: border-box; }
@@ -36,7 +39,7 @@ html, body {
   overflow: hidden;
 }
 
-header { grid-area: header; padding: 8px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: baseline; gap: 16px; }
+header { grid-area: header; padding: 8px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: baseline; gap: 16px; zoom: var(--ui-zoom); }
 header h1 { font-size: 16px; margin: 0; }
 header .sub { color: var(--muted); font-size: 12px; margin: 0; }
 header .info-box { position: relative; margin-left: auto; }
@@ -187,6 +190,7 @@ header .info-popup.legend-popup a { color: var(--accent); }
   padding: 0;
   min-width: 380px;
   max-width: 460px;
+  zoom: var(--ui-zoom);
   z-index: 12;
   /* `zoom` was breaking drag math (clientX in viewport pixels vs.
      offsetLeft in unzoomed CSS pixels). Panel sizes are already
@@ -913,6 +917,7 @@ footer#desc {
   background: var(--panel);
   border-top: 1px solid var(--border);
   font-size: 13px;
+  zoom: var(--ui-zoom);
 }
 footer#desc p { margin: 0; line-height: 1.35; }
 footer#desc .desc-dynamic { color: var(--fg); }
@@ -1020,6 +1025,7 @@ footer#desc .desc-dynamic { color: var(--fg); }
   border-top: 1px solid rgba(255, 60, 60, 0.5);
   z-index: 12;
   letter-spacing: 0.02em;
+  zoom: var(--ui-zoom);
 }
 #meeus-warning strong { color: #ff8a8a; }
 

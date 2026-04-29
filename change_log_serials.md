@@ -11508,7 +11508,67 @@ Format:
   top of the ocean / rim
   regardless of camera
   distance.
-- **Revert:** `git checkout v-s000673 -- .` Note: existing
+- **Revert:** `git checkout v-s000673 -- .`
+
+## S675 — UI: dynamic zoom across more panels + tighter clamp band
+
+- **Date:** 2026-04-28
+- **Files changed:**
+  - `css/styles.css`
+  - `css/styles.min.css`
+  - `js/main.js`
+- **Change:**
+  - `--ui-zoom` formula
+    upgraded from
+    `clamp(0.65, 100vw / 1920,
+    1.5)` to
+    `clamp(0.5,
+    min(100vw / 1920,
+    100vh / 1080), 1.6)`.
+    Picking the smaller of
+    width / height ratios
+    means tall narrow windows
+    no longer oversize the
+    bottom bar horizontally
+    and short wide windows
+    don't push it off-screen.
+    The expanded clamp lets
+    phones (≤1248 px) scale
+    down to 0.5 and 4 K
+    monitors scale up to 1.6.
+  - Applied
+    `zoom: var(--ui-zoom)`
+    to four additional
+    panels that were rendering
+    at native size:
+    `header` (title + About
+    / Legend buttons),
+    `#tracking-info-popup`
+    (the draggable body
+    detail panel),
+    `footer#desc` (the
+    bottom status text), and
+    `#meeus-warning` (the
+    "Meeus timing error"
+    banner). Plus the
+    JS-injected
+    `#cadence-chip` in
+    `js/main.js`.
+  - Re-minified
+    `styles.min.css`.
+- **Why:** user request — UI was
+  not scaling dynamically to
+  the browser size. The
+  bottom bar / hud / tracker
+  popups already used
+  `--ui-zoom`, but the title
+  bar, body popup, footer,
+  Meeus banner, and cadence
+  chip were stuck at native
+  size, so the layout looked
+  inconsistent at narrow or
+  4 K viewports.
+- **Revert:** `git checkout v-s000674 -- .` Note: existing
   installed workers persist
   in browsers — bumping
   `CACHE_VERSION` to evict

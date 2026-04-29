@@ -160,6 +160,7 @@ cadenceChip.style.cssText = `
   padding: 4px 10px;
   z-index: 10;
   display: none;
+  zoom: var(--ui-zoom);
 `;
 const viewEl = document.getElementById('view');
 if (viewEl) viewEl.appendChild(cadenceChip);

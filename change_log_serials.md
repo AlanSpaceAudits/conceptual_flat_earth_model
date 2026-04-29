@@ -10564,3 +10564,31 @@ Format:
   that to one round per date
   change.
 - **Revert:** `git checkout v-s000652 -- .`
+
+## S654 — assets: shrink ac_logo.png from 1500×1500 to 360×360
+
+- **Date:** 2026-04-28
+- **Files changed:**
+  - `assets/ac_logo.png`
+  - `index.html`
+- **Change:**
+  - Resized `assets/ac_logo.png`
+    from 1500×1500 (376 KiB) to
+    360×360 (99 KiB). 360 px
+    base covers the 180 px CSS
+    ceiling at 2× DPR.
+  - Added `width="180"`,
+    `height="180"`, and
+    `decoding="async"` to the
+    `<img id="logo">` tag.
+- **Why:** Lighthouse mobile lab
+  flagged `Improve image
+  delivery` with 366 KiB
+  estimated savings. Logo CSS is
+  `clamp(40px, 12vmin, 180px)`,
+  so 360 px is sufficient for
+  retina. Width / height attrs
+  let the browser reserve box
+  space before the image
+  decodes.
+- **Revert:** `git checkout v-s000653 -- .`

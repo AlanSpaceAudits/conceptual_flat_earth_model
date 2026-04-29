@@ -12000,3 +12000,44 @@ Format:
   separate task if those
   need DP wrapping too.
 - **Revert:** `git checkout v-s000682 -- .`
+
+## S684 — hot-fix: restore Stars class GE branch dropped by S683
+
+- **Date:** 2026-04-29
+- **Files changed:**
+  - `js/render/worldObjects.js`
+- **Change:**
+  - The S683 edit to the
+    Stars class
+    `update()` malformed
+    the
+    `if (ge) { ... } else
+    { ... }` block — the
+    closing `}` of the
+    GE branch was
+    swallowed, so the
+    GE star-disc
+    assignment (Rgv
+    sphere coords) ran
+    inside a different
+    scope than intended
+    and the FE branch
+    was unreachable for
+    the heavenly-vault
+    starfield. Restored
+    the if/else
+    structure with
+    `let feVault = null`
+    declared before the
+    branches.
+- **Why:** black screen
+  on load — hoisting +
+  the now-bracketed code
+  paths produced a
+  reference / scoping
+  error at runtime
+  even though
+  `node --check` passed
+  (braces balanced,
+  semantics broken).
+- **Revert:** `git checkout v-s000683 -- .`

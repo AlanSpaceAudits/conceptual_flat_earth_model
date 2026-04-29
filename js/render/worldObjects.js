@@ -4418,6 +4418,7 @@ export class Stars {
       const [lat, lon] = this._celest[i];
       const celestV = this._celestVect[i];
 
+      let feVault = null;
       if (ge) {
         // Globe heavenly-vault projection: place each star on the
         // celestial sphere at radius GlobeVaultRadius, with longitude
@@ -4428,8 +4429,7 @@ export class Stars {
         domePos[i * 3]     = Rgv * cp * Math.cos(lam);
         domePos[i * 3 + 1] = Rgv * cp * Math.sin(lam);
         domePos[i * 3 + 2] = Rgv * Math.sin(phi);
-      let feVault = null;
-      if (!ge) {
+      } else {
         // FE flat starfield disk: stars sit at a single constant
         // altitude (StarfieldVaultHeight). Disc position routes
         // through `canonicalLatLongToDisc` so DP picks up dual-pole

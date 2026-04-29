@@ -11335,7 +11335,51 @@ Format:
   delay because LCP can fire
   on the static paragraph
   immediately.
-- **Revert:** `git checkout v-s000669 -- .` Note: existing
+- **Revert:** `git checkout v-s000669 -- .`
+
+## S671 — service worker: kill switch (black-screen-on-refresh hot-fix)
+
+- **Date:** 2026-04-28
+- **Files changed:**
+  - `sw.js`
+  - `js/main.js`
+- **Change:**
+  - `sw.js` reduced to a kill
+    switch: `install` calls
+    `skipWaiting`, `activate`
+    deletes every cache entry
+    via `caches.keys()`
+    + `caches.delete`,
+    self-unregisters via
+    `self.registration.unregister()`,
+    and navigates each
+    controlled client to its
+    own URL so the page
+    re-fetches without the
+    worker. No `fetch`
+    listener is installed —
+    every request bypasses
+    the worker.
+  - `js/main.js` no longer
+    registers `sw.js`. The
+    block is left in place as
+    a comment so a future
+    re-introduction can
+    restore the call against
+    a fresh `CACHE_VERSION`.
+- **Why:** the S669 worker
+  produced a black-screen-
+  on-refresh report. Until
+  the root cause is
+  isolated, the safest path
+  is to evict every
+  installed copy of the
+  worker and stop registering
+  new ones, so the site
+  reverts to the no-SW
+  baseline that was working
+  through S668.
+- **Revert:** `git checkout v-s000670 -- .` Note: existing
   installed workers persist
   in browsers — bumping
   `CACHE_VERSION` to evict

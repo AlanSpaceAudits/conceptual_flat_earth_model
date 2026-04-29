@@ -357,14 +357,8 @@ window.model = model;
 window.renderer = renderer;
 window.demos = demos;
 
-// Service-worker registration. Defers behind `load` so SW install
-// doesn't compete with the cold-start network budget. Registers
-// from the document base path (works on both
-// `/conceptual_flat_earth_model/` GH Pages and a local
-// `python -m http.server` root). Failures swallow silently — the
-// app still works offline-less without a SW.
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('sw.js').catch(() => {});
-  });
-}
+// Service-worker registration disabled (S671 hot-fix). The S669
+// worker triggered black-screen-on-refresh reports; the kill-switch
+// `sw.js` is still served so any installed copy unregisters itself
+// and clears its caches on activate. New SW installation stays
+// disabled until the registration call below is restored.

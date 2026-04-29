@@ -12180,3 +12180,42 @@ Format:
   on each subsequent
   switch.
 - **Revert:** `git checkout v-s000685 -- .`
+
+## S687 — DP: LongitudeRing rotation via projection gradient
+
+- **Date:** 2026-04-29
+- **Files changed:**
+  - `js/render/worldObjects.js`
+- **Change:**
+  - `LongitudeRing.update`
+    rotated the disc-rim
+    degree ring by
+    `ToRad(ObserverLong)`
+    so "0°" sat at
+    compass-north — works
+    only under AE polar's
+    rotational symmetry.
+    DP now reads the
+    projection gradient
+    via
+    `canonicalLatLongToDisc`,
+    same formula
+    `ObserversOpticalVault`
+    uses (S682):
+    `θ = atan2(−ny, −nx)`.
+    AE / GE keep the
+    legacy
+    `ToRad(ObserverLong)`
+    path.
+- **Why:** in DP the
+  observer's optical-vault
+  azimuth ring aligned
+  with the projection's
+  meridian tangent (S682
+  fix), but the
+  heavenly-vault rim ring
+  was still rotating by
+  raw longitude — the two
+  no longer matched at
+  "0°".
+- **Revert:** `git checkout v-s000686 -- .`

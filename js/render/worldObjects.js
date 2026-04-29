@@ -378,22 +378,38 @@ export class LongitudeRing {
     // palette already matches (guarded inside `_applyPalette`).
     this._applyPalette(model.state.DarkBackground ? 'dark' : 'light');
 
-    // rotate the ring so the "0°" marker
-    // lands at the observer's compass-north direction. The disc-rim
-    // numerals are the projection-grid reference and a wants
-    // them to read in the same heading frame as the cap-attached
-    // azimuth ring (which has 0° = compass-north of the observer).
+    // rotate the ring so the "0°" marker lands at the observer's
+    // compass-north direction. The disc-rim numerals are the
+    // projection-grid reference and read in the same heading frame
+    // as the cap-attached azimuth ring (0° = compass-north).
     //
-    // Geometry: the observer at (lat, long) sits at world position
-    //   (r_obs · cos long, r_obs · sin long, 0)
-    // with `r_obs = (90 − lat) / 180` (azimuthal-equidistant disc
-    // mapping in `canonicalLatLongToDisc`). Compass-north from
-    // there points toward the disc centre — world direction angle
-    // `long + π`. The ring's "0°" mark is at world angle `π` (from
-    // the `LONGITUDE_RING_ANCHOR_DEG = 180` anchor in
-    // `ringAngleRad`). Rotating the ring's group by `long` about
-    // +z moves "0°" from `π` to `π + long`, which matches.
-    this.group.rotation.set(0, 0, ToRad(model.state.ObserverLong || 0));
+    // AE polar has rotational symmetry about its pole, so compass-
+    // north sits at world angle `long + π` and the ring rotation
+    // collapses to `ToRad(ObserverLong)`. DP has no such symmetry —
+    // compass-north is the projection's local meridian tangent at
+    // (obsLat, obsLon) — so the rotation is derived from the
+    // gradient of latitude through `canonicalLatLongToDisc`, the
+    // same way `ObserversOpticalVault` rotates its cap (S682).
+    const s = model.state;
+    let angle;
+    if (s.WorldModel === 'dp') {
+      const lat = s.ObserverLat || 0;
+      const lon = s.ObserverLong || 0;
+      const eps = 1e-3;
+      const pHere = canonicalLatLongToDisc(lat, lon, 1);
+      const latProbe = lat >= 90 - eps ? lat - eps : lat + eps;
+      const sign = lat >= 90 - eps ? -1 : 1;
+      const pN = canonicalLatLongToDisc(latProbe, lon, 1);
+      const dnx = (pN[0] - pHere[0]) * sign;
+      const dny = (pN[1] - pHere[1]) * sign;
+      const nLen = Math.hypot(dnx, dny);
+      angle = nLen < 1e-9
+        ? ToRad(lon)
+        : Math.atan2(-dny / nLen, -dnx / nLen);
+    } else {
+      angle = ToRad(s.ObserverLong || 0);
+    }
+    this.group.rotation.set(0, 0, angle);
   }
 }
 

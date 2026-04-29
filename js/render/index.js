@@ -813,6 +813,14 @@ export class Renderer {
     // Optical-vault moon body (craters + phase) — only when the user
     // is inside the optical hemisphere (Optical view in FE, sphere
     // wrap in GE). Uses real ephemeris MoonPhase / MoonRotation.
+    // Observer-up = `GlobeObserverFrame.up*` so crater orientation
+    // is invariant across FE/GE world-model toggles. The frame is
+    // computed in `app.update` from observer lat/long via the same
+    // `compTransMatCelestToGlobe` matrix `MoonRotation` is derived
+    // in, so the texture's "up" axis aligns with the angle math.
+    const obsUp = c.GlobeObserverFrame
+      ? [c.GlobeObserverFrame.upX, c.GlobeObserverFrame.upY, c.GlobeObserverFrame.upZ]
+      : null;
     const moonBodyShow = showMoon && s.ShowOpticalVault && s.InsideVault;
     const moonElevFade = Math.max(0, Math.min(1, (moonElevForFade + 3) / 5));
     this.moonOpticalBody.update(
@@ -823,6 +831,7 @@ export class Renderer {
       c.MoonRotation || 0,
       this.sm.camera,
       moonElevFade,
+      obsUp,
     );
 
     // Optical-vault sun body — same size as the moon body, gated
@@ -839,6 +848,7 @@ export class Renderer {
       c.MoonRotation || 0,
       this.sm.camera,
       sunElevFade,
+      obsUp,
     );
 
     // Planet markers: same pipeline as sun/moon but each has its own vault

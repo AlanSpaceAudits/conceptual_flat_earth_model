@@ -369,21 +369,23 @@ export class LongitudeRing {
   }
 
   update(model) {
-    // Hidden in Optical-vault mode so it doesn't compete with the
-    // compass-azimuth ring on the observer's cap.
-    const inVault = !!model.state.InsideVault;
-    this.group.visible = !inVault && (model.state.ShowLongitudeRing !== false);
+    // Hidden in GE (no flat disc rim) and in Optical-vault first-
+    // person mode (the cap-attached azi ring takes over).
+    const s = model.state;
+    const ge = s.WorldModel === 'ge';
+    const inVault = !!s.InsideVault;
+    this.group.visible = !ge && !inVault && (s.ShowLongitudeRing !== false);
 
     // flip palette when DarkBackground toggles. No-op if the
     // palette already matches (guarded inside `_applyPalette`).
-    this._applyPalette(model.state.DarkBackground ? 'dark' : 'light');
+    this._applyPalette(s.DarkBackground ? 'dark' : 'light');
 
-    // Heavenly azi ring is observer-independent in every world
-    // model: 0° pinned to world +y (top of the disc), 90° at +x,
-    // 180° at −y, 270° at −x. The optical-vault cap still rotates
-    // with the observer's local compass via S682 / legacy paths;
-    // away from the projection's centre the two rings will
-    // disagree, which is intentional in DP.
+    // Heavenly azi ring is observer-independent in FE / DP: 0°
+    // pinned to world +y (top of disc), 90° at +x, 180° at −y,
+    // 270° at −x. The optical-vault cap still rotates with the
+    // observer's local compass via S682 / legacy paths; away from
+    // the projection's centre the two rings will disagree, which is
+    // intentional in DP.
     this.group.rotation.set(0, 0, -Math.PI / 2);
   }
 }

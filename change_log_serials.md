@@ -12517,3 +12517,38 @@ Format:
   camera-forward
   direction by design.
 - **Revert:** `git checkout v-s000691 -- .`
+
+## S693 — hide LongitudeRing in GE (visibility gate fix)
+
+- **Date:** 2026-04-29
+- **Files changed:**
+  - `js/render/worldObjects.js`
+- **Change:**
+  - `LongitudeRing.update`
+    re-checks
+    `WorldModel === 'ge'`
+    and force-hides the
+    ring in GE.
+    `index.js` line 577
+    already sets
+    `visible = !ge`, but
+    that runs before
+    `update()`, which
+    overwrote it with
+    `!inVault &&
+    ShowLongitudeRing`
+    every frame.
+- **Why:** with the
+  S692-locked rotation
+  the GE ring was
+  rendering as a flat
+  azimuth band at z=0
+  around the globe, no
+  longer rotating with
+  the observer — read as
+  a stuck "diagonal"
+  scale next to the
+  sphere. Belongs to FE /
+  DP only; GE has no flat
+  disc rim.
+- **Revert:** `git checkout v-s000692 -- .`

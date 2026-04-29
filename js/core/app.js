@@ -47,6 +47,21 @@ const PLANET_GP_COLORS = {
 };
 const TRACKED_GP_COLORS_PLANET_DEFAULT = 0xff8c66;
 
+// Keys that don't drive any computed value inside `App.update` —
+// they're text overlays, HUD readouts, or panel collapse flags
+// consumed only by the renderers / control panel. `setState`
+// short-circuits the heavy recompute when a patch only touches
+// these. Any new key that *would* affect a `c.*` value MUST stay
+// out of this set.
+const _UI_ONLY_STATE_KEYS = new Set([
+  'Description',
+  'MouseElevation',
+  'MouseAzimuth',
+  'ClearTraceCount',
+  'MoonPhaseExpanded',
+  'ShowLiveEphemeris',
+]);
+
 function opticalVaultProject(localGlobe, R, H) {
   return [localGlobe[0] * H, localGlobe[1] * R, localGlobe[2] * R];
 }
@@ -420,7 +435,16 @@ export class FeModel extends EventTarget {
 
   setState(patch, emit = true) {
     Object.assign(this.state, patch);
-    this.update();
+    // Skip the heavy `update()` recompute when the patch only carries
+    // UI-only keys — text overlays, HUD readouts, panel collapse
+    // flags. None of those keys are read inside `update()`, so the
+    // computed snapshot stays valid from the last frame and the
+    // renderer's `update`-event listeners can pull state directly.
+    // Empty patches (`setState({})` as a "force-emit" trigger) still
+    // run the recompute by design.
+    const keys = patch ? Object.keys(patch) : [];
+    const skipRecompute = keys.length > 0 && keys.every((k) => _UI_ONLY_STATE_KEYS.has(k));
+    if (!skipRecompute) this.update();
     if (emit) this.dispatchEvent(new CustomEvent('update', { detail: this }));
   }
 

@@ -10374,3 +10374,35 @@ Format:
   the obvious source of
   long-running tasks during a drag.
 - **Revert:** `git checkout v-s000647 -- .`
+
+## S649 — app.setState: skip recompute on UI-only patches
+
+- **Date:** 2026-04-28
+- **Files changed:**
+  - `js/core/app.js`
+- **Change:**
+  - Added `_UI_ONLY_STATE_KEYS`
+    `Set` near the top of the
+    module listing keys that no
+    `App.update` branch reads:
+    `Description`,
+    `MouseElevation`,
+    `MouseAzimuth`,
+    `ClearTraceCount`,
+    `MoonPhaseExpanded`,
+    `ShowLiveEphemeris`.
+  - `setState(patch, emit)` now
+    inspects the patch keys and
+    skips `this.update()` when
+    every key is in the UI-only
+    set. The `update` event still
+    fires so HUD subscribers
+    refresh.
+- **Why:** mobile PageSpeed audit
+  flagged INP at 231 ms (target
+  200 ms). Cursor-readout and
+  description-string updates were
+  triggering the full computed
+  pass each frame even though no
+  `c.*` value depends on them.
+- **Revert:** `git checkout v-s000648 -- .`

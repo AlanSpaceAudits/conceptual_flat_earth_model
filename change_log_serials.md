@@ -11431,7 +11431,45 @@ Format:
   re-enabling the registration
   forces the kill switch to
   install.
-- **Revert:** `git checkout v-s000671 -- .` Note: existing
+- **Revert:** `git checkout v-s000671 -- .`
+
+## S673 — index.html: importmap before any modulepreload (Firefox fix)
+
+- **Date:** 2026-04-28
+- **Files changed:**
+  - `index.html`
+- **Change:**
+  - Moved
+    `<script type="importmap">`
+    above every
+    `<link rel="modulepreload">`
+    in `<head>`.
+- **Why:** Librewolf / Firefox
+  enforces a strict ordering
+  rule: once a module load
+  or preload starts, any
+  later importmap is
+  rejected. The console
+  warned "Import maps are
+  not allowed after a module
+  load or preload has
+  started", which made
+  `import 'three'` fail with
+  "The specifier 'three' was
+  a bare specifier, but was
+  not remapped to anything"
+  and crashed
+  `js/main.js` before the
+  scene rendered — black
+  screen on every load.
+  Chrome had been silently
+  tolerant of the inverted
+  order. Putting the
+  importmap first lets the
+  spec'd resolution kick in
+  before any module fetch
+  starts.
+- **Revert:** `git checkout v-s000672 -- .` Note: existing
   installed workers persist
   in browsers — bumping
   `CACHE_VERSION` to evict

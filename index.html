@@ -14,6 +14,19 @@
 <link rel="apple-touch-icon" href="assets/ac_logo.png">
 <link rel="preload" href="css/styles.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
 <noscript><link rel="stylesheet" href="css/styles.min.css"></noscript>
+<!-- The importmap MUST be declared before any <link rel="modulepreload">
+     or <script type="module">. Firefox enforces this strictly: a
+     modulepreload kicks off the module-load pipeline, after which
+     importmaps are rejected (warning "Import maps are not allowed
+     after a module load or preload has started") and any bare
+     specifier (`import 'three'`) fails to resolve. -->
+<script type="importmap">
+{
+  "imports": {
+    "three": "./assets/vendor/three.module.min.js"
+  }
+}
+</script>
 <link rel="modulepreload" href="assets/vendor/three.module.min.js">
 <link rel="preload" href="assets/ne_110m_land.geojson" as="fetch" type="application/geo+json" crossorigin>
 <link rel="modulepreload" href="js/main.js">
@@ -24,13 +37,6 @@
 <link rel="modulepreload" href="js/data/astropixels.js">
 <link rel="modulepreload" href="js/ui/controlPanel.js">
 <link rel="modulepreload" href="js/ui/i18n.js">
-<script type="importmap">
-{
-  "imports": {
-    "three": "./assets/vendor/three.module.min.js"
-  }
-}
-</script>
 </head>
 <body>
 

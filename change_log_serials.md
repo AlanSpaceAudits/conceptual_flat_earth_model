@@ -11576,3 +11576,38 @@ Format:
   user can clear site data,
   if a roll-back leaves
   stale assets active.
+
+## S677 — revert S676: GlobeObserverFrame.up alone doesn't fix FE↔GE moon
+
+- **Date:** 2026-04-28
+- **Files changed:**
+  - `js/render/worldObjects.js`
+  - `js/render/index.js`
+- **Change:**
+  - `git revert v-s000676`.
+    Restored
+    `mesh.quaternion.copy(camera.quaternion)`
+    on
+    `MoonOpticalBody.update`
+    and
+    `SunOpticalBody.update`.
+- **Why:** the S676 patch
+  pinned the moon plane's
+  up to
+  `c.GlobeObserverFrame.up*`
+  (sphere-radial in world
+  coords). But the moon's
+  WORLD-frame position
+  differs between FE and GE
+  (FE uses an AE flat-disc
+  projection, GE uses
+  sphere-tangent), which
+  means
+  `(camera - moon)` —
+  the look direction the
+  plane orients to — also
+  differs. Pinning `mesh.up`
+  alone doesn't compensate.
+  Reverting while a correct
+  fix is designed.
+- **Revert:** `git checkout 8815abb -- .`

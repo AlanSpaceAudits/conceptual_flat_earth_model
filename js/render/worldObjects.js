@@ -6270,6 +6270,8 @@ export class GPTracer {
           starColor = 0x40e0d0;
         } else if (c.Galaxies && (entry = c.Galaxies.find((x) => x.id === starId))) {
           starColor = 0xff80c0;
+        } else if (c.CelTheoStars && (entry = c.CelTheoStars.find((x) => x.id === starId))) {
+          starColor = 0xff8c00;
         } else if (c.Satellites && (entry = c.Satellites.find((x) => x.id === starId))) {
           starColor = 0x66ff88;
         }

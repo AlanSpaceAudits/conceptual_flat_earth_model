@@ -97,6 +97,7 @@ const SKY_HIDDEN = {
   ShowBlackHoles:          false,
   ShowQuasars:             false,
   ShowGalaxies:            false,
+  ShowCelTheo:             false,
   ShowSatellites:          false,
   // Shadows / day-night shading off so the line-art map stays a
   // clean black backdrop. ShowShadow drives the FE disc shadow

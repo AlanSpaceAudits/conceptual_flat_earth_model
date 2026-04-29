@@ -10,6 +10,7 @@ import { CATALOGUED_STARS, CONSTELLATIONS } from '../core/constellations.js';
 import { BLACK_HOLES } from '../core/blackHoles.js';
 import { QUASARS }     from '../core/quasars.js';
 import { GALAXIES }    from '../core/galaxies.js';
+import { CEL_THEO_STARS, CEL_THEO_OWN } from '../core/celTheoStars.js';
 import { SATELLITES }  from '../core/satellites.js';
 import { NAMED_STARS_HYG }    from '../core/_namedStarsHyg.js';
 import { NAMED_STARS_HYG_EXTRA } from '../core/_namedStarsHygExtra.js';
@@ -55,6 +56,7 @@ const BODY_SEARCH_INDEX = (() => {
   for (const b of BLACK_HOLES)       out.push({ id: `star:${b.id}`, name: b.name, color: '#9966ff' });
   for (const q of QUASARS)           out.push({ id: `star:${q.id}`, name: q.name, color: '#40e0d0' });
   for (const g of GALAXIES)          out.push({ id: `star:${g.id}`, name: g.name, color: '#ff80c0' });
+  for (const s of CEL_THEO_OWN)      out.push({ id: `star:${s.id}`, name: s.name, color: '#ff8c00' });
   for (const s of SATELLITES)        out.push({ id: `star:${s.id}`, name: s.name, color: '#66ff88' });
   for (const s of NAMED_STARS_HYG)        out.push({ id: `star:${s.id}`, name: s.name, color: '#fff5d8' });
   for (const s of NAMED_STARS_HYG_EXTRA)  out.push({ id: `star:${s.id}`, name: s.name, color: '#fff5d8' });
@@ -74,7 +76,7 @@ function resolveTargetAngles(targetId, c) {
   if (c.Planets && c.Planets[targetId]) return c.Planets[targetId].anglesGlobe || null;
   if (targetId.startsWith('star:')) {
     const id = targetId.slice(5);
-    for (const list of [c.CelNavStars, c.CataloguedStars, c.BlackHoles, c.Quasars, c.Galaxies]) {
+    for (const list of [c.CelNavStars, c.CataloguedStars, c.BlackHoles, c.Quasars, c.Galaxies, c.CelTheoStars]) {
       if (!list) continue;
       const f = list.find((x) => x.id === id);
       if (f) return f.anglesGlobe || null;
@@ -975,6 +977,35 @@ const FIELD_GROUPS = [
           [...GALAXIES]
             .sort((a, b) => a.name.localeCompare(b.name))
             .map((g) => ({ value: `star:${g.id}`, label: g.name, color: '#ff80c0' })),
+        },
+      ]},
+      { title: 'Cel Theo', rows: [
+        { key: 'ShowCelTheo', label: 'Show', bool: true },
+        { label: '', buttonLabel: 'Enable All',
+          onClick: (m) => m.setState({
+            TrackerTargets: [
+              ...new Set([
+                ...(Array.isArray(m.state.TrackerTargets) ? m.state.TrackerTargets : []),
+                ...CEL_THEO_STARS.map((s) => `star:${s.extId || s.id}`),
+              ]),
+            ],
+            ShowCelTheo: true,
+          }) },
+        { label: '', buttonLabel: 'Disable All',
+          onClick: (m) => {
+            const ids = new Set(CEL_THEO_STARS.map((s) => `star:${s.extId || s.id}`));
+            const cur = Array.isArray(m.state.TrackerTargets) ? m.state.TrackerTargets : [];
+            m.setState({ TrackerTargets: cur.filter((t) => !ids.has(t)) });
+          } },
+        { key: 'TrackerTargets', label: '', buttonGrid:
+          // Preserve user-supplied order (not alphabetised) — the
+          // sequence on Roohif's celestial-theodolite list reflects
+          // the observation timeline.
+          CEL_THEO_STARS.map((s) => ({
+            value: `star:${s.extId || s.id}`,
+            label: s.name,
+            color: '#ff8c00',
+          })),
         },
       ]},
       { title: 'Satellites', rows: [

@@ -130,6 +130,17 @@ export class Renderer {
     });
     this.sm.world.add(this.galaxyStars.group);
 
+    this.celTheoStars = new CatalogPointStars({
+      sourceKey: 'CelTheoStars',
+      color: 0xff8c00,
+      domeSize: 4,
+      sphereSize: 3.5,
+      maxCount: 64,
+      clippingPlanes: clipPlanes,
+      showKey: 'ShowCelTheo',
+    });
+    this.sm.world.add(this.celTheoStars.group);
+
     // Satellites ride the same generic renderer but default off
     // (visibility is state-gated via ShowSatellites — the computed
     // array is simply empty when the user hasn't enabled them).
@@ -669,6 +680,7 @@ export class Renderer {
     this.blackHoleStars.update(m);
     this.quasarStars.update(m);
     this.galaxyStars.update(m);
+    this.celTheoStars.update(m);
     this.satelliteStars.update(m);
     this.gpPathOverlay.update(m);
     this.centralAngleArcs.update(m);
@@ -1283,6 +1295,7 @@ export class Renderer {
       galaxy:     0xff80c0,
       satellite:  0x66ff88,
       bsc:        0xfff5d8,
+      celtheo:    0xff8c00,
     };
     const findStarEntry = (starId) => {
       const lookups = [
@@ -1292,6 +1305,7 @@ export class Renderer {
         ['quasar',     c.Quasars],
         ['galaxy',     c.Galaxies],
         ['satellite',  c.Satellites],
+        ['celtheo',    c.CelTheoStars],
       ];
       for (const [cat, list] of lookups) {
         if (!list) continue;

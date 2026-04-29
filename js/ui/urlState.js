@@ -18,7 +18,7 @@ const PERSISTED_KEYS = [
   'ShowCelestialPoles', 'DarkBackground',
   'ShowLiveEphemeris', 'MoonPhaseExpanded',
   'ShowSatellites', 'ShowCelestialBodies', 'ShowCelNav',
-  'ShowBlackHoles', 'ShowQuasars', 'ShowGalaxies',
+  'ShowBlackHoles', 'ShowQuasars', 'ShowGalaxies', 'ShowCelTheo',
   'ShowGPPath', 'GPPathDays',
   'ShowSunAnalemma', 'ShowMoonAnalemma',
   'DynamicStars',

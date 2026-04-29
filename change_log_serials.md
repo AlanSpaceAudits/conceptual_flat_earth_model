@@ -10774,3 +10774,117 @@ Format:
   time the import resolves the
   module is already in cache.
 - **Revert:** `git checkout v-s000658 -- .`
+
+## S660 — Cel Theo: catalogue + tracker section + render layer
+
+- **Date:** 2026-04-28
+- **Files changed:**
+  - `js/core/celTheoStars.js` (new)
+  - `js/core/app.js`
+  - `js/render/index.js`
+  - `js/render/worldObjects.js`
+  - `js/ui/controlPanel.js`
+  - `js/ui/mouseHandler.js`
+  - `js/ui/urlState.js`
+  - `js/demos/flightRoutes.js`
+- **Change:**
+  - New `CEL_THEO_STARS`
+    catalogue (42 entries) for
+    Roohif's celestial-theodolite
+    targets. RA / Dec sourced
+    from HYG v4.1 (32 stars) +
+    SIMBAD (LP Aqr, EZ Cet, HD
+    77039, HD 144519/429/392,
+    SAO 117309/493/565). Three
+    explicit duplicates carry
+    the base star's coords with
+    a distinct id (`ct_*_2`,
+    `ct_*_3`, `ct_*_moon`)
+    so the menu can list each
+    occurrence the observer
+    flagged.
+  - Seven entries (Regulus,
+    Rigel, Mintaka, Alnilam,
+    Alnitak, Baten Kaitos, HD
+    207098 = Deneb Algedi)
+    carry `extId` instead of
+    raH / decD; the menu button
+    routes to the existing
+    cel-nav / constellations /
+    bsc star id rather than
+    re-rendering a duplicate
+    dot.
+  - β 949 (Burnham 949) left as
+    a comment-only TODO —
+    SIMBAD did not resolve under
+    `Burnham 949`, `BU 949`, or
+    `BUP 949`.
+  - `app.update`: imports
+    `CEL_THEO_STARS` /
+    `CEL_THEO_OWN`. Adds
+    `ShowCelTheo: true` default.
+    Default `TrackerTargets`
+    bundles only `CEL_THEO_OWN`
+    ids (the seven `extId`
+    aliases stay deduplicated
+    against their primary
+    catalogue rows). Star
+    projection block writes
+    `c.CelTheoStars` alongside
+    the existing five lists.
+    `TrackerInfos` loop +
+    `gpColorByCat` extended for
+    a new `celtheo` category
+    (orange `#ff8c00`). GP-path
+    star sweep includes
+    `CEL_THEO_OWN`.
+  - `render/index.js`:
+    instantiates a sixth
+    `CatalogPointStars` with
+    `sourceKey: 'CelTheoStars'`,
+    `showKey: 'ShowCelTheo'`,
+    color `0xff8c00`, max 64,
+    and routes its `.update(m)`
+    call. `findStarEntry`
+    lookup chain extended.
+  - `render/worldObjects.js`:
+    popup star-entry resolver
+    extended with
+    `c.CelTheoStars` branch.
+  - `ui/controlPanel.js`:
+    new "Cel Theo" tracker
+    section after Galaxies
+    with Show toggle, Enable
+    All / Disable All buttons,
+    and a button grid
+    preserving Roohif's
+    observation-timeline order
+    (intentionally not
+    alphabetised). Buttons
+    route to `s.extId || s.id`
+    so overlap stars hit the
+    primary catalogue.
+    `FOLLOW_TARGET_OPTIONS`
+    + `resolveTargetAngles`
+    extended with Cel Theo
+    own-coord entries.
+  - `ui/mouseHandler.js`:
+    four hover / click
+    hit-test loops gain
+    `c.CelTheoStars`.
+  - `ui/urlState.js`: persists
+    `ShowCelTheo` in the URL
+    hash.
+  - `demos/flightRoutes.js`:
+    Flight Routes demo turns
+    `ShowCelTheo` off
+    alongside the other star
+    catalogues.
+- **Why:** user request. Roohif's
+  Celestial Theodolite list
+  needs to track in the
+  simulator. Default-on
+  visibility matches the
+  existing pattern for the
+  other dot catalogues.
+- **Revert:** `git checkout v-s000659 -- .`

@@ -85,7 +85,7 @@ function resolveTargetAngles(targetId, c) {
   if (targetId.startsWith('star:')) {
     const id = targetId.slice(5);
     for (const list of [
-      c.CelNavStars, c.CataloguedStars, c.BlackHoles, c.Quasars, c.Galaxies, c.Satellites,
+      c.CelNavStars, c.CataloguedStars, c.BlackHoles, c.Quasars, c.Galaxies, c.CelTheoStars, c.Satellites,
     ]) {
       if (!list) continue;
       const found = list.find((x) => x.id === id);
@@ -116,7 +116,7 @@ function collectClickables(c, state) {
   }
   if (starsVisible(c, state)) {
     for (const list of [
-      c.CelNavStars, c.CataloguedStars, c.BlackHoles, c.Quasars, c.Galaxies,
+      c.CelNavStars, c.CataloguedStars, c.BlackHoles, c.Quasars, c.Galaxies, c.CelTheoStars,
     ]) {
       if (!list) continue;
       for (const s of list) {
@@ -157,7 +157,7 @@ function displayNameFor(id, c) {
   if (id.startsWith('star:')) {
     const starId = id.slice(5);
     for (const list of [
-      c.CelNavStars, c.CataloguedStars, c.BlackHoles, c.Quasars, c.Galaxies,
+      c.CelNavStars, c.CataloguedStars, c.BlackHoles, c.Quasars, c.Galaxies, c.CelTheoStars,
     ]) {
       if (!list) continue;
       const f = list.find((x) => x.id === starId);
@@ -215,7 +215,7 @@ function collectHeavenlyCandidates(c, state) {
   }
   if (starsVisible(c, state)) {
     for (const list of [
-      c.CelNavStars, c.CataloguedStars, c.BlackHoles, c.Quasars, c.Galaxies, c.Satellites,
+      c.CelNavStars, c.CataloguedStars, c.BlackHoles, c.Quasars, c.Galaxies, c.CelTheoStars, c.Satellites,
     ]) {
       if (!list) continue;
       for (const s of list) {

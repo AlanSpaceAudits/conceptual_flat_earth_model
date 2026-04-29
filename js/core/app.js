@@ -22,6 +22,7 @@ import { CATALOGUED_STARS, cataloguedStarById } from './constellations.js';
 import { BLACK_HOLES, blackHoleById } from './blackHoles.js';
 import { QUASARS,      quasarById }    from './quasars.js';
 import { GALAXIES,     galaxyById }    from './galaxies.js';
+import { CEL_THEO_STARS, CEL_THEO_OWN } from './celTheoStars.js';
 import { SATELLITES,   satelliteById, satelliteSubPoint } from './satellites.js';
 import { SATELLITES_EXTRA } from './satellitesExtra.js';
 import {
@@ -271,6 +272,7 @@ function defaultState() {
     ShowBlackHoles:          true,
     ShowQuasars:             true,
     ShowGalaxies:            true,
+    ShowCelTheo:             true,
     Language:                'en',
     GPOverridePlanets:         false,
     GPOverrideCelNav:          false,
@@ -351,6 +353,13 @@ function defaultState() {
       ...BLACK_HOLES.map((x) => `star:${x.id}`),
       ...QUASARS.map((x) => `star:${x.id}`),
       ...GALAXIES.map((x) => `star:${x.id}`),
+      // Cel Theo: only the entries with their own coordinates. The
+      // `extId` aliases (Regulus / Rigel / Mintaka / Alnilam /
+      // Alnitak / Baten Kaitos / Deneb Algedi) already sit in the
+      // default tracker via CEL_NAV_STARS / CATALOGUED_STARS /
+      // NAMED_STARS_HYG, so duplicating them here would just stack
+      // extra rows in the HUD pointing at the same id.
+      ...CEL_THEO_OWN.map((x) => `star:${x.id}`),
       ...SATELLITES.map((x) => `star:${x.id}`),
     ],
 
@@ -1141,12 +1150,14 @@ export class FeModel extends EventTarget {
       c.BlackHoles      = BLACK_HOLES.map(projectStar);
       c.Quasars         = QUASARS.map(projectStar);
       c.Galaxies        = GALAXIES.map(projectStar);
+      c.CelTheoStars    = CEL_THEO_OWN.map(projectStar);
     } else {
       c.CelNavStars = [];
       c.CataloguedStars = [];
       c.BlackHoles = [];
       c.Quasars = [];
       c.Galaxies = [];
+      c.CelTheoStars = [];
     }
 
     // Satellites: sub-point (lat, lon) computed per-frame from
@@ -1287,6 +1298,7 @@ export class FeModel extends EventTarget {
         [BLACK_HOLES,      0x9966ff, 'bh'],
         [QUASARS,          0x40e0d0, 'q'],
         [GALAXIES,         0xff80c0, 'gal'],
+        [CEL_THEO_OWN,     0xff8c00, 'ct'],
       ];
       for (const [list, color, prefix] of starCategories) {
         for (const star of list) {
@@ -1439,6 +1451,11 @@ export class FeModel extends EventTarget {
           def   = galaxyById(starId);
           if (entry) cat = 'galaxy';
         }
+        if (!entry && c.CelTheoStars) {
+          entry = c.CelTheoStars.find((x) => x.id === starId);
+          def   = entry ? { name: entry.name, mag: entry.mag } : null;
+          if (entry) cat = 'celtheo';
+        }
         if (!entry) {
           entry = c.Satellites.find((x) => x.id === starId);
           def   = satelliteById(starId) || (entry ? { name: entry.name, mag: -1.5 } : null);
@@ -1453,6 +1470,7 @@ export class FeModel extends EventTarget {
             quasar:     0x40e0d0,  // cyan
             galaxy:     0xff80c0,  // pink
             satellite:  0x66ff88,  // lime green
+            celtheo:    0xff8c00,  // orange
           };
           // Stars carry a single catalog RA / Dec — no five-pipeline
           // ephemeris comparison applies. Drop the redundant

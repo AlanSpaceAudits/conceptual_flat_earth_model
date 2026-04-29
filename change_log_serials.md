@@ -11094,3 +11094,52 @@ Format:
   without triggering a
   synchronous layout flush.
 - **Revert:** `git checkout v-s000664 -- .`
+
+## S666 — controlPanel: lazy-build Demos tab body until first open
+
+- **Date:** 2026-04-28
+- **Files changed:**
+  - `js/ui/controlPanel.js`
+- **Change:**
+  - `registerTab(label, buildInto,
+    { lazy = false } = {})` now
+    accepts a third options
+    object. When `lazy: true`,
+    the build callback is
+    deferred until either the
+    tab button is clicked or
+    the feature-search opens
+    the tab. The first call
+    flips a `_built` flag so
+    subsequent opens are
+    no-ops on the build path.
+  - `featureOpen.fn` invokes
+    `tabEntries[idx].ensureBuilt()`
+    before unhiding the popup
+    so search-driven shortcuts
+    pick up the same lazy
+    contract.
+  - The Demos tab registration
+    passes `{ lazy: true }`.
+    The Demos panel host now
+    builds its 80+ demo
+    buttons only when the user
+    actually opens the Demos
+    tab.
+- **Why:** Lighthouse mobile lab
+  flagged a 1314-element DOM
+  with 83 children under
+  `.demo-list`, plus 23.6 s of
+  CPU time attributed to
+  `demos/index.js`. The Demos
+  tab is rarely opened on cold
+  load — its 80 listener
+  attachments and grouped
+  header / button creation
+  shouldn't compete with the
+  initial paint.
+  `demos._refreshPanel()`
+  already guards on
+  `this._listEl` so external
+  callers stay safe pre-build.
+- **Revert:** `git checkout v-s000665 -- .`

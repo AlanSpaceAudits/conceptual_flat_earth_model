@@ -2355,6 +2355,11 @@ export function buildControlPanel(host, model, demos) {
       tabEntries[activeIdx].popup.hidden = true;
       tabEntries[activeIdx].btn.setAttribute('aria-selected', 'false');
     }
+    // Lazy tabs (e.g. Demos) defer their build callback until the
+    // tab is opened — feature-search shortcut presses count as open.
+    if (typeof tabEntries[idx].ensureBuilt === 'function') {
+      tabEntries[idx].ensureBuilt();
+    }
     positionPopup(idx);
     tabEntries[idx].popup.hidden = false;
     tabEntries[idx].btn.setAttribute('aria-selected', 'true');
@@ -2381,7 +2386,7 @@ export function buildControlPanel(host, model, demos) {
     View: 'tab_view', Time: 'tab_time', Show: 'tab_show',
     Tracker: 'tab_tracker', Demos: 'tab_demos', Info: 'tab_info',
   };
-  const registerTab = (label, buildInto) => {
+  const registerTab = (label, buildInto, { lazy = false } = {}) => {
     const btn = document.createElement('button');
     btn.className = 'tab-btn';
     btn.type = 'button';
@@ -2397,11 +2402,23 @@ export function buildControlPanel(host, model, demos) {
     popup.hidden = true;
     popupsContainer.appendChild(popup);
 
-    buildInto(popup);
+    // Heavy tab bodies (e.g. Demos with its 80+ button list) defer
+    // their build callback until the user actually opens the tab.
+    // Cuts initial DOM size + cold-start JS execution time.
+    let _built = false;
+    const ensureBuilt = () => {
+      if (_built) return;
+      _built = true;
+      buildInto(popup);
+    };
+    if (!lazy) ensureBuilt();
 
     const idx = tabEntries.length;
-    tabEntries.push({ btn, popup });
-    btn.addEventListener('click', () => openTab(idx));
+    tabEntries.push({ btn, popup, ensureBuilt });
+    btn.addEventListener('click', () => {
+      ensureBuilt();
+      openTab(idx);
+    });
   };
 
   for (const tab of FIELD_GROUPS) {
@@ -2430,7 +2447,7 @@ export function buildControlPanel(host, model, demos) {
       host.className = 'demos-host';
       popup.appendChild(host);
       demos.renderInto(host);
-    });
+    }, { lazy: true });
   }
 
   registerTab('Info', (popup) => {

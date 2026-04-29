@@ -219,7 +219,18 @@ export function buildImageMap(projection, { feRadius = 1 } = {}) {
   group.name = 'land';
 
   const loader = new THREE.TextureLoader();
-  const tex = loader.load(projection.imageAsset);
+  // WebP-first with optional original-format fallback for browsers
+  // that can't decode WebP (effectively pre-iOS 14). The fallback
+  // re-loads the bytes into the same `tex.image` so the texture
+  // ref stays valid.
+  const tex = loader.load(projection.imageAsset, undefined, undefined,
+    projection.imageAssetFallback ? () => {
+      loader.load(projection.imageAssetFallback, (loaded) => {
+        tex.image = loaded.image;
+        tex.needsUpdate = true;
+      });
+    } : undefined,
+  );
   tex.colorSpace = THREE.SRGBColorSpace;
   tex.minFilter  = THREE.LinearMipMapLinearFilter;
   tex.magFilter  = THREE.LinearFilter;

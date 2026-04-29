@@ -153,12 +153,16 @@ export class StarfieldChart {
     // Each entry: { url | generator, width, height }. Inscribed-
     // circle crop is computed per-entry so charts with different
     // source aspect ratios all map onto the disc edge-to-edge.
+    // WebP variants (lossless, ~30 % smaller than PNG) are the
+    // primary asset; the original PNGs stay in `assets/` as a
+    // fallback served by the texture loader's error callback for
+    // browsers without WebP decode support (effectively pre-iOS 14).
     const CHART_DEFS = {
-      'chart-dark':  { url: 'assets/starfield_dark.png',         width: 1920, height: 1080 },
-      'chart-light': { url: 'assets/starfield_light.png',        width: 1920, height: 1080 },
-      'ae_aries':    { url: 'assets/starfield_ae_aries.png',     width: 1920, height: 1080 },
-      'ae_aries_2':  { url: 'assets/starfield_ae_aries_2.png',   width: 2476, height: 1246 },
-      'ae_aries_3':  { url: 'assets/starfield_ae_aries_3.png',   width: 1920, height: 1080 },
+      'chart-dark':  { url: 'assets/starfield_dark.webp',        fallback: 'assets/starfield_dark.png',        width: 1920, height: 1080 },
+      'chart-light': { url: 'assets/starfield_light.webp',       fallback: 'assets/starfield_light.png',       width: 1920, height: 1080 },
+      'ae_aries':    { url: 'assets/starfield_ae_aries.webp',    fallback: 'assets/starfield_ae_aries.png',    width: 1920, height: 1080 },
+      'ae_aries_2':  { url: 'assets/starfield_ae_aries_2.webp',  fallback: 'assets/starfield_ae_aries_2.png',  width: 2476, height: 1246 },
+      'ae_aries_3':  { url: 'assets/starfield_ae_aries_3.webp',  fallback: 'assets/starfield_ae_aries_3.png',  width: 1920, height: 1080 },
       'alphabeta':   { generator: makeAlphabetaCanvas,           width: 1080, height: 1080 },
     };
     this.charts = {};
@@ -167,7 +171,13 @@ export class StarfieldChart {
       if (def.generator) {
         tex = new THREE.CanvasTexture(def.generator());
       } else {
-        tex = loader.load(def.url);
+        // Try the WebP first; on error swap to the PNG fallback.
+        tex = loader.load(def.url, undefined, undefined, def.fallback ? () => {
+          loader.load(def.fallback, (loaded) => {
+            tex.image = loaded.image;
+            tex.needsUpdate = true;
+          });
+        } : undefined);
       }
       tex.colorSpace = THREE.SRGBColorSpace;
       tex.minFilter  = THREE.LinearMipMapLinearFilter;

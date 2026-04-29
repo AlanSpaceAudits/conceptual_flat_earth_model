@@ -343,7 +343,8 @@ export const PROJECTIONS = {
   hq_equirect_day: {
     id: 'hq_equirect_day', name: 'HQ Equirectangular (day)',
     category: 'hq',
-    imageAsset: 'assets/map_hq_equirect_day.jpg',
+    imageAsset: 'assets/map_hq_equirect_day.webp',
+    imageAssetFallback: 'assets/map_hq_equirect_day.jpg',
     imageNativeWidth: 2048, imageNativeHeight: 1024,
     imageInscribedRadius: 0.5,
     wrapsSphere: true,
@@ -354,7 +355,8 @@ export const PROJECTIONS = {
   hq_equirect_night: {
     id: 'hq_equirect_night', name: 'HQ Equirectangular (night)',
     category: 'hq',
-    imageAsset: 'assets/map_hq_equirect_night.jpg',
+    imageAsset: 'assets/map_hq_equirect_night.webp',
+    imageAssetFallback: 'assets/map_hq_equirect_night.jpg',
     imageNativeWidth: 2048, imageNativeHeight: 1024,
     imageInscribedRadius: 0.5,
     wrapsSphere: true,

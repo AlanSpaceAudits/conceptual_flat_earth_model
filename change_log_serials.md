@@ -11143,3 +11143,69 @@ Format:
   `this._listEl` so external
   callers stay safe pre-build.
 - **Revert:** `git checkout v-s000665 -- .`
+
+## S667 — assets: WebP variants for starfields + HQ map textures
+
+- **Date:** 2026-04-28
+- **Files changed:**
+  - `assets/starfield_dark.webp`
+    (new)
+  - `assets/starfield_light.webp`
+    (new)
+  - `assets/starfield_ae_aries.webp`
+    (new)
+  - `assets/starfield_ae_aries_2.webp`
+    (new)
+  - `assets/starfield_ae_aries_3.webp`
+    (new)
+  - `assets/map_hq_equirect_day.webp`
+    (new)
+  - `assets/map_hq_equirect_night.webp`
+    (new)
+  - `js/render/starfieldChart.js`
+  - `js/core/projections.js`
+  - `js/render/earthMap.js`
+- **Change:**
+  - Generated lossless WebP for
+    the five starfield PNGs
+    (combined 9.99 MiB → 6.31
+    MiB, ~3.7 MiB savings) and
+    quality-85 lossy WebP for
+    the two HQ equirectangular
+    JPEGs (combined 718 KiB →
+    231 KiB, ~487 KiB savings).
+    Original PNG / JPG files
+    stay in place as fallbacks.
+  - `starfieldChart.js`'s
+    `CHART_DEFS` carries
+    `url` (WebP) and
+    `fallback` (PNG); the
+    `TextureLoader.load`
+    error callback re-issues
+    the fallback URL and
+    pipes the loaded image
+    back onto the same
+    `tex.image` so material
+    refs stay valid.
+  - `projections.js`
+    `imageAsset` for the two
+    HQ entries flips to
+    `.webp`; new
+    `imageAssetFallback` field
+    holds the original
+    `.jpg` path. `earthMap.js`
+    `buildImageMap` mirrors
+    the loader pattern used
+    in `starfieldChart`.
+- **Why:** Lighthouse mobile
+  flagged "Avoid enormous
+  network payloads" with a
+  total of 12,047 KiB. The
+  five starfield assets +
+  two map JPEGs accounted for
+  10.7 MiB. WebP cuts the
+  starfields by ~30 % each
+  (lossless) and the JPEGs by
+  ~65 % (high-quality
+  lossy).
+- **Revert:** `git checkout v-s000666 -- .`

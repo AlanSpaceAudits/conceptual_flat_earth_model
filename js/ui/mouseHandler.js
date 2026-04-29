@@ -316,6 +316,29 @@ export function attachMouseHandler(canvas, model, renderer = null) {
   let downX = 0, downY = 0;
   let dragDist = 0;
   const hoverTip = ensureHoverTooltip();
+
+  // rAF-coalesced setState for pointer-move work. Touch / trackpad
+  // pointermove events fire at 90–144 Hz on modern devices; each
+  // setState triggers the full `app.update` pass which dominates
+  // INP on mobile. Buffering the latest patch and flushing once
+  // per `requestAnimationFrame` caps the rate at the display's
+  // refresh and merges sequential patches under the same key
+  // (last-write-wins). Behaviour is unchanged at the visible
+  // frame boundary; only sub-frame work is dropped.
+  let _pendingMovePatch = null;
+  let _moveRafScheduled = false;
+  const scheduleMovePatch = (patch) => {
+    _pendingMovePatch = { ..._pendingMovePatch, ...patch };
+    if (_moveRafScheduled) return;
+    _moveRafScheduled = true;
+    requestAnimationFrame(() => {
+      _moveRafScheduled = false;
+      if (_pendingMovePatch) {
+        model.setState(_pendingMovePatch);
+        _pendingMovePatch = null;
+      }
+    });
+  };
   // Id of the celestial body currently under the cursor (whatever the
   // hover tooltip is showing). Used by the pointer-up click handler so
   // the selected target is exactly the one whose info box the user
@@ -479,7 +502,7 @@ export function attachMouseHandler(canvas, model, renderer = null) {
     if (dotDragging) {
       const ll = cursorToLatLon(e.offsetX, e.offsetY);
       if (ll) {
-        model.setState({ ObserverLat: ll.lat, ObserverLong: ll.lon });
+        scheduleMovePatch({ ObserverLat: ll.lat, ObserverLong: ll.lon });
       }
       return;
     }
@@ -511,7 +534,7 @@ export function attachMouseHandler(canvas, model, renderer = null) {
       const sky = canvasToSkyAngles(canvas, e.offsetX, e.offsetY, model.state);
       if (model.state.MouseElevation !== sky.el
           || model.state.MouseAzimuth !== sky.az) {
-        model.setState({ MouseElevation: sky.el, MouseAzimuth: sky.az });
+        scheduleMovePatch({ MouseElevation: sky.el, MouseAzimuth: sky.az });
       }
       // Hover tooltip: when cursor is within the click-hit threshold
       // of a celestial body, float its name + az/el next to the
@@ -543,7 +566,7 @@ export function attachMouseHandler(canvas, model, renderer = null) {
       // body's world-space vault position, not pinhole az/el.
       if (model.state.MouseElevation !== null
           || model.state.MouseAzimuth !== null) {
-        model.setState({ MouseElevation: null, MouseAzimuth: null });
+        scheduleMovePatch({ MouseElevation: null, MouseAzimuth: null });
       }
       if (!dragging) {
         const camera = window.renderer?.sm?.camera || null;
@@ -583,7 +606,7 @@ export function attachMouseHandler(canvas, model, renderer = null) {
     lastX = e.offsetX; lastY = e.offsetY;
 
     if (e.ctrlKey || e.metaKey) {
-      model.setState({
+      scheduleMovePatch({
         ObserverLat: model.state.ObserverLat - (dy / w) * POS_INCR,
         ObserverLong: model.state.ObserverLong + (dx / h) * POS_INCR,
         Description: '',
@@ -599,7 +622,7 @@ export function attachMouseHandler(canvas, model, renderer = null) {
       // Drag right: heading+. Drag up: pitch+. Pitch clamped 0..90°.
       const heading = model.state.ObserverHeading || 0;
       const pitch   = model.state.CameraHeight || 0;
-      model.setState({
+      scheduleMovePatch({
         ObserverHeading: ((heading + (dx / w) * FP_LOOK_INCR) % 360 + 360) % 360,
         CameraHeight: Math.max(0, Math.min(90,
           pitch - (dy / h) * FP_LOOK_INCR)),
@@ -611,7 +634,7 @@ export function attachMouseHandler(canvas, model, renderer = null) {
     // the underside of the globe is reachable; FE keeps its 0°
     // floor since the disc has no underside to inspect.
     const minPitch = model.state.WorldModel === 'ge' ? -89.9 : 0;
-    model.setState({
+    scheduleMovePatch({
       CameraDirection: model.state.CameraDirection - (dx / w) * ROT_INCR,
       CameraHeight: Math.max(minPitch, Math.min(89.9,
         model.state.CameraHeight + (dy / h) * ROT_INCR)),

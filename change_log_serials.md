@@ -10326,3 +10326,51 @@ Format:
     ecliptic → equatorial).
   - "Coverage" footer reworded.
 - **Revert:** `git checkout v-s000646 -- .`
+
+## S648 — mouseHandler: rAF-coalesce pointer-move setStates
+
+- **Date:** 2026-04-28
+- **Files changed:**
+  - `js/ui/mouseHandler.js`
+- **Change:**
+  - Added `scheduleMovePatch(patch)`
+    helper inside
+    `attachMouseHandler`. Buffers
+    the latest patch into a single
+    object and flushes via
+    `requestAnimationFrame`, so
+    multiple setState calls inside
+    one frame collapse to a single
+    `model.setState` and a single
+    `app.update` pass.
+  - Routed every drag-related
+    `model.setState` through the
+    new helper:
+    - Orange-dot drag observer
+      reposition.
+    - `MouseElevation` /
+      `MouseAzimuth` cursor
+      readouts (Optical mode +
+      Heavenly clear).
+    - Ctrl / meta + drag observer
+      lat / lon pan.
+    - Optical first-person
+      heading / pitch look-around.
+    - Heavenly orbit-camera
+      dir / height pan.
+  - Hover tooltip DOM updates and
+    pure read-side computations
+    stay synchronous; only the
+    state-mutation calls go through
+    the rAF gate.
+- **Why:** mobile PageSpeed audit
+  flagged INP at 231 ms (target
+  200 ms). Pointer events on
+  touch / 120 Hz devices fire well
+  above the display refresh rate;
+  each one previously triggered a
+  full `app.update` pass. Capping
+  to one update per frame removes
+  the obvious source of
+  long-running tasks during a drag.
+- **Revert:** `git checkout v-s000647 -- .`

@@ -11914,3 +11914,89 @@ Format:
   instead of DP-meridian
   angles.
 - **Revert:** `git checkout v-s000681 -- .`
+
+## S683 — DP: FE-conceptual rays for optical-vault apparent positions
+
+- **Date:** 2026-04-29
+- **Files changed:**
+  - `js/core/transforms.js`
+  - `js/core/app.js`
+  - `js/render/worldObjects.js`
+- **Change:**
+  - New
+    `feConceptualLocalGlobeUnit(vaultGlobalFe,
+    observerGlobalFe,
+    transMatLocalFeToGlobalFe)`
+    helper in
+    `transforms.js`. Returns
+    the unit ray
+    observer → vault
+    expressed in local-globe
+    axes
+    (zenith / east / north).
+  - `app.js`: when
+    `WorldModel === 'dp'`,
+    sun / moon / planets +
+    every star catalogue
+    (CelNav, Cataloged,
+    BlackHoles, Quasars,
+    Galaxies, CelTheo,
+    satellites) build
+    `*OpticalVaultCoord`
+    from
+    `feConceptualLocalGlobeUnit(VaultCoord,
+    ObserverFeCoord, ...)`
+    instead of the
+    sphere-model
+    `celestCoordToLocalGlobeCoord`.
+    AnglesGlobe and
+    day / night / eclipse
+    pre-conditions stay on
+    the sphere-model
+    direction so HUD
+    az / el and astronomical
+    timing keep using
+    celestial mechanics
+    rather than
+    DP-conceptual angles.
+  - `worldObjects.js`
+    Stars class: heavenly-
+    vault star disc
+    position now goes
+    through
+    `canonicalLatLongToDisc`
+    (was inlined AE
+    formula), so DP-mode
+    background stars wrap
+    in lockstep with the
+    GP renderer. Optical-
+    vault projection for
+    each star uses the
+    FE-conceptual ray from
+    observer to that
+    star's heavenly-vault
+    position when DP is
+    active.
+- **Why:** user feedback —
+  star GPs were correctly
+  doing the DP "weird
+  motion" but the
+  apparent positions on
+  the optical vault
+  weren't following.
+  Sphere-model was
+  producing uniform
+  daily arcs in DP. The
+  FE-conceptual ray makes
+  the angular sweep
+  speed up / slow down
+  to match the DP-disc
+  wrapping a stationary
+  observer would actually
+  see. Constellation
+  lines + DeclinationCircles
+  still use sphere-model
+  on the optical vault;
+  separate task if those
+  need DP wrapping too.
+- **Revert:** `git checkout v-s000682 -- .`

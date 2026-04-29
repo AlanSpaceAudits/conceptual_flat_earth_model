@@ -164,3 +164,32 @@ export function localGlobeCoordToGlobalFeCoord(v, transMatLocalFeToGlobalFe) {
 export function vaultCoordToGlobalFeCoord(v, transMatDomeToFe) {
   return M.Trans(transMatDomeToFe, v);
 }
+
+// FE-conceptual unit direction in the observer's local-globe frame
+// (x = zenith, y = east, z = north).
+//
+// Given a body's vault position in global FE coords and the
+// observer's global FE position, this returns the unit ray
+// observer → body expressed in local-globe axes — i.e. what the
+// observer sees on a flat-earth conceptual model where the active
+// projection (currently DP) places both the observer and the vault
+// position on the disc. Drop-in replacement for
+// `celestCoordToLocalGlobeCoord(...)` when you want the optical
+// vault to follow the FE projection rather than the sphere model.
+export function feConceptualLocalGlobeUnit(vaultGlobalFe, observerGlobalFe, transMatLocalFeToGlobalFe) {
+  const dx = vaultGlobalFe[0] - observerGlobalFe[0];
+  const dy = vaultGlobalFe[1] - observerGlobalFe[1];
+  const dz = vaultGlobalFe[2] - observerGlobalFe[2];
+  // Inverse rotation: rotation matrix is orthonormal so transpose suffices.
+  const r = transMatLocalFeToGlobalFe.r;
+  const lfX = r[0][0] * dx + r[1][0] * dy + r[2][0] * dz; // local-FE x = south
+  const lfY = r[0][1] * dx + r[1][1] * dy + r[2][1] * dz; // local-FE y = east
+  const lfZ = r[0][2] * dx + r[1][2] * dy + r[2][2] * dz; // local-FE z = up
+  // local-FE (south, east, up) → local-globe (zenith, east, north) = (z, y, -x)
+  const lgZenith = lfZ;
+  const lgEast   = lfY;
+  const lgNorth  = -lfX;
+  const len = Math.hypot(lgZenith, lgEast, lgNorth);
+  if (len < 1e-12) return [0, 0, 0];
+  return [lgZenith / len, lgEast / len, lgNorth / len];
+}

@@ -4428,23 +4428,42 @@ export class Stars {
         domePos[i * 3]     = Rgv * cp * Math.cos(lam);
         domePos[i * 3 + 1] = Rgv * cp * Math.sin(lam);
         domePos[i * 3 + 2] = Rgv * Math.sin(phi);
-      } else {
-        // FE flat starfield disk: stars sit at a single constant altitude
-        // (StarfieldVaultHeight), projected via the AE formula so high-Dec
-        // clusters near the centre and southern-Dec sits near the rim.
-        const discR = FE_RADIUS * (90 - lat) / 180;
-        const lo = lon * Math.PI / 180;
-        const diskLocal = [discR * Math.cos(lo), discR * Math.sin(lo), s.StarfieldVaultHeight];
-        const gd = vaultCoordToGlobalFeCoord(diskLocal, c.TransMatVaultToFe);
-        domePos[i * 3]     = gd[0];
-        domePos[i * 3 + 1] = gd[1];
-        domePos[i * 3 + 2] = gd[2];
+      let feVault = null;
+      if (!ge) {
+        // FE flat starfield disk: stars sit at a single constant
+        // altitude (StarfieldVaultHeight). Disc position routes
+        // through `canonicalLatLongToDisc` so DP picks up dual-pole
+        // wrapping for both the GP and the heavenly-vault star.
+        const disc = canonicalLatLongToDisc(lat, lon, FE_RADIUS);
+        const diskLocal = [disc[0], disc[1], s.StarfieldVaultHeight];
+        feVault = vaultCoordToGlobalFeCoord(diskLocal, c.TransMatVaultToFe);
+        domePos[i * 3]     = feVault[0];
+        domePos[i * 3 + 1] = feVault[1];
+        domePos[i * 3 + 2] = feVault[2];
       }
 
       // --- Inner-sphere projection -----------------------------------
-      // celest unit dir -> observer's local-globe -> fe-local (axis swap)
-      // -> global-fe (rotate by observer long, translate to observer).
-      const localGlobe = M.Trans(c.TransMatCelestToGlobe, celestV);
+      // FE: in DP we project the FE-conceptual ray (observer →
+      // heavenly-vault star) onto the optical hemisphere so the
+      // apparent motion matches the dual-pole wrapping seen on the
+      // disc. Other FE projections + GE keep the sphere-model
+      // celest → local-globe direction.
+      let localGlobe;
+      if (!ge && s.WorldModel === 'dp' && feVault) {
+        const obs = c.ObserverFeCoord;
+        const dx = feVault[0] - obs[0];
+        const dy = feVault[1] - obs[1];
+        const dz = feVault[2] - obs[2];
+        const r = c.TransMatLocalFeToGlobalFe.r;
+        const lfX = r[0][0] * dx + r[1][0] * dy + r[2][0] * dz;
+        const lfY = r[0][1] * dx + r[1][1] * dy + r[2][1] * dz;
+        const lfZ = r[0][2] * dx + r[1][2] * dy + r[2][2] * dz;
+        const lgZ = lfZ, lgE = lfY, lgN = -lfX;
+        const len = Math.hypot(lgZ, lgE, lgN);
+        localGlobe = len < 1e-12 ? [0, 0, 0] : [lgZ / len, lgE / len, lgN / len];
+      } else {
+        localGlobe = M.Trans(c.TransMatCelestToGlobe, celestV);
+      }
       if (ge && c.GlobeObserverFrame && c.GlobeObserverCoord) {
         // GE optical-vault projection: hemisphere of FE_RADIUS tangent
         // at the observer. Sub-horizon stars (zenith ≤ 0) park below

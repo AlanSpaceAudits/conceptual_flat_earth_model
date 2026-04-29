@@ -376,17 +376,35 @@ export class LongitudeRing {
     const inVault = !!s.InsideVault;
     this.group.visible = !ge && !inVault && (s.ShowLongitudeRing !== false);
 
-    // flip palette when DarkBackground toggles. No-op if the
-    // palette already matches (guarded inside `_applyPalette`).
     this._applyPalette(s.DarkBackground ? 'dark' : 'light');
 
-    // Heavenly azi ring is observer-independent in FE / DP: 0°
-    // pinned to world +y (top of disc), 90° at +x, 180° at −y,
-    // 270° at −x. The optical-vault cap still rotates with the
-    // observer's local compass via S682 / legacy paths; away from
-    // the projection's centre the two rings will disagree, which is
-    // intentional in DP.
-    this.group.rotation.set(0, 0, -Math.PI / 2);
+    // Heavenly azi ring rotates so 0° lands at the observer's
+    // compass-north direction, the same axis the cap-attached
+    // azimuth ring uses. AE polar collapses to
+    // `ToRad(ObserverLong)` (compass-N points at world angle
+    // λ + π and the default 0° tick sits at angle π, so a +λ
+    // rotation moves it onto compass-N). DP samples the gradient
+    // of latitude through `canonicalLatLongToDisc` to track the
+    // curved meridian tangent at the observer.
+    let angle;
+    if (s.WorldModel === 'dp') {
+      const lat = s.ObserverLat || 0;
+      const lon = s.ObserverLong || 0;
+      const eps = 1e-3;
+      const pHere = canonicalLatLongToDisc(lat, lon, 1);
+      const latProbe = lat >= 90 - eps ? lat - eps : lat + eps;
+      const sign = lat >= 90 - eps ? -1 : 1;
+      const pN = canonicalLatLongToDisc(latProbe, lon, 1);
+      const dnx = (pN[0] - pHere[0]) * sign;
+      const dny = (pN[1] - pHere[1]) * sign;
+      const nLen = Math.hypot(dnx, dny);
+      angle = nLen < 1e-9
+        ? ToRad(lon)
+        : Math.atan2(-dny / nLen, -dnx / nLen);
+    } else {
+      angle = ToRad(s.ObserverLong || 0);
+    }
+    this.group.rotation.set(0, 0, angle);
   }
 }
 

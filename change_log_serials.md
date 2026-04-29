@@ -12552,3 +12552,52 @@ Format:
   DP only; GE has no flat
   disc rim.
 - **Revert:** `git checkout v-s000692 -- .`
+
+## S694 — LongitudeRing back to per-mode compass rotation
+
+- **Date:** 2026-04-29
+- **Files changed:**
+  - `js/render/worldObjects.js`
+- **Change:**
+  - Reverted S692's
+    locked `−π/2`
+    rotation. Ring rotates
+    so 0° always lands on
+    the observer's
+    compass-north — the
+    same axis the cap
+    rim uses:
+    - DP: gradient of
+      latitude via
+      `canonicalLatLongToDisc`
+      (S687 logic).
+    - FE / AE:
+      `ToRad(ObserverLong)`
+      (legacy).
+  - GE visibility gate
+    (S693) still applied.
+  - DP InsideVault camera
+    world-fixed NEWS
+    (S692) untouched —
+    the "diagonal" only
+    in DP.
+- **Why:** locking the
+  ring at world axes left
+  observer's compass-N
+  pointing at a label
+  other than 0° in
+  FE / AE (e.g. 270° at
+  compass-N for the
+  observer in
+  screenshot #116 at
+  lon=0). User wants the
+  digits to rotate with
+  the observer so 0°
+  lines up with their
+  N — the legacy
+  behaviour. The
+  "FIXED" they asked for
+  meant fixed-meaning
+  (0 = N, 90 = E, …),
+  not fixed-position.
+- **Revert:** `git checkout v-s000693 -- .`

@@ -10485,3 +10485,45 @@ Format:
   yet it was being recomputed on
   every drag tick.
 - **Revert:** `git checkout v-s000650 -- .`
+
+## S652 — app.update: gate star catalogue projection on visibility / tracker
+
+- **Date:** 2026-04-28
+- **Files changed:**
+  - `js/core/app.js`
+- **Change:**
+  - Wrapped the five
+    `c.CelNavStars`,
+    `c.CataloguedStars`,
+    `c.BlackHoles`, `c.Quasars`,
+    `c.Galaxies` `.map(projectStar)`
+    assignments in a guard:
+    runs only when
+    `s.ShowStars !== false`,
+    or any `s.TrackerTargets`
+    entry starts with
+    `star:` (and isn't a
+    `star:sat_*` satellite id),
+    or `s.FollowTarget` is a
+    catalogue-star id.
+  - When the guard is false the
+    five `c.*` slots get empty
+    arrays so consumers
+    (`render/scene.js`,
+    `worldObjects.js`,
+    `mouseHandler.js`,
+    `controlPanel.js`) iterate
+    nothing instead of skipping
+    via their own visibility
+    checks after the projection
+    work was already done.
+- **Why:** the catalogue map
+  projects ~200 entries per
+  frame. With stars hidden the
+  result was being thrown away by
+  the renderer's own
+  `ShowStars` gate. Mirrors the
+  existing `_trackerHasSat`
+  pattern used for satellites in
+  the block immediately below.
+- **Revert:** `git checkout v-s000651 -- .`

@@ -1126,11 +1126,28 @@ export class FeModel extends EventTarget {
         anglesGlobe,
       };
     };
-    c.CelNavStars     = CEL_NAV_STARS.map(projectStar);
-    c.CataloguedStars = CATALOGUED_STARS.map(projectStar);
-    c.BlackHoles      = BLACK_HOLES.map(projectStar);
-    c.Quasars         = QUASARS.map(projectStar);
-    c.Galaxies        = GALAXIES.map(projectStar);
+    // Skip the per-frame catalogue projection when stars are hidden
+    // AND nothing in the tracker / follow target references a
+    // catalogue star. Satellite ids (`star:sat_*`) are projected by
+    // the satellite block below, so they aren't a reason to project
+    // here. Mirrors the gate already used for satellites.
+    const _trackerHasStar = (Array.isArray(s.TrackerTargets) ? s.TrackerTargets : [])
+      .some((t) => typeof t === 'string' && t.startsWith('star:') && !t.startsWith('star:sat_'));
+    const _followIsStar = typeof s.FollowTarget === 'string'
+      && s.FollowTarget.startsWith('star:') && !s.FollowTarget.startsWith('star:sat_');
+    if (s.ShowStars !== false || _trackerHasStar || _followIsStar) {
+      c.CelNavStars     = CEL_NAV_STARS.map(projectStar);
+      c.CataloguedStars = CATALOGUED_STARS.map(projectStar);
+      c.BlackHoles      = BLACK_HOLES.map(projectStar);
+      c.Quasars         = QUASARS.map(projectStar);
+      c.Galaxies        = GALAXIES.map(projectStar);
+    } else {
+      c.CelNavStars = [];
+      c.CataloguedStars = [];
+      c.BlackHoles = [];
+      c.Quasars = [];
+      c.Galaxies = [];
+    }
 
     // Satellites: sub-point (lat, lon) computed per-frame from
     // two-body Kepler; projected through the same vault /

@@ -3044,27 +3044,16 @@ export class MoonOpticalBody {
     this.tex.needsUpdate = true;
   }
 
-  update(opticalPos, size, show, phase, rot, camera, alpha = 1, observerUp = null) {
+  update(opticalPos, size, show, phase, rot, camera, alpha = 1) {
     this.group.visible = !!show;
     if (!show) return;
     this.mesh.position.set(opticalPos[0], opticalPos[1], opticalPos[2]);
     this.mesh.scale.set(size, size, 1);
-    // Plane faces the camera with its "up" axis pinned to the
-    // observer's local zenith (`GlobeObserverFrame.up*`). The
-    // observer-frame is computed identically in FE and GE
-    // (`compTransMatCelestToGlobe(lat, long, gmst)`), so the moon's
-    // perceived crater orientation stays constant across world-model
-    // toggles. Falls back to `camera.quaternion` when no
-    // `observerUp` is supplied so legacy call sites keep their
-    // current behaviour.
-    if (camera) {
-      if (observerUp && Number.isFinite(observerUp[0])) {
-        this.mesh.up.set(observerUp[0], observerUp[1], observerUp[2]);
-        this.mesh.lookAt(camera.position);
-      } else {
-        this.mesh.quaternion.copy(camera.quaternion);
-      }
-    }
+    // Camera-aligned (canvas-up = screen-up) instead of
+    // lookAt(camera.position): preserves perceived moon orientation
+    // across FE / GE since both modes share the same camera
+    // up-vector in optical view.
+    if (camera) this.mesh.quaternion.copy(camera.quaternion);
     this.material.opacity = alpha;
     if (phase !== this._lastPhase || rot !== this._lastRot) {
       this._lastPhase = phase;
@@ -3177,7 +3166,7 @@ export class SunOpticalBody {
     this._zAxis = new THREE.Vector3(0, 0, 1);
   }
 
-  update(opticalPos, size, show, rot, camera, alpha = 1, observerUp = null) {
+  update(opticalPos, size, show, rot, camera, alpha = 1) {
     this.group.visible = !!show;
     if (!show) return;
     this._faceMesh.position.set(opticalPos[0], opticalPos[1], opticalPos[2]);
@@ -3185,21 +3174,13 @@ export class SunOpticalBody {
     this._faceMesh.scale.set(size, size, 1);
     this._haloMesh.scale.set(size * 2.5, size * 2.5, 1);
     if (camera) {
-      // Halo + face are pinned to the observer's local zenith via
-      // `lookAt(camera.position)` with `mesh.up = observerUp` so the
-      // sunspot tilt reads consistently across FE / GE world toggles
-      // (observer-zenith is computed identically in both modes).
-      // Falls back to `camera.quaternion` for legacy callers that
-      // don't pass `observerUp`.
-      if (observerUp && Number.isFinite(observerUp[0])) {
-        this._haloMesh.up.set(observerUp[0], observerUp[1], observerUp[2]);
-        this._haloMesh.lookAt(camera.position);
-        this._faceMesh.up.set(observerUp[0], observerUp[1], observerUp[2]);
-        this._faceMesh.lookAt(camera.position);
-      } else {
-        this._haloMesh.quaternion.copy(camera.quaternion);
-        this._faceMesh.quaternion.copy(camera.quaternion);
-      }
+      // Halo stays camera-aligned (symmetric, no rotation needed).
+      // Face camera-aligns then rotates around the local view axis
+      // so the sunspot pattern reads as a real surface marking that
+      // tilts with observer latitude — same convention the moon
+      // canvas uses via ctx.rotate(c.MoonRotation).
+      this._haloMesh.quaternion.copy(camera.quaternion);
+      this._faceMesh.quaternion.copy(camera.quaternion);
       this._faceMesh.rotateOnAxis(this._zAxis, rot);
     }
     this._faceMat.opacity = alpha;

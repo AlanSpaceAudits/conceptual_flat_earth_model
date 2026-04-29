@@ -11568,57 +11568,7 @@ Format:
   size, so the layout looked
   inconsistent at narrow or
   4 K viewports.
-- **Revert:** `git checkout v-s000674 -- .`
-
-## S676 — moon / sun optical body: pin "up" to observer-zenith (FE/GE invariant)
-
-- **Date:** 2026-04-28
-- **Files changed:**
-  - `js/render/worldObjects.js`
-  - `js/render/index.js`
-- **Change:**
-  - `MoonOpticalBody.update`
-    and `SunOpticalBody.update`
-    accept a new `observerUp`
-    argument. When supplied,
-    they call
-    `mesh.up.set(...observerUp)`
-    + `mesh.lookAt(camera.position)`
-    instead of
-    `mesh.quaternion.copy(camera.quaternion)`.
-    Halo + face mesh on the
-    sun follow the same
-    convention.
-  - `render/index.js`
-    constructs `obsUp` from
-    `c.GlobeObserverFrame.upX/Y/Z`
-    and passes it to both
-    optical body updates.
-- **Why:** the camera's up-vector
-  in optical view differs
-  between FE and GE
-  (`scene.js`: FE → world Z,
-  GE → sphere-radial =
-  observer-zenith), so the
-  previous
-  `mesh.quaternion.copy(camera.quaternion)`
-  inherited that
-  inconsistency. The texture
-  rotation `c.MoonRotation`
-  is computed in
-  `compTransMatCelestToGlobe`'s
-  observer-local-globe frame
-  (zenith = sphere-radial)
-  regardless of mode, so
-  pinning the plane's up to
-  the observer-frame zenith
-  matches the angle math in
-  both modes. Result: moon
-  craters + sunspots stay
-  fixed across world-model
-  toggles for the same
-  observer.
-- **Revert:** `git checkout v-s000675 -- .` Note: existing
+- **Revert:** `git checkout v-s000674 -- .` Note: existing
   installed workers persist
   in browsers — bumping
   `CACHE_VERSION` to evict

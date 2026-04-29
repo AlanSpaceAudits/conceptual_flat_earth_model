@@ -11209,3 +11209,38 @@ Format:
   ~65 % (high-quality
   lossy).
 - **Revert:** `git checkout v-s000666 -- .`
+
+## S668 — minify CSS: ship `styles.min.css`
+
+- **Date:** 2026-04-28
+- **Files changed:**
+  - `css/styles.min.css` (new)
+  - `css/styles.css`
+  - `index.html`
+- **Change:**
+  - Generated
+    `css/styles.min.css`
+    via
+    `npx esbuild css/styles.css
+    --minify --bundle=false`
+    (37,555 → 26,470 raw
+    bytes; ~3 KiB gzipped
+    savings as flagged by
+    Lighthouse).
+  - `index.html` `preload`
+    + `noscript` link tags
+    point at the minified
+    file.
+  - Header comment in
+    `styles.css` documents the
+    regeneration command so
+    future edits regenerate
+    the minified twin.
+- **Why:** Lighthouse mobile lab
+  flagged "Minify CSS — Est
+  savings of 3 KiB" on
+  `styles.css`. Build-step
+  free pipeline keeps the
+  authored file readable while
+  shipping a minified copy.
+- **Revert:** `git checkout v-s000667 -- .`

@@ -1,3 +1,7 @@
+/* Source CSS. The deployed stylesheet is `styles.min.css`,
+   regenerated from this file with:
+       npx esbuild css/styles.css --minify --bundle=false > css/styles.min.css
+   Edit this file, then re-run that command before committing. */
 :root {
   --bg: #0b0e14;
   --panel: #141821;

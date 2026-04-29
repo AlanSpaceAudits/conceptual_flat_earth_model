@@ -12379,3 +12379,79 @@ Format:
   the dot colour makes the
   membership obvious.
 - **Revert:** `git checkout v-s000689 -- .`
+
+## S691 — revert FE-conceptual ray for optical-vault body positions
+
+- **Date:** 2026-04-29
+- **Files changed:**
+  - `js/core/app.js`
+  - `js/render/worldObjects.js`
+- **Change:**
+  - Dropped the
+    `opticalDir(vault,
+    sphereLocalGlobe)`
+    helper added in S683
+    along with the
+    `feConceptualLocalGlobeUnit`
+    import. Sun / moon /
+    planets / star
+    catalogues / satellites
+    in `app.js` once again
+    feed
+    `*LocalGlobeCoord`
+    (sphere-model
+    celest → local-globe)
+    straight into
+    `opticalVaultProject`.
+  - `Stars.update`
+    optical-vault branch
+    no longer takes the
+    DP-only FE-conceptual
+    detour; reverted to
+    `M.Trans(c.TransMatCelestToGlobe,
+    celestV)`.
+  - Heavenly-vault star
+    placement still goes
+    through
+    `canonicalLatLongToDisc(lat,
+    lon - skyRotDeg, FE_RADIUS)`
+    so the dome-side
+    starfield + GP layer
+    keep the DP-aware
+    placement S686 fixed.
+- **Why:** S683 routed
+  optical-vault body
+  positions through the
+  ray observer → vault
+  position to make the
+  apparent motion show
+  DP wrapping. But the
+  HUD's az / el
+  (`AnglesGlobe`) and the
+  optical-vault cap
+  rotation (S682, S687
+  gradient) are
+  sphere-model — so the
+  body's rendered
+  position no longer
+  matched the displayed
+  azimuth, and bodies
+  were jumping across
+  the cap at a different
+  geometry than the
+  cardinals + heavenly
+  ring used. User
+  reported sun
+  disappearing while still
+  above the horizon and
+  re-appearing at the
+  wrong spot, with the
+  HUD reading correct.
+  Reverting the body
+  override puts the
+  rendered position on
+  the same sphere-model
+  azimuth the cap labels
+  + HUD use, so they
+  agree end-to-end.
+- **Revert:** `git checkout v-s000690 -- .`

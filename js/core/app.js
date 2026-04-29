@@ -29,7 +29,6 @@ import {
   compTransMatCelestToGlobe, compTransMatLocalFeToGlobalFe, compTransMatVaultToFe,
   celestCoordToLocalGlobeCoord, coordToLatLong, localGlobeCoordToAngles,
   localGlobeCoordToGlobalFeCoord, vaultCoordToGlobalFeCoord,
-  feConceptualLocalGlobeUnit,
 } from './transforms.js';
 import {
   feLatLongToGlobalFeCoord, celestLatLongToVaultCoord, vaultCoordAt,
@@ -616,18 +615,6 @@ export class FeModel extends EventTarget {
       c.ObserverFeCoord, s.ObserverLong,
       s.WorldModel === 'dp' ? s.ObserverLat : null,
     );
-    // DP world-mode hook for the optical vault. In DP we project bodies
-    // onto the observer's optical hemisphere via the FE-conceptual ray
-    // (observer → vault position) so the apparent positions wrap with
-    // the dual-pole disc layout. AnglesGlobe / day-night / eclipse
-    // pre-conditions stay sphere-model so daily fade and eclipse
-    // alignment keep using celestial mechanics.
-    const _isDp = s.WorldModel === 'dp';
-    const opticalDir = (vaultGlobalFe, sphereLocalGlobe) => (
-      _isDp
-        ? feConceptualLocalGlobeUnit(vaultGlobalFe, c.ObserverFeCoord, c.TransMatLocalFeToGlobalFe)
-        : sphereLocalGlobe
-    );
     // Heavenly-vault body placement. Apply sky rotation to longitude
     // *before* projecting instead of post-rotating the projected (x, y)
     // about z. AE polar has rotational symmetry about its pole so the
@@ -764,7 +751,7 @@ export class FeModel extends EventTarget {
     );
     c.SunAnglesGlobe     = localGlobeCoordToAngles(c.SunLocalGlobeCoord);
     c.SunOpticalVaultCoord   = localGlobeCoordToGlobalFeCoord(
-      opticalVaultProject(opticalDir(c.SunVaultCoord, c.SunLocalGlobeCoord), c.OpticalVaultRadius, c.OpticalVaultHeightEffective),
+      opticalVaultProject(c.SunLocalGlobeCoord, c.OpticalVaultRadius, c.OpticalVaultHeightEffective),
       c.TransMatLocalFeToGlobalFe,
     );
     c.SunGlobeOpticalVaultCoord = _globeOpticalProject(c.SunLocalGlobeCoord);
@@ -818,7 +805,7 @@ export class FeModel extends EventTarget {
     );
     c.MoonAnglesGlobe     = localGlobeCoordToAngles(c.MoonLocalGlobeCoord);
     c.MoonOpticalVaultCoord   = localGlobeCoordToGlobalFeCoord(
-      opticalVaultProject(opticalDir(c.MoonVaultCoord, c.MoonLocalGlobeCoord), c.OpticalVaultRadius, c.OpticalVaultHeightEffective),
+      opticalVaultProject(c.MoonLocalGlobeCoord, c.OpticalVaultRadius, c.OpticalVaultHeightEffective),
       c.TransMatLocalFeToGlobalFe,
     );
     c.MoonGlobeOpticalVaultCoord = _globeOpticalProject(c.MoonLocalGlobeCoord);
@@ -1080,7 +1067,7 @@ export class FeModel extends EventTarget {
       const localGlobe = celestCoordToLocalGlobeCoord(celestCoord, c.TransMatCelestToGlobe);
       const anglesGlobe = localGlobeCoordToAngles(localGlobe);
       const opticalVaultCoord = localGlobeCoordToGlobalFeCoord(
-        opticalVaultProject(opticalDir(vaultCoord, localGlobe), c.OpticalVaultRadius, c.OpticalVaultHeightEffective),
+        opticalVaultProject(localGlobe, c.OpticalVaultRadius, c.OpticalVaultHeightEffective),
         c.TransMatLocalFeToGlobalFe,
       );
       const globeOpticalVaultCoord = _globeOpticalProject(localGlobe);
@@ -1133,7 +1120,7 @@ export class FeModel extends EventTarget {
       const localGlobe  = celestCoordToLocalGlobeCoord(celestCoord, c.TransMatCelestToGlobe);
       const anglesGlobe = localGlobeCoordToAngles(localGlobe);
       const opticalVaultCoord = localGlobeCoordToGlobalFeCoord(
-        opticalVaultProject(opticalDir(vaultCoord, localGlobe), c.OpticalVaultRadius, c.OpticalVaultHeightEffective),
+        opticalVaultProject(localGlobe, c.OpticalVaultRadius, c.OpticalVaultHeightEffective),
         c.TransMatLocalFeToGlobalFe,
       );
       const globeOpticalVaultCoord = _globeOpticalProject(localGlobe);
@@ -1194,7 +1181,7 @@ export class FeModel extends EventTarget {
         const localGlobe  = celestCoordToLocalGlobeCoord(celestCoord, c.TransMatCelestToGlobe);
         const anglesGlobe = localGlobeCoordToAngles(localGlobe);
         const opticalVaultCoord = localGlobeCoordToGlobalFeCoord(
-          opticalVaultProject(opticalDir(vaultCoord, localGlobe), c.OpticalVaultRadius, c.OpticalVaultHeightEffective),
+          opticalVaultProject(localGlobe, c.OpticalVaultRadius, c.OpticalVaultHeightEffective),
           c.TransMatLocalFeToGlobalFe,
         );
         const globeOpticalVaultCoord = _globeOpticalProject(localGlobe);

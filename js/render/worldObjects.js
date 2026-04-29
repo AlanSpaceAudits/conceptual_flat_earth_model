@@ -4481,27 +4481,9 @@ export class Stars {
       }
 
       // --- Inner-sphere projection -----------------------------------
-      // FE: in DP we project the FE-conceptual ray (observer →
-      // heavenly-vault star) onto the optical hemisphere so the
-      // apparent motion matches the dual-pole wrapping seen on the
-      // disc. Other FE projections + GE keep the sphere-model
-      // celest → local-globe direction.
-      let localGlobe;
-      if (!ge && s.WorldModel === 'dp' && feVault) {
-        const obs = c.ObserverFeCoord;
-        const dx = feVault[0] - obs[0];
-        const dy = feVault[1] - obs[1];
-        const dz = feVault[2] - obs[2];
-        const r = c.TransMatLocalFeToGlobalFe.r;
-        const lfX = r[0][0] * dx + r[1][0] * dy + r[2][0] * dz;
-        const lfY = r[0][1] * dx + r[1][1] * dy + r[2][1] * dz;
-        const lfZ = r[0][2] * dx + r[1][2] * dy + r[2][2] * dz;
-        const lgZ = lfZ, lgE = lfY, lgN = -lfX;
-        const len = Math.hypot(lgZ, lgE, lgN);
-        localGlobe = len < 1e-12 ? [0, 0, 0] : [lgZ / len, lgE / len, lgN / len];
-      } else {
-        localGlobe = M.Trans(c.TransMatCelestToGlobe, celestV);
-      }
+      // celest unit dir -> observer's local-globe -> fe-local (axis swap)
+      // -> global-fe (rotate by observer long, translate to observer).
+      const localGlobe = M.Trans(c.TransMatCelestToGlobe, celestV);
       if (ge && c.GlobeObserverFrame && c.GlobeObserverCoord) {
         // GE optical-vault projection: hemisphere of FE_RADIUS tangent
         // at the observer. Sub-horizon stars (zenith ≤ 0) park below

@@ -89,16 +89,41 @@ export class SceneManager {
     this.world = new THREE.Group();
     this.scene.add(this.world);
 
-    this.onResize = this.onResize.bind(this);
-    window.addEventListener('resize', this.onResize);
-    this.onResize();
-  }
-
-  onResize() {
-    const r = this.canvas.getBoundingClientRect();
-    this.renderer.setSize(r.width, r.height, false);
-    this.camera.aspect = r.width / Math.max(1, r.height);
-    this.camera.updateProjectionMatrix();
+    // ResizeObserver delivers canvas dimensions in the
+    // observation callback without forcing layout reads, unlike
+    // `getBoundingClientRect()` from a `resize` listener which
+    // synchronously flushes layout. The previous implementation
+    // (`window.resize → getBoundingClientRect → setSize`) was
+    // attributed by Lighthouse as a forced-reflow source in
+    // `render/scene.js:98`.
+    this._applyCanvasSize = (w, h) => {
+      this.renderer.setSize(w, h, false);
+      this.camera.aspect = w / Math.max(1, h);
+      this.camera.updateProjectionMatrix();
+    };
+    if (typeof ResizeObserver !== 'undefined') {
+      this._resizeObserver = new ResizeObserver((entries) => {
+        const cr = entries[0]?.contentRect;
+        if (!cr) return;
+        this._applyCanvasSize(cr.width, cr.height);
+      });
+      this._resizeObserver.observe(this.canvas);
+    } else {
+      // Pre-RO browsers: keep the resize-listener path, with
+      // rAF-deferred reads so the bbox query runs in a layout-
+      // clean phase rather than synchronously inside the event.
+      let _resizeRaf = 0;
+      const handle = () => {
+        if (_resizeRaf) return;
+        _resizeRaf = requestAnimationFrame(() => {
+          _resizeRaf = 0;
+          const r = this.canvas.getBoundingClientRect();
+          this._applyCanvasSize(r.width, r.height);
+        });
+      };
+      window.addEventListener('resize', handle);
+      handle();
+    }
   }
 
   updateCamera() {
@@ -325,7 +350,7 @@ export class SceneManager {
   }
 
   dispose() {
-    window.removeEventListener('resize', this.onResize);
+    if (this._resizeObserver) this._resizeObserver.disconnect();
     this.renderer.dispose();
   }
 }

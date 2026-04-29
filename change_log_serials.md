@@ -11052,3 +11052,45 @@ Format:
   live-ephem-tab) for
   insufficient size or spacing.
 - **Revert:** `git checkout v-s000663 -- .`
+
+## S665 — scene: ResizeObserver replaces resize-listener layout reads
+
+- **Date:** 2026-04-28
+- **Files changed:**
+  - `js/render/scene.js`
+- **Change:**
+  - `SceneManager` constructor
+    no longer listens on
+    `window.resize` and no
+    longer calls
+    `canvas.getBoundingClientRect()`.
+    Replaced with a
+    `ResizeObserver` on the
+    canvas that delivers
+    dimensions in its callback
+    via `entry.contentRect`.
+    Per-pixel
+    `setSize / camera.aspect /
+    updateProjectionMatrix`
+    work moved into a small
+    `_applyCanvasSize(w, h)`
+    helper.
+  - Pre-RO fallback rAF-defers
+    the bbox query for
+    browsers without
+    `ResizeObserver`.
+  - `dispose()` disconnects
+    the observer instead of
+    removing the
+    `window.resize` listener.
+- **Why:** Lighthouse mobile lab
+  attributed 78 ms of
+  forced-reflow time to
+  `render/scene.js:98:26` —
+  the `getBoundingClientRect`
+  call inside the resize
+  handler. ResizeObserver
+  delivers the new size
+  without triggering a
+  synchronous layout flush.
+- **Revert:** `git checkout v-s000664 -- .`

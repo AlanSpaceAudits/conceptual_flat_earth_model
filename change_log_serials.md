@@ -11722,3 +11722,70 @@ Format:
   pitch clamps to FE
   range).
 - **Revert:** `git checkout v-s000678 -- .`
+
+## S680 — DP: route the canonical disc framework through the DP projection
+
+- **Date:** 2026-04-29
+- **Files changed:**
+  - `js/core/canonical.js`
+  - `js/main.js`
+  - `js/render/worldObjects.js`
+- **Change:**
+  - `canonical.js`
+    `setActiveProjection(id)`
+    now actually stores the
+    projection (was a stub).
+    `canonicalLatLongToDisc`
+    dispatches to the
+    active projection's
+    `project()` whenever
+    that projection carries
+    `useProjectionGrid`
+    (`dp` only). Otherwise
+    it stays on the
+    hard-coded north-pole
+    AE formula.
+  - `main.js`
+    `refreshActiveProjection`
+    now keys off
+    `WorldModel`: passes
+    `'dp'` when the world
+    is DP, otherwise
+    `null`. FE/GE keep the
+    canonical AE framework.
+  - `worldObjects.js`:
+    removed the
+    `gridDiscFor` helper
+    +
+    `getProjection`
+    import added in S678.
+    `LatitudeLines._rebuild`
+    and `DiscGrid._rebuild`
+    fall back to direct
+    `canonicalLatLongToDisc`
+    calls — the dispatch
+    inside that function
+    now does the work.
+    Cache keys still pick
+    up FE↔DP transitions
+    so geometry rebuilds
+    when world cycles.
+- **Why:** user feedback —
+  in DP mode the optical
+  vault rays + equatorial
+  star band still traced
+  through AE-positioned
+  observer / GPs because
+  only the graticule
+  overlay was DP. Routing
+  the canonical framework
+  through DP makes
+  observer placement, sun
+  / moon GPs, optical-
+  vault dome math, eclipse
+  paths, and the
+  equatorial band all
+  pivot together so the
+  projected sky matches
+  the DP ground.
+- **Revert:** `git checkout v-s000679 -- .`

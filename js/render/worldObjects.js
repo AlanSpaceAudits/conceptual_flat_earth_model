@@ -10,20 +10,6 @@ import {
   pointOnFE, celestLatLongToVaultCoord, feLatLongToGlobalFeCoord,
 } from '../core/feGeometry.js';
 import { canonicalLatLongToDisc } from '../core/canonical.js';
-import { getProjection } from '../core/projections.js';
-
-// Pick the (lat, lon) → disc mapper for the FE graticule. Most
-// projections leave the canonical north-pole AE framework in charge of
-// where lat/lon lines fall (so observer / GP placement stays
-// consistent). Projections that opt into `useProjectionGrid` (e.g.
-// `dp`) drive the graticule with their own `project()` math instead.
-function gridDiscFor(projectionId) {
-  const proj = getProjection(projectionId);
-  if (proj && proj.useProjectionGrid) {
-    return (lat, lon, feRadius) => proj.project(lat, lon, feRadius);
-  }
-  return canonicalLatLongToDisc;
-}
 import { STELLARIUM_TRACES } from '../data/stellariumTraces.js';
 import { generateGeArtTexture } from './geArt.js';
 import { CONSTELLATIONS } from '../core/constellations.js';
@@ -954,9 +940,8 @@ export class LatitudeLines {
     this._lastProj = null;
     this._rebuild();
   }
-  _rebuild(ge = false, projectionId = 'ae') {
+  _rebuild(ge = false) {
     const feRadius = this._feRadius;
-    const toDisc = gridDiscFor(projectionId);
     // Slight outward lift on GE so the circles sit just above the
     // globe shader surface and don't z-fight with it.
     const Rge = feRadius * 1.0008;
@@ -975,7 +960,7 @@ export class LatitudeLines {
       } else {
         for (let k = 0; k <= 256; k++) {
           const lon = -180 + k * (360 / 256);
-          const p = toDisc(c.lat, lon, feRadius);
+          const p = canonicalLatLongToDisc(c.lat, lon, feRadius);
           pts.push(p[0], p[1], 8e-4);
         }
       }
@@ -1008,7 +993,7 @@ export class LatitudeLines {
             const matSp = sp.material;
             if (matSp.depthTest !== true) { matSp.depthTest = true; matSp.needsUpdate = true; }
           } else {
-            const p = toDisc(cLat, cLon, feRadius);
+            const p = canonicalLatLongToDisc(cLat, cLon, feRadius);
             sp.position.set(p[0], p[1], 1.5e-3);
             const matSp = sp.material;
             if (matSp.depthTest !== false) { matSp.depthTest = false; matSp.needsUpdate = true; }
@@ -1030,14 +1015,11 @@ export class LatitudeLines {
     }
     this.group.visible = anyOn;
     const ge = s.WorldModel === 'ge';
-    const projectionId = ge
-      ? (s.MapProjectionGe || 'hq_equirect_night')
-      : s.WorldModel === 'dp'
-      ? 'dp'
-      : (s.MapProjection || 'ae');
-    const key = ge ? 'ge' : `fe:${projectionId}`;
+    // Active-projection dispatch lives in canonical.js, so the
+    // rebuild only needs a key sensitive to FE↔GE↔DP transitions.
+    const key = ge ? 'ge' : `fe:${s.WorldModel === 'dp' ? 'dp' : (s.MapProjection || 'ae')}`;
     if (key !== this._lastProj) {
-      this._rebuild(ge, projectionId);
+      this._rebuild(ge);
       this._lastProj = key;
     }
   }
@@ -1504,15 +1486,14 @@ export class DiscGrid {
     this._lastProj = null;
     this._rebuild();
   }
-  _rebuild(projectionId = 'ae') {
+  _rebuild() {
     const feRadius = this._feRadius;
-    const toDisc = gridDiscFor(projectionId);
     const segs = [];
     for (let lat = -90 + 15; lat <= 75; lat += 15) {
       const ringPts = [];
       for (let k = 0; k <= 120; k++) {
         const lon = -180 + k * 3;
-        const p = toDisc(lat, lon, feRadius);
+        const p = canonicalLatLongToDisc(lat, lon, feRadius);
         ringPts.push(p[0], p[1], 2e-4);
       }
       for (let k = 0; k < ringPts.length - 3; k += 3) {
@@ -1526,7 +1507,7 @@ export class DiscGrid {
       let prev = null;
       for (let k = 0; k <= 60; k++) {
         const lat = -90 + k * 3;
-        const p = toDisc(lat, lon, feRadius);
+        const p = canonicalLatLongToDisc(lat, lon, feRadius);
         if (prev) {
           segs.push(prev[0], prev[1], 2e-4, p[0], p[1], 2e-4);
         }
@@ -1543,7 +1524,7 @@ export class DiscGrid {
     this.group.visible = s.ShowFeGrid;
     const proj = s.WorldModel === 'dp' ? 'dp' : (s.MapProjection || 'ae');
     if (proj !== this._lastProj) {
-      this._rebuild(proj);
+      this._rebuild();
       this._lastProj = proj;
     }
   }

@@ -43,11 +43,14 @@ if (!_hashHasLang) {
   }
 }
 
-// Routes MapProjection → canonical.js' active-projection slot.
-// Registered before the Renderer so its 'update' listener runs first
-// and rebuilds DiscGrid / LatitudeLines using the new projection.
+// Routes WorldModel → canonical.js' active-projection slot. Only
+// world models that opt into `useProjectionGrid` (currently `dp`)
+// override the canonical north-pole AE framework; FE/GE keep the
+// default. Registered before the Renderer so its 'update' listener
+// runs first and rebuilds DiscGrid / LatitudeLines using the new
+// projection.
 const refreshActiveProjection = () => {
-  setActiveProjection(model.state.MapProjection || 'ae');
+  setActiveProjection(model.state.WorldModel === 'dp' ? 'dp' : null);
 };
 model.addEventListener('update', refreshActiveProjection);
 refreshActiveProjection();

@@ -118,7 +118,8 @@ header .info-popup.legend-popup a { color: var(--accent); }
 #hud .moon-phase-header {
   display: block;
   width: 100%;
-  padding: 2px 6px;
+  padding: 4px 6px;
+  min-height: 24px;
   font: 11px/1.2 ui-monospace, Menlo, monospace;
   color: #f4a640;
   background: transparent;
@@ -273,7 +274,8 @@ header .info-popup.legend-popup a { color: var(--accent); }
   display: block;
   width: 100%;
   margin-top: 4px;
-  padding: 2px 6px;
+  padding: 4px 6px;
+  min-height: 24px;
   font: 11px/1.2 ui-monospace, Menlo, monospace;
   color: #f4a640;
   background: transparent;
@@ -462,12 +464,13 @@ header .info-popup.legend-popup a { color: var(--accent); }
   display: grid;
   grid-template-columns: repeat(5, auto);
   grid-auto-rows: auto;
-  gap: 2px;
+  gap: 4px;
   margin: 0 8px;
 }
 #bottom-bar .geo-hops .time-btn {
-  padding: 2px 4px;
-  min-width: 0;
+  padding: 4px 6px;
+  min-width: 24px;
+  min-height: 24px;
   font-size: 10px;
   font-weight: 600;
   letter-spacing: 0.5px;
@@ -485,6 +488,8 @@ header .info-popup.legend-popup a { color: var(--accent); }
   border-radius: 4px;
   padding: 4px 10px;
   min-width: 34px;
+  /* Lighthouse touch-target threshold = 24x24 CSS px. */
+  min-height: 24px;
   cursor: pointer;
   font: inherit;
   font-size: 13px;
@@ -620,7 +625,7 @@ header .info-popup.legend-popup a { color: var(--accent); }
 #bottom-bar .cardinal-grid .time-btn {
   font-weight: 600;
 }
-#bottom-bar .compass-btn { min-width: 28px; padding: 4px 6px; font-weight: 600; }
+#bottom-bar .compass-btn { min-width: 28px; min-height: 24px; padding: 4px 6px; font-weight: 600; }
 #bottom-bar .compass-btn[aria-pressed="true"] {
   border-color: var(--accent);
   color: var(--accent);
@@ -717,6 +722,7 @@ header .info-popup.legend-popup a { color: var(--accent); }
   border: 0;
   border-radius: 4px;
   padding: 6px 14px;
+  min-height: 24px;
   cursor: pointer;
   font: inherit;
   font-size: 13px;
@@ -1127,7 +1133,7 @@ footer#desc .desc-dynamic { color: var(--fg); }
 @media (max-width: 520px) {
   #app > header h1 { font-size: 12px; }
   #app > header .info-btn { padding: 3px 6px; font-size: 11px; }
-  #bottom-bar .time-btn { min-width: 26px; padding: 5px 6px; font-size: 11px; }
+  #bottom-bar .time-btn { min-width: 26px; min-height: 24px; padding: 5px 6px; font-size: 11px; }
   #bottom-bar .body-search { width: 110px; }
   #hud { font-size: 10px; }
 }

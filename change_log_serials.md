@@ -11008,3 +11008,47 @@ Format:
   appropriate `role="tab"`
   children.
 - **Revert:** `git checkout v-s000662 -- .`
+
+## S664 — touch targets: min-height 24 px on bottom-bar / hud buttons
+
+- **Date:** 2026-04-28
+- **Files changed:**
+  - `css/styles.css`
+- **Change:**
+  - Added `min-height: 24px`
+    to `#bottom-bar .time-btn`,
+    `#bottom-bar .compass-btn`,
+    `#bottom-bar .tab-btn`,
+    `#hud .moon-phase-header`,
+    `#live-ephem-tab`, and the
+    phone-sized override of
+    `time-btn`.
+  - Bumped
+    `#bottom-bar .geo-hops`
+    gap from 2 px → 4 px and
+    its `time-btn` padding
+    from `2px 4px` → `4px 6px`
+    so the country quick-jump
+    buttons clear the threshold
+    individually and have
+    spacing between them.
+  - Bumped
+    `#hud .moon-phase-header` /
+    `#live-ephem-tab` padding
+    from `2px 6px` → `4px 6px`
+    in addition to the
+    `min-height`.
+- **Why:** Lighthouse mobile
+  best-practices flagged
+  numerous buttons (geo-hops,
+  jump buttons, vault-swap,
+  axis-line, night, screenshot,
+  true, stm, tracker-opts,
+  observer, freecam, rays, map,
+  starfield, az-ring, lang,
+  compass, world, clear-trace,
+  grids, tab-btn,
+  moon-phase-header,
+  live-ephem-tab) for
+  insufficient size or spacing.
+- **Revert:** `git checkout v-s000663 -- .`

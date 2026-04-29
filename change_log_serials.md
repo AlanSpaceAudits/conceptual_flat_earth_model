@@ -12041,3 +12041,60 @@ Format:
   (braces balanced,
   semantics broken).
 - **Revert:** `git checkout v-s000683 -- .`
+
+## S685 — gate projection-aware local frame on DP only (FE/GE regression fix)
+
+- **Date:** 2026-04-29
+- **Files changed:**
+  - `js/core/app.js`
+  - `js/render/scene.js`
+  - `js/render/worldObjects.js`
+- **Change:**
+  - `app.js` only passes
+    `s.ObserverLat` to
+    `compTransMatLocalFeToGlobalFe`
+    when
+    `WorldModel === 'dp'`;
+    otherwise passes
+    `null` so the legacy
+    `RotatingZ(ObserverLong)`
+    path runs verbatim.
+  - `scene.js` InsideVault
+    FE branch now
+    short-circuits to the
+    pre-S681 "vector from
+    observer toward disc
+    centre" north / east
+    formula unless
+    `WorldModel === 'dp'`.
+  - `ObserversOpticalVault.update`
+    optical-vault rotation
+    falls back to
+    `ToRad(ObserverLong)`
+    unless
+    `WorldModel === 'dp'`.
+- **Why:** user reported
+  FE + GE cardinal
+  directions were offset
+  from "correct N" after
+  S681 / S682.
+  Mathematically the
+  gradient computation
+  collapses to the AE
+  longitude rotation for
+  AE polar, but in
+  practice tiny
+  floating-point
+  differences (or some
+  interaction with downstream
+  consumers) shifted the
+  visual result enough
+  for the user to notice
+  in modes that should be
+  byte-identical.
+  Restoring the legacy
+  formulas for non-DP
+  guarantees the
+  pre-S681 behaviour is
+  preserved exactly.
+- **Revert:** `git checkout v-s000684 -- .`

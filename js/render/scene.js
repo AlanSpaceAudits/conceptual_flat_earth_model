@@ -191,14 +191,14 @@ export class SceneManager {
         northX = f.northX; northY = f.northY; northZ = f.northZ;
         eastX  = f.eastX;  eastY  = f.eastY;  eastZ  = f.eastZ;
         upX    = f.upX;    upY    = f.upY;    upZ    = f.upZ;
-      } else {
-        // Local north = gradient of latitude on the disc, sampled
-        // through `canonicalLatLongToDisc`. In canonical AE that's
-        // the radial direction toward the disc centre; in DP the
-        // meridians curve so the gradient picks up the per-position
-        // tangent. East = north rotated −90° in the disc plane so the
-        // basis stays orthonormal even when the projection isn't
-        // conformal.
+      } else if (s.WorldModel === 'dp') {
+        // DP: local north = gradient of latitude on the disc, sampled
+        // through `canonicalLatLongToDisc`. The meridians curve so the
+        // gradient picks up the per-position tangent. East = north
+        // rotated −90° in the disc plane so the basis stays orthonormal
+        // even when the projection isn't conformal. AE FE keeps the
+        // legacy "vector-from-observer-toward-disc-centre" formula
+        // below since it's byte-identical to the gradient for AE polar.
         const lat = s.ObserverLat || 0;
         const lon = s.ObserverLong || 0;
         const eps = 1e-3;
@@ -217,6 +217,22 @@ export class SceneManager {
         }
         northX = dnx / nLen;
         northY = dny / nLen;
+        northZ = 0;
+        eastX  =  northY;
+        eastY  = -northX;
+        eastZ  = 0;
+        upX = 0; upY = 0; upZ = 1;
+      } else {
+        const ox = obs[0], oy = obs[1];
+        const obsLen = Math.hypot(ox, oy);
+        if (obsLen > 1e-6) {
+          northX = -ox / obsLen;
+          northY = -oy / obsLen;
+        } else {
+          const longR = ToRad(s.ObserverLong || 0);
+          northX = -Math.cos(longR);
+          northY = -Math.sin(longR);
+        }
         northZ = 0;
         eastX  =  northY;
         eastY  = -northX;

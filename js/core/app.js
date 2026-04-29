@@ -613,7 +613,8 @@ export class FeModel extends EventTarget {
     c.TransMatVaultToFe = compTransMatVaultToFe(c.SkyRotAngle);
     c.ObserverFeCoord   = feLatLongToGlobalFeCoord(s.ObserverLat, s.ObserverLong, FE_RADIUS);
     c.TransMatLocalFeToGlobalFe = compTransMatLocalFeToGlobalFe(
-      c.ObserverFeCoord, s.ObserverLong, s.ObserverLat,
+      c.ObserverFeCoord, s.ObserverLong,
+      s.WorldModel === 'dp' ? s.ObserverLat : null,
     );
     // DP world-mode hook for the optical vault. In DP we project bodies
     // onto the observer's optical hemisphere via the FE-conceptual ray

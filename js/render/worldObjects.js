@@ -2283,25 +2283,29 @@ export class ObserversOpticalVault {
     }
 
     if (!ge) {
-      // Rotate the vault so its local +x (south) and +y (east) align
-      // with the active projection's south / east directions at the
-      // observer. Sampled through `canonicalLatLongToDisc` so AE
-      // collapses to the previous `RotatingZ(λ)` and DP picks up the
-      // gradient-driven angle (its 0° / 90° meridians don't sit where
-      // AE's do, which is why the cardinals were rotated wrong).
-      const lat = s.ObserverLat || 0;
-      const lon = s.ObserverLong || 0;
-      const eps = 1e-3;
-      const pHere = canonicalLatLongToDisc(lat, lon, 1);
-      const latProbe = lat >= 90 - eps ? lat - eps : lat + eps;
-      const sign = lat >= 90 - eps ? -1 : 1;
-      const pN = canonicalLatLongToDisc(latProbe, lon, 1);
-      const dnx = (pN[0] - pHere[0]) * sign;
-      const dny = (pN[1] - pHere[1]) * sign;
-      const nLen = Math.hypot(dnx, dny);
-      const angle = nLen < 1e-9
-        ? ToRad(lon)
-        : Math.atan2(-dny / nLen, -dnx / nLen);
+      // FE: rotate so local +x (south) lines up with the disc's south
+      // direction at the observer. AE polar uses
+      // `RotatingZ(ObserverLong)` (south = radial outward at angle λ);
+      // DP samples the projection gradient because its meridians curve
+      // and don't sit where AE's do.
+      let angle;
+      if (s.WorldModel === 'dp') {
+        const lat = s.ObserverLat || 0;
+        const lon = s.ObserverLong || 0;
+        const eps = 1e-3;
+        const pHere = canonicalLatLongToDisc(lat, lon, 1);
+        const latProbe = lat >= 90 - eps ? lat - eps : lat + eps;
+        const sign = lat >= 90 - eps ? -1 : 1;
+        const pN = canonicalLatLongToDisc(latProbe, lon, 1);
+        const dnx = (pN[0] - pHere[0]) * sign;
+        const dny = (pN[1] - pHere[1]) * sign;
+        const nLen = Math.hypot(dnx, dny);
+        angle = nLen < 1e-9
+          ? ToRad(lon)
+          : Math.atan2(-dny / nLen, -dnx / nLen);
+      } else {
+        angle = ToRad(s.ObserverLong);
+      }
       this.group.rotation.set(0, 0, angle);
     }
 

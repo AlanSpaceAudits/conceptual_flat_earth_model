@@ -10965,3 +10965,46 @@ Format:
   the LCP image up the network
   priority queue.
 - **Revert:** `git checkout v-s000661 -- .`
+
+## S663 — HTML hygiene: meta description, `<main>`, drop tablist role
+
+- **Date:** 2026-04-28
+- **Files changed:**
+  - `index.html`
+  - `js/ui/controlPanel.js`
+- **Change:**
+  - Added
+    `<meta name="description">`
+    summarising the simulator
+    (Lighthouse SEO: missing
+    meta description).
+  - Renamed `<div id="app">` to
+    `<main id="app">` and the
+    closing `</div>` to
+    `</main>` — the existing
+    `#app` CSS selector and JS
+    queries still match.
+  - Removed
+    `tabsBar.setAttribute('role',
+    'tablist')` in
+    `controlPanel.js`. The bar
+    holds two `<input
+    type="search">` hosts
+    alongside the tab buttons,
+    and ARIA forbids non-tab
+    children of a `tablist`.
+    Each tab button still
+    carries
+    `role="tab"`
+    individually, so screen
+    readers still announce the
+    button purpose.
+- **Why:** Lighthouse mobile
+  flagged three accessibility /
+  SEO items: missing meta
+  description (SEO 91), missing
+  `<main>` landmark, and ARIA
+  `role="tab"` parent without
+  appropriate `role="tab"`
+  children.
+- **Revert:** `git checkout v-s000662 -- .`

@@ -2233,7 +2233,10 @@ export function buildControlPanel(host, model, demos) {
 
   const tabsBar = document.createElement('div');
   tabsBar.className = 'tabs';
-  tabsBar.setAttribute('role', 'tablist');
+  // No `role="tablist"` on the bar itself: it carries two
+  // `<input type="search">` hosts alongside the tab buttons, and
+  // ARIA forbids non-`role="tab"` children of a tablist. Each tab
+  // button still announces as `role="tab"` individually.
   // Search hosts live inside tabsBar so they sit immediately to the
   // left of the View tab in the right-aligned tab cluster.
   tabsBar.appendChild(searchHost);

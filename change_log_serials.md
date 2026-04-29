@@ -10657,3 +10657,43 @@ Format:
   observer's invalidation
   timing.
 - **Revert:** `git checkout v-s000655 -- .`
+
+## S657 — autoplay: defer first tick until rIC / 800 ms timeout
+
+- **Date:** 2026-04-28
+- **Files changed:**
+  - `js/ui/autoplay.js`
+- **Change:**
+  - Constructor no longer
+    schedules a synchronous
+    `requestAnimationFrame` on
+    instantiation. Instead, the
+    first tick is queued behind
+    `requestIdleCallback(start,
+    { timeout: 1000 })`, with a
+    `setTimeout(start, 800)`
+    fallback for browsers that
+    lack `requestIdleCallback`.
+  - The `start` shim re-checks
+    `this.playing` so a `pause()`
+    issued before the deferred
+    fire doesn't start a stray
+    rAF chain.
+- **Why:** Lighthouse mobile lab
+  flagged 3.75 s of script
+  evaluation attributed to
+  `ui/autoplay.js`. The default
+  state plays autoplay on cold
+  start, which means a
+  `model.setState({ DateTime })`
+  → `app.update()` cascade
+  fired every frame from t=0,
+  competing with the initial
+  paint, JS parse, and WebGL
+  init for main-thread time.
+  Deferring until idle keeps
+  the autoplay UX (sky animates
+  on its own) but lets the
+  cold-start budget settle
+  first.
+- **Revert:** `git checkout v-s000656 -- .`

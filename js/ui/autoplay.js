@@ -21,8 +21,23 @@ export class Autoplay {
     this._tick = this._tick.bind(this);
     this._listeners = new Set();
     if (this.playing) {
-      this._last = performance.now();
-      requestAnimationFrame(this._tick);
+      // Defer the first tick until the browser is idle so the
+      // cold-start frame budget (HTML parse + module loads + WebGL
+      // init + first paint) isn't competing with a per-frame
+      // `model.setState({ DateTime })` cascade. `requestIdleCallback`
+      // fires after the main thread settles; the timeout fallback
+      // caps the delay so autoplay still starts visibly within
+      // a second on browsers without rIC support.
+      const start = () => {
+        if (!this.playing) return;
+        this._last = performance.now();
+        requestAnimationFrame(this._tick);
+      };
+      if (typeof requestIdleCallback === 'function') {
+        requestIdleCallback(start, { timeout: 1000 });
+      } else {
+        setTimeout(start, 800);
+      }
     }
   }
 

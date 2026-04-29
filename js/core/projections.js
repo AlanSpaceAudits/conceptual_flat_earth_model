@@ -374,6 +374,17 @@ export const PROJECTIONS = {
     project: projectAEDual,
   },
 
+  dp: {
+    id: 'dp', name: 'DP (Dual Pole)',
+    category: 'hq',
+    imageAsset: 'assets/map_hq_ae_dual.png',
+    imageNativeWidth: 2476, imageNativeHeight: 1246,
+    imageInscribedRadius: 0.5,
+    useProjectionGrid: true,
+    notes: 'Dual Pole — azimuthal-equidistant centred at (0°, 0°). Both geographic poles fall on the vertical centre-line as distinct points. FE lat/lon graticule renders with this projection rather than canonical north-pole AE.',
+    project: projectAEDual,
+  },
+
   hq_ae_polar_day: {
     id: 'hq_ae_polar_day', name: 'HQ AE Polar (day)',
     category: 'hq',

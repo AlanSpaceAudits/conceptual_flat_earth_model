@@ -11611,3 +11611,59 @@ Format:
   Reverting while a correct
   fix is designed.
 - **Revert:** `git checkout 8815abb -- .`
+
+## S678 — DP (Dual Pole) projection: ground + graticule on dual-pole AE
+
+- **Date:** 2026-04-28
+- **Files changed:**
+  - `js/core/projections.js`
+  - `js/render/worldObjects.js`
+- **Change:**
+  - New `dp` entry in
+    `PROJECTIONS` (category
+    `hq`). Uses
+    `projectAEDual` math
+    and the existing
+    `assets/map_hq_ae_dual.png`
+    raster (2476×1246).
+    Carries a new
+    `useProjectionGrid:
+    true` flag.
+  - `worldObjects.js` adds
+    a `gridDiscFor(projectionId)`
+    helper: when the active
+    projection has
+    `useProjectionGrid`,
+    the FE graticule maps
+    `(lat, lon) → disc` via
+    that projection's
+    `project()`; otherwise
+    it stays on
+    `canonicalLatLongToDisc`
+    (canonical north-pole AE).
+  - `LatitudeLines._rebuild`
+    + `DiscGrid._rebuild`
+    now take a
+    `projectionId` argument
+    and route through
+    `gridDiscFor`. `DiscGrid`
+    also draws meridians as
+    densified polylines
+    (60 segments each)
+    instead of single
+    pole-to-pole chords so
+    DP renders curved
+    meridians.
+- **Why:** user request —
+  add a "DP" map option
+  whose lat/lon graticule
+  (and ground art) follow
+  the dual-pole AE
+  projection rather than
+  canonical north-pole AE.
+  Reference
+  `assets/map_hq_ae_dual.png`
+  (byte-identical to
+  `Azi_Equi_EA180_Lat0_Lon0_2.png`
+  the user supplied).
+- **Revert:** `git checkout v-s000677 -- .`

@@ -10,6 +10,20 @@ import {
   pointOnFE, celestLatLongToVaultCoord, feLatLongToGlobalFeCoord,
 } from '../core/feGeometry.js';
 import { canonicalLatLongToDisc } from '../core/canonical.js';
+import { getProjection } from '../core/projections.js';
+
+// Pick the (lat, lon) → disc mapper for the FE graticule. Most
+// projections leave the canonical north-pole AE framework in charge of
+// where lat/lon lines fall (so observer / GP placement stays
+// consistent). Projections that opt into `useProjectionGrid` (e.g.
+// `dp`) drive the graticule with their own `project()` math instead.
+function gridDiscFor(projectionId) {
+  const proj = getProjection(projectionId);
+  if (proj && proj.useProjectionGrid) {
+    return (lat, lon, feRadius) => proj.project(lat, lon, feRadius);
+  }
+  return canonicalLatLongToDisc;
+}
 import { STELLARIUM_TRACES } from '../data/stellariumTraces.js';
 import { generateGeArtTexture } from './geArt.js';
 import { CONSTELLATIONS } from '../core/constellations.js';
@@ -940,8 +954,9 @@ export class LatitudeLines {
     this._lastProj = null;
     this._rebuild();
   }
-  _rebuild(ge = false) {
+  _rebuild(ge = false, projectionId = 'ae') {
     const feRadius = this._feRadius;
+    const toDisc = gridDiscFor(projectionId);
     // Slight outward lift on GE so the circles sit just above the
     // globe shader surface and don't z-fight with it.
     const Rge = feRadius * 1.0008;
@@ -960,7 +975,7 @@ export class LatitudeLines {
       } else {
         for (let k = 0; k <= 256; k++) {
           const lon = -180 + k * (360 / 256);
-          const p = canonicalLatLongToDisc(c.lat, lon, feRadius);
+          const p = toDisc(c.lat, lon, feRadius);
           pts.push(p[0], p[1], 8e-4);
         }
       }
@@ -993,7 +1008,7 @@ export class LatitudeLines {
             const matSp = sp.material;
             if (matSp.depthTest !== true) { matSp.depthTest = true; matSp.needsUpdate = true; }
           } else {
-            const p = canonicalLatLongToDisc(cLat, cLon, feRadius);
+            const p = toDisc(cLat, cLon, feRadius);
             sp.position.set(p[0], p[1], 1.5e-3);
             const matSp = sp.material;
             if (matSp.depthTest !== false) { matSp.depthTest = false; matSp.needsUpdate = true; }
@@ -1015,9 +1030,10 @@ export class LatitudeLines {
     }
     this.group.visible = anyOn;
     const ge = s.WorldModel === 'ge';
-    const key = ge ? 'ge' : `fe:${s.MapProjection || 'ae'}`;
+    const projectionId = s.MapProjection || 'ae';
+    const key = ge ? 'ge' : `fe:${projectionId}`;
     if (key !== this._lastProj) {
-      this._rebuild(ge);
+      this._rebuild(ge, projectionId);
       this._lastProj = key;
     }
   }
@@ -1484,14 +1500,15 @@ export class DiscGrid {
     this._lastProj = null;
     this._rebuild();
   }
-  _rebuild() {
+  _rebuild(projectionId = 'ae') {
     const feRadius = this._feRadius;
+    const toDisc = gridDiscFor(projectionId);
     const segs = [];
     for (let lat = -90 + 15; lat <= 75; lat += 15) {
       const ringPts = [];
       for (let k = 0; k <= 120; k++) {
         const lon = -180 + k * 3;
-        const p = canonicalLatLongToDisc(lat, lon, feRadius);
+        const p = toDisc(lat, lon, feRadius);
         ringPts.push(p[0], p[1], 2e-4);
       }
       for (let k = 0; k < ringPts.length - 3; k += 3) {
@@ -1499,10 +1516,18 @@ export class DiscGrid {
                   ringPts[k + 3], ringPts[k + 4], ringPts[k + 5]);
       }
     }
-    for (let lon = 0; lon < 360; lon += 15) {
-      const a = canonicalLatLongToDisc(90, lon, feRadius);
-      const b = canonicalLatLongToDisc(-90, lon, feRadius);
-      segs.push(a[0], a[1], 2e-4, b[0], b[1], 2e-4);
+    // Meridians as polylines so non-AE projections (e.g. DP) render
+    // them as curves rather than chords from pole to pole.
+    for (let lon = -180; lon < 180; lon += 15) {
+      let prev = null;
+      for (let k = 0; k <= 60; k++) {
+        const lat = -90 + k * 3;
+        const p = toDisc(lat, lon, feRadius);
+        if (prev) {
+          segs.push(prev[0], prev[1], 2e-4, p[0], p[1], 2e-4);
+        }
+        prev = p;
+      }
     }
     const attr = new THREE.Float32BufferAttribute(segs, 3);
     this.lines.geometry.setAttribute('position', attr);
@@ -1513,7 +1538,7 @@ export class DiscGrid {
     this.group.visible = model.state.ShowFeGrid;
     const proj = model.state.MapProjection || 'ae';
     if (proj !== this._lastProj) {
-      this._rebuild();
+      this._rebuild(proj);
       this._lastProj = proj;
     }
   }

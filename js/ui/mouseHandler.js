@@ -386,6 +386,19 @@ export function attachMouseHandler(canvas, model, renderer = null) {
     }
     const plane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
     if (!_ray.ray.intersectPlane(plane, hit)) return null;
+    if (model.state.WorldModel === 'dp') {
+      // Dual-pole AE inverse, centred at (0°, 0°). c = π·ρ for the
+      // unit-radius disc; phi = asin(y·sin(c)/ρ);
+      // lambda = atan2(x·sin(c), ρ·cos(c)).
+      const rho = Math.hypot(hit.x, hit.y);
+      if (rho < 1e-9) return { lat: 0, lon: 0 };
+      const cAng = Math.PI * Math.min(1, rho);
+      const sinC = Math.sin(cAng);
+      const cosC = Math.cos(cAng);
+      const lat = Math.asin(Math.max(-1, Math.min(1, hit.y * sinC / rho))) * 180 / Math.PI;
+      const lon = Math.atan2(hit.x * sinC, rho * cosC) * 180 / Math.PI;
+      return { lat, lon };
+    }
     const r = Math.hypot(hit.x, hit.y);
     const lat = Math.max(-90, Math.min(90, 90 - 180 * r));
     const lon = Math.atan2(hit.y, hit.x) * 180 / Math.PI;

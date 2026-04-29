@@ -12098,3 +12098,85 @@ Format:
   pre-S681 behaviour is
   preserved exactly.
 - **Revert:** `git checkout v-s000684 -- .`
+
+## S686 — DP: heavenly-vault placement + cursor → lat/lon inverse
+
+- **Date:** 2026-04-29
+- **Files changed:**
+  - `js/core/app.js`
+  - `js/render/worldObjects.js`
+  - `js/ui/mouseHandler.js`
+- **Change:**
+  - New
+    `_bodyVault(lat, lonCelest,
+    height)` helper inside
+    `update()` applies sky
+    rotation to celestial
+    longitude *before*
+    projecting via
+    `canonicalLatLongToDisc`.
+    AE polar collapses to
+    the previous
+    post-projection
+    `RotatingZ(-skyRot)`
+    result by symmetry; DP
+    (no rotational symmetry
+    about the disc centre)
+    needs the longitude
+    shift up front so the
+    sun / moon / planets /
+    stars / satellites land
+    directly above their
+    DP-projected disc GPs.
+    Replaced 5 callsites
+    (`SunVaultCoord`,
+    `MoonVaultCoord`, planet
+    + star + satellite
+    `vaultCoord`).
+    `worldObjects.js`
+    `Stars.update()` heavenly
+    branch does the same.
+  - `mouseHandler.js`
+    `cursorToLatLon` adds a
+    DP inverse-projection
+    branch:
+    `c = π·ρ`,
+    `lat = asin(y·sin(c)/ρ)`,
+    `lon = atan2(x·sin(c),
+    ρ·cos(c))`. Without
+    this, dragging the
+    orange dot or otherwise
+    converting cursor →
+    (lat, lon) on the DP
+    disc went through the
+    AE inverse and assigned
+    a different position
+    than the user clicked.
+- **Why:** user reported
+  the True-Position tracer
+  in DP didn't line up
+  with the body's actual
+  vault position, and
+  lat / lon "didn't
+  preserve" across world
+  toggles. Both rooted in
+  AE-only assumptions:
+  the post-projection sky
+  rotation works only
+  when the projection
+  rotates rigidly about
+  its centre (AE polar);
+  and the cursor inverse
+  was hardcoded AE.
+  Switching modes was
+  fine state-wise — it's
+  preserved — but the
+  click-to-place gesture
+  was producing different
+  lat / lon than the user
+  meant in DP, so the
+  observer landed in a
+  different visual spot
+  on each subsequent
+  switch.
+- **Revert:** `git checkout v-s000685 -- .`

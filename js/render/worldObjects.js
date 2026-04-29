@@ -4435,12 +4435,12 @@ export class Stars {
         domePos[i * 3 + 2] = Rgv * Math.sin(phi);
       } else {
         // FE flat starfield disk: stars sit at a single constant
-        // altitude (StarfieldVaultHeight). Disc position routes
-        // through `canonicalLatLongToDisc` so DP picks up dual-pole
-        // wrapping for both the GP and the heavenly-vault star.
-        const disc = canonicalLatLongToDisc(lat, lon, FE_RADIUS);
-        const diskLocal = [disc[0], disc[1], s.StarfieldVaultHeight];
-        feVault = vaultCoordToGlobalFeCoord(diskLocal, c.TransMatVaultToFe);
+        // altitude (StarfieldVaultHeight). Apply sky rotation to the
+        // celestial longitude *before* projecting so DP (no rotational
+        // symmetry) lands stars directly above their disc GPs. AE
+        // collapses to the previous post-rotation result by symmetry.
+        const disc = canonicalLatLongToDisc(lat, lon - skyRotDeg, FE_RADIUS);
+        feVault = [disc[0], disc[1], s.StarfieldVaultHeight];
         domePos[i * 3]     = feVault[0];
         domePos[i * 3 + 1] = feVault[1];
         domePos[i * 3 + 2] = feVault[2];

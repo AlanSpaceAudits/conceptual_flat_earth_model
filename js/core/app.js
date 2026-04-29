@@ -628,6 +628,14 @@ export class FeModel extends EventTarget {
         ? feConceptualLocalGlobeUnit(vaultGlobalFe, c.ObserverFeCoord, c.TransMatLocalFeToGlobalFe)
         : sphereLocalGlobe
     );
+    // Heavenly-vault body placement. Apply sky rotation to longitude
+    // *before* projecting instead of post-rotating the projected (x, y)
+    // about z. AE polar has rotational symmetry about its pole so the
+    // two are equivalent there; DP doesn't, so post-rotating leaves the
+    // sun / moon / planets / stars off-axis from their disc GPs.
+    // Returns a global-FE coord at the body's vault height.
+    const _bodyVault = (lat, lonCelest, height) =>
+      vaultCoordAt(lat, lonCelest - c.SkyRotAngle, height, FE_RADIUS);
     // ObserverAtCenter teleports the camera to the world origin via
     // scene.js but keeps ObserverFeCoord / GlobeObserverCoord at the
     // surface lat / lon — the optical vault therefore stays anchored
@@ -748,10 +756,8 @@ export class FeModel extends EventTarget {
       c.SunCelestLatLong.lat,
       _wrapLon180(c.SunRA * 180 / Math.PI - c.SkyRotAngle),
     );
-    c.SunVaultCoord = vaultCoordToGlobalFeCoord(
-      vaultCoordAt(c.SunCelestLatLong.lat, c.SunCelestLatLong.lng,
-                   s.SunVaultHeight, FE_RADIUS),
-      c.TransMatVaultToFe,
+    c.SunVaultCoord = _bodyVault(
+      c.SunCelestLatLong.lat, c.SunCelestLatLong.lng, s.SunVaultHeight,
     );
     c.SunLocalGlobeCoord = celestCoordToLocalGlobeCoord(
       c.SunCelestCoord, c.TransMatCelestToGlobe,
@@ -804,10 +810,8 @@ export class FeModel extends EventTarget {
       c.MoonCelestLatLong.lat,
       _wrapLon180(c.MoonRA * 180 / Math.PI - c.SkyRotAngle),
     );
-    c.MoonVaultCoord = vaultCoordToGlobalFeCoord(
-      vaultCoordAt(c.MoonCelestLatLong.lat, c.MoonCelestLatLong.lng,
-                   s.MoonVaultHeight, FE_RADIUS),
-      c.TransMatVaultToFe,
+    c.MoonVaultCoord = _bodyVault(
+      c.MoonCelestLatLong.lat, c.MoonCelestLatLong.lng, s.MoonVaultHeight,
     );
     c.MoonLocalGlobeCoord = celestCoordToLocalGlobeCoord(
       c.MoonCelestCoord, c.TransMatCelestToGlobe,
@@ -1068,10 +1072,7 @@ export class FeModel extends EventTarget {
       const planetFloor = s.StarfieldVaultHeight + HEADROOM;
       const planetZ = Math.max(planetFloor, Math.min(planetCeil, desired));
       s[PLANET_RANGE_KEY[name]] = planetZ;
-      const vaultCoord = vaultCoordToGlobalFeCoord(
-        vaultCoordAt(ll.lat, ll.lng, planetZ, FE_RADIUS),
-        c.TransMatVaultToFe,
-      );
+      const vaultCoord = _bodyVault(ll.lat, ll.lng, planetZ);
       const globeVaultCoord = _globeVaultAt(
         ll.lat,
         _wrapLon180(eq.ra * 180 / Math.PI - c.SkyRotAngle),
@@ -1124,10 +1125,7 @@ export class FeModel extends EventTarget {
       const dec = apparent.dec;
       const celestCoord   = equatorialToCelestCoord({ ra, dec });
       const celestLatLong = coordToLatLong(celestCoord);
-      const vaultCoord    = vaultCoordToGlobalFeCoord(
-        vaultCoordAt(celestLatLong.lat, celestLatLong.lng, STAR_VAULT_HEIGHT, FE_RADIUS),
-        c.TransMatVaultToFe,
-      );
+      const vaultCoord    = _bodyVault(celestLatLong.lat, celestLatLong.lng, STAR_VAULT_HEIGHT);
       const globeVaultCoord = _globeVaultAt(
         celestLatLong.lat,
         _wrapLon180(ra * 180 / Math.PI - c.SkyRotAngle),
@@ -1191,10 +1189,7 @@ export class FeModel extends EventTarget {
         const raRad  = (sub.lon + c.SkyRotAngle) * Math.PI / 180;
         const celestCoord   = equatorialToCelestCoord({ ra: raRad, dec: decRad });
         const celestLatLong = coordToLatLong(celestCoord);
-        const vaultCoord    = vaultCoordToGlobalFeCoord(
-          vaultCoordAt(celestLatLong.lat, celestLatLong.lng, SAT_VAULT_HEIGHT, FE_RADIUS),
-          c.TransMatVaultToFe,
-        );
+        const vaultCoord    = _bodyVault(celestLatLong.lat, celestLatLong.lng, SAT_VAULT_HEIGHT);
         const globeVaultCoord = _globeVaultAt(celestLatLong.lat, sub.lon);
         const localGlobe  = celestCoordToLocalGlobeCoord(celestCoord, c.TransMatCelestToGlobe);
         const anglesGlobe = localGlobeCoordToAngles(localGlobe);

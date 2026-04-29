@@ -618,13 +618,11 @@ export class WorldGlobe {
     this.group.name = 'world-globe';
     this.group.visible = false;
 
-    // SphereGeometry's default UV maps `(theta, phi)` such that `+x`
-    // is `(u, v) = (0, 0.5)`. Rotate the geometry so its poles
-    // become `±z` (matching celestial-axis convention) AFTER UV
-    // generation; equirectangular textures still map correctly
-    // because the rotation is applied to vertex positions, not UVs.
-    // To put longitude `0°` on the world `+x` axis we additionally
-    // shift the texture origin by `0.5` on `u`.
+    // SphereGeometry's default UV puts `u = 0.5` on the world `+x`
+    // axis after `rotateX(π/2)` aligns the poles with `±z`, which is
+    // exactly where lon=0° sits in a standard equirect texture
+    // (lon=-180° at u=0, lon=180° at u=1). No offset is needed for
+    // the prime meridian to land on world `+x`.
     const sphereGeom = new THREE.SphereGeometry(radius, 96, 64);
     sphereGeom.rotateX(Math.PI / 2);
     // Day/night shader. World-space surface normal is dotted against
@@ -636,7 +634,7 @@ export class WorldGlobe {
         uMap:        { value: null },
         uHasMap:     { value: 0.0 },
         uColor:      { value: new THREE.Color(0x1a3a5e) },
-        uMapOffset:  { value: new THREE.Vector2(0.5, 0.0) },
+        uMapOffset:  { value: new THREE.Vector2(0.0, 0.0) },
         uSunDir:     { value: new THREE.Vector3(1, 0, 0) },
         uOpacity:    { value: 0.85 },
         uTermSoft:   { value: 0.12 },
@@ -816,11 +814,9 @@ export class WorldGlobe {
         tex = new THREE.TextureLoader().load(asset);
         tex.colorSpace = THREE.SRGBColorSpace;
         tex.wrapS = THREE.RepeatWrapping;
-        // Shift longitude origin so the prime meridian of the map
-        // lines up with world `+x`. Mirrored into the shader as
-        // `uMapOffset` since custom shaders don't auto-apply
-        // `texture.offset`.
-        tex.offset.set(0.5, 0);
+        // No shift: the rotated SphereGeometry's UV already puts
+        // u=0.5 (= equirect lon=0°) on world +x.
+        tex.offset.set(0, 0);
         this._textureCache.set(asset, tex);
       }
       u.uMap.value = tex;

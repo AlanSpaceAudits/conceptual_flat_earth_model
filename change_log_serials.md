@@ -12284,3 +12284,54 @@ Format:
   region without further
   changes).
 - **Revert:** `git checkout v-s000687 -- .`
+
+## S689 — GE: remove 180° texture offset on equirect skins
+
+- **Date:** 2026-04-29
+- **Files changed:**
+  - `js/render/worldObjects.js`
+  - `js/render/geArt.js`
+- **Change:**
+  - `WorldGlobe` shader's
+    `uMapOffset` default
+    drops from
+    `(0.5, 0)` to
+    `(0, 0)`.
+  - HQ-equirect texture
+    cache no longer sets
+    `tex.offset.set(0.5, 0)`.
+  - `geArt.js` procedural
+    canvas texture path
+    matches.
+- **Why:** observer placed
+  at lat=32, lon=−100
+  (Texas) was visually
+  showing as in India
+  (lon ≈ +80) — the
+  GlobeObserverCoord at
+  +X was correct, but
+  the texture beneath was
+  shifted by 180°.
+  Three.js
+  `SphereGeometry` after
+  `rotateX(π/2)` already
+  puts `u = 0.5` on world
+  `+x`, which is exactly
+  where a standard
+  equirect texture stores
+  lon=0°
+  (lon=−180 at u=0,
+  lon=180 at u=1). The
+  pre-existing 0.5 offset
+  added a redundant 180°
+  rotation. Setting it to
+  0 lines all GE skins
+  (NASA day / night, world
+  shaded relief, AE
+  raster maps wrapped on
+  the globe path,
+  procedural ge_art
+  variants) up with the
+  observer + body GP
+  positions.
+- **Revert:** `git checkout v-s000688 -- .`

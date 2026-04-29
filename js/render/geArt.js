@@ -199,10 +199,9 @@ export function generateGeArtTexture(styleId, geoJson) {
   const tex = new THREE.CanvasTexture(cv);
   tex.colorSpace = THREE.SRGBColorSpace;
   tex.wrapS = THREE.RepeatWrapping;
-  // Match the equirect raster path: shift u by 0.5 so the prime
-  // meridian on the canvas (centred at x = W/2) lines up with world
-  // +x on the rotated sphere.
-  tex.offset.set(0.5, 0);
+  // No shift: the rotated SphereGeometry's UV puts u=0.5
+  // (the canvas's prime meridian at x = W/2) on world +x already.
+  tex.offset.set(0, 0);
   tex.needsUpdate = true;
   return tex;
 }

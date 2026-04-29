@@ -11469,7 +11469,46 @@ Format:
   spec'd resolution kick in
   before any module fetch
   starts.
-- **Revert:** `git checkout v-s000672 -- .` Note: existing
+- **Revert:** `git checkout v-s000672 -- .`
+
+## S674 — flight-routes lineart map: kill z-fight at long camera distance
+
+- **Date:** 2026-04-28
+- **Files changed:**
+  - `js/render/earthMap.js`
+- **Change:**
+  - `buildLineArtMap`'s
+    backdrop disc now uses
+    `depthTest: false` and
+    `renderOrder = 5`. The
+    coastline `LineSegments`
+    use `depthTest: false`
+    and `renderOrder = 6`.
+- **Why:** in the flight-route
+  demos (`MapProjection:
+  'ae_lineart'`) the black
+  lineart backdrop sits at
+  z = 1e-4 above
+  `DiscBase`'s ocean disc at
+  z = 0 and rim ring at
+  z = 1e-4. Heavenly-vault
+  FE zoom-out pushes the
+  camera far enough that
+  depth-buffer precision
+  near z = 0 collapses,
+  producing visible flicker
+  ("the map starts
+  flickering like there's
+  another map under it").
+  Routing both lineart
+  layers through
+  `depthTest: false`
+  + a higher renderOrder
+  guarantees they paint on
+  top of the ocean / rim
+  regardless of camera
+  distance.
+- **Revert:** `git checkout v-s000673 -- .` Note: existing
   installed workers persist
   in browsers — bumping
   `CACHE_VERSION` to evict

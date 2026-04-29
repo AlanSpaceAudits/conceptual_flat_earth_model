@@ -153,13 +153,19 @@ export function buildLineArtMap(geojson, projection, {
 } = {}) {
   const group = new THREE.Group();
   group.name = 'land';
-  // Backdrop disc.
+  // Backdrop disc. `depthTest: false` + `renderOrder = 5` keeps the
+  // black backdrop painted on top of `DiscBase`'s ocean / rim at any
+  // camera distance. Without this, zooming way out in heavenly-vault
+  // FE flickers the line-art map against the ocean disc because both
+  // sit within ~1e-4 of z=0 and the depth buffer can't resolve them
+  // at far focal distances.
   const bgMat = new THREE.MeshBasicMaterial({
     color: backgroundColor, transparent: false,
-    side: THREE.DoubleSide, depthWrite: false,
+    side: THREE.DoubleSide, depthWrite: false, depthTest: false,
   });
   const bg = new THREE.Mesh(new THREE.CircleGeometry(feRadius, 128), bgMat);
   bg.position.z = EPS_LIFT;
+  bg.renderOrder = 5;
   bg.name = 'lineart-disc';
   group.add(bg);
   // Coastlines.
@@ -182,10 +188,12 @@ export function buildLineArtMap(geojson, projection, {
   }
   const lineMat = new THREE.LineBasicMaterial({
     color: strokeColor, transparent: strokeOpacity < 1, opacity: strokeOpacity,
+    depthTest: false,
   });
   const lineGeo = new THREE.BufferGeometry();
   lineGeo.setAttribute('position', new THREE.Float32BufferAttribute(lineSegs, 3));
   const lines = new THREE.LineSegments(lineGeo, lineMat);
+  lines.renderOrder = 6;
   lines.name = 'coastlines';
   group.add(lines);
   return group;

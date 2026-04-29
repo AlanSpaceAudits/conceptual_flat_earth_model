@@ -10592,3 +10592,35 @@ Format:
   space before the image
   decodes.
 - **Revert:** `git checkout v-s000653 -- .`
+
+## S655 — index.html: load styles.css async via rel=preload
+
+- **Date:** 2026-04-28
+- **Files changed:**
+  - `index.html`
+- **Change:**
+  - Replaced
+    `<link rel="stylesheet"
+    href="css/styles.css">`
+    with the standard async-CSS
+    pattern:
+    `<link rel="preload"
+    href="css/styles.css"
+    as="style"
+    onload="this.onload=null;this.rel='stylesheet'">`
+    plus a `<noscript>` fallback
+    that keeps the original
+    blocking link for users with
+    JS disabled.
+- **Why:** Lighthouse mobile lab
+  flagged `Render blocking
+  requests` with 320 ms savings.
+  `styles.css` is small (37 KiB
+  raw, ~9 KiB gzipped) but its
+  fetch sat on the critical
+  path. Preload + media-swap
+  removes it from the
+  render-blocking critical chain
+  without splitting the file or
+  introducing a build step.
+- **Revert:** `git checkout v-s000654 -- .`

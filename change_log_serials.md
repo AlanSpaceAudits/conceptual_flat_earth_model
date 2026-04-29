@@ -12335,3 +12335,47 @@ Format:
   observer + body GP
   positions.
 - **Revert:** `git checkout v-s000688 -- .`
+
+## S690 — Cel Theo menu: preserve original-category colour for aliases
+
+- **Date:** 2026-04-29
+- **Files changed:**
+  - `js/ui/controlPanel.js`
+- **Change:**
+  - New
+    `STAR_COLOR_BY_ID`
+    map built from
+    `BODY_SEARCH_INDEX`
+    plus constellation
+    star ids (default
+    `#ffffff`).
+  - `celTheoMenuColor(star)`
+    returns the alias's
+    owning-catalogue
+    colour when
+    `star.extId` is set,
+    otherwise the Cel Theo
+    orange.
+  - Cel Theo button grid
+    uses `celTheoMenuColor(s)`
+    in place of the hard-
+    coded `'#ff8c00'`.
+- **Why:** entries like
+  Regulus, Rigel, Alnilam,
+  Mintaka, Alnitak, Baten
+  Kaitos, Deneb Algedi
+  appear under Cel Theo
+  via `extId` aliases; the
+  rendered dots already
+  carry the owning
+  catalogue's colour
+  (cel-nav warm yellow,
+  named-stars warm white,
+  constellation white),
+  but the Cel Theo
+  menu buttons were all
+  painted orange. Aligning
+  the button colour with
+  the dot colour makes the
+  membership obvious.
+- **Revert:** `git checkout v-s000689 -- .`

@@ -69,6 +69,28 @@ const BODY_SEARCH_INDEX = (() => {
   return out;
 })();
 
+// star-id → menu-button colour. Lets the Cel Theo menu show
+// alias entries (e.g. Regulus, Rigel, Mintaka) in their owning
+// catalogue's accent rather than the Cel Theo orange. Falls back
+// to orange when the id isn't found in any other catalogue.
+const STAR_COLOR_BY_ID = (() => {
+  const m = new Map();
+  for (const e of BODY_SEARCH_INDEX) {
+    if (e.id && e.id.startsWith('star:')) m.set(e.id.slice(5), e.color);
+  }
+  for (const c of CONSTELLATIONS) {
+    for (const st of (c.stars || [])) {
+      if (st.id && !m.has(st.id)) m.set(st.id, '#ffffff');
+    }
+  }
+  return m;
+})();
+
+function celTheoMenuColor(star) {
+  if (star.extId) return STAR_COLOR_BY_ID.get(star.extId) || '#ff8c00';
+  return '#ff8c00';
+}
+
 function resolveTargetAngles(targetId, c) {
   if (!targetId) return null;
   if (targetId === 'sun')  return c.SunAnglesGlobe  || null;
@@ -1004,7 +1026,7 @@ const FIELD_GROUPS = [
           CEL_THEO_STARS.map((s) => ({
             value: `star:${s.extId || s.id}`,
             label: s.name,
-            color: '#ff8c00',
+            color: celTheoMenuColor(s),
           })),
         },
       ]},

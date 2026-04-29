@@ -10697,3 +10697,49 @@ Format:
   cold-start budget settle
   first.
 - **Revert:** `git checkout v-s000656 -- .`
+
+## S658 — index.html: preconnect + preload critical-chain assets
+
+- **Date:** 2026-04-28
+- **Files changed:**
+  - `index.html`
+- **Change:**
+  - Added
+    `<link rel="preconnect"
+    href="https://unpkg.com"
+    crossorigin>` so the TLS /
+    DNS handshake to the
+    three.js CDN starts during
+    HTML parse instead of
+    waiting for the import to
+    resolve.
+  - Added
+    `<link rel="modulepreload"
+    href=".../three.module.js"
+    crossorigin>` so the 254
+    KiB three.module.js fetch
+    issues in parallel with
+    the local module graph
+    instead of after
+    `main.js → mouseHandler.js`.
+  - Added
+    `<link rel="preload"
+    href="assets/ne_110m_land.geojson"
+    as="fetch" ...>` so the 51
+    KiB land outline (the
+    longest leaf of the
+    critical-path chain at 2.83
+    s in the lab audit) starts
+    fetching immediately
+    instead of after the
+    `loadLand()` call resolves
+    in `main.js`.
+- **Why:** Lighthouse mobile lab
+  flagged a 2.83 s critical
+  network chain ending in the
+  geojson load. The
+  `mouseHandler → three →
+  geojson` chain forced sequential
+  fetches; preload + modulepreload
+  parallelize them.
+- **Revert:** `git checkout v-s000657 -- .`

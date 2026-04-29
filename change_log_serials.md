@@ -11858,3 +11858,59 @@ Format:
   — that's a separate
   architectural change.
 - **Revert:** `git checkout v-s000680 -- .`
+
+## S682 — DP: projection-aware optical-vault rotation (NESW first-person)
+
+- **Date:** 2026-04-29
+- **Files changed:**
+  - `js/render/worldObjects.js`
+- **Change:**
+  - `ObserversOpticalVault.update`
+    used to drive its
+    group rotation with
+    `RotatingZ(ObserverLong)`
+    so the local +x /
+    +y axes lined up with
+    AE's south / east at
+    the observer. In DP
+    that's wrong — the
+    projection's 0° / 90°
+    meridians don't sit
+    where AE's do — so
+    cardinals + the
+    azimuth ring + the
+    heading arrow all came
+    out rotated against
+    the DP ground in
+    first-person mode.
+    Replaced with a
+    gradient-driven angle
+    sampled from
+    `canonicalLatLongToDisc`:
+    `θ = atan2(−ny, −nx)`
+    where `(nx, ny)` is the
+    normalised
+    `∂position/∂lat` at
+    `(obsLat, obsLon)`. AE
+    collapses back to
+    `RotatingZ(λ)` exactly;
+    DP follows the curved
+    meridian tangent.
+- **Why:** user reported
+  NESW still mixed up in
+  DP first-person after
+  S681. S681 fixed the
+  local-FE rotation matrix
+  used to place celestial
+  bodies, but the
+  optical-vault group
+  itself was still rotated
+  by raw longitude — so
+  the cardinal labels
+  (which sit at fixed
+  local positions on that
+  group) ended up at AE-
+  longitude angles
+  instead of DP-meridian
+  angles.
+- **Revert:** `git checkout v-s000681 -- .`

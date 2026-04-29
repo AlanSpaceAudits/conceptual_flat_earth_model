@@ -2135,23 +2135,22 @@ export function buildControlPanel(host, model, demos) {
   model.addEventListener('update', refreshLangBtn);
   refreshLangBtn();
 
-  // World-model toggle: FE (flat-earth disc) ↔ GE (globe-earth
-  // sphere). State key `WorldModel` ('fe' / 'ge'). Button face
-  // displays the *current* model. Stacked directly under the grids
-  // toggle (▦) — see the grids-stack assembly below.
+  // World-model cycle: FE (flat disc, AE) → GE (globe sphere) → DP
+  // (flat disc, dual-pole AE) → FE. State key `WorldModel`
+  // ('fe' / 'ge' / 'dp'). Button face displays the *current* model.
+  // Stacked directly under the grids toggle (▦).
   const btnWorld = document.createElement('button');
   btnWorld.className = 'time-btn world-btn';
   btnWorld.type = 'button';
-  // One world model is always active, so the button stays in the
-  // pressed state — the face text alone tells the user which mode
-  // they're in.
   btnWorld.setAttribute('aria-pressed', 'true');
   const refreshWorldBtn = () => {
-    btnWorld.textContent = (model.state.WorldModel === 'ge') ? 'GE' : 'FE';
+    const wm = model.state.WorldModel;
+    btnWorld.textContent = wm === 'ge' ? 'GE' : wm === 'dp' ? 'DP' : 'FE';
   };
   btnWorld.addEventListener('click', () => {
-    const cur = model.state.WorldModel === 'ge' ? 'ge' : 'fe';
-    model.setState({ WorldModel: cur === 'fe' ? 'ge' : 'fe' });
+    const cur = model.state.WorldModel;
+    const next = cur === 'fe' ? 'ge' : cur === 'ge' ? 'dp' : 'fe';
+    model.setState({ WorldModel: next });
   });
   model.addEventListener('update', refreshWorldBtn);
   refreshWorldBtn();

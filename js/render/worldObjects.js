@@ -1030,7 +1030,11 @@ export class LatitudeLines {
     }
     this.group.visible = anyOn;
     const ge = s.WorldModel === 'ge';
-    const projectionId = s.MapProjection || 'ae';
+    const projectionId = ge
+      ? (s.MapProjectionGe || 'hq_equirect_night')
+      : s.WorldModel === 'dp'
+      ? 'dp'
+      : (s.MapProjection || 'ae');
     const key = ge ? 'ge' : `fe:${projectionId}`;
     if (key !== this._lastProj) {
       this._rebuild(ge, projectionId);
@@ -1535,8 +1539,9 @@ export class DiscGrid {
     this.lines.geometry.computeBoundingSphere();
   }
   update(model) {
-    this.group.visible = model.state.ShowFeGrid;
-    const proj = model.state.MapProjection || 'ae';
+    const s = model.state;
+    this.group.visible = s.ShowFeGrid;
+    const proj = s.WorldModel === 'dp' ? 'dp' : (s.MapProjection || 'ae');
     if (proj !== this._lastProj) {
       this._rebuild(proj);
       this._lastProj = proj;

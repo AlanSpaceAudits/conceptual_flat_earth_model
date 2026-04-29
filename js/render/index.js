@@ -427,6 +427,8 @@ export class Renderer {
     const s = this.model.state;
     const projId = (s.WorldModel === 'ge')
       ? (s.MapProjectionGe || 'hq_equirect_night')
+      : (s.WorldModel === 'dp')
+      ? 'dp'
       : (s.MapProjection || 'ae');
     this._rebuildLand(projId);
     this.frame();
@@ -552,10 +554,13 @@ export class Renderer {
     const m = this.model;
     const c = m.computed, s = m.state;
     // Per-world-model map projection: FE uses `MapProjection`, GE
-    // uses `MapProjectionGe`. Each preserves its own dropdown
-    // selection so toggling FE/GE doesn't clobber the other map.
+    // uses `MapProjectionGe`, DP forces `dp`. Each preserves its own
+    // dropdown selection so toggling between modes doesn't clobber
+    // the FE/GE map picker state.
     const projId = (s.WorldModel === 'ge')
       ? (s.MapProjectionGe || 'hq_equirect_night')
+      : (s.WorldModel === 'dp')
+      ? 'dp'
       : (s.MapProjection || 'ae');
     if (projId !== this._landProjection) {
       this._rebuildLand(projId);

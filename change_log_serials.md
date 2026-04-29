@@ -11667,3 +11667,58 @@ Format:
   `Azi_Equi_EA180_Lat0_Lon0_2.png`
   the user supplied).
 - **Revert:** `git checkout v-s000677 -- .`
+
+## S679 — DP as third world-model cycle (FE → GE → DP)
+
+- **Date:** 2026-04-28
+- **Files changed:**
+  - `js/ui/controlPanel.js`
+  - `js/render/index.js`
+  - `js/render/worldObjects.js`
+- **Change:**
+  - World-model button now
+    cycles
+    `fe → ge → dp → fe`
+    instead of toggling
+    `fe ↔ ge`. Button face
+    reads `FE` / `GE` / `DP`
+    for the current mode.
+  - `js/render/index.js`
+    `loadLand()` and
+    `frame()`: when
+    `s.WorldModel === 'dp'`
+    the projection ID is
+    forced to `dp`,
+    overriding
+    `MapProjection`. FE and
+    GE projection routing
+    is unchanged.
+  - `LatitudeLines.update`
+    + `DiscGrid.update`:
+    rebuild key picks up
+    `'dp'` whenever the
+    world model is DP, so
+    the FE graticule
+    re-renders against DP
+    math regardless of the
+    `MapProjection`
+    dropdown.
+- **Why:** user request —
+  DP belongs in the
+  top-level world cycle
+  alongside FE / GE, not
+  buried in the FE map
+  picker. DP renders as a
+  flat disc (FE-like) but
+  with the dual-pole AE
+  ground + graticule.
+  Existing
+  `WorldModel === 'ge'`
+  branches naturally fall
+  through to the FE-disc
+  path for DP (no globe
+  geometry, optical-vault
+  uses FE settings, camera
+  pitch clamps to FE
+  range).
+- **Revert:** `git checkout v-s000678 -- .`

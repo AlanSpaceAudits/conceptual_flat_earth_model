@@ -10888,3 +10888,41 @@ Format:
   existing pattern for the
   other dot catalogues.
 - **Revert:** `git checkout v-s000659 -- .`
+
+## S661 — self-host three.js (minified ESM, 0.162.0)
+
+- **Date:** 2026-04-28
+- **Files changed:**
+  - `assets/vendor/three.module.min.js` (new, vendored)
+  - `index.html`
+- **Change:**
+  - Vendored
+    `three@0.162.0/build/three.module.min.js`
+    (678 KiB raw, ~190 KiB
+    gzipped) under
+    `assets/vendor/`.
+  - Import map now points
+    `three` at
+    `./assets/vendor/three.module.min.js`.
+  - Dropped the
+    `https://unpkg.com`
+    `preconnect` and the
+    `modulepreload` of the CDN
+    URL (replaced with a local
+    `modulepreload`).
+  - Removed `three/addons/`
+    entry — repo doesn't import
+    from `three/addons/`.
+- **Why:** Lighthouse mobile lab
+  flagged `Reduce unused
+  JavaScript` (145 KiB) and
+  `Minify JavaScript` (255 KiB)
+  on the unminified ESM bundle
+  served from unpkg. Self-
+  hosting the minified build
+  on GitHub Pages eliminates
+  the cross-origin handshake,
+  drops the 3rd-party CDN
+  dependency, and shrinks
+  parse / compile time.
+- **Revert:** `git checkout v-s000660 -- .`

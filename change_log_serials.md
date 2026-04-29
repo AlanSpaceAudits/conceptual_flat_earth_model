@@ -12688,3 +12688,69 @@ Format:
   observer moves
   off-centre.
 - **Revert:** `git checkout v-s000695 -- .`
+
+## S697 — DP InsideVault camera + figure back to gradient (tracker desync fix)
+
+- **Date:** 2026-04-29
+- **Files changed:**
+  - `js/render/scene.js`
+  - `js/render/worldObjects.js`
+- **Change:**
+  - Reverted S692's
+    world-fixed
+    `north = (0,1,0)`,
+    `east = (1,0,0)`
+    in the DP
+    InsideVault camera.
+    DP now reads heading
+    against the gradient
+    of latitude at the
+    observer (= sphere-
+    model "north" via
+    S681's
+    TransMatLocalFeToGlobalFe).
+  - Reverted S695's
+    `π/2 − headingRad`
+    figure rotation in
+    DP. All FE-side
+    branches use the
+    legacy
+    `ang + π − headingRad`
+    where
+    `ang = atan2(p.y, p.x)`.
+  - Heavenly
+    `LongitudeRing`
+    stays locked at
+    `−π/2` in DP
+    (S696) per
+    user's earlier
+    "heavenly fixed"
+    direction.
+- **Why:** trackers
+  set
+  `ObserverHeading =
+  AnglesGlobe.azimuth`,
+  which is sphere-model
+  azimuth measured from
+  gradient-N. With S692
+  reading heading
+  against world-fixed
+  +y, off-centre
+  observers in DP saw
+  the tracked body
+  drift off screen by
+  the gradient/world
+  delta. Putting the
+  camera back on
+  gradient axes makes
+  the heading align
+  with the body's
+  azimuth so tracking
+  centres correctly.
+  The "diagonal" feel
+  for NEWS in DP
+  comes naturally from
+  the camera following
+  the curving meridian
+  tangent.
+- **Revert:** `git checkout v-s000696 -- .`

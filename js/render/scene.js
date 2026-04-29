@@ -192,16 +192,36 @@ export class SceneManager {
         eastX  = f.eastX;  eastY  = f.eastY;  eastZ  = f.eastZ;
         upX    = f.upX;    upY    = f.upY;    upZ    = f.upZ;
       } else if (s.WorldModel === 'dp') {
-        // DP: heading uses the world-fixed heavenly axes so clicking
-        // N / E / S / W faces the disc's heavenly compass — the same
-        // axes the locked LongitudeRing labels at world +y / +x / −y / −x.
-        // The optical-vault cap (S682 gradient) still shows the
-        // observer's local compass, so its N letter floats off the
-        // camera-forward direction whenever the observer is off-centre,
-        // tracing the "diagonal" the user requested.
-        northX = 0; northY = 1; northZ = 0;
-        eastX  = 1; eastY  = 0; eastZ  = 0;
-        upX    = 0; upY    = 0; upZ    = 1;
+        // DP: heading is measured against the local meridian tangent
+        // (compass-N for the observer in DP) — same axis the
+        // sphere-model `AnglesGlobe.azimuth` lives in via the S681
+        // TransMatLocalFeToGlobalFe, so trackers that set
+        // `ObserverHeading = body_az` aim the camera at the body.
+        // The heading line traces a diagonal across the disc
+        // naturally because DP's meridians curve.
+        const lat = s.ObserverLat || 0;
+        const lon = s.ObserverLong || 0;
+        const eps = 1e-3;
+        const pHere = canonicalLatLongToDisc(lat, lon, 1);
+        const latProbe = lat >= 90 - eps ? lat - eps : lat + eps;
+        const sign = lat >= 90 - eps ? -1 : 1;
+        const pN = canonicalLatLongToDisc(latProbe, lon, 1);
+        let dnx = (pN[0] - pHere[0]) * sign;
+        let dny = (pN[1] - pHere[1]) * sign;
+        let nLen = Math.hypot(dnx, dny);
+        if (nLen < 1e-9) {
+          const longR = ToRad(lon);
+          dnx = -Math.cos(longR);
+          dny = -Math.sin(longR);
+          nLen = 1;
+        }
+        northX = dnx / nLen;
+        northY = dny / nLen;
+        northZ = 0;
+        eastX  =  northY;
+        eastY  = -northX;
+        eastZ  = 0;
+        upX = 0; upY = 0; upZ = 1;
       } else {
         const ox = obs[0], oy = obs[1];
         const obsLen = Math.hypot(ox, oy);

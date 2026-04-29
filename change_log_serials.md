@@ -10743,3 +10743,34 @@ Format:
   fetches; preload + modulepreload
   parallelize them.
 - **Revert:** `git checkout v-s000657 -- .`
+
+## S659 — index.html: modulepreload heavy local JS modules
+
+- **Date:** 2026-04-28
+- **Files changed:**
+  - `index.html`
+- **Change:**
+  - Added eight
+    `<link rel="modulepreload">`
+    tags for the heaviest local
+    modules on the critical path:
+    - `js/main.js`
+    - `js/render/index.js`
+    - `js/render/worldObjects.js`
+    - `js/core/app.js`
+    - `js/core/ephemerisAstropixels.js`
+    - `js/data/astropixels.js`
+      (293 KiB)
+    - `js/ui/controlPanel.js`
+    - `js/ui/i18n.js` (34 KiB)
+- **Why:** the network dependency
+  tree in the lab audit chained
+  these modules behind
+  `main.js → mouseHandler.js`,
+  serialising fetches over the
+  Slow 4G profile. `modulepreload`
+  issues each fetch in parallel
+  during HTML parse, so by the
+  time the import resolves the
+  module is already in cache.
+- **Revert:** `git checkout v-s000658 -- .`

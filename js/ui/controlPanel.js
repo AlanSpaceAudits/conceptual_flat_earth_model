@@ -2833,14 +2833,28 @@ export function buildTrackerHud(trackerEl, model) {
   };
 
   // Re-anchor #tracker-hud just below #hud so collapsing the
-  // moon-phase widget pulls the tracker HUD up with it.
+  // moon-phase widget pulls the tracker HUD up with it. Reads are
+  // batched into a rAF callback so the
+  // `getBoundingClientRect` queries don't synchronously flush
+  // layout when called inside a ResizeObserver / resize event
+  // handler that may be fired alongside other DOM mutations.
   const hudHost = document.getElementById('hud');
   const viewHost = document.getElementById('view');
+  let _trackerAnchorRaf = 0;
+  let _trackerAnchorLastTop = -1;
   const positionTrackerBelowHud = () => {
     if (!hudHost || !viewHost) return;
-    const hudRect  = hudHost.getBoundingClientRect();
-    const viewRect = viewHost.getBoundingClientRect();
-    trackerEl.style.top = `${Math.round(hudRect.bottom - viewRect.top + 8)}px`;
+    if (_trackerAnchorRaf) return;
+    _trackerAnchorRaf = requestAnimationFrame(() => {
+      _trackerAnchorRaf = 0;
+      const hudRect  = hudHost.getBoundingClientRect();
+      const viewRect = viewHost.getBoundingClientRect();
+      const top = Math.round(hudRect.bottom - viewRect.top + 8);
+      if (top !== _trackerAnchorLastTop) {
+        _trackerAnchorLastTop = top;
+        trackerEl.style.top = `${top}px`;
+      }
+    });
   };
   if (hudHost && typeof ResizeObserver !== 'undefined') {
     new ResizeObserver(positionTrackerBelowHud).observe(hudHost);

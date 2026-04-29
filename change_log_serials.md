@@ -10624,3 +10624,36 @@ Format:
   without splitting the file or
   introducing a build step.
 - **Revert:** `git checkout v-s000654 -- .`
+
+## S656 — controlPanel: rAF-defer #tracker-hud reposition reads
+
+- **Date:** 2026-04-28
+- **Files changed:**
+  - `js/ui/controlPanel.js`
+- **Change:**
+  - `positionTrackerBelowHud()`
+    now queues its
+    `getBoundingClientRect`
+    reads inside a
+    `requestAnimationFrame`
+    callback. A pending-rAF flag
+    coalesces multiple invocations
+    in a single frame down to one.
+  - Cached the last computed
+    `top` and skipped the
+    `style.top` write when the
+    new value matches, so steady-
+    state ResizeObserver firings
+    don't dirty layout for no
+    reason.
+- **Why:** Lighthouse mobile lab
+  flagged 36 ms of
+  `Forced reflow` charged to
+  `controlPanel.js:2841:29` —
+  the `hudHost.getBoundingClientRect()`
+  call inside the ResizeObserver
+  callback. Deferring to rAF
+  decouples the reads from the
+  observer's invalidation
+  timing.
+- **Revert:** `git checkout v-s000655 -- .`

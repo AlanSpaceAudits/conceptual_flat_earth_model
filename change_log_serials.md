@@ -11379,7 +11379,59 @@ Format:
   reverts to the no-SW
   baseline that was working
   through S668.
-- **Revert:** `git checkout v-s000670 -- .` Note: existing
+- **Revert:** `git checkout v-s000670 -- .`
+
+## S672 — scene: seed canvas size synchronously before ResizeObserver fires
+
+- **Date:** 2026-04-28
+- **Files changed:**
+  - `js/render/scene.js`
+  - `js/main.js`
+  - `sw.js`
+- **Change:**
+  - `SceneManager` constructor
+    now does a single
+    `getBoundingClientRect`
+    read after building the
+    renderer + camera, then
+    calls `_applyCanvasSize`
+    once before attaching the
+    ResizeObserver. The RO
+    handles every subsequent
+    resize, but the seed read
+    guarantees the first frame
+    has a non-zero canvas
+    size.
+  - `js/main.js` re-enables the
+    `navigator.serviceWorker.register('sw.js')`
+    call so browsers running
+    the broken S669 worker
+    pull the kill switch on
+    next page load instead of
+    waiting up to 24 h for a
+    passive update check.
+  - `sw.js` activate handler
+    no longer navigates
+    controlled clients
+    (`c.navigate(c.url)`).
+    Cache wipe + self-
+    unregister happen first;
+    the next manual reload
+    runs without the worker
+    in the loop.
+- **Why:** the S665 ResizeObserver
+  swap left a window between
+  scene construction and the
+  first observation callback
+  where the renderer was sized
+  0×0, producing a black
+  canvas. Pages with no SW
+  cleanup path were also stuck
+  on the broken S669 worker —
+  re-enabling the registration
+  forces the kill switch to
+  install.
+- **Revert:** `git checkout v-s000671 -- .` Note: existing
   installed workers persist
   in browsers — bumping
   `CACHE_VERSION` to evict

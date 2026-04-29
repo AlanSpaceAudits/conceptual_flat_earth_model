@@ -89,18 +89,23 @@ export class SceneManager {
     this.world = new THREE.Group();
     this.scene.add(this.world);
 
-    // ResizeObserver delivers canvas dimensions in the
-    // observation callback without forcing layout reads, unlike
-    // `getBoundingClientRect()` from a `resize` listener which
-    // synchronously flushes layout. The previous implementation
-    // (`window.resize → getBoundingClientRect → setSize`) was
-    // attributed by Lighthouse as a forced-reflow source in
-    // `render/scene.js:98`.
+    // Size pipeline: ResizeObserver delivers updates without
+    // forcing layout flushes, but is asynchronous — the first
+    // observation fires only after the next layout. To avoid a
+    // 0×0 first-frame render, seed the renderer + camera
+    // synchronously with a `getBoundingClientRect` read once on
+    // construction; the RO then takes over for subsequent
+    // resizes. Net forced-reflow cost: a single read at startup,
+    // not one per `window.resize` event as before.
     this._applyCanvasSize = (w, h) => {
       this.renderer.setSize(w, h, false);
       this.camera.aspect = w / Math.max(1, h);
       this.camera.updateProjectionMatrix();
     };
+    {
+      const r = this.canvas.getBoundingClientRect();
+      this._applyCanvasSize(r.width, r.height);
+    }
     if (typeof ResizeObserver !== 'undefined') {
       this._resizeObserver = new ResizeObserver((entries) => {
         const cr = entries[0]?.contentRect;
@@ -122,7 +127,6 @@ export class SceneManager {
         });
       };
       window.addEventListener('resize', handle);
-      handle();
     }
   }
 

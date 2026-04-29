@@ -357,8 +357,15 @@ window.model = model;
 window.renderer = renderer;
 window.demos = demos;
 
-// Service-worker registration disabled (S671 hot-fix). The S669
-// worker triggered black-screen-on-refresh reports; the kill-switch
-// `sw.js` is still served so any installed copy unregisters itself
-// and clears its caches on activate. New SW installation stays
-// disabled until the registration call below is restored.
+// Service-worker registration kept ALIVE so browsers running the
+// broken S669 worker pull the S671 kill-switch on next page load,
+// which clears caches and self-unregisters. Without this call the
+// old worker would persist for up to 24 h (browser passive update
+// interval) before auto-checking the new `sw.js`. The kill switch
+// itself runs `self.registration.unregister()` on activate, so
+// after one navigation cycle no worker remains installed.
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  });
+}

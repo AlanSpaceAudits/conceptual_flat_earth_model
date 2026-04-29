@@ -1133,6 +1133,7 @@ uniform float uSunDec;
 uniform float uGMSTRad;
 uniform float uDiscRadius;
 uniform float uMaxDarkness;
+uniform float uIsDp;
 varying vec2  vXY;
 const float PI      = 3.14159265358979;
 const float HALF_PI = 1.57079632679489;
@@ -1142,8 +1143,27 @@ void main() {
   float r = length(vXY);
   if (r > uDiscRadius) discard;
 
-  float lat = HALF_PI - (r / uDiscRadius) * PI;
-  float lon = atan(vXY.y, vXY.x);
+  float lat;
+  float lon;
+  if (uIsDp > 0.5) {
+    // Dual-pole AE inverse, centred at (0°, 0°). c = π·ρ/R; the
+    // disc-rim sits at c = π. Singular at the centre — return the
+    // projection's centre coords (0, 0) there.
+    float rho = r;
+    if (rho < 1e-6) {
+      lat = 0.0;
+      lon = 0.0;
+    } else {
+      float cAng = PI * rho / uDiscRadius;
+      float sinC = sin(cAng);
+      float cosC = cos(cAng);
+      lat = asin(clamp(vXY.y * sinC / rho, -1.0, 1.0));
+      lon = atan(vXY.x * sinC, rho * cosC);
+    }
+  } else {
+    lat = HALF_PI - (r / uDiscRadius) * PI;
+    lon = atan(vXY.y, vXY.x);
+  }
 
   float lha = uGMSTRad + lon - uSunRA;
   float sinElev = sin(lat) * sin(uSunDec)
@@ -1468,6 +1488,7 @@ export class Shadow {
         uGMSTRad:     { value: 0 },
         uDiscRadius:  { value: feRadius },
         uMaxDarkness: { value: 0.7 },
+        uIsDp:        { value: 0 },
       },
       vertexShader: SHADOW_VERT,
       fragmentShader: SHADOW_FRAG,
@@ -1489,6 +1510,7 @@ export class Shadow {
     u.uSunRA.value   = c.SunRA;
     u.uSunDec.value  = c.SunDec;
     u.uGMSTRad.value = c.SkyRotAngle * Math.PI / 180;
+    u.uIsDp.value    = s.WorldModel === 'dp' ? 1 : 0;
   }
 }
 

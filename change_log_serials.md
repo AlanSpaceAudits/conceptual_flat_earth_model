@@ -12219,3 +12219,68 @@ Format:
   no longer matched at
   "0°".
 - **Revert:** `git checkout v-s000686 -- .`
+
+## S688 — DP: day/night shadow shader uses DP inverse
+
+- **Date:** 2026-04-29
+- **Files changed:**
+  - `js/render/worldObjects.js`
+- **Change:**
+  - `Shadow` class
+    fragment shader
+    inverted disc-XY to
+    (lat, lon) with the
+    AE polar formula
+    `lat = π/2 − π·r/R`,
+    `lon = atan2(y, x)`
+    to compute solar
+    elevation per pixel
+    and draw the
+    day / night
+    terminator. In DP
+    that mapping is
+    wrong — the disc is
+    dual-pole AE centred
+    at (0°, 0°) — so the
+    terminator was
+    sweeping across the
+    DP map along
+    AE-polar lines and
+    "lighting up" wrong
+    regions.
+  - Added `uIsDp`
+    uniform; the shader
+    branches to the DP
+    inverse:
+    `c = π·ρ/R`,
+    `lat = asin(y·sin c / ρ)`,
+    `lon = atan2(x·sin c,
+    ρ·cos c)`. Same
+    closed-form inverse
+    `mouseHandler.js`
+    already uses for
+    cursor → lat / lon
+    (S686).
+  - `Shadow.update`
+    sets `uIsDp` from
+    `WorldModel === 'dp'`.
+- **Why:** user reported
+  "light distribution is
+  fucked up" in DP after
+  the directionality fix —
+  the day / night zones
+  on the disc weren't
+  following the new
+  projection. Eclipse
+  shadow is unchanged
+  because it operates on
+  global-FE 3D
+  coords (sun + moon vault
+  positions are already
+  DP-aware via S686, so
+  the cone-plane
+  intersection lands on
+  the DP-correct disc
+  region without further
+  changes).
+- **Revert:** `git checkout v-s000687 -- .`

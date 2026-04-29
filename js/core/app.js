@@ -1078,10 +1078,25 @@ export class FeModel extends EventTarget {
           aberration: !!s.StarApplyAberration,
         };
     const STAR_VAULT_HEIGHT = s.StarfieldVaultHeight;
+    // Apparent (RA, Dec) per star is pure (J2000, date, starOpts);
+    // observer-pan / camera drags don't change any of those, so
+    // cache by (dateMs, starOptsKey) and reuse across drag ticks.
+    // The downstream projection (vault / local-globe / optical) is
+    // observer-dependent and still recomputes every frame.
+    const _starOptsKey = `${starOpts.precession ? 1 : 0}${starOpts.nutation ? 1 : 0}${starOpts.aberration ? 1 : 0}`;
+    const _starApparentKey = `${utcDate.getTime()}|${_starOptsKey}`;
+    if (!this._starApparentCache || this._starApparentCache.key !== _starApparentKey) {
+      this._starApparentCache = { key: _starApparentKey, byId: new Map() };
+    }
+    const _starApparentById = this._starApparentCache.byId;
     const projectStar = (star) => {
-      const raJ2000  = (star.raH / 24) * 2 * Math.PI;
-      const decJ2000 = star.decD * Math.PI / 180;
-      const apparent = apparentStarPosition(raJ2000, decJ2000, utcDate, starOpts);
+      let apparent = _starApparentById.get(star.id);
+      if (!apparent) {
+        const raJ2000  = (star.raH / 24) * 2 * Math.PI;
+        const decJ2000 = star.decD * Math.PI / 180;
+        apparent = apparentStarPosition(raJ2000, decJ2000, utcDate, starOpts);
+        _starApparentById.set(star.id, apparent);
+      }
       const ra  = apparent.ra;
       const dec = apparent.dec;
       const celestCoord   = equatorialToCelestCoord({ ra, dec });

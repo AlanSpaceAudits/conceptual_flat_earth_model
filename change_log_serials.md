@@ -10446,3 +10446,42 @@ Format:
   the toggle is off and aren't
   hot during a drag.
 - **Revert:** `git checkout v-s000649 -- .`
+
+## S651 — app.update: cache apparent star (RA, Dec) by (date, starOpts)
+
+- **Date:** 2026-04-28
+- **Files changed:**
+  - `js/core/app.js`
+- **Change:**
+  - Added `this._starApparentCache`
+    keyed by
+    `${utcDate.getTime()}|${precession}${nutation}${aberration}`.
+    Cache body is a `Map` from
+    star id to the
+    `{ ra, dec }` object returned
+    by `apparentStarPosition`.
+  - `projectStar` now consults the
+    cache before invoking
+    `apparentStarPosition`. On a
+    miss it computes and stores;
+    on a hit it reuses the cached
+    apparent pair.
+  - The downstream vault /
+    local-globe / optical
+    projection is observer-
+    dependent and still runs every
+    frame.
+- **Why:** five catalogue maps
+  (`CEL_NAV_STARS`,
+  `CATALOGUED_STARS`,
+  `BLACK_HOLES`, `QUASARS`,
+  `GALAXIES`) project hundreds of
+  stars per frame. The apparent-
+  position math (precession +
+  nutation + aberration trig) is
+  pure (J2000, date, opts) — none
+  of which moves during an
+  observer-pan / camera drag —
+  yet it was being recomputed on
+  every drag tick.
+- **Revert:** `git checkout v-s000650 -- .`

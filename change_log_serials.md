@@ -10926,3 +10926,42 @@ Format:
   dependency, and shrinks
   parse / compile time.
 - **Revert:** `git checkout v-s000660 -- .`
+
+## S662 — ac_logo: WebP @ 180×180 + picture fallback + fetchpriority
+
+- **Date:** 2026-04-28
+- **Files changed:**
+  - `assets/ac_logo.png`
+    (resized 360 → 180, 97 → 37
+    KiB)
+  - `assets/ac_logo.webp` (new,
+    9.7 KiB)
+  - `index.html`
+- **Change:**
+  - Generated WebP at 180×180,
+    quality 90, method 6 →
+    9.7 KiB.
+  - Re-encoded the PNG fallback
+    at 180×180 → 37 KiB.
+  - Wrapped `<img id="logo">`
+    in a `<picture>` element
+    with a WebP `<source>` so
+    browsers that support WebP
+    fetch the smaller asset and
+    others fall back to the PNG.
+  - Added `fetchpriority="high"`
+    on the `<img>` per
+    Lighthouse's "LCP request
+    discovery" hint.
+- **Why:** Lighthouse mobile lab
+  flagged 91 KiB savings on
+  `ac_logo.png` — 75 KiB via
+  WebP, 72 KiB via 180×180
+  source. Combined patch
+  takes the asset from 97 KiB
+  down to 9.7 KiB on
+  WebP-capable browsers. The
+  `fetchpriority` hint moves
+  the LCP image up the network
+  priority queue.
+- **Revert:** `git checkout v-s000661 -- .`

@@ -65,7 +65,10 @@
          DE405; eclipse demos in those modes will land at the wrong
          UTC moment. -->
     <div id="meeus-warning" hidden></div>
-    <img id="logo" src="assets/ac_logo.png" alt="Aether Cosmology" width="180" height="180" decoding="async">
+    <picture>
+      <source srcset="assets/ac_logo.webp" type="image/webp">
+      <img id="logo" src="assets/ac_logo.png" alt="Aether Cosmology" width="180" height="180" decoding="async" fetchpriority="high">
+    </picture>
   </div>
 
   <footer id="desc">

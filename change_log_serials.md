@@ -10406,3 +10406,43 @@ Format:
   pass each frame even though no
   `c.*` value depends on them.
 - **Revert:** `git checkout v-s000648 -- .`
+
+## S650 — app.update: cache sun / moon / planet ephemeris by (date, source)
+
+- **Date:** 2026-04-28
+- **Files changed:**
+  - `js/core/app.js`
+- **Change:**
+  - Added `this._ephemCache`
+    keyed by
+    `${utcDate.getTime()}|${bodySource}`.
+    On a fresh key the cache
+    object is rebuilt with
+    `sun`, `moon`, and an empty
+    `planets` map; on a key
+    match the existing cache is
+    reused.
+  - `bodyRADec('sun', …)` and
+    `bodyRADec('moon', …)`
+    upgraded to lazy-fill the
+    cache slots.
+  - Planet loop now reads / fills
+    `this._ephemCache.planets[name]`
+    instead of calling
+    `bodyRADec` every frame.
+- **Why:** observer-pan / camera
+  drags re-enter `app.update`
+  without changing the date or
+  pipeline. The previous loop
+  evaluated Meeus sun + Meeus
+  moon + N planet pipelines per
+  tick anyway. Caching skips that
+  work whenever the cache key
+  matches the prior frame, which
+  is the steady state during a
+  drag. Comparison-mode readings
+  (`readingsFor`) are unchanged —
+  they already short-circuit when
+  the toggle is off and aren't
+  hot during a drag.
+- **Revert:** `git checkout v-s000649 -- .`

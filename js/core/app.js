@@ -580,8 +580,19 @@ export class FeModel extends EventTarget {
     const bodySource = (s.BodySource === 'heliocentric')
       ? 'geocentric'
       : (s.BodySource || 'geocentric');
-    const sunEq  = bodyRADec('sun',  utcDate, bodySource);
-    const moonEq = bodyRADec('moon', utcDate, bodySource);
+    // Ephemeris cache: sun/moon/planet (ra, dec) depend only on date
+    // and the selected source pipeline; observer pan / camera drag
+    // don't move the cache key. Reusing the previous frame's
+    // readings drops 2 Meeus + N planet evaluations per drag tick.
+    const _ephemKey = `${utcDate.getTime()}|${bodySource}`;
+    if (this._ephemCache && this._ephemCache.key === _ephemKey) {
+      this._ephemCacheHit = true;
+    } else {
+      this._ephemCache = { key: _ephemKey, sun: null, moon: null, planets: Object.create(null) };
+      this._ephemCacheHit = false;
+    }
+    const sunEq  = this._ephemCache.sun  || (this._ephemCache.sun  = bodyRADec('sun',  utcDate, bodySource));
+    const moonEq = this._ephemCache.moon || (this._ephemCache.moon = bodyRADec('moon', utcDate, bodySource));
     const gmstDeg = greenwichSiderealDeg(utcDate);
 
     c.SkyRotAngle      = gmstDeg;
@@ -1013,7 +1024,8 @@ export class FeModel extends EventTarget {
 
     c.Planets = {};
     for (const name of PLANET_NAMES) {
-      const eq = bodyRADec(name, utcDate, bodySource);
+      const eq = this._ephemCache.planets[name]
+        || (this._ephemCache.planets[name] = bodyRADec(name, utcDate, bodySource));
       // NaN = pipeline lacks this body; skip geometry + marker.
       if (!Number.isFinite(eq.ra) || !Number.isFinite(eq.dec)) continue;
       const celestCoord = equatorialToCelestCoord(eq);

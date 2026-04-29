@@ -11291,7 +11291,51 @@ Format:
   for repeat visits and
   serves cached assets
   offline.
-- **Revert:** `git checkout v-s000668 -- .` Note: existing
+- **Revert:** `git checkout v-s000668 -- .`
+
+## S670 — index.html: pre-fill LCP `<p class="desc-dynamic">` placeholder
+
+- **Date:** 2026-04-28
+- **Files changed:**
+  - `index.html`
+- **Change:**
+  - The footer's
+    `<p class="desc-dynamic">`
+    used to ship empty and
+    only became visible once
+    `main.js` finished running
+    `model.update()` and the
+    update listener wrote a
+    status string. Lighthouse
+    measured LCP "element
+    render delay" at 1390 ms —
+    the time for the empty
+    paragraph to receive its
+    text.
+  - Added a static
+    placeholder string
+    matching the
+    `defaultStatus` format
+    (`"0.0°N — within
+    observer's optical vault
+    — daylight."`). The text
+    renders as the LCP
+    element on first paint;
+    `main.js`'s update
+    listener overwrites it
+    once the real model
+    state is available.
+- **Why:** Lighthouse "LCP
+  breakdown": resource load
+  delay 110 ms, resource
+  load duration 110 ms,
+  element render delay
+  1,390 ms. Pre-filling
+  collapses the render
+  delay because LCP can fire
+  on the static paragraph
+  immediately.
+- **Revert:** `git checkout v-s000669 -- .` Note: existing
   installed workers persist
   in browsers — bumping
   `CACHE_VERSION` to evict

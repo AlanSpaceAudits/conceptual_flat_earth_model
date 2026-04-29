@@ -73,7 +73,12 @@
   </div>
 
   <footer id="desc">
-    <p class="desc-dynamic"></p>
+    <!-- Static placeholder matches the format of the live status
+         readout (`defaultStatus` in main.js). Renders as the LCP
+         element on first paint so LCP isn't blocked on the JS
+         module graph; main.js overwrites it once the model has
+         computed the real status string. -->
+    <p class="desc-dynamic">0.0°N — within observer's optical vault — daylight.</p>
   </footer>
 </main>
 

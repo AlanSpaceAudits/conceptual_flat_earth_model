@@ -378,38 +378,13 @@ export class LongitudeRing {
     // palette already matches (guarded inside `_applyPalette`).
     this._applyPalette(model.state.DarkBackground ? 'dark' : 'light');
 
-    // rotate the ring so the "0°" marker lands at the observer's
-    // compass-north direction. The disc-rim numerals are the
-    // projection-grid reference and read in the same heading frame
-    // as the cap-attached azimuth ring (0° = compass-north).
-    //
-    // AE polar has rotational symmetry about its pole, so compass-
-    // north sits at world angle `long + π` and the ring rotation
-    // collapses to `ToRad(ObserverLong)`. DP has no such symmetry —
-    // compass-north is the projection's local meridian tangent at
-    // (obsLat, obsLon) — so the rotation is derived from the
-    // gradient of latitude through `canonicalLatLongToDisc`, the
-    // same way `ObserversOpticalVault` rotates its cap (S682).
-    const s = model.state;
-    let angle;
-    if (s.WorldModel === 'dp') {
-      const lat = s.ObserverLat || 0;
-      const lon = s.ObserverLong || 0;
-      const eps = 1e-3;
-      const pHere = canonicalLatLongToDisc(lat, lon, 1);
-      const latProbe = lat >= 90 - eps ? lat - eps : lat + eps;
-      const sign = lat >= 90 - eps ? -1 : 1;
-      const pN = canonicalLatLongToDisc(latProbe, lon, 1);
-      const dnx = (pN[0] - pHere[0]) * sign;
-      const dny = (pN[1] - pHere[1]) * sign;
-      const nLen = Math.hypot(dnx, dny);
-      angle = nLen < 1e-9
-        ? ToRad(lon)
-        : Math.atan2(-dny / nLen, -dnx / nLen);
-    } else {
-      angle = ToRad(s.ObserverLong || 0);
-    }
-    this.group.rotation.set(0, 0, angle);
+    // Heavenly azi ring is observer-independent in every world
+    // model: 0° pinned to world +y (top of the disc), 90° at +x,
+    // 180° at −y, 270° at −x. The optical-vault cap still rotates
+    // with the observer's local compass via S682 / legacy paths;
+    // away from the projection's centre the two rings will
+    // disagree, which is intentional in DP.
+    this.group.rotation.set(0, 0, -Math.PI / 2);
   }
 }
 

@@ -12455,3 +12455,65 @@ Format:
   + HUD use, so they
   agree end-to-end.
 - **Revert:** `git checkout v-s000690 -- .`
+
+## S692 — heavenly LongitudeRing fixed; DP NEWS faces world axes
+
+- **Date:** 2026-04-29
+- **Files changed:**
+  - `js/render/worldObjects.js`
+  - `js/render/scene.js`
+- **Change:**
+  - `LongitudeRing.update`
+    locks rotation at
+    `−π/2` in every world
+    model. 0° pinned to
+    world +y (top of
+    disc), 90° at +x,
+    180° at −y, 270° at
+    −x. Was rotating with
+    `ObserverLong` (legacy)
+    or the gradient angle
+    (S687 DP path).
+  - `scene.js` InsideVault
+    DP branch: local
+    `north = (0, 1, 0)`,
+    `east = (1, 0, 0)`. So
+    heading 0 / 90 / 180 / 270
+    in DP faces world
+    +y / +x / −y / −x — i.e.
+    the same heavenly axes
+    the locked
+    `LongitudeRing` labels.
+    AE FE branch keeps the
+    legacy
+    "vector-toward-disc-
+    centre" path. GE branch
+    (`GlobeObserverFrame`)
+    untouched.
+- **Why:** user wants the
+  outer azi digits FIXED
+  in every model and the
+  optical-vault cap to
+  rotate with the
+  observer's local
+  compass. Clicking
+  N / E / S / W in DP should
+  face the fixed heavenly
+  directions — when the
+  observer is off-centre
+  in DP the heading
+  arrow now traces a
+  diagonal across the
+  disc rather than
+  following the curved
+  meridian tangent.
+  Optical-vault cap
+  rotation untouched
+  (S682 gradient) so the
+  cap's N letter still
+  marks the observer's
+  actual compass-N; it
+  floats off the
+  camera-forward
+  direction by design.
+- **Revert:** `git checkout v-s000691 -- .`

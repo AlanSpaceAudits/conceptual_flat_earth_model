@@ -12647,3 +12647,44 @@ Format:
   direction from where
   the camera looked.
 - **Revert:** `git checkout v-s000694 -- .`
+
+## S696 — DP heavenly LongitudeRing locked at world +y; FE/AE keeps legacy
+
+- **Date:** 2026-04-29
+- **Files changed:**
+  - `js/render/worldObjects.js`
+- **Change:**
+  - LongitudeRing
+    rotation splits on
+    `WorldModel`:
+    - DP: `−π/2` (0°
+      pinned to world
+      +y, doesn't track
+      the observer).
+    - FE / AE:
+      `ToRad(ObserverLong)`
+      (legacy — 0° at
+      observer's compass-
+      north).
+- **Why:** in DP 3rd-
+  person the heavenly
+  ring should stay
+  fixed; the InsideVault
+  camera + figure
+  (S692 / S695) already
+  use the same world-
+  fixed axes, so locking
+  the ring at `−π/2`
+  makes everything in DP
+  share one heavenly
+  reference frame
+  regardless of observer
+  position. At
+  (lat=0, lon=0) the
+  gradient and the
+  locked angle coincide,
+  so the only visible
+  change is when the
+  observer moves
+  off-centre.
+- **Revert:** `git checkout v-s000695 -- .`

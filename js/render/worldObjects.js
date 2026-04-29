@@ -378,32 +378,19 @@ export class LongitudeRing {
 
     this._applyPalette(s.DarkBackground ? 'dark' : 'light');
 
-    // Heavenly azi ring rotates so 0° lands at the observer's
-    // compass-north direction, the same axis the cap-attached
-    // azimuth ring uses. AE polar collapses to
-    // `ToRad(ObserverLong)` (compass-N points at world angle
-    // λ + π and the default 0° tick sits at angle π, so a +λ
-    // rotation moves it onto compass-N). DP samples the gradient
-    // of latitude through `canonicalLatLongToDisc` to track the
-    // curved meridian tangent at the observer.
-    let angle;
-    if (s.WorldModel === 'dp') {
-      const lat = s.ObserverLat || 0;
-      const lon = s.ObserverLong || 0;
-      const eps = 1e-3;
-      const pHere = canonicalLatLongToDisc(lat, lon, 1);
-      const latProbe = lat >= 90 - eps ? lat - eps : lat + eps;
-      const sign = lat >= 90 - eps ? -1 : 1;
-      const pN = canonicalLatLongToDisc(latProbe, lon, 1);
-      const dnx = (pN[0] - pHere[0]) * sign;
-      const dny = (pN[1] - pHere[1]) * sign;
-      const nLen = Math.hypot(dnx, dny);
-      angle = nLen < 1e-9
-        ? ToRad(lon)
-        : Math.atan2(-dny / nLen, -dnx / nLen);
-    } else {
-      angle = ToRad(s.ObserverLong || 0);
-    }
+    // Heavenly azi rotation:
+    //   FE / AE — `ToRad(ObserverLong)` lines 0° up with the
+    //   observer's compass-north (toward the disc centre).
+    //   DP — locked at `−π/2` so 0° pins to world +y. The
+    //   InsideVault camera + figure use the same world-fixed
+    //   axes (S692, S695); at the projection centre this matches
+    //   the gradient too, so the optical cap and the heavenly
+    //   ring agree there. Off-centre, the heavenly ring stays
+    //   put while the optical cap follows the observer's local
+    //   compass — by design.
+    const angle = s.WorldModel === 'dp'
+      ? -Math.PI / 2
+      : ToRad(s.ObserverLong || 0);
     this.group.rotation.set(0, 0, angle);
   }
 }

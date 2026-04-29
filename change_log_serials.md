@@ -12601,3 +12601,49 @@ Format:
   (0 = N, 90 = E, …),
   not fixed-position.
 - **Revert:** `git checkout v-s000693 -- .`
+
+## S695 — Observer figure rotation: DP world-fixed branch
+
+- **Date:** 2026-04-29
+- **Files changed:**
+  - `js/render/worldObjects.js`
+- **Change:**
+  - Observer figure
+    rotation in the
+    non-GE branch
+    splits on
+    `WorldModel`:
+    - DP:
+      `rot = π/2 −
+      headingRad` so the
+      figure +x axis
+      lines up with the
+      world-fixed heading
+      direction
+      (S692 camera).
+    - FE / AE: legacy
+      `ang + π − headingRad`
+      where `ang =
+      atan2(p[1], p[0])`
+      (toward disc
+      centre at heading
+      0).
+- **Why:** in DP the
+  S692 InsideVault
+  camera follows the
+  world-fixed heavenly
+  axes, but the
+  figure was still
+  rotating to the
+  AE-derived
+  observer-position
+  angle. At the
+  poles the AE term
+  flips the figure
+  ±π/2 vs world +y,
+  so 3rd-person view
+  showed the figure
+  facing the opposite
+  direction from where
+  the camera looked.
+- **Revert:** `git checkout v-s000694 -- .`

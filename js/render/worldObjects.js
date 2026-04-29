@@ -4252,13 +4252,24 @@ export class Observer {
       this.figureGroup.rotation.set(0, 0, Math.PI - headingRad);
     } else {
       this.group.quaternion.identity();
-      // Keep the figure facing the heading direction. In FE the
-      // local frame is world-aligned, so we add the longitude angle
-      // (atan2(p[1], p[0])) to the (π − H) baseline so heading 0
-      // points the figure toward the disc centre (north) regardless
-      // of where on the disc the observer stands.
-      const ang = Math.atan2(p[1], p[0]);
-      this.figureGroup.rotation.set(0, 0, ang + Math.PI - headingRad);
+      // Keep the figure facing the heading direction.
+      //
+      // In DP the InsideVault camera (S692) follows the world-fixed
+      // heavenly axes — heading 0 = world +y, 90 = +x, etc. The
+      // figure has to match: solving R(rot) · (1, 0) = (sin h, cos h)
+      // gives `rot = π/2 − h`.
+      //
+      // FE / AE keeps the legacy "toward the disc centre" path:
+      // figure +x maps to world `−north`, so we add the observer's
+      // disc-position angle to the (π − H) baseline — heading 0
+      // points toward the disc centre regardless of where on the
+      // disc the observer stands.
+      if (s.WorldModel === 'dp') {
+        this.figureGroup.rotation.set(0, 0, Math.PI / 2 - headingRad);
+      } else {
+        const ang = Math.atan2(p[1], p[0]);
+        this.figureGroup.rotation.set(0, 0, ang + Math.PI - headingRad);
+      }
     }
 
     // Axis line — observer position → origin. In GE this is the

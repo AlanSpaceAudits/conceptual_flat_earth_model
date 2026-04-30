@@ -5462,47 +5462,18 @@ export class TrackedGroundPoints {
 //   • cyan point cloud at every tracker target's UNREFRACTED
 //     optical-vault coord (true / geocentric position),
 //   • orange point cloud at the REFRACTED coord (apparent),
-//   • per-slot orange ring sprite centred on the apparent point and
-//     scaled so its circumference passes through the true point —
-//     the ring grows when the body sits low (refraction lift large)
-//     and shrinks when it climbs (lift small), so the visible
-//     scale is the live refraction error itself.
-// The two dot clouds use `sizeAttenuation: false` to keep apparent
-// and true dots at consistent screen-space sizes (3 px, matching
-// cel-nav stars). The halo uses `THREE.Sprite` instead so the ring
-// always faces the camera and its world-space radius can be set per
-// slot from the apparent↔true world distance.
-// Ring-outline texture for the apparent-position halo. Stroke is
-// drawn at full alpha against a fully-cleared canvas; the
-// `SpriteMaterial.opacity` knob handles the "lightly faded" look.
-// Mipmaps disabled so the ring stroke isn't averaged into a soft
-// fill at small render sizes — that's what was making the halo look
-// filled-in.
-function _makeRingTexture() {
-  const canvas = document.createElement('canvas');
-  canvas.width = 256; canvas.height = 256;
-  const ctx = canvas.getContext('2d');
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  ctx.beginPath();
-  ctx.arc(128, 128, 124, 0, Math.PI * 2);
-  ctx.lineWidth = 2;
-  ctx.strokeStyle = 'rgba(255, 140, 0, 1.0)';
-  ctx.stroke();
-  const tex = new THREE.CanvasTexture(canvas);
-  tex.minFilter = THREE.LinearFilter;
-  tex.magFilter = THREE.LinearFilter;
-  tex.generateMipmaps = false;
-  tex.needsUpdate = true;
-  return tex;
-}
-
-// Sprite-quad scale → world ring radius factor. Ring is drawn at
-// pixel radius 124 of a 256-px canvas, so the texture's ring sits at
-// 124/256 = 0.484 of the texture half-width. A sprite with
-// scale = s spans s world units, so the ring's world radius is
-// 0.484 · s. Inverting: scale = R / 0.484 ≈ 2.065 · R.
-const _HALO_SCALE_PER_R = 256 / 124;
-
+//   • per-slot orange ring mesh centred on the apparent point with
+//     world radius equal to the apparent↔true distance, billboarded
+//     to face the camera so the true marker sits exactly on the
+//     circumference. As the body drops toward the horizon the
+//     refraction lift grows and the ring expands; near zenith it
+//     shrinks.
+// Both dot clouds use `sizeAttenuation: false` and 3 px size — the
+// same size the cel-nav star sprite renders — so the apparent ghost
+// overlays the regular star sprite cleanly and the true ghost reads
+// at the same scale rather than dwarfing the body. The halo uses a
+// thin `RingGeometry` annulus (1.5 % stroke band) so the line stays
+// readable at any distance without smearing into a fill.
 export class GeocentricMarkers {
   constructor(max = 64) {
     this.group = new THREE.Group();
@@ -5511,15 +5482,11 @@ export class GeocentricMarkers {
     this._truePos = new Float32Array(max * 3);
     this._appPos  = new Float32Array(max * 3);
 
-    // Marker-dot pixel size tuned to be visible above bright cel-nav
-    // stars (which render at 3 px) without dwarfing them — 6 px reads
-    // as a small dot on heavenly backdrops and as a clear circle in
-    // first-person mode without saturating the orange halo.
     const trueGeom = new THREE.BufferGeometry();
     trueGeom.setAttribute('position', new THREE.BufferAttribute(this._truePos, 3));
     trueGeom.setDrawRange(0, 0);
     const trueMat = new THREE.PointsMaterial({
-      color: 0x40e0d0, size: 6, sizeAttenuation: false,
+      color: 0x40e0d0, size: 3, sizeAttenuation: false,
       transparent: true, opacity: 1.0,
       depthTest: false, depthWrite: false,
     });
@@ -5532,7 +5499,7 @@ export class GeocentricMarkers {
     appGeom.setAttribute('position', new THREE.BufferAttribute(this._appPos, 3));
     appGeom.setDrawRange(0, 0);
     const appMat = new THREE.PointsMaterial({
-      color: 0xff8c00, size: 6, sizeAttenuation: false,
+      color: 0xff8c00, size: 3, sizeAttenuation: false,
       transparent: true, opacity: 1.0,
       depthTest: false, depthWrite: false,
     });
@@ -5541,25 +5508,31 @@ export class GeocentricMarkers {
     this._appPoints.frustumCulled = false;
     this.group.add(this._appPoints);
 
-    const haloTex = _makeRingTexture();
+    // Halo ring as a thin annular mesh. Geometry is unit-radius so
+    // the per-frame `scale` directly sets the world radius. Inner
+    // radius 0.985 leaves a 1.5 % stroke band — visually a thin line
+    // that stays readable without becoming a fill. The mesh is
+    // re-oriented per frame to face the camera (manual billboard)
+    // since `lookAt(camera.position)` aims the local +Z axis at the
+    // camera, and `RingGeometry` lies in the local XY plane.
+    const ringGeom = new THREE.RingGeometry(0.985, 1.0, 96);
     this._halos = [];
     for (let i = 0; i < max; i++) {
-      const mat = new THREE.SpriteMaterial({
-        map: haloTex, color: 0xff8c00,
-        transparent: true, opacity: 0.55,
-        alphaTest: 0.05,
+      const mat = new THREE.MeshBasicMaterial({
+        color: 0xff8c00, transparent: true, opacity: 0.65,
+        side: THREE.DoubleSide,
         depthTest: false, depthWrite: false,
       });
-      const sp = new THREE.Sprite(mat);
-      sp.frustumCulled = false;
-      sp.renderOrder = 59;
-      sp.visible = false;
-      this._halos.push(sp);
-      this.group.add(sp);
+      const m = new THREE.Mesh(ringGeom, mat);
+      m.frustumCulled = false;
+      m.renderOrder = 59;
+      m.visible = false;
+      this._halos.push(m);
+      this.group.add(m);
     }
   }
 
-  update(model) {
+  update(model, camera) {
     const s = model.state;
     const c = model.computed;
     const on = s.Refraction && s.Refraction !== 'off'
@@ -5567,11 +5540,12 @@ export class GeocentricMarkers {
     if (!on) {
       this._truePoints.geometry.setDrawRange(0, 0);
       this._appPoints.geometry.setDrawRange(0, 0);
-      for (const sp of this._halos) sp.visible = false;
+      for (const m of this._halos) m.visible = false;
       return;
     }
     const ge = s.WorldModel === 'ge';
     const infos = c.TrackerInfos || [];
+    const camPos = camera ? camera.position : null;
     let n = 0;
     for (const info of infos) {
       // Below-horizon cull. GE returns [0, 0, -1000] from
@@ -5602,8 +5576,8 @@ export class GeocentricMarkers {
       const halo = this._halos[n];
       if (r > 1e-7) {
         halo.position.set(ac[0], ac[1], ac[2]);
-        const sc = r * _HALO_SCALE_PER_R;
-        halo.scale.set(sc, sc, 1);
+        halo.scale.set(r, r, 1);
+        if (camPos) halo.lookAt(camPos);
         halo.visible = true;
       } else {
         halo.visible = false;

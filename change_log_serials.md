@@ -13225,3 +13225,29 @@ Format:
   still shrinks naturally with the rest of `tabsBar` (flex 1 1 0)
   if the viewport is narrow.
 - **Revert path:** `git checkout v-s000709 -- .`
+
+## S711 — geocentric markers 3 px, halo as billboarded ring mesh
+
+- **Date:** 2026-04-30
+- **Files changed:**
+  - `js/render/worldObjects.js`
+  - `js/render/index.js`
+- **Change:**
+  - `worldObjects.js`: `GeocentricMarkers` true / apparent dot size
+    pulled back from 6 px to 3 px so they match the cel-nav star
+    sprite size — the apparent ghost overlays the regular star
+    cleanly and the true ghost no longer dwarfs the body.
+  - Halo replaced. Was a `THREE.Sprite` with a canvas ring texture
+    sized in world units; on small refractions and from heavenly
+    camera distances the sprite collapsed sub-pixel and the ring
+    disappeared. Now a per-slot `THREE.Mesh` with a thin
+    `RingGeometry(0.985, 1.0, 96)` annulus, scaled per frame to the
+    apparent↔true world distance and re-oriented each frame via
+    `lookAt(camera.position)` so the ring's plane stays
+    perpendicular to the camera direction. The true marker therefore
+    sits exactly on the rendered circumference at any zoom, and the
+    ring grows as refraction grows.
+  - `update(model)` signature → `update(model, camera)`.
+  - `index.js`: passes `this.sm.camera` into the geocentric-markers
+    update so the halos can billboard.
+- **Revert path:** `git checkout v-s000710 -- .`

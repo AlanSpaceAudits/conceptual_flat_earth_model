@@ -653,7 +653,7 @@ export class Renderer {
       this.moonGP.updateAt(0, 0, FE_RADIUS, false);
     }
     this.trackedGPs.update(m);
-    this.geocentricMarkers.update(m);
+    this.geocentricMarkers.update(m, this.sm.camera);
 
     // Vault markers use the canonical vault coords app.js already
     // computes. No overlay-level re-projection.

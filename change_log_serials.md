@@ -13377,3 +13377,21 @@ Format:
   refractions; the dropped helper Vector3s and the NDC
   computation were removed from `update`.
 - **Revert path:** `git checkout v-s000715 -- .`
+
+## S717 — halo angular visibility floor restored
+
+- **Date:** 2026-04-30
+- **Files changed:** `js/render/worldObjects.js`
+- **Change:** `GeocentricMarkers` halo update now restores the
+  per-frame minimum-world-radius clamp it lost in S716. With pure
+  `scale = R * _HALO_SCALE_PER_R` and `sizeAttenuation: true`, at
+  heavenly camera distances and / or small refractions the
+  rendered sprite was sub-pixel and got dropped by the rasteriser,
+  so the ring vanished entirely. Clamp is `world_R ≥ 0.010 × camDist`,
+  which reads as ~0.57° angular size from the camera (≈ 6 px on a
+  1080-tall viewport at 60° FOV). Above the floor the strict
+  geometric relation holds — the true marker sits exactly on the
+  circumference. Below it the ring is bigger than the apparent↔true
+  gap and the true dot sits inside the ring; that's the only way to
+  keep the visualisation present at small refractions.
+- **Revert path:** `git checkout v-s000716 -- .`

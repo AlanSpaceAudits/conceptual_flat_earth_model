@@ -5611,10 +5611,27 @@ export class GeocentricMarkers {
       const halo = this._halos[n];
       if (r > 1e-7) {
         // Sprite scale set in world units so the ring world radius
-        // exactly equals the apparent↔true 3D distance — the
-        // rendered circumference therefore passes through the true
-        // marker, regardless of camera angle or zoom.
-        const scale = r * _HALO_SCALE_PER_R;
+        // exactly equals the apparent↔true 3D distance — perspective
+        // then lands the rendered circumference on the true marker.
+        // Visibility floor: at small refractions (or far heavenly
+        // camera distances) the ring's projected size collapses
+        // sub-pixel and the rasterizer drops it. Compute the minimum
+        // world radius required to keep the ring at least
+        // ~0.6° angular from the camera (~6 px on a 1080-tall
+        // viewport at 60° FOV). Below that the ring is bigger than
+        // the apparent↔true gap and the true dot sits inside it;
+        // above the floor the strict-geometry relation holds.
+        let scaleR = r;
+        if (camera) {
+          const cx = camera.position.x - ac[0];
+          const cy = camera.position.y - ac[1];
+          const cz = camera.position.z - ac[2];
+          const camDist = Math.hypot(cx, cy, cz);
+          const MIN_ANG = 0.010; // rad; ~0.57°
+          const minWorldR = MIN_ANG * camDist;
+          if (scaleR < minWorldR) scaleR = minWorldR;
+        }
+        const scale = scaleR * _HALO_SCALE_PER_R;
         halo.position.set(ac[0], ac[1], ac[2]);
         halo.scale.set(scale, scale, 1);
         halo.visible = true;

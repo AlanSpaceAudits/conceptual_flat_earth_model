@@ -263,15 +263,23 @@ export function buildImageMap(projection, { feRadius = 1 } = {}) {
     }
   }
 
+  // `depthTest: false` + `renderOrder = 5` keeps the textured disc
+  // painted on top of `DiscBase`'s ocean / rim at any camera
+  // distance. Without this, zooming way out in heavenly-vault FE
+  // flickers the image map against the ocean disc because both sit
+  // within ~1e-4 of z=0 and the depth buffer can't resolve them at
+  // far focal distances. Same fix the lineart map uses (S674).
   const mat = new THREE.MeshBasicMaterial({
     map: tex,
     transparent: false,
     side: THREE.DoubleSide,
+    depthTest: false,
     depthWrite: false,
   });
   const geom = new THREE.CircleGeometry(feRadius, 128);
   const mesh = new THREE.Mesh(geom, mat);
   mesh.position.z = EPS_LIFT;
+  mesh.renderOrder = 5;
   mesh.name = 'map-image';
   group.add(mesh);
 

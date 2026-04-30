@@ -114,14 +114,15 @@ const SKY_HIDDEN = {
 // hidden via SKY_HIDDEN. FE map and GE map both default to the
 // line-art / outline-only styles so the orange flight artwork and
 // cyan central-angle legs read clean against a black backdrop.
+// Flight-route demos inherit the user's current MapProjection /
+// MapProjectionGe / WorldModel so the visual mode they're already
+// in carries through the demo. Earlier hardcoded `'ae_lineart'`
+// + `'ge_art_line'` overrides removed.
 const ROUTE_OVERLAYS = {
   ShowFeGrid:        true,
   ShowGroundPoints:  false,
   ShowFlightRoutes:  true,
   FlightRoutesProgress: 0,
-  WorldModel:        'fe',
-  MapProjection:     'ae_lineart',
-  MapProjectionGe:   'ge_art_line',
 };
 
 const baseIntro = (extra) => Object.assign({}, SKY_HIDDEN, ROUTE_OVERLAYS, TOP_DOWN_CAMERA, extra || {});

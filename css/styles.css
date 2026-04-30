@@ -352,11 +352,6 @@ header .info-popup.legend-popup a { color: var(--accent); }
   flex-direction: column;
   justify-content: center;
   gap: 2px;
-  /* Right padding reserves space for the bottom-bar's right
-     cluster (cycle row + cardinal grid + tabs / search) so the
-     End Demo / End Tracking buttons docked at the info-row's
-     right edge don't sit directly above it. Increase if more
-     buttons land in the bottom-bar's right cluster. */
   padding: 2px 280px 2px 14px;
   font: 12px/1 ui-monospace, Menlo, monospace;
   color: #d6deed;
@@ -364,6 +359,7 @@ header .info-popup.legend-popup a { color: var(--accent); }
   pointer-events: none;
   z-index: 31;
   text-shadow: 0 0 2px rgba(0, 0, 0, 0.9);
+  zoom: var(--ui-zoom);
 }
 #info-bar .info-row { display: flex; align-items: center; gap: 18px; }
 #info-bar .info-slot { white-space: nowrap; }

@@ -687,7 +687,6 @@ const SUN_24H_DEMOS = [
         ShowSunTrack: true,
         ShowShadow: true, ShowTruePositions: true,
       };
-      if (m.state.WorldModel === 'ge') base.MapProjectionGe = 'hq_equirect_day';
       return base;
     },
     tasks: () => [
@@ -712,7 +711,6 @@ const SUN_24H_DEMOS = [
         ShowSunTrack: true,
         ShowShadow: true, ShowTruePositions: true,
       };
-      if (m.state.WorldModel === 'ge') base.MapProjectionGe = 'hq_equirect_day';
       return base;
     },
     tasks: () => [
@@ -739,7 +737,6 @@ const SUN_24H_DEMOS = [
         ShowTruePositions: true,
         DynamicStars: true,
       };
-      if (m.state.WorldModel === 'ge') base.MapProjectionGe = 'hq_equirect_day';
       return base;
     },
     tasks: () => [
@@ -769,7 +766,6 @@ const SUN_24H_DEMOS = [
         ShowTruePositions: true,
         DynamicStars: true,
       };
-      if (m.state.WorldModel === 'ge') base.MapProjectionGe = 'hq_equirect_day';
       return base;
     },
     tasks: () => [
@@ -809,7 +805,6 @@ const MOON_24H_DEMOS = [
         DynamicStars: true,
         ShowConstellationLines: false,
       };
-      if (m.state.WorldModel === 'ge') base.MapProjectionGe = 'hq_equirect_day';
       return base;
     },
     tasks: () => [
@@ -837,7 +832,6 @@ const MOON_24H_DEMOS = [
         DynamicStars: true,
         ShowConstellationLines: false,
       };
-      if (m.state.WorldModel === 'ge') base.MapProjectionGe = 'hq_equirect_day';
       return base;
     },
     tasks: () => [

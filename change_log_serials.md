@@ -12754,3 +12754,85 @@ Format:
   the curving meridian
   tangent.
 - **Revert:** `git checkout v-s000696 -- .`
+
+## S698 — demos inherit user projection; DP image map z-fight; info-bar UI zoom
+
+- **Date:** 2026-04-29
+- **Files changed:**
+  - `js/demos/flightRoutes.js`
+  - `js/demos/definitions.js`
+  - `js/render/earthMap.js`
+  - `css/styles.css`
+  - `css/styles.min.css`
+- **Change:**
+  - **Demos inherit
+    user projection.**
+    `ROUTE_OVERLAYS` in
+    `flightRoutes.js`
+    no longer sets
+    `WorldModel`,
+    `MapProjection`, or
+    `MapProjectionGe`.
+    Stripped six
+    `if (WorldModel ===
+    'ge') base.MapProjectionGe
+    = 'hq_equirect_day';`
+    overrides from the
+    24h-sun + similar
+    demos in
+    `definitions.js`. All
+    demos now keep
+    whatever projection
+    the user already had
+    set; missing /
+    invalid values fall
+    back to AE through
+    the existing
+    `getProjection`
+    default.
+  - **DP image map
+    z-fight fix.**
+    `buildImageMap` in
+    `earthMap.js` now
+    sets
+    `depthTest: false`
+    and
+    `renderOrder = 5` on
+    the textured disc
+    mesh. Same fix the
+    flight-routes
+    line-art map uses
+    (S674) — at long
+    camera distances the
+    depth buffer can't
+    resolve the DP
+    image at z = 1e-4
+    against
+    `DiscBase`'s rim
+    ring at the same
+    z, so the user saw
+    the AE base flicker
+    through the DP map.
+    GE doesn't hit it
+    because the globe
+    is solid and lifts
+    well off z=0.
+  - **UI scaling.**
+    Added
+    `zoom: var(--ui-zoom)`
+    to `#info-bar`
+    (the bottom-bar's
+    coords / az / el /
+    tracker readout
+    band). The header,
+    HUD, tracker HUD,
+    tracking-info popup,
+    bottom-bar, footer,
+    Meeus banner, and
+    cadence chip already
+    scaled (S675);
+    info-bar was the
+    last major panel
+    sitting at native
+    pixels.
+- **Revert:** `git checkout v-s000697 -- .`

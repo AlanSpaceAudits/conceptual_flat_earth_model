@@ -13211,3 +13211,17 @@ Format:
       that offset). Result: all three rows of the bar's left
       cluster now share a consistent baseline.
 - **Revert path:** `git checkout v-s000708 -- .`
+
+## S710 — bar-left compass cluster shifted further left for search clearance
+
+- **Date:** 2026-04-30
+- **Files changed:** `css/styles.css`, `css/styles.min.css`
+- **Change:** `.compass-controls margin-right` 8 → 28 px and
+  `.search-host` gained `margin-left: 16 px`. Combined with the
+  bar's flex `gap: 12 px`, that's a 56 px guaranteed buffer between
+  the compass cluster's right edge and the body-search input's
+  left edge — enough that the FE / ⌫ row no longer touches the
+  search input on the user's viewport. The search input itself
+  still shrinks naturally with the rest of `tabsBar` (flex 1 1 0)
+  if the viewport is narrow.
+- **Revert path:** `git checkout v-s000709 -- .`

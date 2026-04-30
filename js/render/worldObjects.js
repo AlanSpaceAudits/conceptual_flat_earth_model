@@ -5599,15 +5599,22 @@ export class GeocentricMarkers {
       const dy = ac[1] - coordTrue[1];
       const dz = ac[2] - coordTrue[2];
       const r  = Math.hypot(dx, dy, dz);
+      // Minimum visible world radius. At typical refractions
+      // (~10 arcmin) the apparent↔true gap is only ~0.002 world
+      // units, which renders sub-pixel from heavenly camera
+      // distances and disappears entirely. Clamp so the halo always
+      // reads as a visible circle, then scale up proportionally as
+      // the gap grows. The strict "circumference passes through
+      // true marker" relationship holds for r > MIN_R; below that
+      // the true dot sits inside the halo and the halo just
+      // signals "this body has refraction applied".
+      const MIN_R = 0.025;
       const halo = this._halos[n];
-      if (r > 1e-7) {
-        halo.position.set(ac[0], ac[1], ac[2]);
-        const sc = r * _HALO_SCALE_PER_R;
-        halo.scale.set(sc, sc, 1);
-        halo.visible = true;
-      } else {
-        halo.visible = false;
-      }
+      const visibleR = Math.max(r, MIN_R);
+      halo.position.set(ac[0], ac[1], ac[2]);
+      const sc = visibleR * _HALO_SCALE_PER_R;
+      halo.scale.set(sc, sc, 1);
+      halo.visible = true;
       n++;
     }
     for (let i = n; i < this._halos.length; i++) this._halos[i].visible = false;

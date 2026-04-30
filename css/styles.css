@@ -570,10 +570,10 @@ header .info-popup.legend-popup a { color: var(--accent); }
   margin-top: -18px;
 }
 #bottom-bar .bar-left .presets .preset-btn {
-  min-width: 40px;
+  min-width: 36px;
   min-height: 26px;
-  padding: 4px 10px;
-  font-size: 15px;
+  padding: 3px 8px;
+  font-size: 14px;
   line-height: 20px;
   margin: 0;
 }
@@ -583,6 +583,7 @@ header .info-popup.legend-popup a { color: var(--accent); }
   gap: 2px;
   flex: 0 0 auto;
   margin-left: 12px;
+  margin-right: 16px;
   margin-top: -18px;
 }
 #bottom-bar .mode-grid,
@@ -601,10 +602,10 @@ header .info-popup.legend-popup a { color: var(--accent); }
   align-items: stretch;
 }
 #bottom-bar .grids-stack .time-btn {
-  min-width: 40px;
+  min-width: 36px;
   min-height: 26px;
-  padding: 4px 10px;
-  font-size: 15px;
+  padding: 3px 8px;
+  font-size: 14px;
   line-height: 20px;
   margin: 0;
 }
@@ -615,10 +616,10 @@ header .info-popup.legend-popup a { color: var(--accent); }
 #bottom-bar .mode-grid .time-btn,
 #bottom-bar .cycle-row .time-btn,
 #bottom-bar .cardinal-grid .time-btn {
-  min-width: 40px;
+  min-width: 36px;
   min-height: 26px;
-  padding: 4px 10px;
-  font-size: 15px;
+  padding: 3px 8px;
+  font-size: 14px;
   line-height: 20px;
   margin: 0;
 }
@@ -634,7 +635,7 @@ header .info-popup.legend-popup a { color: var(--accent); }
 #bottom-bar .cardinal-grid .time-btn {
   font-weight: 600;
 }
-#bottom-bar .compass-btn { min-width: 32px; min-height: 28px; padding: 5px 8px; font-weight: 600; }
+#bottom-bar .compass-btn { min-width: 28px; min-height: 28px; padding: 4px 6px; font-weight: 600; }
 #bottom-bar .compass-btn[aria-pressed="true"] {
   border-color: var(--accent);
   color: var(--accent);
@@ -1210,10 +1211,10 @@ body.flight-demo-active #tracking-info-popup {
   margin-right: 0;
 }
 #bottom-bar .swap-stack .time-btn {
-  min-width: 40px;
+  min-width: 36px;
   min-height: 26px;
-  padding: 4px 10px;
-  font-size: 15px;
+  padding: 3px 8px;
+  font-size: 14px;
   line-height: 20px;
   margin: 0;
 }

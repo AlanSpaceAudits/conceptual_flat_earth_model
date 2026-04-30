@@ -13144,3 +13144,29 @@ Format:
       `.time-jump-grid .time-btn` get proportional bumps. Tab
       buttons go from 6 14 / 13 px to 8 16 / 14 px.
 - **Revert path:** `git checkout v-s000706 -- .`
+
+## S708 — halo min-radius clamp + compass-controls margin tightened
+
+- **Date:** 2026-04-30
+- **Files changed:**
+  - `js/render/worldObjects.js`
+  - `css/styles.css`
+  - `css/styles.min.css`
+- **Change:**
+  - `worldObjects.js`: `GeocentricMarkers` halo now clamps the
+    sprite scale to a minimum world radius of 0.025 (≈ 1.4°
+    equivalent at the optical vault). At low refractions the
+    apparent↔true gap was only ~0.002 world units, which scaled to
+    sub-pixel halo size from heavenly camera distances and made
+    the ring vanish. Above the clamp the strict
+    "circumference passes through true marker" relation still
+    holds; below it the true dot just sits inside the halo.
+  - `styles.css`: rolled back the S707 sub-button width bumps
+    (`.grids-stack`, `.cycle-row`, `.mode-grid`, `.cardinal-grid`,
+    `.swap-stack`, `.presets`, `.compass-btn`) from 40 px back to
+    36 px (28 px for compass cardinals). Heights / fonts stayed
+    bumped — buttons are taller and easier to read but no wider.
+    Added `margin-right: 16px` on `.compass-controls` so the
+    cardinal / world-row no longer overlaps the body-search input
+    on standard 1080p viewports.
+- **Revert path:** `git checkout v-s000707 -- .`

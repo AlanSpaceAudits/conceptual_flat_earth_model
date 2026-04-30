@@ -5457,6 +5457,38 @@ export class TrackedGroundPoints {
   }
 }
 
+// Halo ring texture: a clean white circle outline on a fully
+// transparent canvas. Mipmaps off so the stroke doesn't average
+// itself into a soft fill at small render sizes; linear filter
+// keeps the circle smooth.
+function _haloRingTexture() {
+  const canvas = document.createElement('canvas');
+  canvas.width = 256; canvas.height = 256;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, 256, 256);
+  ctx.beginPath();
+  ctx.arc(128, 128, 120, 0, Math.PI * 2);
+  ctx.lineWidth = 3;
+  ctx.strokeStyle = 'rgba(255, 255, 255, 1)';
+  ctx.stroke();
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.minFilter = THREE.LinearFilter;
+  tex.magFilter = THREE.LinearFilter;
+  tex.generateMipmaps = false;
+  tex.needsUpdate = true;
+  return tex;
+}
+
+// Sprite-quad scale → ring radius factor. Ring is drawn at pixel
+// radius 120 of a 256-px canvas; the sprite quad locally spans
+// −0.5..0.5 in the unit cell. With `sizeAttenuation: false`, sprite
+// scale is in clip-space units and the visible quad spans -scale/2
+// to +scale/2 in NDC. The ring sits at radius
+// `(120/128) * (scale/2) = 0.469 * scale / 2` in NDC. To make the
+// ring's NDC radius equal to a target value `R_ndc`, scale =
+// `R_ndc / (0.469 / 2) ≈ 4.267 * R_ndc`.
+const _HALO_SCALE_PER_NDC = 256 / 60; // ≈ 4.267
+
 // True / apparent position ghost markers. Pairs with
 // `Refraction !== 'off'` and `ShowGeocentricPosition`. Three layers:
 //   • cyan point cloud at every tracker target's UNREFRACTED
@@ -5508,40 +5540,35 @@ export class GeocentricMarkers {
     this._appPoints.frustumCulled = false;
     this.group.add(this._appPoints);
 
-    // Halo ring as a `THREE.LineLoop` over a unit circle. WebGL line
-    // width is 1 px on every desktop driver regardless of geometry
-    // scale, so this gives a thin always-visible outline — the
-    // RingGeometry approach had a stroke band that shrank sub-pixel
-    // when scaled to small refractions, making the halo disappear.
-    // The unit circle's per-frame `scale` directly sets the ring's
-    // world radius. `lookAt(camera.position)` faces the local +Z
-    // axis at the camera so the XY-plane circle stays perpendicular
-    // to the view direction.
-    const RING_SEG = 96;
-    const ringGeom = new THREE.BufferGeometry();
-    {
-      const arr = new Float32Array(RING_SEG * 3);
-      for (let i = 0; i < RING_SEG; i++) {
-        const t = (i / RING_SEG) * Math.PI * 2;
-        arr[i * 3]     = Math.cos(t);
-        arr[i * 3 + 1] = Math.sin(t);
-        arr[i * 3 + 2] = 0;
-      }
-      ringGeom.setAttribute('position', new THREE.BufferAttribute(arr, 3));
-    }
+    // Halo ring as a `THREE.Sprite` with `sizeAttenuation: false`,
+    // so the sprite renders at constant screen size regardless of
+    // camera distance. Each frame we project the apparent and true
+    // 3D coords to NDC, measure their pixel-equivalent screen
+    // separation, and set the sprite's scale so the ring's radius
+    // matches that screen distance. Result: the circumference
+    // *always* passes through the true marker on screen, at any
+    // zoom or camera distance, and the ring stays visible at a
+    // fixed line width because the sprite never collapses
+    // sub-pixel. Texture is white so it reads as bright as the
+    // cel-nav stars.
+    const haloTex = _haloRingTexture();
     this._halos = [];
     for (let i = 0; i < max; i++) {
-      const mat = new THREE.LineBasicMaterial({
+      const mat = new THREE.SpriteMaterial({
+        map: haloTex,
         color: 0xffffff,
-        transparent: false,
+        transparent: true,
+        opacity: 0.95,
+        alphaTest: 0.05,
+        sizeAttenuation: false,
         depthTest: false, depthWrite: false,
       });
-      const m = new THREE.LineLoop(ringGeom, mat);
-      m.frustumCulled = false;
-      m.renderOrder = 59;
-      m.visible = false;
-      this._halos.push(m);
-      this.group.add(m);
+      const sp = new THREE.Sprite(mat);
+      sp.frustumCulled = false;
+      sp.renderOrder = 59;
+      sp.visible = false;
+      this._halos.push(sp);
+      this.group.add(sp);
     }
   }
 
@@ -5558,14 +5585,10 @@ export class GeocentricMarkers {
     }
     const ge = s.WorldModel === 'ge';
     const infos = c.TrackerInfos || [];
-    const camPos = camera ? camera.position : null;
+    const _ap = this._tmpAp || (this._tmpAp = new THREE.Vector3());
+    const _tr = this._tmpTr || (this._tmpTr = new THREE.Vector3());
     let n = 0;
     for (const info of infos) {
-      // Below-horizon cull. GE returns [0, 0, -1000] from
-      // `_globeOpticalProject`; FE's `opticalVaultProject` always
-      // returns a coord (even below the disc), so check
-      // `info.elevation` directly to avoid drawing markers under the
-      // observer in FE mode.
       if (Number.isFinite(info.elevation) && info.elevation < 0) continue;
       const coordTrue = ge
         ? (info.globeOpticalVaultCoordTrue || info.opticalVaultCoordTrue)
@@ -5582,35 +5605,24 @@ export class GeocentricMarkers {
       this._appPos[n * 3]     = ac[0];
       this._appPos[n * 3 + 1] = ac[1];
       this._appPos[n * 3 + 2] = ac[2];
-      const dx = ac[0] - coordTrue[0];
-      const dy = ac[1] - coordTrue[1];
-      const dz = ac[2] - coordTrue[2];
-      const r  = Math.hypot(dx, dy, dz);
       const halo = this._halos[n];
-      if (r > 1e-7) {
+      if (camera) {
+        // Project both points to NDC, measure their screen-space
+        // distance, and set the sprite's scale so the rendered
+        // ring's NDC radius equals that distance. With
+        // `sizeAttenuation: false` the sprite scale is in clip-space
+        // units, so a ring whose NDC radius equals the apparent↔true
+        // NDC distance lands its circumference exactly on the true
+        // marker — at any zoom level. Below a small floor, clamp so
+        // the ring stays visible.
+        _ap.set(ac[0], ac[1], ac[2]).project(camera);
+        _tr.set(coordTrue[0], coordTrue[1], coordTrue[2]).project(camera);
+        const ndcDist = Math.hypot(_ap.x - _tr.x, _ap.y - _tr.y);
+        const MIN_NDC = 0.012; // ~1.2 % of viewport, ~13 px on 1080
+        const targetNdc = Math.max(ndcDist, MIN_NDC);
+        const scale = targetNdc * _HALO_SCALE_PER_NDC;
         halo.position.set(ac[0], ac[1], ac[2]);
-        // Visible-floor clamp. The strict geometric reading wants the
-        // halo's world radius to equal `r` (the apparent↔true 3D
-        // distance), so the circumference passes through the true
-        // marker. At small refractions the ring's *angular* size from
-        // the camera collapses below ~0.05° and the rasterizer drops
-        // every line segment as sub-pixel — so even a 1 px line
-        // disappears. Clamp to a minimum angular radius of 0.3°
-        // (~5 px on a 1080-tall viewport at 75° FOV) so the ring
-        // always reads as a clear circle. When refraction is large
-        // enough that the natural radius beats the floor, the strict
-        // "ring touches true" relationship holds.
-        let scaleR = r;
-        if (camPos) {
-          const camDist = Math.hypot(
-            camPos.x - ac[0], camPos.y - ac[1], camPos.z - ac[2],
-          );
-          const MIN_ANG = 0.005;
-          const minWorldR = MIN_ANG * camDist;
-          if (scaleR < minWorldR) scaleR = minWorldR;
-        }
-        halo.scale.set(scaleR, scaleR, 1);
-        if (camPos) halo.lookAt(camPos);
+        halo.scale.set(scale, scale, 1);
         halo.visible = true;
       } else {
         halo.visible = false;

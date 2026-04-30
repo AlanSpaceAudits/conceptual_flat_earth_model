@@ -13336,3 +13336,23 @@ Format:
     add another 24 px of clearance between the FE / clear-trace
     column and the body-search input.
 - **Revert path:** `git checkout v-s000713 -- .`
+
+## S715 — halo as screen-space sprite with projected radius
+
+- **Date:** 2026-04-30
+- **Files changed:** `js/render/worldObjects.js`
+- **Change:** halo refactored once more. `LineLoop` was getting
+  silently dropped by the rasteriser at small refractions — its
+  individual line segments collapsed sub-pixel. Replaced with a
+  `THREE.Sprite` carrying a clean ring-outline canvas texture and
+  `sizeAttenuation: false`, which renders at constant screen size
+  regardless of camera distance. Each frame the update loop projects
+  the apparent and true 3D coords to NDC via `Vector3.project`,
+  measures their NDC distance, and sets the sprite scale so the
+  ring's NDC radius equals that distance — i.e. the rendered
+  circumference always passes through the true marker, at any zoom
+  or camera distance. A 0.012-NDC floor (~13 px on a 1080-tall
+  viewport) keeps the ring visible when the apparent↔true gap is
+  near zero. White texture so it reads as bright as the cel-nav
+  stars.
+- **Revert path:** `git checkout v-s000714 -- .`

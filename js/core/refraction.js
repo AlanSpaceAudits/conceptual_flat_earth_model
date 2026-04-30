@@ -38,20 +38,39 @@ export function seidelmanRefractionDeg(appAltDeg, pressureMbar = 1013.25, tempC 
   return R * pressureTempAdjustment(pressureMbar, tempC) / 60;
 }
 
-export function refractionDeg(mode, appAltDeg, pressureMbar = 1013.25, tempC = 15) {
+// Bennett and Seidelman are defined to take APPARENT altitude as
+// input. Calling code typically has TRUE altitude (the geometric
+// elevation from the sphere model). The two differ by R itself, so
+// the right thing is a fixed-point iteration:
+//   h_apparent = h_true + R(h_apparent)
+// Two iterations from h_true gives sub-arcsecond accuracy across
+// the whole range above the horizon. Without the iteration the
+// returned value is consistently a little high (R(h_true) > R(h_apparent)
+// because lower altitude means more refraction). The `_isApparent`
+// flag bypasses iteration if the caller already has apparent
+// altitude.
+export function refractionDeg(mode, trueAltDeg, pressureMbar = 1013.25, tempC = 15, _isApparent = false) {
   if (!mode || mode === 'off') return 0;
-  if (!Number.isFinite(appAltDeg)) return 0;
-  if (appAltDeg < -1) return 0;
-  const h = Math.max(appAltDeg, -0.9);
-  if (mode === 'bennett')   return bennettRefractionDeg(h, pressureMbar, tempC);
-  if (mode === 'seidelman') return seidelmanRefractionDeg(h, pressureMbar, tempC);
-  return 0;
+  if (!Number.isFinite(trueAltDeg)) return 0;
+  if (trueAltDeg < -1) return 0;
+  const formula = mode === 'bennett'   ? bennettRefractionDeg
+                : mode === 'seidelman' ? seidelmanRefractionDeg
+                : null;
+  if (!formula) return 0;
+  const clamp = (h) => Math.max(h, -0.9);
+  if (_isApparent) return formula(clamp(trueAltDeg), pressureMbar, tempC);
+  let R = formula(clamp(trueAltDeg), pressureMbar, tempC);
+  R = formula(clamp(trueAltDeg + R), pressureMbar, tempC);
+  R = formula(clamp(trueAltDeg + R), pressureMbar, tempC);
+  return R;
 }
 
 // Lift a local-globe direction (x = zenith, y = east, z = north) by
-// the chosen refraction model. Returns a new vector at the same
-// magnitude with elevation increased by R(elevation). Azimuth is
-// preserved.
+// the chosen refraction model. Input is a TRUE direction (sphere-
+// model geocentric coordinate); the returned vector has elevation
+// increased by R, where R is the apparent-altitude refraction at the
+// resulting apparent altitude — `refractionDeg` does the iteration.
+// Azimuth and vector magnitude are preserved.
 export function applyRefractionLocalGlobe(coord, mode, pressureMbar = 1013.25, tempC = 15) {
   if (!mode || mode === 'off') return coord;
   const len = Math.hypot(coord[0], coord[1], coord[2]);

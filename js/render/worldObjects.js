@@ -5501,12 +5501,16 @@ export class GeocentricMarkers {
     this._truePos = new Float32Array(max * 3);
     this._appPos  = new Float32Array(max * 3);
 
+    // Marker-dot pixel size tuned to be visible above bright cel-nav
+    // stars (which render at 3 px) without dwarfing them — 6 px reads
+    // as a small dot on heavenly backdrops and as a clear circle in
+    // first-person mode without saturating the orange halo.
     const trueGeom = new THREE.BufferGeometry();
     trueGeom.setAttribute('position', new THREE.BufferAttribute(this._truePos, 3));
     trueGeom.setDrawRange(0, 0);
     const trueMat = new THREE.PointsMaterial({
-      color: 0x40e0d0, size: 3, sizeAttenuation: false,
-      transparent: true, opacity: 0.95,
+      color: 0x40e0d0, size: 6, sizeAttenuation: false,
+      transparent: true, opacity: 1.0,
       depthTest: false, depthWrite: false,
     });
     this._truePoints = new THREE.Points(trueGeom, trueMat);
@@ -5518,8 +5522,8 @@ export class GeocentricMarkers {
     appGeom.setAttribute('position', new THREE.BufferAttribute(this._appPos, 3));
     appGeom.setDrawRange(0, 0);
     const appMat = new THREE.PointsMaterial({
-      color: 0xff8c00, size: 3, sizeAttenuation: false,
-      transparent: true, opacity: 0.95,
+      color: 0xff8c00, size: 6, sizeAttenuation: false,
+      transparent: true, opacity: 1.0,
       depthTest: false, depthWrite: false,
     });
     this._appPoints = new THREE.Points(appGeom, appMat);

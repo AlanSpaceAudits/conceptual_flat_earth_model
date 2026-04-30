@@ -13058,3 +13058,29 @@ Format:
     12 px, indented 16 px so the `↳ Bennett +X.XX′` row reads as
     a sub-row of `Apparent Elevation`.
 - **Revert path:** `git checkout v-s000703 -- .`
+
+## S705 — refraction iteration (true → apparent), bumped marker size
+
+- **Date:** 2026-04-30
+- **Files changed:**
+  - `js/core/refraction.js`
+  - `js/render/worldObjects.js`
+- **Change:**
+  - `refraction.js`: `refractionDeg` now performs a fixed-point
+    iteration to convert TRUE altitude into the apparent altitude
+    Bennett / Seidelman expect as input. Two iterations of
+    `R ← formula(h_true + R)` give sub-arcsecond convergence above
+    the horizon. Without the iteration the returned value was
+    consistently a little high — `R(h_true) > R(h_apparent)` because
+    a lower altitude implies more refraction. Added an `_isApparent`
+    flag for callers (test rigs, the legacy spreadsheet path) that
+    already have apparent altitude and want the raw formula
+    evaluation.
+  - `applyRefractionLocalGlobe` now relies on the iterated
+    `refractionDeg` so the optical-vault lift matches the value
+    the HUD / popup display.
+  - `worldObjects.js`: `GeocentricMarkers` true-and-apparent dot
+    size raised from 3 px to 6 px so the cyan / orange dots stay
+    readable above the cel-nav starfield (3 px) at heavenly-vault
+    distances. Opacity bumped to 1.0.
+- **Revert path:** `git checkout v-s000704 -- .`

@@ -5532,7 +5532,8 @@ export class GeocentricMarkers {
     this._halos = [];
     for (let i = 0; i < max; i++) {
       const mat = new THREE.LineBasicMaterial({
-        color: 0xff8c00, transparent: true, opacity: 0.85,
+        color: 0xffffff,
+        transparent: false,
         depthTest: false, depthWrite: false,
       });
       const m = new THREE.LineLoop(ringGeom, mat);

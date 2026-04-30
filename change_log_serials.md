@@ -13280,3 +13280,35 @@ Format:
     search input ends up well clear of the FE / clear-trace row on
     the user's viewport.
 - **Revert path:** `git checkout v-s000711 -- .`
+
+## S713 — halo white & opaque, bar-left restored, ui-zoom floor up
+
+- **Date:** 2026-04-30
+- **Files changed:**
+  - `js/render/worldObjects.js`
+  - `css/styles.css`
+  - `css/styles.min.css`
+- **Change:**
+  - `worldObjects.js`: halo `LineBasicMaterial` switched to
+    `color: 0xffffff`, `transparent: false`. The orange + alpha
+    blend was ending up unrenderable in some configurations; a
+    fully-opaque white line at `depthTest: false` is unambiguous
+    and matches the cel-nav star colour.
+  - `styles.css`:
+    - `#bottom-bar .bar-left` reverted to `flex: 1 1 0` — the
+      `flex: 0 1 auto` from S712 over-pulled the whole bar-left
+      cluster to the screen's left edge. Bar layout is back to
+      its pre-S712 distribution.
+    - `#bottom-bar .compass-controls margin-right` 28 → 56 px so
+      the compass cluster now sits a moderate distance left of
+      the body-search input without dragging the rest of bar-left
+      with it.
+    - `--ui-zoom` floor 0.5 → 0.7 and reference viewport
+      `1600×900` → `1440×810`. Phones land at a 0.7× floor
+      instead of 0.5× so menu text reads larger; the upper cap
+      stays at 1.8 so 4K monitors still scale up.
+    - Mobile breakpoint's `#bottom-bar .time-btn`: `min-width`
+      28 → 30 px, `min-height` added at 28 px, padding 6 8 → 6 9,
+      font 12 → 13 px. Buttons read more cleanly on small
+      phones without changing the desktop layout.
+- **Revert path:** `git checkout v-s000712 -- .`

@@ -17,7 +17,7 @@
      clamp band runs from 0.5 (phones / very small windows) up to 1.6
      (4K monitors). The browser's zoom level multiplies on top
      automatically. */
-  --ui-zoom: clamp(0.5, min(calc(100vw / 1600), calc(100vh / 900)), 1.8);
+  --ui-zoom: clamp(0.7, min(calc(100vw / 1440), calc(100vh / 810)), 1.8);
 }
 
 * { box-sizing: border-box; }
@@ -413,7 +413,7 @@ header .info-popup.legend-popup a { color: var(--accent); }
      readable on every monitor + browser-zoom level. */
   zoom: var(--ui-zoom);
 }
-#bottom-bar .bar-left { flex: 0 1 auto; min-width: 0; display: flex; align-items: center; }
+#bottom-bar .bar-left { flex: 1 1 0; min-width: 0; display: flex; align-items: center; }
 
 #bottom-bar .search-host { flex: 0 0 auto; margin-right: 8px; margin-left: 16px; }
 .body-search { position: relative; width: 220px; }
@@ -583,7 +583,7 @@ header .info-popup.legend-popup a { color: var(--accent); }
   gap: 2px;
   flex: 0 0 auto;
   margin-left: 12px;
-  margin-right: 28px;
+  margin-right: 56px;
   margin-top: -18px;
 }
 #bottom-bar .mode-grid,
@@ -1133,9 +1133,10 @@ footer#desc .desc-dynamic { color: var(--fg); }
   #bottom-bar > * { flex-shrink: 0; }
   #bottom-bar .bar-left { flex: 0 0 auto; }
   #bottom-bar .time-btn {
-    min-width: 28px;
-    padding: 6px 8px;
-    font-size: 12px;
+    min-width: 30px;
+    min-height: 28px;
+    padding: 6px 9px;
+    font-size: 13px;
   }
   #bottom-bar .geo-hops {
     grid-template-columns: repeat(5, auto);

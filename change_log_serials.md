@@ -13006,3 +13006,12 @@ Format:
     sphere; the halo is a 36-px circle centred on the apparent
     dot.
 - **Revert path:** `git checkout v-s000701 -- .`
+
+## S703 — popup elevation row order: apparent above true
+
+- **Date:** 2026-04-30
+- **Files changed:** `js/ui/trackingInfoPopup.js`
+- **Change:** swapped the two refraction-mode rows in the
+  tracking-info popup. Now reads `Apparent Elevation` on top,
+  `True Elevation` below it.
+- **Revert path:** `git checkout v-s000702 -- .`

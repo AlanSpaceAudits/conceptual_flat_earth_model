@@ -491,8 +491,8 @@ export function buildTrackingInfoPopup(panelEl, model) {
     }
 
     const elevationRows = refrOn
-      ? `<div class="ti-row"><span>True Elevation</span><span>${elTrue}</span></div>
-         <div class="ti-row"><span>Apparent Elevation</span><span>${elApparent}</span></div>`
+      ? `<div class="ti-row"><span>Apparent Elevation</span><span>${elApparent}</span></div>
+         <div class="ti-row"><span>True Elevation</span><span>${elTrue}</span></div>`
       : `<div class="ti-row"><span>Elevation</span><span>${el}</span></div>`;
     elBody.innerHTML = `
       <div class="ti-row"><span>Azimuth</span><span>${az}</span></div>

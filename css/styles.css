@@ -692,9 +692,22 @@ header .info-popup.legend-popup a { color: var(--accent); }
   padding: 2px 8px;
   font-size: 16px;
   line-height: 18px;
-  margin-left: 4px;
+  margin-left: 0;
 }
 #bottom-bar .grids-btn[aria-pressed="true"] {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(255, 154, 60, 0.10);
+}
+#bottom-bar .refr-btn {
+  min-width: 36px;
+  padding: 2px 8px;
+  font-size: 14px;
+  line-height: 18px;
+  font-weight: 600;
+  margin: 0;
+}
+#bottom-bar .refr-btn[aria-pressed="true"] {
   border-color: var(--accent);
   color: var(--accent);
   background: rgba(255, 154, 60, 0.10);

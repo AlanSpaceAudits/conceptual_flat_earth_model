@@ -701,6 +701,13 @@ const FIELD_GROUPS = [
         { key: 'StarApplyAberration', label: 'Aberration',  bool: true },
         { key: 'StarTrepidation',     label: 'Trepidation', bool: true },
       ]},
+      { title: 'Refraction', rows: [
+        { key: 'Refraction', label: '"Astronomical"', select: [
+          { value: 'off',       label: 'Off' },
+          { value: 'bennett',   label: 'Bennett' },
+          { value: 'seidelman', label: 'Seidelman' },
+        ]},
+      ]},
       { title: 'Starfield', rows: [
         { key: 'StarfieldType', label: 'Starfield', select: [
           { value: 'random',      label: 'Default (random)' },
@@ -2220,6 +2227,28 @@ export function buildControlPanel(host, model, demos) {
   };
   model.addEventListener('update', refreshGrids);
   refreshGrids();
+
+  // Astronomical-refraction quick toggle. Cycles
+  // off → Bennett → Seidelman → off. Button face shows the active
+  // formula's initial (— / B / S).
+  const btnRefr = document.createElement('button');
+  btnRefr.className = 'time-btn refr-btn';
+  btnRefr.type = 'button';
+  btnRefr.title = 'Astronomical refraction (off / Bennett / Seidelman)';
+  btnRefr.addEventListener('click', () => {
+    const cur = model.state.Refraction || 'off';
+    const next = cur === 'off' ? 'bennett'
+               : cur === 'bennett' ? 'seidelman'
+               : 'off';
+    model.setState({ Refraction: next });
+  });
+  const refreshRefr = () => {
+    const cur = model.state.Refraction || 'off';
+    btnRefr.textContent = cur === 'bennett' ? 'B' : cur === 'seidelman' ? 'S' : '—';
+    btnRefr.setAttribute('aria-pressed', cur !== 'off' ? 'true' : 'false');
+  };
+  model.addEventListener('update', refreshRefr);
+  refreshRefr();
   // Stack the world-model toggle (FE / GE) directly under the grids
   // button so the two related "what am I looking at" toggles share a
   // column at the right edge of the compass cluster.
@@ -2236,9 +2265,15 @@ export function buildControlPanel(host, model, demos) {
   worldRow.className = 'world-row';
   worldRow.append(btnWorld, btnClearTrace);
 
+  // Top row of the column: tracer (▦) + refraction (— / B / S).
+  // Symmetric with the FE / ⌫ row below.
+  const tracerRow = document.createElement('div');
+  tracerRow.className = 'world-row';
+  tracerRow.append(btnGrids, btnRefr);
+
   const gridsStack = document.createElement('div');
   gridsStack.className = 'grids-stack';
-  gridsStack.append(btnGrids, worldRow);
+  gridsStack.append(tracerRow, worldRow);
   compassControls.appendChild(gridsStack);
 
 

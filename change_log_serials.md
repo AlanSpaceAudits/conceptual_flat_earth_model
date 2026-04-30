@@ -12836,3 +12836,47 @@ Format:
     sitting at native
     pixels.
 - **Revert:** `git checkout v-s000697 -- .`
+
+## S699 — astronomical refraction toggle (Bennett / Seidelman)
+
+- **Date:** 2026-04-30
+- **Files changed:**
+  - `js/core/refraction.js` (new)
+  - `js/core/app.js`
+  - `js/ui/controlPanel.js`
+  - `css/styles.css`
+  - `css/styles.min.css`
+- **Change:**
+  - New `js/core/refraction.js` exporting `bennettRefractionDeg`,
+    `seidelmanRefractionDeg`, `refractionDeg(mode, appAltDeg, elev)`,
+    and `applyRefractionLocalGlobe(coord, mode, elev)`. Both formulas
+    take apparent altitude in degrees and return refraction in
+    degrees, with the spreadsheet's pressure/temperature adjustment
+    (`T = 15°C`, `p0 = 101 kPa`) so observer elevation rolls into
+    the lift. Below-horizon input returns 0 (formulas misbehave).
+  - `app.js`: imported `applyRefractionLocalGlobe`; added
+    `Refraction: 'off'` to `defaultState()` (values: `'off'`,
+    `'bennett'`, `'seidelman'`); inside `update()` declared
+    `_refr(lg)` once per frame and threaded it through every
+    optical-vault projection — sun, moon, planets, stars,
+    satellites — so each body's `OpticalVaultCoord` and
+    `GlobeOpticalVaultCoord` are computed from a refraction-lifted
+    local-globe vector. `*AnglesGlobe` and the heavenly
+    `*VaultCoord` stay unrefracted, so HUD readouts and true-position
+    overlays remain ground truth.
+  - `controlPanel.js`: added a new Tracker-tab group titled
+    `Refraction` with one row, label `"Astronomical"`, bound to a
+    select with `Off / Bennett / Seidelman`. Added a quick toggle
+    button (`.refr-btn`) next to the GP-tracer (▦) button. Single
+    click cycles `off → bennett → seidelman → off`; face shows
+    `—` / `B` / `S` and the button picks up the orange aria-pressed
+    style when active. Restructured `gridsStack` into two
+    `.world-row` rows so the top row holds [▦, refr] and the
+    bottom row keeps [FE, ⌫] — both rows hold two equal-width
+    buttons, replacing the previous single full-width ▦.
+  - `styles.css`: `.grids-btn` lost `margin-left: 4px` (now sits
+    inside a flex row with its sibling); added `.refr-btn` rule
+    matching the grids-btn metrics plus the standard
+    aria-pressed accent. Re-minified.
+- **Revert path:** `git checkout v-s000698 -- .` (and delete
+  `js/core/refraction.js`).

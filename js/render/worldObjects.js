@@ -5457,6 +5457,61 @@ export class TrackedGroundPoints {
   }
 }
 
+// Geocentric-position ghost markers. One small cyan sphere per
+// tracker target placed at the body's UNREFRACTED optical-vault
+// position. Pairs with `Refraction !== 'off'` and
+// `ShowGeocentricPosition` — when both are on, every tracked body
+// shows two markers (the apparent / refracted main marker that the
+// usual render path draws, plus the geocentric ghost) so the angular
+// gap is visible. Hidden in InsideVault first-person mode (the
+// observer figure is between the camera and the markers, hiding them
+// against the dome anyway).
+export class GeocentricMarkers {
+  constructor(max = 64) {
+    this.group = new THREE.Group();
+    this.group.name = 'geocentric-markers';
+    this._pool = [];
+    const sharedGeo = new THREE.SphereGeometry(0.012, 12, 8);
+    for (let i = 0; i < max; i++) {
+      const mat = new THREE.MeshBasicMaterial({
+        color: 0x40e0d0, transparent: true, opacity: 0.85,
+        depthTest: false, depthWrite: false,
+      });
+      const m = new THREE.Mesh(sharedGeo, mat);
+      m.renderOrder = 60;
+      m.visible = false;
+      m.frustumCulled = false;
+      this._pool.push(m);
+      this.group.add(m);
+    }
+  }
+  update(model) {
+    const s = model.state;
+    const c = model.computed;
+    const on = s.Refraction && s.Refraction !== 'off'
+      && !!s.ShowGeocentricPosition
+      && !s.InsideVault;
+    if (!on) {
+      for (const m of this._pool) m.visible = false;
+      return;
+    }
+    const ge = s.WorldModel === 'ge';
+    const infos = c.TrackerInfos || [];
+    let n = 0;
+    for (const info of infos) {
+      const coord = ge
+        ? (info.globeOpticalVaultCoordTrue || info.opticalVaultCoordTrue)
+        : info.opticalVaultCoordTrue;
+      if (!coord || coord[2] === -1000) continue;
+      if (n >= this._pool.length) break;
+      const m = this._pool[n++];
+      m.position.set(coord[0], coord[1], coord[2]);
+      m.visible = true;
+    }
+    for (let i = n; i < this._pool.length; i++) this._pool[i].visible = false;
+  }
+}
+
 // Central-angle / inscribed-angle helper for GE mode.
 //
 // Per `c.TrackerInfos` entry, draws a great-circle arc on the

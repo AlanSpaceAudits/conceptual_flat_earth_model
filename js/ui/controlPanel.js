@@ -707,6 +707,7 @@ const FIELD_GROUPS = [
           { value: 'bennett',   label: 'Bennett' },
           { value: 'seidelman', label: 'Seidelman' },
         ]},
+        { key: 'ShowGeocentricPosition', label: 'Show Geocentric Position', bool: true },
       ]},
       { title: 'Starfield', rows: [
         { key: 'StarfieldType', label: 'Starfield', select: [
@@ -1966,6 +1967,48 @@ export function buildControlPanel(host, model, demos) {
   timeControls.append(btnRew, btnPlay, btnFf, btnSlow, btnSpeed, jumpGrid, speedStack);
   barLeft.appendChild(geoHops);
 
+  // Cel Theo presets. Each entry seeds observer lat/lon, tracker
+  // target (the relevant Cel Theo star), and the date / time / UTC
+  // offset for the documented occultation event so the user can
+  // jump straight to the configuration the spreadsheet is built
+  // around. Sits next to the geo-hops grid in the same row.
+  const CEL_THEO_PRESETS = [
+    {
+      code: 'PP',
+      name: 'Pikes Peak  ·  39 Aquarii  ·  2025-01-27 18:43:07 MST',
+      lat:  38.999700,
+      lon: -104.497230,
+      starId: 'star:ct_39_aqr',
+      utcMs: Date.UTC(2025, 0, 28, 1, 43, 7),
+      tzMin: -420,
+    },
+  ];
+  const celTheoHops = document.createElement('div');
+  celTheoHops.className = 'geo-hops cel-theo-hops';
+  for (const p of CEL_THEO_PRESETS) {
+    const b = document.createElement('button');
+    b.className = 'time-btn geo-hop cel-theo-hop';
+    b.type = 'button';
+    b.textContent = p.code;
+    b.title = p.name;
+    b.addEventListener('click', () => {
+      const dateTime = p.utcMs / TIME_ORIGIN.msPerDay - TIME_ORIGIN.ZeroDate;
+      const cur = Array.isArray(model.state.TrackerTargets) ? model.state.TrackerTargets : [];
+      const targets = cur.includes(p.starId) ? cur : [...cur, p.starId];
+      model.setState({
+        ObserverLat:  p.lat,
+        ObserverLong: p.lon,
+        DateTime:     dateTime,
+        TimezoneOffsetMinutes: p.tzMin,
+        TrackerTargets: targets,
+        FollowTarget:   p.starId,
+        ShowCelTheo:    true,
+      });
+    });
+    celTheoHops.appendChild(b);
+  }
+  barLeft.appendChild(celTheoHops);
+
   const compassControls = document.createElement('div');
   compassControls.className = 'compass-controls';
 
@@ -3027,6 +3070,9 @@ export function buildTrackerHud(trackerEl, model) {
     const azel = document.createElement('div');
     azel.className = 'line';
     block.appendChild(azel);
+    const refr = document.createElement('div');
+    refr.className = 'line tracker-refr';
+    block.appendChild(refr);
     const geo = document.createElement('div');
     geo.className = 'line source-line';
     block.appendChild(geo);
@@ -3042,7 +3088,7 @@ export function buildTrackerHud(trackerEl, model) {
     const foot = document.createElement('div');
     foot.className = 'line tracker-foot';
     block.appendChild(foot);
-    return { block, title, azel, geo, ptolemy, astropixels, vsop87, foot };
+    return { block, title, azel, refr, geo, ptolemy, astropixels, vsop87, foot };
   }
 
   const refresh = () => {
@@ -3105,6 +3151,20 @@ export function buildTrackerHud(trackerEl, model) {
         : 'luminary';
       rec.title.textContent = `${info.name} (${cat})`;
       rec.azel.textContent  = `az ${fmtDmsDegAz(info.azimuth)}   el ${fmtDmsDegEl(info.elevation)}`;
+      // Refraction lift in arcminutes when a formula is active and
+      // the body is above the horizon. Hidden otherwise so the row
+      // doesn't take up space when refraction is off.
+      const refrDeg = Number.isFinite(info.refractionDeg) ? info.refractionDeg : 0;
+      const refrOn = (model.state.Refraction && model.state.Refraction !== 'off');
+      if (refrOn && refrDeg > 0) {
+        const formulaName = model.state.Refraction === 'bennett' ? 'Bennett' : 'Seidelman';
+        const arcmin = refrDeg * 60;
+        rec.refr.textContent = `refr (${formulaName}): +${arcmin.toFixed(2)}′  (apparent ${fmtDmsDegEl(info.elevation + refrDeg)})`;
+        rec.refr.hidden = false;
+      } else {
+        rec.refr.textContent = '';
+        rec.refr.hidden = true;
+      }
       // ephemeris-comparison block hides entirely for stars
       // (their RA/Dec doesn't depend on pipeline) and for sun/moon/
       // planets when `ShowEphemerisReadings` is off. Keeps the

@@ -34,7 +34,7 @@ import {
   feLatLongToGlobalFeCoord, celestLatLongToVaultCoord, vaultCoordAt,
 } from './feGeometry.js';
 import { canonicalLatLongToDisc } from './canonical.js';
-import { applyRefractionLocalGlobe } from './refraction.js';
+import { applyRefractionLocalGlobe, refractionDeg } from './refraction.js';
 
 // Mirrors PLANET_STYLE colours in render/index.js and the Tracker
 // button grid. Keep in sync.
@@ -329,6 +329,11 @@ function defaultState() {
     // position of every body by the apparent-altitude refraction
     // value of the chosen formula. True positions remain unrefracted.
     Refraction: 'off',
+    // When true (and `Refraction` is on), every tracked body gets a
+    // cyan ghost marker drawn at its unrefracted optical-vault
+    // position so the angular gap with the apparent (refracted)
+    // marker is visible.
+    ShowGeocentricPosition: false,
 
     // Eclipse demo state hooks. Registry sets these via intro().
     EclipseActive:     false,
@@ -727,12 +732,20 @@ export class FeModel extends EventTarget {
 
     // Refraction: lift every body's optical-vault local-globe vector
     // by the apparent-altitude refraction. True positions
-    // (`*VaultCoord`, `*GlobeVaultCoord`) and HUD readouts
+    // (`*VaultCoord`, `*GlobeVaultCoord`, `*OpticalVaultCoordTrue`,
+    // `*GlobeOpticalVaultCoordTrue`) and HUD readouts
     // (`*AnglesGlobe`) remain unrefracted, so the user can compare
-    // apparent vs true.
+    // apparent vs true. `_opticalCoords(lg)` returns the pair:
+    //   { app: refracted local-globe (used for the rendered marker),
+    //     true: original local-globe (used by the geocentric ghost) }
+    // Plus the refraction value in degrees so the HUD can display it.
     const _refrMode = s.Refraction || 'off';
     const _refrElev = Number(s.ObserverElevation) || 0;
     const _refr = (lg) => applyRefractionLocalGlobe(lg, _refrMode, _refrElev);
+    const _opticalPair = (lg) => {
+      const app = _refrMode === 'off' ? lg : _refr(lg);
+      return { lgTrue: lg, lgApp: app };
+    };
 
     // --- sun ---
     c.SunRA = sunEq.ra; c.SunDec = sunEq.dec;
@@ -766,12 +779,21 @@ export class FeModel extends EventTarget {
     );
     c.SunAnglesGlobe     = localGlobeCoordToAngles(c.SunLocalGlobeCoord);
     {
-      const lgApp = _refr(c.SunLocalGlobeCoord);
-      c.SunOpticalVaultCoord   = localGlobeCoordToGlobalFeCoord(
-        opticalVaultProject(lgApp, c.OpticalVaultRadius, c.OpticalVaultHeightEffective),
+      const { lgTrue, lgApp } = _opticalPair(c.SunLocalGlobeCoord);
+      c.SunOpticalVaultCoordTrue = localGlobeCoordToGlobalFeCoord(
+        opticalVaultProject(lgTrue, c.OpticalVaultRadius, c.OpticalVaultHeightEffective),
         c.TransMatLocalFeToGlobalFe,
       );
-      c.SunGlobeOpticalVaultCoord = _globeOpticalProject(lgApp);
+      c.SunGlobeOpticalVaultCoordTrue = _globeOpticalProject(lgTrue);
+      c.SunOpticalVaultCoord = lgApp === lgTrue
+        ? c.SunOpticalVaultCoordTrue
+        : localGlobeCoordToGlobalFeCoord(
+            opticalVaultProject(lgApp, c.OpticalVaultRadius, c.OpticalVaultHeightEffective),
+            c.TransMatLocalFeToGlobalFe,
+          );
+      c.SunGlobeOpticalVaultCoord = lgApp === lgTrue
+        ? c.SunGlobeOpticalVaultCoordTrue
+        : _globeOpticalProject(lgApp);
     }
 
     // --- moon ---
@@ -823,12 +845,21 @@ export class FeModel extends EventTarget {
     );
     c.MoonAnglesGlobe     = localGlobeCoordToAngles(c.MoonLocalGlobeCoord);
     {
-      const lgApp = _refr(c.MoonLocalGlobeCoord);
-      c.MoonOpticalVaultCoord   = localGlobeCoordToGlobalFeCoord(
-        opticalVaultProject(lgApp, c.OpticalVaultRadius, c.OpticalVaultHeightEffective),
+      const { lgTrue, lgApp } = _opticalPair(c.MoonLocalGlobeCoord);
+      c.MoonOpticalVaultCoordTrue = localGlobeCoordToGlobalFeCoord(
+        opticalVaultProject(lgTrue, c.OpticalVaultRadius, c.OpticalVaultHeightEffective),
         c.TransMatLocalFeToGlobalFe,
       );
-      c.MoonGlobeOpticalVaultCoord = _globeOpticalProject(lgApp);
+      c.MoonGlobeOpticalVaultCoordTrue = _globeOpticalProject(lgTrue);
+      c.MoonOpticalVaultCoord = lgApp === lgTrue
+        ? c.MoonOpticalVaultCoordTrue
+        : localGlobeCoordToGlobalFeCoord(
+            opticalVaultProject(lgApp, c.OpticalVaultRadius, c.OpticalVaultHeightEffective),
+            c.TransMatLocalFeToGlobalFe,
+          );
+      c.MoonGlobeOpticalVaultCoord = lgApp === lgTrue
+        ? c.MoonGlobeOpticalVaultCoordTrue
+        : _globeOpticalProject(lgApp);
     }
 
     // --- analemma accumulators ---
@@ -1087,16 +1118,26 @@ export class FeModel extends EventTarget {
       );
       const localGlobe = celestCoordToLocalGlobeCoord(celestCoord, c.TransMatCelestToGlobe);
       const anglesGlobe = localGlobeCoordToAngles(localGlobe);
-      const lgApp = _refr(localGlobe);
-      const opticalVaultCoord = localGlobeCoordToGlobalFeCoord(
-        opticalVaultProject(lgApp, c.OpticalVaultRadius, c.OpticalVaultHeightEffective),
+      const { lgTrue, lgApp } = _opticalPair(localGlobe);
+      const opticalVaultCoordTrue = localGlobeCoordToGlobalFeCoord(
+        opticalVaultProject(lgTrue, c.OpticalVaultRadius, c.OpticalVaultHeightEffective),
         c.TransMatLocalFeToGlobalFe,
       );
-      const globeOpticalVaultCoord = _globeOpticalProject(lgApp);
+      const globeOpticalVaultCoordTrue = _globeOpticalProject(lgTrue);
+      const opticalVaultCoord = lgApp === lgTrue
+        ? opticalVaultCoordTrue
+        : localGlobeCoordToGlobalFeCoord(
+            opticalVaultProject(lgApp, c.OpticalVaultRadius, c.OpticalVaultHeightEffective),
+            c.TransMatLocalFeToGlobalFe,
+          );
+      const globeOpticalVaultCoord = lgApp === lgTrue
+        ? globeOpticalVaultCoordTrue
+        : _globeOpticalProject(lgApp);
       c.Planets[name] = {
         ra: eq.ra, dec: eq.dec,
         celestCoord, celestLatLong: ll,
         vaultCoord, globeVaultCoord, opticalVaultCoord, globeOpticalVaultCoord,
+        opticalVaultCoordTrue, globeOpticalVaultCoordTrue,
         anglesGlobe,
       };
     }
@@ -1141,12 +1182,21 @@ export class FeModel extends EventTarget {
       );
       const localGlobe  = celestCoordToLocalGlobeCoord(celestCoord, c.TransMatCelestToGlobe);
       const anglesGlobe = localGlobeCoordToAngles(localGlobe);
-      const lgApp = _refr(localGlobe);
-      const opticalVaultCoord = localGlobeCoordToGlobalFeCoord(
-        opticalVaultProject(lgApp, c.OpticalVaultRadius, c.OpticalVaultHeightEffective),
+      const { lgTrue, lgApp } = _opticalPair(localGlobe);
+      const opticalVaultCoordTrue = localGlobeCoordToGlobalFeCoord(
+        opticalVaultProject(lgTrue, c.OpticalVaultRadius, c.OpticalVaultHeightEffective),
         c.TransMatLocalFeToGlobalFe,
       );
-      const globeOpticalVaultCoord = _globeOpticalProject(lgApp);
+      const globeOpticalVaultCoordTrue = _globeOpticalProject(lgTrue);
+      const opticalVaultCoord = lgApp === lgTrue
+        ? opticalVaultCoordTrue
+        : localGlobeCoordToGlobalFeCoord(
+            opticalVaultProject(lgApp, c.OpticalVaultRadius, c.OpticalVaultHeightEffective),
+            c.TransMatLocalFeToGlobalFe,
+          );
+      const globeOpticalVaultCoord = lgApp === lgTrue
+        ? globeOpticalVaultCoordTrue
+        : _globeOpticalProject(lgApp);
       return {
         id:   star.id,
         name: star.name,
@@ -1154,6 +1204,7 @@ export class FeModel extends EventTarget {
         ra, dec,
         celestCoord, celestLatLong,
         vaultCoord, globeVaultCoord, opticalVaultCoord, globeOpticalVaultCoord,
+        opticalVaultCoordTrue, globeOpticalVaultCoordTrue,
         anglesGlobe,
       };
     };
@@ -1203,17 +1254,27 @@ export class FeModel extends EventTarget {
         const globeVaultCoord = _globeVaultAt(celestLatLong.lat, sub.lon);
         const localGlobe  = celestCoordToLocalGlobeCoord(celestCoord, c.TransMatCelestToGlobe);
         const anglesGlobe = localGlobeCoordToAngles(localGlobe);
-        const lgApp = _refr(localGlobe);
-        const opticalVaultCoord = localGlobeCoordToGlobalFeCoord(
-          opticalVaultProject(lgApp, c.OpticalVaultRadius, c.OpticalVaultHeightEffective),
+        const { lgTrue, lgApp } = _opticalPair(localGlobe);
+        const opticalVaultCoordTrue = localGlobeCoordToGlobalFeCoord(
+          opticalVaultProject(lgTrue, c.OpticalVaultRadius, c.OpticalVaultHeightEffective),
           c.TransMatLocalFeToGlobalFe,
         );
-        const globeOpticalVaultCoord = _globeOpticalProject(lgApp);
+        const globeOpticalVaultCoordTrue = _globeOpticalProject(lgTrue);
+        const opticalVaultCoord = lgApp === lgTrue
+          ? opticalVaultCoordTrue
+          : localGlobeCoordToGlobalFeCoord(
+              opticalVaultProject(lgApp, c.OpticalVaultRadius, c.OpticalVaultHeightEffective),
+              c.TransMatLocalFeToGlobalFe,
+            );
+        const globeOpticalVaultCoord = lgApp === lgTrue
+          ? globeOpticalVaultCoordTrue
+          : _globeOpticalProject(lgApp);
         return {
           id: sat.id, name: sat.name,
           ra: raRad, dec: decRad,
           celestCoord, celestLatLong, globeVaultCoord,
           vaultCoord, opticalVaultCoord, globeOpticalVaultCoord,
+          opticalVaultCoordTrue, globeOpticalVaultCoordTrue,
           anglesGlobe,
         };
       };
@@ -1408,6 +1469,8 @@ export class FeModel extends EventTarget {
           gpLat: c.SunCelestLatLong.lat,
           gpLon: wrapLon(c.SunRA * 180 / Math.PI - c.SkyRotAngle),
           vaultCoord: c.SunVaultCoord,
+          opticalVaultCoordTrue: c.SunOpticalVaultCoordTrue,
+          globeOpticalVaultCoordTrue: c.SunGlobeOpticalVaultCoordTrue,
         };
       } else if (target === 'moon') {
         const { rGeo, rPtol, rApix, rVsop } = readingsFor('moon');
@@ -1423,6 +1486,8 @@ export class FeModel extends EventTarget {
           gpLat: c.MoonCelestLatLong.lat,
           gpLon: wrapLon(c.MoonRA * 180 / Math.PI - c.SkyRotAngle),
           vaultCoord: c.MoonVaultCoord,
+          opticalVaultCoordTrue: c.MoonOpticalVaultCoordTrue,
+          globeOpticalVaultCoordTrue: c.MoonGlobeOpticalVaultCoordTrue,
         };
       } else if (PLANET_NAMES.includes(target)) {
         const p = c.Planets[target];
@@ -1444,6 +1509,8 @@ export class FeModel extends EventTarget {
             gpLat: p.celestLatLong.lat,
             gpLon: wrapLon(p.ra * 180 / Math.PI - c.SkyRotAngle),
             vaultCoord: p.vaultCoord,
+            opticalVaultCoordTrue: p.opticalVaultCoordTrue,
+            globeOpticalVaultCoordTrue: p.globeOpticalVaultCoordTrue,
           };
         }
       } else if (target.startsWith('star:')) {
@@ -1509,6 +1576,8 @@ export class FeModel extends EventTarget {
             gpLat: entry.celestLatLong.lat,
             gpLon: wrapLon(entry.ra * 180 / Math.PI - c.SkyRotAngle),
             vaultCoord: entry.vaultCoord,
+            opticalVaultCoordTrue: entry.opticalVaultCoordTrue,
+            globeOpticalVaultCoordTrue: entry.globeOpticalVaultCoordTrue,
           };
         }
       }
@@ -1517,6 +1586,11 @@ export class FeModel extends EventTarget {
         info.activeSource = bodySource;
         info.utcMs = utcDate.getTime();
         info._followOnly = followOnlyIds.has(target);
+        // Refraction lift for the body's current true elevation, in
+        // degrees. Zero when the toggle is off or the body is below
+        // the horizon. The HUD uses this directly; the geocentric
+        // ghost marker is gated on `_refrMode !== 'off'`.
+        info.refractionDeg = refractionDeg(_refrMode, info.elevation, _refrElev);
         c.TrackerInfos.push(info);
       }
     }

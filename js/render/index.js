@@ -7,7 +7,7 @@ import {
   DiscBase, DiscGrid, Shadow, EclipseShadow, VaultOfHeavens, ObserversOpticalVault,
   CelestialMarker, Observer, Stars, LatitudeLines, GroundPoint,
   CelestialPoles, DeclinationCircles, Yggdrasil, MtMeru, ToroidalVortex,
-  LongitudeRing, CelNavStars, TrackedGroundPoints, CatalogPointStars,
+  LongitudeRing, CelNavStars, TrackedGroundPoints, GeocentricMarkers, CatalogPointStars,
   GPPathOverlay, GPTracer, StellariumTraceOverlay, Discworld, AnalemmaLine, SunMoonGlyph,
   CentralAngleArcs, MoonOpticalBody, SunOpticalBody,
   MonthMarkers, WorldGlobe, GlobeHeavenlyVault, DomeCausticOverlay,
@@ -74,6 +74,12 @@ export class Renderer {
     // TrackerTargets, independent of ShowGroundPoints.
     this.trackedGPs = new TrackedGroundPoints(256);
     this.sm.world.add(this.trackedGPs.group);
+
+    // Geocentric (unrefracted) optical-vault ghost markers, gated on
+    // `ShowGeocentricPosition` + `Refraction !== 'off'`. Sits next to
+    // the apparent (refracted) marker the regular render path draws.
+    this.geocentricMarkers = new GeocentricMarkers(128);
+    this.sm.world.add(this.geocentricMarkers.group);
 
     // Dashed lines from the body's vault position straight down to its
     // ground point. The line ends share (x, y) because the vault and GP
@@ -647,6 +653,7 @@ export class Renderer {
       this.moonGP.updateAt(0, 0, FE_RADIUS, false);
     }
     this.trackedGPs.update(m);
+    this.geocentricMarkers.update(m);
 
     // Vault markers use the canonical vault coords app.js already
     // computes. No overlay-level re-projection.

@@ -712,6 +712,22 @@ header .info-popup.legend-popup a { color: var(--accent); }
   color: var(--accent);
   background: rgba(255, 154, 60, 0.10);
 }
+#tracker-hud .tracker-refr {
+  color: #40e0d0;
+  font-size: 11px;
+}
+#bottom-bar .cel-theo-hops {
+  grid-template-columns: repeat(2, auto);
+  margin-left: 4px;
+}
+#bottom-bar .cel-theo-hop {
+  color: #ff8c00;
+  border-color: rgba(255, 140, 0, 0.55);
+}
+#bottom-bar .cel-theo-hop:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
 #bottom-bar .freecam-btn { min-width: 32px; padding: 4px 6px; margin-left: 4px; }
 #bottom-bar .freecam-btn[aria-pressed="true"] {
   border-color: var(--accent);

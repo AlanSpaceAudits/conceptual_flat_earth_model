@@ -12880,3 +12880,58 @@ Format:
     aria-pressed accent. Re-minified.
 - **Revert path:** `git checkout v-s000698 -- .` (and delete
   `js/core/refraction.js`).
+
+## S700 — refraction HUD line + geocentric ghost markers + Cel Theo presets
+
+- **Date:** 2026-04-30
+- **Files changed:**
+  - `js/core/refraction.js`
+  - `js/core/app.js`
+  - `js/render/worldObjects.js`
+  - `js/render/index.js`
+  - `js/ui/controlPanel.js`
+  - `css/styles.css`
+  - `css/styles.min.css`
+- **Change:**
+  - `app.js`: imported `refractionDeg`. Refactored every body's
+    optical-vault projection so true (unrefracted) and apparent
+    (refracted) coords coexist. New per-body fields
+    `*OpticalVaultCoordTrue` / `*GlobeOpticalVaultCoordTrue` are
+    always populated; `*OpticalVaultCoord` / `*GlobeOpticalVaultCoord`
+    alias the True versions when refraction is off, otherwise carry
+    the lifted (apparent) versions. Sun, Moon, planets, stars,
+    satellites all updated.
+  - `app.js`: `TrackerInfos` entries pick up
+    `opticalVaultCoordTrue` / `globeOpticalVaultCoordTrue` from each
+    body, and a `refractionDeg` field set to
+    `refractionDeg(mode, info.elevation, observerElev)`.
+  - `app.js`: added `ShowGeocentricPosition: false` to
+    `defaultState()`.
+  - `worldObjects.js`: new `GeocentricMarkers` class — fixed pool of
+    cyan spheres positioned at each tracker target's
+    `opticalVaultCoordTrue` (or globe variant in GE). Hidden when
+    refraction is off, when the toggle is off, or in InsideVault
+    first-person mode.
+  - `render/index.js`: instantiates `GeocentricMarkers(128)`, adds it
+    to the world group, and updates it each frame next to
+    `trackedGPs`.
+  - `controlPanel.js`: Refraction submenu in the Tracker tab gains a
+    `Show Geocentric Position` boolean row. Tracker HUD per-block
+    DOM gains a new `tracker-refr` line; when refraction is on and
+    the body is above the horizon it reads
+    `refr (Bennett|Seidelman): +X.XX′  (apparent <signed dms>)` —
+    where `apparent = elevation + refractionDeg`. Hidden otherwise.
+  - `controlPanel.js`: added `CEL_THEO_PRESETS` array and a
+    `.cel-theo-hops` mini-grid placed in `bar-left` right after
+    `geo-hops`. First entry: `PP` (Pikes Peak) — sets observer
+    `38.999700, -104.497230`, follows `star:ct_39_aqr` (39 Aquarii),
+    sets `DateTime` to 2025-01-28 01:43:07 UTC (= 2025-01-27
+    18:43:07 MST), `TimezoneOffsetMinutes = -420`, ensures the star
+    is in `TrackerTargets`, enables `ShowCelTheo`.
+  - `styles.css`: added `.tracker-refr` (cyan, 11 px), `.cel-theo-hops`
+    (2-column grid, 4 px margin-left), `.cel-theo-hop` (warm-orange
+    foreground / border that picks up the accent on hover).
+- **Revert path:** `git checkout v-s000699 -- .` (and remove the
+  new `GeocentricMarkers` class block plus the `cel-theo-hops`
+  block; the `*OpticalVaultCoordTrue` plumbing folds back to the
+  S699 single-coord shape).

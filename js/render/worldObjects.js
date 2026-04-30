@@ -5462,20 +5462,22 @@ export class TrackedGroundPoints {
 //   • cyan point cloud at every tracker target's UNREFRACTED
 //     optical-vault coord (true / geocentric position),
 //   • orange point cloud at the REFRACTED coord (apparent),
-//   • orange halo point cloud at the same apparent coord — a small
-//     transparent ring around the apparent dot so the eye can follow
-//     the gap to the cyan true dot inside (or just outside) the
-//     ring.
-// All three use `THREE.Points` with `sizeAttenuation: false` so the
-// dots and halo stay at consistent pixel sizes across heavenly and
-// first-person camera distances, the same way the cel-nav star
-// renderer keeps stars at fixed pixel size.
-function _makeRingTexture(strokeRgba = 'rgba(255, 140, 0, 0.55)', width = 2) {
+//   • per-slot orange ring sprite centred on the apparent point and
+//     scaled so its circumference passes through the true point —
+//     the ring grows when the body sits low (refraction lift large)
+//     and shrinks when it climbs (lift small), so the visible
+//     scale is the live refraction error itself.
+// The two dot clouds use `sizeAttenuation: false` to keep apparent
+// and true dots at consistent screen-space sizes (3 px, matching
+// cel-nav stars). The halo uses `THREE.Sprite` instead so the ring
+// always faces the camera and its world-space radius can be set per
+// slot from the apparent↔true world distance.
+function _makeRingTexture(strokeRgba = 'rgba(255, 140, 0, 0.45)', width = 2) {
   const canvas = document.createElement('canvas');
-  canvas.width = 64; canvas.height = 64;
+  canvas.width = 128; canvas.height = 128;
   const ctx = canvas.getContext('2d');
   ctx.beginPath();
-  ctx.arc(32, 32, 28, 0, Math.PI * 2);
+  ctx.arc(64, 64, 60, 0, Math.PI * 2);
   ctx.lineWidth = width;
   ctx.strokeStyle = strokeRgba;
   ctx.stroke();
@@ -5483,6 +5485,13 @@ function _makeRingTexture(strokeRgba = 'rgba(255, 140, 0, 0.55)', width = 2) {
   tex.needsUpdate = true;
   return tex;
 }
+
+// Sprite-quad scale → world ring radius factor. Ring is drawn at
+// pixel radius 60 of a 128-px canvas, so the texture's ring sits at
+// 60/128 = 0.46875 of the texture half-width. A sprite with
+// scale = s spans s world units, so the ring's world radius is
+// 0.46875 · s. Inverting: scale = R / 0.46875 ≈ 2.133 · R.
+const _HALO_SCALE_PER_R = 128 / 60;
 
 export class GeocentricMarkers {
   constructor(max = 64) {
@@ -5518,20 +5527,21 @@ export class GeocentricMarkers {
     this._appPoints.frustumCulled = false;
     this.group.add(this._appPoints);
 
-    const haloGeom = new THREE.BufferGeometry();
-    haloGeom.setAttribute('position', new THREE.BufferAttribute(this._appPos, 3));
-    haloGeom.setDrawRange(0, 0);
-    const haloMat = new THREE.PointsMaterial({
-      map: _makeRingTexture(),
-      size: 36, sizeAttenuation: false,
-      transparent: true, opacity: 0.85,
-      alphaTest: 0.05,
-      depthTest: false, depthWrite: false,
-    });
-    this._haloPoints = new THREE.Points(haloGeom, haloMat);
-    this._haloPoints.renderOrder = 59;
-    this._haloPoints.frustumCulled = false;
-    this.group.add(this._haloPoints);
+    const haloTex = _makeRingTexture();
+    this._halos = [];
+    for (let i = 0; i < max; i++) {
+      const mat = new THREE.SpriteMaterial({
+        map: haloTex, color: 0xff8c00,
+        transparent: true, opacity: 0.55,
+        depthTest: false, depthWrite: false,
+      });
+      const sp = new THREE.Sprite(mat);
+      sp.frustumCulled = false;
+      sp.renderOrder = 59;
+      sp.visible = false;
+      this._halos.push(sp);
+      this.group.add(sp);
+    }
   }
 
   update(model) {
@@ -5542,7 +5552,7 @@ export class GeocentricMarkers {
     if (!on) {
       this._truePoints.geometry.setDrawRange(0, 0);
       this._appPoints.geometry.setDrawRange(0, 0);
-      this._haloPoints.geometry.setDrawRange(0, 0);
+      for (const sp of this._halos) sp.visible = false;
       return;
     }
     const ge = s.WorldModel === 'ge';
@@ -5564,14 +5574,26 @@ export class GeocentricMarkers {
       this._appPos[n * 3]     = ac[0];
       this._appPos[n * 3 + 1] = ac[1];
       this._appPos[n * 3 + 2] = ac[2];
+      const dx = ac[0] - coordTrue[0];
+      const dy = ac[1] - coordTrue[1];
+      const dz = ac[2] - coordTrue[2];
+      const r  = Math.hypot(dx, dy, dz);
+      const halo = this._halos[n];
+      if (r > 1e-7) {
+        halo.position.set(ac[0], ac[1], ac[2]);
+        const sc = r * _HALO_SCALE_PER_R;
+        halo.scale.set(sc, sc, 1);
+        halo.visible = true;
+      } else {
+        halo.visible = false;
+      }
       n++;
     }
+    for (let i = n; i < this._halos.length; i++) this._halos[i].visible = false;
     this._truePoints.geometry.attributes.position.needsUpdate = true;
     this._truePoints.geometry.setDrawRange(0, n);
     this._appPoints.geometry.attributes.position.needsUpdate  = true;
     this._appPoints.geometry.setDrawRange(0, n);
-    this._haloPoints.geometry.attributes.position.needsUpdate = true;
-    this._haloPoints.geometry.setDrawRange(0, n);
   }
 }
 

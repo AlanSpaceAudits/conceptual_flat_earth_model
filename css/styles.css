@@ -716,6 +716,13 @@ header .info-popup.legend-popup a { color: var(--accent); }
   color: #40e0d0;
   font-size: 11px;
 }
+#tracking-info-popup .ti-row.ti-refr-info {
+  color: #ff8c00;
+  font-size: 12px;
+  padding-left: 16px;
+  opacity: 0.85;
+}
+#tracking-info-popup .ti-row.ti-refr-info span:first-child { color: #ff8c00; }
 #bottom-bar .cel-theo-hops {
   grid-template-columns: repeat(2, auto);
   margin-left: 4px;
@@ -727,6 +734,11 @@ header .info-popup.legend-popup a { color: var(--accent); }
 #bottom-bar .cel-theo-hop:hover {
   border-color: var(--accent);
   color: var(--accent);
+}
+#bottom-bar .cel-theo-hop[aria-pressed="true"] {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(255, 154, 60, 0.18);
 }
 #bottom-bar .freecam-btn { min-width: 32px; padding: 4px 6px; margin-left: 4px; }
 #bottom-bar .freecam-btn[aria-pressed="true"] {

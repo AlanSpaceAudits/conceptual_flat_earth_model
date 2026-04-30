@@ -1992,10 +1992,14 @@ export function buildControlPanel(host, model, demos) {
   barLeft.appendChild(geoHops);
 
   // Cel Theo presets. Each entry seeds observer lat/lon, tracker
-  // target (the relevant Cel Theo star), and the date / time / UTC
-  // offset for the documented occultation event so the user can
-  // jump straight to the configuration the spreadsheet is built
-  // around. Sits next to the geo-hops grid in the same row.
+  // target (the relevant Cel Theo star), the date / time / UTC
+  // offset for the documented occultation event, and the
+  // event-day atmosphere (`pressureMbar`, `tempC`) the refraction
+  // formulas should pull from. Buttons toggle: clicking the active
+  // preset reverts pressure / temperature to MSL standard
+  // (1013.25 mbar, 15°C) so the user can compare event-conditions
+  // refraction against standard-atmosphere refraction without
+  // re-typing the numbers.
   const CEL_THEO_PRESETS = [
     {
       code: 'PP',
@@ -2005,10 +2009,15 @@ export function buildControlPanel(host, model, demos) {
       starId: 'star:ct_39_aqr',
       utcMs: Date.UTC(2025, 0, 28, 1, 43, 7),
       tzMin: -420,
+      pressureMbar: 787.8,
+      tempC: -0.2,
     },
   ];
+  const DEFAULT_PRESSURE_MBAR = 1013.25;
+  const DEFAULT_TEMP_C = 15;
   const celTheoHops = document.createElement('div');
   celTheoHops.className = 'geo-hops cel-theo-hops';
+  const celTheoBtns = [];
   for (const p of CEL_THEO_PRESETS) {
     const b = document.createElement('button');
     b.className = 'time-btn geo-hop cel-theo-hop';
@@ -2016,6 +2025,15 @@ export function buildControlPanel(host, model, demos) {
     b.textContent = p.code;
     b.title = p.name;
     b.addEventListener('click', () => {
+      const isActive = model.state.CelTheoPresetActive === p.code;
+      if (isActive) {
+        model.setState({
+          CelTheoPresetActive: null,
+          RefractionPressureMbar: DEFAULT_PRESSURE_MBAR,
+          RefractionTemperatureC: DEFAULT_TEMP_C,
+        });
+        return;
+      }
       const dateTime = p.utcMs / TIME_ORIGIN.msPerDay - TIME_ORIGIN.ZeroDate;
       const cur = Array.isArray(model.state.TrackerTargets) ? model.state.TrackerTargets : [];
       const targets = cur.includes(p.starId) ? cur : [...cur, p.starId];
@@ -2027,10 +2045,22 @@ export function buildControlPanel(host, model, demos) {
         TrackerTargets: targets,
         FollowTarget:   p.starId,
         ShowCelTheo:    true,
+        RefractionPressureMbar: p.pressureMbar,
+        RefractionTemperatureC: p.tempC,
+        CelTheoPresetActive: p.code,
       });
     });
+    celTheoBtns.push({ btn: b, code: p.code });
     celTheoHops.appendChild(b);
   }
+  const refreshCelTheoPresets = () => {
+    const active = model.state.CelTheoPresetActive;
+    for (const { btn, code } of celTheoBtns) {
+      btn.setAttribute('aria-pressed', active === code ? 'true' : 'false');
+    }
+  };
+  model.addEventListener('update', refreshCelTheoPresets);
+  refreshCelTheoPresets();
   barLeft.appendChild(celTheoHops);
 
   const compassControls = document.createElement('div');

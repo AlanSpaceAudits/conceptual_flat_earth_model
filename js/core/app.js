@@ -339,6 +339,10 @@ function defaultState() {
     // adjustment factor evaluates to ~0.986 at those values.
     RefractionPressureMbar: 1013.25,
     RefractionTemperatureC: 15,
+    // Active Cel-Theo preset code (e.g. 'PP') or null. Drives the
+    // toggle behaviour of the preset buttons — clicking an active
+    // preset deactivates it and reverts the atmosphere knobs.
+    CelTheoPresetActive: null,
 
     // Eclipse demo state hooks. Registry sets these via intro().
     EclipseActive:     false,

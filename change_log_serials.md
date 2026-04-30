@@ -13015,3 +13015,46 @@ Format:
   tracking-info popup. Now reads `Apparent Elevation` on top,
   `True Elevation` below it.
 - **Revert path:** `git checkout v-s000702 -- .`
+
+## S704 — popup formula+amount line, PP toggle, dynamic halo radius
+
+- **Date:** 2026-04-30
+- **Files changed:**
+  - `js/ui/trackingInfoPopup.js`
+  - `js/core/app.js`
+  - `js/ui/controlPanel.js`
+  - `js/render/worldObjects.js`
+  - `css/styles.css`
+  - `css/styles.min.css`
+- **Change:**
+  - `trackingInfoPopup.js`: when refraction is on, the row beneath
+    `Apparent Elevation` now reads `↳ <Formula>  +X.XX′` (Bennett
+    or Seidelman + the lift in arcminutes). Hidden when refraction
+    is off.
+  - `app.js`: `defaultState()` adds `CelTheoPresetActive: null`.
+    Tracks which Cel-Theo preset is currently engaged so the same
+    button can act as a toggle.
+  - `controlPanel.js`: PP click handler is now a toggle. First
+    click activates: sets observer / date / target plus
+    `RefractionPressureMbar = 787.8` and `RefractionTemperatureC =
+    -0.2`, marks `CelTheoPresetActive = 'PP'`. Second click
+    deactivates: reverts pressure / temperature to MSL standard
+    (1013.25 mbar / 15°C) and clears `CelTheoPresetActive`. Button
+    toggles its `aria-pressed` state from `model.update`.
+  - `worldObjects.js`: `GeocentricMarkers` halo is now a per-slot
+    `THREE.Sprite` rather than a fixed-size pixel point. Each
+    sprite is centred on the apparent coord and scaled so the
+    rendered ring's world-space radius equals the apparent↔true
+    Euclidean distance — so the true marker sits exactly on the
+    halo's circumference. The halo therefore expands as the body
+    drops toward the horizon (refraction lift grows) and shrinks
+    near zenith (lift small). Faded orange (opacity 0.55 with the
+    stroke already drawn at 0.45 alpha → effective ~0.25). Apparent
+    and true dots stay at the cel-nav star size (3 px,
+    `sizeAttenuation: false`).
+  - `controlPanel.js` / `styles.css`: added `.cel-theo-hop[aria-pressed]`
+    accent style for the toggled-on PP button. Added
+    `#tracking-info-popup .ti-row.ti-refr-info` style — orange,
+    12 px, indented 16 px so the `↳ Bennett +X.XX′` row reads as
+    a sub-row of `Apparent Elevation`.
+- **Revert path:** `git checkout v-s000703 -- .`

@@ -490,8 +490,15 @@ export function buildTrackingInfoPopup(panelEl, model) {
       inscribedStr = fmtDms(centralDeg / 2);
     }
 
+    const formulaName = s.Refraction === 'bennett' ? 'Bennett'
+      : s.Refraction === 'seidelman' ? 'Seidelman' : '';
+    const refrArcmin = refrDeg * 60;
+    const refrInfoRow = refrOn
+      ? `<div class="ti-row ti-refr-info"><span>↳ ${formulaName}</span><span>+${refrArcmin.toFixed(2)}′</span></div>`
+      : '';
     const elevationRows = refrOn
       ? `<div class="ti-row"><span>Apparent Elevation</span><span>${elApparent}</span></div>
+         ${refrInfoRow}
          <div class="ti-row"><span>True Elevation</span><span>${elTrue}</span></div>`
       : `<div class="ti-row"><span>Elevation</span><span>${el}</span></div>`;
     elBody.innerHTML = `

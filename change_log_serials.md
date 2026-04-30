@@ -12963,3 +12963,46 @@ Format:
     Cel-Theo events.
 - **Revert path:** `git checkout v-s000700 -- .` and rebuild
   `styles.min.css` if it changed.
+
+## S702 — refraction T/P inputs, menu reorder, local-time clock, marker resize
+
+- **Date:** 2026-04-30
+- **Files changed:**
+  - `js/core/refraction.js`
+  - `js/core/app.js`
+  - `js/ui/controlPanel.js`
+  - `js/render/worldObjects.js`
+- **Change:**
+  - `refraction.js`: signature change. The pressure/temperature
+    adjustment now takes explicit pressure (mbar) and temperature
+    (°C) inputs instead of observer elevation. Reference values are
+    P0 = 1010 mbar (≈ 101 kPa), T_ref = 283 K (10°C) — same form the
+    spreadsheet uses. `bennettRefractionDeg`,
+    `seidelmanRefractionDeg`, `refractionDeg`, and
+    `applyRefractionLocalGlobe` all take `(pressureMbar, tempC)`
+    parameters with MSL standard defaults (1013.25 mbar, 15°C).
+  - `app.js`: `defaultState()` adds `RefractionPressureMbar: 1013.25`
+    and `RefractionTemperatureC: 15`. `update()` reads them with
+    NaN-safe fallbacks and threads them into `_refr(...)` and the
+    per-info `refractionDeg(...)` call.
+  - `controlPanel.js`: Refraction submenu moved out of its old slot
+    above Starfield and re-anchored at the bottom of the Tracker
+    tab, immediately after Tracker Options. Two new numeric rows
+    inside the submenu — `Pressure` (mbar, 800–1100, step 0.25)
+    and `Temperature` (°C, -40–50, step 0.5).
+  - `controlPanel.js`: `refreshInfoBar` now renders the menu-bar
+    clock in the observer's local zone, derived from
+    `TimezoneOffsetMinutes`. Previously it always displayed UTC, so
+    e.g. the PP preset's 18:43:07 MST time read as
+    `01:43:07 UTC`. Format is now
+    `Mon DD YYYY / HH:MM:SS UTC±H[:MM]`.
+  - `worldObjects.js`: `GeocentricMarkers` rebuilt as three
+    `THREE.Points` clouds (true cyan dot, apparent orange dot, and
+    an orange ring halo around the apparent dot) instead of mesh
+    spheres. All three use `sizeAttenuation: false` so the dots and
+    halo stay at consistent screen-space sizes — same pixel
+    treatment cel-nav stars use. Apparent dot is now the same size
+    as a typical star (3 px) instead of the chunky world-space
+    sphere; the halo is a 36-px circle centred on the apparent
+    dot.
+- **Revert path:** `git checkout v-s000701 -- .`

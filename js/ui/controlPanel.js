@@ -701,14 +701,6 @@ const FIELD_GROUPS = [
         { key: 'StarApplyAberration', label: 'Aberration',  bool: true },
         { key: 'StarTrepidation',     label: 'Trepidation', bool: true },
       ]},
-      { title: 'Refraction', rows: [
-        { key: 'Refraction', label: '"Astronomical"', select: [
-          { value: 'off',       label: 'Off' },
-          { value: 'bennett',   label: 'Bennett' },
-          { value: 'seidelman', label: 'Seidelman' },
-        ]},
-        { key: 'ShowGeocentricPosition', label: 'Show Geocentric Position', bool: true },
-      ]},
       { title: 'Starfield', rows: [
         { key: 'StarfieldType', label: 'Starfield', select: [
           { value: 'random',      label: 'Default (random)' },
@@ -775,6 +767,18 @@ const FIELD_GROUPS = [
         { key: 'ShowStellariumOverlay', label: 'Stellarium Overlay',      bool: true },
         { key: 'ShowSunMoonNine',      label: 'Sun / Moon "9" Glyph',     bool: true },
         { key: 'ShowDomeCaustic',      label: 'Dome Caustic',             bool: true },
+      ]},
+      { title: 'Refraction', rows: [
+        { key: 'Refraction', label: '"Astronomical"', select: [
+          { value: 'off',       label: 'Off' },
+          { value: 'bennett',   label: 'Bennett' },
+          { value: 'seidelman', label: 'Seidelman' },
+        ]},
+        { key: 'ShowGeocentricPosition', label: 'Show Geocentric Position', bool: true },
+        { key: 'RefractionPressureMbar', label: 'Pressure', unit: 'mbar',
+          min: 800, max: 1100, step: 0.25 },
+        { key: 'RefractionTemperatureC', label: 'Temperature', unit: '°C',
+          min: -40, max: 50, step: 0.5 },
       ]},
       { title: 'Celestial Bodies', rows: [
         { key: 'GPOverridePlanets', label: 'GP Override', bool: true },
@@ -1664,7 +1668,27 @@ export function buildControlPanel(host, model, demos) {
       ? `Mouse Az: ${s.MouseAzimuth.toFixed(2)}°`
       : 'Mouse Az: —';
     slotEph.textContent = `ephem: ${EPHEM_NAMES[s.BodySource] || s.BodySource || '—'}`;
-    slotTime.textContent = dateTimeToString(s.DateTime);
+    // Show the menu-bar clock in the observer's local zone (as set by
+    // `TimezoneOffsetMinutes`) so a preset like PP that selects a
+    // specific local-time event reads as the local clock the user
+    // typed in, not as UTC. Adds a `(UTC±H[:MM])` suffix so the
+    // offset stays self-documenting.
+    const tzMin = Number.isFinite(Number(s.TimezoneOffsetMinutes))
+      ? Number(s.TimezoneOffsetMinutes) : 0;
+    const utc = dateTimeToDate(s.DateTime);
+    const local = new Date(utc.getTime() + tzMin * 60 * 1000);
+    const _MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const _pad2 = (n) => String(Math.floor(n)).padStart(2, '0');
+    const datePart = `${_MONTHS[local.getUTCMonth()]} ${_pad2(local.getUTCDate())} ${local.getUTCFullYear()}`;
+    const timePart = `${_pad2(local.getUTCHours())}:${_pad2(local.getUTCMinutes())}:${_pad2(local.getUTCSeconds())}`;
+    const sign = tzMin >= 0 ? '+' : '-';
+    const absMin = Math.abs(tzMin);
+    const offHrs = Math.floor(absMin / 60);
+    const offMin = absMin % 60;
+    const offLabel = offMin === 0
+      ? `UTC${sign}${offHrs}`
+      : `UTC${sign}${offHrs}:${_pad2(offMin)}`;
+    slotTime.textContent = `${datePart} / ${timePart} ${offLabel}`;
     const trackName = resolveTrackName(s.FollowTarget);
     if (trackName) {
       const a = resolveTargetAngles(s.FollowTarget, model.computed);

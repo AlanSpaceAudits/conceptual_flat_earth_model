@@ -334,6 +334,11 @@ function defaultState() {
     // position so the angular gap with the apparent (refracted)
     // marker is visible.
     ShowGeocentricPosition: false,
+    // Atmospheric inputs the refraction formulas pull from. Defaults
+    // are MSL ICAO standard (1013.25 mbar, 15°C); both formulas'
+    // adjustment factor evaluates to ~0.986 at those values.
+    RefractionPressureMbar: 1013.25,
+    RefractionTemperatureC: 15,
 
     // Eclipse demo state hooks. Registry sets these via intro().
     EclipseActive:     false,
@@ -740,8 +745,11 @@ export class FeModel extends EventTarget {
     //     true: original local-globe (used by the geocentric ghost) }
     // Plus the refraction value in degrees so the HUD can display it.
     const _refrMode = s.Refraction || 'off';
-    const _refrElev = Number(s.ObserverElevation) || 0;
-    const _refr = (lg) => applyRefractionLocalGlobe(lg, _refrMode, _refrElev);
+    const _refrPressure = Number.isFinite(Number(s.RefractionPressureMbar))
+      ? Number(s.RefractionPressureMbar) : 1013.25;
+    const _refrTempC = Number.isFinite(Number(s.RefractionTemperatureC))
+      ? Number(s.RefractionTemperatureC) : 15;
+    const _refr = (lg) => applyRefractionLocalGlobe(lg, _refrMode, _refrPressure, _refrTempC);
     const _opticalPair = (lg) => {
       const app = _refrMode === 'off' ? lg : _refr(lg);
       return { lgTrue: lg, lgApp: app };
@@ -1590,7 +1598,7 @@ export class FeModel extends EventTarget {
         // degrees. Zero when the toggle is off or the body is below
         // the horizon. The HUD uses this directly; the geocentric
         // ghost marker is gated on `_refrMode !== 'off'`.
-        info.refractionDeg = refractionDeg(_refrMode, info.elevation, _refrElev);
+        info.refractionDeg = refractionDeg(_refrMode, info.elevation, _refrPressure, _refrTempC);
         c.TrackerInfos.push(info);
       }
     }

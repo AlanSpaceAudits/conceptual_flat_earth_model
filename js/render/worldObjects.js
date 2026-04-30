@@ -5458,61 +5458,91 @@ export class TrackedGroundPoints {
 }
 
 // True / apparent position ghost markers. Pairs with
-// `Refraction !== 'off'` and `ShowGeocentricPosition`: when both are
-// on, every tracker target shows two small markers — a cyan ball at
-// the body's UNREFRACTED (geocentric) optical-vault position and an
-// orange ball at the REFRACTED (apparent) position, with a faded
-// orange halo around the apparent ball. The two markers should
-// appear to travel together inside the halo as the body crosses the
-// sky; the gap between them is the refraction lift. Visible in
-// first-person mode too so a Cel-Theo observer at ground level can
-// see the apparent vs true offset directly.
+// `Refraction !== 'off'` and `ShowGeocentricPosition`. Three layers:
+//   • cyan point cloud at every tracker target's UNREFRACTED
+//     optical-vault coord (true / geocentric position),
+//   • orange point cloud at the REFRACTED coord (apparent),
+//   • orange halo point cloud at the same apparent coord — a small
+//     transparent ring around the apparent dot so the eye can follow
+//     the gap to the cyan true dot inside (or just outside) the
+//     ring.
+// All three use `THREE.Points` with `sizeAttenuation: false` so the
+// dots and halo stay at consistent pixel sizes across heavenly and
+// first-person camera distances, the same way the cel-nav star
+// renderer keeps stars at fixed pixel size.
+function _makeRingTexture(strokeRgba = 'rgba(255, 140, 0, 0.55)', width = 2) {
+  const canvas = document.createElement('canvas');
+  canvas.width = 64; canvas.height = 64;
+  const ctx = canvas.getContext('2d');
+  ctx.beginPath();
+  ctx.arc(32, 32, 28, 0, Math.PI * 2);
+  ctx.lineWidth = width;
+  ctx.strokeStyle = strokeRgba;
+  ctx.stroke();
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.needsUpdate = true;
+  return tex;
+}
+
 export class GeocentricMarkers {
   constructor(max = 64) {
     this.group = new THREE.Group();
     this.group.name = 'geocentric-markers';
-    this._pool = [];
-    const ballGeo = new THREE.SphereGeometry(0.012, 12, 8);
-    const haloGeo = new THREE.SphereGeometry(0.038, 16, 10);
-    for (let i = 0; i < max; i++) {
-      const trueMat = new THREE.MeshBasicMaterial({
-        color: 0x40e0d0, transparent: true, opacity: 0.9,
-        depthTest: false, depthWrite: false,
-      });
-      const trueBall = new THREE.Mesh(ballGeo, trueMat);
-      trueBall.renderOrder = 60;
-      trueBall.frustumCulled = false;
+    this._max = max;
+    this._truePos = new Float32Array(max * 3);
+    this._appPos  = new Float32Array(max * 3);
 
-      const appMat = new THREE.MeshBasicMaterial({
-        color: 0xff8c00, transparent: true, opacity: 0.9,
-        depthTest: false, depthWrite: false,
-      });
-      const appBall = new THREE.Mesh(ballGeo, appMat);
-      appBall.renderOrder = 60;
-      appBall.frustumCulled = false;
+    const trueGeom = new THREE.BufferGeometry();
+    trueGeom.setAttribute('position', new THREE.BufferAttribute(this._truePos, 3));
+    trueGeom.setDrawRange(0, 0);
+    const trueMat = new THREE.PointsMaterial({
+      color: 0x40e0d0, size: 3, sizeAttenuation: false,
+      transparent: true, opacity: 0.95,
+      depthTest: false, depthWrite: false,
+    });
+    this._truePoints = new THREE.Points(trueGeom, trueMat);
+    this._truePoints.renderOrder = 60;
+    this._truePoints.frustumCulled = false;
+    this.group.add(this._truePoints);
 
-      const haloMat = new THREE.MeshBasicMaterial({
-        color: 0xff8c00, transparent: true, opacity: 0.18,
-        depthTest: false, depthWrite: false, side: THREE.DoubleSide,
-      });
-      const halo = new THREE.Mesh(haloGeo, haloMat);
-      halo.renderOrder = 59;
-      halo.frustumCulled = false;
+    const appGeom = new THREE.BufferGeometry();
+    appGeom.setAttribute('position', new THREE.BufferAttribute(this._appPos, 3));
+    appGeom.setDrawRange(0, 0);
+    const appMat = new THREE.PointsMaterial({
+      color: 0xff8c00, size: 3, sizeAttenuation: false,
+      transparent: true, opacity: 0.95,
+      depthTest: false, depthWrite: false,
+    });
+    this._appPoints = new THREE.Points(appGeom, appMat);
+    this._appPoints.renderOrder = 60;
+    this._appPoints.frustumCulled = false;
+    this.group.add(this._appPoints);
 
-      const slot = new THREE.Group();
-      slot.add(trueBall, appBall, halo);
-      slot.visible = false;
-      this._pool.push({ slot, trueBall, appBall, halo });
-      this.group.add(slot);
-    }
+    const haloGeom = new THREE.BufferGeometry();
+    haloGeom.setAttribute('position', new THREE.BufferAttribute(this._appPos, 3));
+    haloGeom.setDrawRange(0, 0);
+    const haloMat = new THREE.PointsMaterial({
+      map: _makeRingTexture(),
+      size: 36, sizeAttenuation: false,
+      transparent: true, opacity: 0.85,
+      alphaTest: 0.05,
+      depthTest: false, depthWrite: false,
+    });
+    this._haloPoints = new THREE.Points(haloGeom, haloMat);
+    this._haloPoints.renderOrder = 59;
+    this._haloPoints.frustumCulled = false;
+    this.group.add(this._haloPoints);
   }
+
   update(model) {
     const s = model.state;
     const c = model.computed;
     const on = s.Refraction && s.Refraction !== 'off'
       && !!s.ShowGeocentricPosition;
     if (!on) {
-      for (const rec of this._pool) rec.slot.visible = false;
+      this._truePoints.geometry.setDrawRange(0, 0);
+      this._appPoints.geometry.setDrawRange(0, 0);
+      this._haloPoints.geometry.setDrawRange(0, 0);
       return;
     }
     const ge = s.WorldModel === 'ge';
@@ -5522,19 +5552,26 @@ export class GeocentricMarkers {
       const coordTrue = ge
         ? (info.globeOpticalVaultCoordTrue || info.opticalVaultCoordTrue)
         : info.opticalVaultCoordTrue;
-      const coordApp = ge
+      const coordAppRaw = ge
         ? (info.globeOpticalVaultCoord || info.opticalVaultCoord)
         : info.opticalVaultCoord;
       if (!coordTrue || coordTrue[2] === -1000) continue;
-      if (n >= this._pool.length) break;
-      const rec = this._pool[n++];
-      rec.trueBall.position.set(coordTrue[0], coordTrue[1], coordTrue[2]);
-      const appCoord = (coordApp && coordApp[2] !== -1000) ? coordApp : coordTrue;
-      rec.appBall.position.set(appCoord[0], appCoord[1], appCoord[2]);
-      rec.halo.position.set(appCoord[0], appCoord[1], appCoord[2]);
-      rec.slot.visible = true;
+      if (n >= this._max) break;
+      this._truePos[n * 3]     = coordTrue[0];
+      this._truePos[n * 3 + 1] = coordTrue[1];
+      this._truePos[n * 3 + 2] = coordTrue[2];
+      const ac = (coordAppRaw && coordAppRaw[2] !== -1000) ? coordAppRaw : coordTrue;
+      this._appPos[n * 3]     = ac[0];
+      this._appPos[n * 3 + 1] = ac[1];
+      this._appPos[n * 3 + 2] = ac[2];
+      n++;
     }
-    for (let i = n; i < this._pool.length; i++) this._pool[i].slot.visible = false;
+    this._truePoints.geometry.attributes.position.needsUpdate = true;
+    this._truePoints.geometry.setDrawRange(0, n);
+    this._appPoints.geometry.attributes.position.needsUpdate  = true;
+    this._appPoints.geometry.setDrawRange(0, n);
+    this._haloPoints.geometry.attributes.position.needsUpdate = true;
+    this._haloPoints.geometry.setDrawRange(0, n);
   }
 }
 

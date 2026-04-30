@@ -5472,26 +5472,36 @@ export class TrackedGroundPoints {
 // cel-nav stars). The halo uses `THREE.Sprite` instead so the ring
 // always faces the camera and its world-space radius can be set per
 // slot from the apparent↔true world distance.
-function _makeRingTexture(strokeRgba = 'rgba(255, 140, 0, 0.45)', width = 2) {
+// Ring-outline texture for the apparent-position halo. Stroke is
+// drawn at full alpha against a fully-cleared canvas; the
+// `SpriteMaterial.opacity` knob handles the "lightly faded" look.
+// Mipmaps disabled so the ring stroke isn't averaged into a soft
+// fill at small render sizes — that's what was making the halo look
+// filled-in.
+function _makeRingTexture() {
   const canvas = document.createElement('canvas');
-  canvas.width = 128; canvas.height = 128;
+  canvas.width = 256; canvas.height = 256;
   const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.beginPath();
-  ctx.arc(64, 64, 60, 0, Math.PI * 2);
-  ctx.lineWidth = width;
-  ctx.strokeStyle = strokeRgba;
+  ctx.arc(128, 128, 124, 0, Math.PI * 2);
+  ctx.lineWidth = 3;
+  ctx.strokeStyle = 'rgba(255, 140, 0, 1.0)';
   ctx.stroke();
   const tex = new THREE.CanvasTexture(canvas);
+  tex.minFilter = THREE.LinearFilter;
+  tex.magFilter = THREE.LinearFilter;
+  tex.generateMipmaps = false;
   tex.needsUpdate = true;
   return tex;
 }
 
 // Sprite-quad scale → world ring radius factor. Ring is drawn at
-// pixel radius 60 of a 128-px canvas, so the texture's ring sits at
-// 60/128 = 0.46875 of the texture half-width. A sprite with
+// pixel radius 124 of a 256-px canvas, so the texture's ring sits at
+// 124/256 = 0.484 of the texture half-width. A sprite with
 // scale = s spans s world units, so the ring's world radius is
-// 0.46875 · s. Inverting: scale = R / 0.46875 ≈ 2.133 · R.
-const _HALO_SCALE_PER_R = 128 / 60;
+// 0.484 · s. Inverting: scale = R / 0.484 ≈ 2.065 · R.
+const _HALO_SCALE_PER_R = 256 / 124;
 
 export class GeocentricMarkers {
   constructor(max = 64) {
@@ -5537,6 +5547,7 @@ export class GeocentricMarkers {
       const mat = new THREE.SpriteMaterial({
         map: haloTex, color: 0xff8c00,
         transparent: true, opacity: 0.55,
+        alphaTest: 0.05,
         depthTest: false, depthWrite: false,
       });
       const sp = new THREE.Sprite(mat);

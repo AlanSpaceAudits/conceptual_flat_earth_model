@@ -13084,3 +13084,28 @@ Format:
     readable above the cel-nav starfield (3 px) at heavenly-vault
     distances. Opacity bumped to 1.0.
 - **Revert path:** `git checkout v-s000704 -- .`
+
+## S706 — zoom-track centring + halo ring outline (no fill)
+
+- **Date:** 2026-04-30
+- **Files changed:**
+  - `js/render/scene.js`
+  - `js/render/worldObjects.js`
+- **Change:**
+  - `scene.js`: `resolveTargetGp` now also returns the body's
+    `vaultCoord` and `globeVaultCoord` so the FreeCamActive heavenly
+    tracking branch can pivot on the body itself instead of its
+    ground-point. Tracking lookAt switched to the body's vault
+    coord (FE) or globe-vault coord (GE), with a fallback to the
+    GP if the vault coord isn't available. Result: zoom keeps the
+    body in screen centre — previously the GP→body offset became a
+    larger fraction of the camera-to-pivot distance as zoom
+    increased, pushing the body off-centre.
+  - `worldObjects.js`: halo `_makeRingTexture` rebuilt as a clean
+    ring outline. Canvas is explicitly cleared before stroke; the
+    ring is drawn at full alpha; the texture has `generateMipmaps`
+    off and `Linear` min/mag filters. The "lightly faded" look now
+    comes only from `SpriteMaterial.opacity = 0.55`. Added
+    `alphaTest: 0.05` so zero-alpha pixels don't blend in. Result:
+    no faint orange fill inside the ring — just the circumference.
+- **Revert path:** `git checkout v-s000705 -- .`

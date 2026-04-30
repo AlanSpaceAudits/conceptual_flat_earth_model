@@ -7,10 +7,13 @@ import { ToRad } from '../math/utils.js';
 import { canonicalLatLongToDisc } from '../core/canonical.js';
 import { FE_RADIUS } from '../core/constants.js';
 
-// Resolve a tracker target id to its ground-point { lat, lon } in
-// degrees using the same formulas `app.update()` applies to
-// TrackerInfos. Returns null if the id can't be found in the current
-// computed snapshot.
+// Resolve a tracker target id to its ground-point { lat, lon } and
+// the body's vault coord (where it sits in 3D world space) using the
+// same formulas `app.update()` applies. Returns null if the id can't
+// be found in the current computed snapshot. The vault coord is
+// used by the FreeCamActive tracking branch as the camera look-at
+// so zoom keeps the body itself in screen centre rather than the
+// disc point underneath it.
 function resolveTargetGp(targetId, c) {
   if (!targetId) return null;
   const wrapLon = (x) => ((x + 180) % 360 + 360) % 360 - 180;
@@ -18,12 +21,16 @@ function resolveTargetGp(targetId, c) {
     return {
       lat: c.SunCelestLatLong.lat,
       lon: wrapLon(c.SunRA * 180 / Math.PI - c.SkyRotAngle),
+      vaultCoord: c.SunVaultCoord,
+      globeVaultCoord: c.SunGlobeVaultCoord,
     };
   }
   if (targetId === 'moon' && c.MoonCelestLatLong) {
     return {
       lat: c.MoonCelestLatLong.lat,
       lon: wrapLon(c.MoonRA * 180 / Math.PI - c.SkyRotAngle),
+      vaultCoord: c.MoonVaultCoord,
+      globeVaultCoord: c.MoonGlobeVaultCoord,
     };
   }
   if (c.Planets && c.Planets[targetId]) {
@@ -31,6 +38,8 @@ function resolveTargetGp(targetId, c) {
     return {
       lat: p.celestLatLong.lat,
       lon: wrapLon(p.ra * 180 / Math.PI - c.SkyRotAngle),
+      vaultCoord: p.vaultCoord,
+      globeVaultCoord: p.globeVaultCoord,
     };
   }
   if (targetId.startsWith('star:')) {
@@ -45,6 +54,8 @@ function resolveTargetGp(targetId, c) {
         return {
           lat: f.celestLatLong.lat,
           lon: wrapLon(f.ra * 180 / Math.PI - c.SkyRotAngle),
+          vaultCoord: f.vaultCoord,
+          globeVaultCoord: f.globeVaultCoord,
         };
       }
     }
@@ -295,12 +306,32 @@ export class SceneManager {
     if (s.FreeCamActive && s.FollowTarget && !s.FreeCameraMode) {
       const gp = resolveTargetGp(s.FollowTarget, this.model.computed);
       if (gp) {
-        const gpXY = canonicalLatLongToDisc(gp.lat, gp.lon, FE_RADIUS);
-        const cx = gpXY[0] + dist * Math.cos(hgt) * Math.cos(dir);
-        const cy = gpXY[1] + dist * Math.cos(hgt) * Math.sin(dir);
-        const cz = 0       + dist * Math.sin(hgt);
-        this.camera.position.set(cx, cy, cz);
-        this.camera.lookAt(gpXY[0], gpXY[1], 0);
+        // Pivot on the body itself (vault coord) rather than its
+        // ground-point so that zooming keeps the body in screen
+        // centre. The GP sits below the body in world space; orbit
+        // and look-at on the GP made the body drift toward the
+        // edge as zoom changed because the GP→body offset became a
+        // larger fraction of the camera-to-pivot distance. Pivot
+        // on the vault coord and the body stays pinned regardless
+        // of zoom level. GE picks the globe-vault variant.
+        const ge = s.WorldModel === 'ge';
+        const pivot = ge
+          ? (gp.globeVaultCoord || gp.vaultCoord)
+          : gp.vaultCoord;
+        if (pivot) {
+          const cx = pivot[0] + dist * Math.cos(hgt) * Math.cos(dir);
+          const cy = pivot[1] + dist * Math.cos(hgt) * Math.sin(dir);
+          const cz = pivot[2] + dist * Math.sin(hgt);
+          this.camera.position.set(cx, cy, cz);
+          this.camera.lookAt(pivot[0], pivot[1], pivot[2]);
+        } else {
+          const gpXY = canonicalLatLongToDisc(gp.lat, gp.lon, FE_RADIUS);
+          const cx = gpXY[0] + dist * Math.cos(hgt) * Math.cos(dir);
+          const cy = gpXY[1] + dist * Math.cos(hgt) * Math.sin(dir);
+          const cz = 0       + dist * Math.sin(hgt);
+          this.camera.position.set(cx, cy, cz);
+          this.camera.lookAt(gpXY[0], gpXY[1], 0);
+        }
         return;
       }
     }

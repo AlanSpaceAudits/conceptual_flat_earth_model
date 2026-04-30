@@ -496,10 +496,14 @@ export function buildTrackingInfoPopup(panelEl, model) {
     const refrInfoRow = refrOn
       ? `<div class="ti-row ti-refr-info"><span>↳ ${formulaName}</span><span>+${refrArcmin.toFixed(2)}′</span></div>`
       : '';
+    const refrCaRow = refrOn
+      ? `<div class="ti-row"><span>CA (Apparent ↔ True)</span><span>${fmtSignedDms(refrDeg)}</span></div>`
+      : '';
     const elevationRows = refrOn
       ? `<div class="ti-row"><span>Apparent Elevation</span><span>${elApparent}</span></div>
          ${refrInfoRow}
-         <div class="ti-row"><span>True Elevation</span><span>${elTrue}</span></div>`
+         <div class="ti-row"><span>True Elevation</span><span>${elTrue}</span></div>
+         ${refrCaRow}`
       : `<div class="ti-row"><span>Elevation</span><span>${el}</span></div>`;
     elBody.innerHTML = `
       <div class="ti-row"><span>Azimuth</span><span>${az}</span></div>

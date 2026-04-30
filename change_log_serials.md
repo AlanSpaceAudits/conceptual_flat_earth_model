@@ -13170,3 +13170,44 @@ Format:
     cardinal / world-row no longer overlaps the body-search input
     on standard 1080p viewports.
 - **Revert path:** `git checkout v-s000707 -- .`
+
+## S709 — popup CA row, halo restored to thin/uncapped, bar row symmetry
+
+- **Date:** 2026-04-30
+- **Files changed:**
+  - `js/ui/trackingInfoPopup.js`
+  - `js/render/worldObjects.js`
+  - `css/styles.css`
+  - `css/styles.min.css`
+- **Change:**
+  - `trackingInfoPopup.js`: when refraction is on, popup gains a
+    `CA (Apparent ↔ True)` row showing the refraction-induced
+    angular separation between the apparent and true positions in
+    the same signed DMS format the other angular fields use. Sits
+    below the `True Elevation` row.
+  - `worldObjects.js`: halo ring stroke restored to 2 px (was 3 px
+    after S707). Removed the S708 `MIN_R = 0.025` clamp — halo
+    radius is now strictly the world-space distance between the
+    apparent and true coords, so the circle's circumference passes
+    through the true marker as the user originally specified, and
+    its size dynamically scales with the elevation-dependent
+    refraction lift. At small refractions / heavenly camera
+    distances the halo will read as a small circle; the user is
+    expected to zoom in to inspect those cases.
+  - `styles.css`:
+    - `--ui-zoom` cap pulled back from 2.4 to 1.8. The 2.4 cap was
+      pushing the bottom-bar's content past the viewport's right
+      edge at 1080p with the bigger button styling.
+    - `#bottom-bar` flex `gap` 18 → 12 px so the four bar
+      sections (bar-left, time-controls, compass, tabs) sit
+      tighter and the search input stays clear of the compass
+      cluster.
+    - `.compass-controls` `margin-right` 16 → 8 px (the bigger
+      gap was over-correcting and pushing search to the screen
+      edge on wider viewports).
+    - `.time-controls` and `.geo-hops` gained `margin-top: -18px`
+      so the playback row and country-hop grid sit at the same
+      vertical midpoint as the compass cluster (which already had
+      that offset). Result: all three rows of the bar's left
+      cluster now share a consistent baseline.
+- **Revert path:** `git checkout v-s000708 -- .`

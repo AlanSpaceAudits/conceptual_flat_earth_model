@@ -17,7 +17,7 @@
      clamp band runs from 0.5 (phones / very small windows) up to 1.6
      (4K monitors). The browser's zoom level multiplies on top
      automatically. */
-  --ui-zoom: clamp(0.5, min(calc(100vw / 1600), calc(100vh / 900)), 2.4);
+  --ui-zoom: clamp(0.5, min(calc(100vw / 1600), calc(100vh / 900)), 1.8);
 }
 
 * { box-sizing: border-box; }
@@ -401,7 +401,7 @@ header .info-popup.legend-popup a { color: var(--accent); }
   box-sizing: border-box;
   display: flex;
   align-items: center;
-  gap: 18px;
+  gap: 12px;
   padding: 56px 14px 4px;
   background: rgba(14, 18, 26, 0.92);
   backdrop-filter: blur(8px);
@@ -462,14 +462,14 @@ header .info-popup.legend-popup a { color: var(--accent); }
   color: var(--muted);
   margin-top: 1px;
 }
-#bottom-bar .time-controls { display: flex; align-items: center; gap: 4px; flex: 0 0 auto; }
+#bottom-bar .time-controls { display: flex; align-items: center; gap: 4px; flex: 0 0 auto; margin-top: -18px; }
 #bottom-bar .vault-swap { font-size: 15px; margin-right: 8px; }
 #bottom-bar .geo-hops {
   display: grid;
   grid-template-columns: repeat(5, auto);
   grid-auto-rows: auto;
   gap: 4px;
-  margin: 0 8px;
+  margin: -18px 8px 0;
 }
 #bottom-bar .geo-hops .time-btn {
   padding: 5px 8px;
@@ -583,7 +583,7 @@ header .info-popup.legend-popup a { color: var(--accent); }
   gap: 2px;
   flex: 0 0 auto;
   margin-left: 12px;
-  margin-right: 16px;
+  margin-right: 8px;
   margin-top: -18px;
 }
 #bottom-bar .mode-grid,

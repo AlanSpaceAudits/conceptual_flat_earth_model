@@ -5589,7 +5589,27 @@ export class GeocentricMarkers {
       const halo = this._halos[n];
       if (r > 1e-7) {
         halo.position.set(ac[0], ac[1], ac[2]);
-        halo.scale.set(r, r, 1);
+        // Visible-floor clamp. The strict geometric reading wants the
+        // halo's world radius to equal `r` (the apparent↔true 3D
+        // distance), so the circumference passes through the true
+        // marker. At small refractions the ring's *angular* size from
+        // the camera collapses below ~0.05° and the rasterizer drops
+        // every line segment as sub-pixel — so even a 1 px line
+        // disappears. Clamp to a minimum angular radius of 0.3°
+        // (~5 px on a 1080-tall viewport at 75° FOV) so the ring
+        // always reads as a clear circle. When refraction is large
+        // enough that the natural radius beats the floor, the strict
+        // "ring touches true" relationship holds.
+        let scaleR = r;
+        if (camPos) {
+          const camDist = Math.hypot(
+            camPos.x - ac[0], camPos.y - ac[1], camPos.z - ac[2],
+          );
+          const MIN_ANG = 0.005;
+          const minWorldR = MIN_ANG * camDist;
+          if (scaleR < minWorldR) scaleR = minWorldR;
+        }
+        halo.scale.set(scaleR, scaleR, 1);
         if (camPos) halo.lookAt(camPos);
         halo.visible = true;
       } else {

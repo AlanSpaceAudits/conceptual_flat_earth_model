@@ -583,7 +583,7 @@ header .info-popup.legend-popup a { color: var(--accent); }
   gap: 2px;
   flex: 0 0 auto;
   margin-left: 12px;
-  margin-right: 56px;
+  margin-right: 80px;
   margin-top: -18px;
 }
 #bottom-bar .mode-grid,

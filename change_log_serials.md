@@ -13312,3 +13312,27 @@ Format:
       font 12 → 13 px. Buttons read more cleanly on small
       phones without changing the desktop layout.
 - **Revert path:** `git checkout v-s000712 -- .`
+
+## S714 — halo angular floor; compass margin-right 56 → 80 px
+
+- **Date:** 2026-04-30
+- **Files changed:**
+  - `js/render/worldObjects.js`
+  - `css/styles.css`
+  - `css/styles.min.css`
+- **Change:**
+  - `worldObjects.js`: `GeocentricMarkers` halo now applies a
+    minimum angular radius of 0.005 rad (~0.29°, roughly 5 px on
+    a 1080-tall viewport at 75° FOV). Calculated per-frame from
+    the camera-to-apparent distance: when the natural radius
+    `r` (apparent↔true world distance) is large enough, it's used
+    unmodified — the line passes exactly through the true marker.
+    When `r` collapses sub-pixel, the world radius is bumped to
+    `0.005 × camDist` so the ring still rasterises as a visible
+    circle. The previous unclamped scale was producing geometry
+    whose individual line segments were sub-pixel and therefore
+    dropped by the rasteriser.
+  - `styles.css`: `.compass-controls margin-right` 56 → 80 px to
+    add another 24 px of clearance between the FE / clear-trace
+    column and the body-search input.
+- **Revert path:** `git checkout v-s000713 -- .`

@@ -12935,3 +12935,31 @@ Format:
   new `GeocentricMarkers` class block plus the `cel-theo-hops`
   block; the `*OpticalVaultCoordTrue` plumbing folds back to the
   S699 single-coord shape).
+
+## S701 — true/apparent elevation rows + paired marker + halo
+
+- **Date:** 2026-04-30
+- **Files changed:**
+  - `js/ui/trackingInfoPopup.js`
+  - `js/render/worldObjects.js`
+  - `change_log_serials.md`
+- **Change:**
+  - `trackingInfoPopup.js`: when a refraction formula is active, the
+    single `Elevation` row now splits into two rows:
+    `True Elevation` (uses `info.elevation`) and `Apparent Elevation`
+    (uses `info.elevation + info.refractionDeg`). When refraction is
+    off, the popup still shows the original single `Elevation` row
+    so the layout doesn't shift in the default case.
+  - `worldObjects.js`: `GeocentricMarkers` rebuilt as a paired
+    visualization. Each pool slot now holds three meshes — a cyan
+    ball at the unrefracted (true) optical-vault coord, an orange
+    ball at the refracted (apparent) coord, and a low-opacity orange
+    sphere wrapping the apparent ball as a halo. Both balls are
+    sized like the previous geocentric ghost (radius 0.012); the
+    halo is radius 0.038 at opacity 0.18. Pool size doubled
+    internally (each tracker target uses one slot with three
+    children). Removed the `!s.InsideVault` gate so the markers
+    render in first-person mode too — the user-requested view for
+    Cel-Theo events.
+- **Revert path:** `git checkout v-s000700 -- .` and rebuild
+  `styles.min.css` if it changed.

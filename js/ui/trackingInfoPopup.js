@@ -447,6 +447,15 @@ export function buildTrackingInfoPopup(panelEl, model) {
     const el = fmtSignedDms(info.elevation);
     const gpLat = fmtSignedDms(info.gpLat);
     const gpLon = fmtSignedDms(info.gpLon);
+    // True (unrefracted) vs apparent (refracted) elevation. Shown as
+    // a pair when a refraction formula is active; collapse to a
+    // single Elevation row when refraction is off.
+    const refrDeg = Number.isFinite(info.refractionDeg) ? info.refractionDeg : 0;
+    const refrOn = !!s.Refraction && s.Refraction !== 'off';
+    const elTrue = fmtSignedDms(info.elevation);
+    const elApparent = refrOn && refrDeg !== 0
+      ? fmtSignedDms(info.elevation + refrDeg)
+      : elTrue;
     // Tracking-popup RA / Dec come from the **active** ephemeris
     // pipeline (carried directly on `info` as `ra`/`dec`). The
     // per-pipeline `*Reading` fields are only populated when the
@@ -481,9 +490,13 @@ export function buildTrackingInfoPopup(panelEl, model) {
       inscribedStr = fmtDms(centralDeg / 2);
     }
 
+    const elevationRows = refrOn
+      ? `<div class="ti-row"><span>True Elevation</span><span>${elTrue}</span></div>
+         <div class="ti-row"><span>Apparent Elevation</span><span>${elApparent}</span></div>`
+      : `<div class="ti-row"><span>Elevation</span><span>${el}</span></div>`;
     elBody.innerHTML = `
       <div class="ti-row"><span>Azimuth</span><span>${az}</span></div>
-      <div class="ti-row"><span>Elevation</span><span>${el}</span></div>
+      ${elevationRows}
       <div class="ti-row"><span>RA</span><span>${ra}</span></div>
       <div class="ti-row"><span>Dec</span><span>${dec}</span></div>
       <div class="ti-row"><span>GP lat</span><span>${gpLat}</span></div>

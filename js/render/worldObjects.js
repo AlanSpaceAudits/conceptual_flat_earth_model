@@ -5457,58 +5457,84 @@ export class TrackedGroundPoints {
   }
 }
 
-// Geocentric-position ghost markers. One small cyan sphere per
-// tracker target placed at the body's UNREFRACTED optical-vault
-// position. Pairs with `Refraction !== 'off'` and
-// `ShowGeocentricPosition` — when both are on, every tracked body
-// shows two markers (the apparent / refracted main marker that the
-// usual render path draws, plus the geocentric ghost) so the angular
-// gap is visible. Hidden in InsideVault first-person mode (the
-// observer figure is between the camera and the markers, hiding them
-// against the dome anyway).
+// True / apparent position ghost markers. Pairs with
+// `Refraction !== 'off'` and `ShowGeocentricPosition`: when both are
+// on, every tracker target shows two small markers — a cyan ball at
+// the body's UNREFRACTED (geocentric) optical-vault position and an
+// orange ball at the REFRACTED (apparent) position, with a faded
+// orange halo around the apparent ball. The two markers should
+// appear to travel together inside the halo as the body crosses the
+// sky; the gap between them is the refraction lift. Visible in
+// first-person mode too so a Cel-Theo observer at ground level can
+// see the apparent vs true offset directly.
 export class GeocentricMarkers {
   constructor(max = 64) {
     this.group = new THREE.Group();
     this.group.name = 'geocentric-markers';
     this._pool = [];
-    const sharedGeo = new THREE.SphereGeometry(0.012, 12, 8);
+    const ballGeo = new THREE.SphereGeometry(0.012, 12, 8);
+    const haloGeo = new THREE.SphereGeometry(0.038, 16, 10);
     for (let i = 0; i < max; i++) {
-      const mat = new THREE.MeshBasicMaterial({
-        color: 0x40e0d0, transparent: true, opacity: 0.85,
+      const trueMat = new THREE.MeshBasicMaterial({
+        color: 0x40e0d0, transparent: true, opacity: 0.9,
         depthTest: false, depthWrite: false,
       });
-      const m = new THREE.Mesh(sharedGeo, mat);
-      m.renderOrder = 60;
-      m.visible = false;
-      m.frustumCulled = false;
-      this._pool.push(m);
-      this.group.add(m);
+      const trueBall = new THREE.Mesh(ballGeo, trueMat);
+      trueBall.renderOrder = 60;
+      trueBall.frustumCulled = false;
+
+      const appMat = new THREE.MeshBasicMaterial({
+        color: 0xff8c00, transparent: true, opacity: 0.9,
+        depthTest: false, depthWrite: false,
+      });
+      const appBall = new THREE.Mesh(ballGeo, appMat);
+      appBall.renderOrder = 60;
+      appBall.frustumCulled = false;
+
+      const haloMat = new THREE.MeshBasicMaterial({
+        color: 0xff8c00, transparent: true, opacity: 0.18,
+        depthTest: false, depthWrite: false, side: THREE.DoubleSide,
+      });
+      const halo = new THREE.Mesh(haloGeo, haloMat);
+      halo.renderOrder = 59;
+      halo.frustumCulled = false;
+
+      const slot = new THREE.Group();
+      slot.add(trueBall, appBall, halo);
+      slot.visible = false;
+      this._pool.push({ slot, trueBall, appBall, halo });
+      this.group.add(slot);
     }
   }
   update(model) {
     const s = model.state;
     const c = model.computed;
     const on = s.Refraction && s.Refraction !== 'off'
-      && !!s.ShowGeocentricPosition
-      && !s.InsideVault;
+      && !!s.ShowGeocentricPosition;
     if (!on) {
-      for (const m of this._pool) m.visible = false;
+      for (const rec of this._pool) rec.slot.visible = false;
       return;
     }
     const ge = s.WorldModel === 'ge';
     const infos = c.TrackerInfos || [];
     let n = 0;
     for (const info of infos) {
-      const coord = ge
+      const coordTrue = ge
         ? (info.globeOpticalVaultCoordTrue || info.opticalVaultCoordTrue)
         : info.opticalVaultCoordTrue;
-      if (!coord || coord[2] === -1000) continue;
+      const coordApp = ge
+        ? (info.globeOpticalVaultCoord || info.opticalVaultCoord)
+        : info.opticalVaultCoord;
+      if (!coordTrue || coordTrue[2] === -1000) continue;
       if (n >= this._pool.length) break;
-      const m = this._pool[n++];
-      m.position.set(coord[0], coord[1], coord[2]);
-      m.visible = true;
+      const rec = this._pool[n++];
+      rec.trueBall.position.set(coordTrue[0], coordTrue[1], coordTrue[2]);
+      const appCoord = (coordApp && coordApp[2] !== -1000) ? coordApp : coordTrue;
+      rec.appBall.position.set(appCoord[0], appCoord[1], appCoord[2]);
+      rec.halo.position.set(appCoord[0], appCoord[1], appCoord[2]);
+      rec.slot.visible = true;
     }
-    for (let i = n; i < this._pool.length; i++) this._pool[i].visible = false;
+    for (let i = n; i < this._pool.length; i++) this._pool[i].slot.visible = false;
   }
 }
 

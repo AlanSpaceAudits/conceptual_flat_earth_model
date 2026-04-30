@@ -5459,16 +5459,19 @@ export class TrackedGroundPoints {
 
 // Halo ring texture: a clean white circle outline on a fully
 // transparent canvas. Mipmaps off so the stroke doesn't average
-// itself into a soft fill at small render sizes; linear filter
-// keeps the circle smooth.
+// itself into a soft fill at small render sizes. Stroke width is
+// generous (~6 % of canvas) so the ring stays a visible band even
+// when the sprite is rendered at small sizes — sub-pixel strokes
+// from a thinner texture were why the earlier attempts went
+// invisible.
 function _haloRingTexture() {
   const canvas = document.createElement('canvas');
-  canvas.width = 256; canvas.height = 256;
+  canvas.width = 128; canvas.height = 128;
   const ctx = canvas.getContext('2d');
-  ctx.clearRect(0, 0, 256, 256);
+  ctx.clearRect(0, 0, 128, 128);
   ctx.beginPath();
-  ctx.arc(128, 128, 120, 0, Math.PI * 2);
-  ctx.lineWidth = 3;
+  ctx.arc(64, 64, 56, 0, Math.PI * 2);
+  ctx.lineWidth = 8;
   ctx.strokeStyle = 'rgba(255, 255, 255, 1)';
   ctx.stroke();
   const tex = new THREE.CanvasTexture(canvas);
@@ -5479,15 +5482,16 @@ function _haloRingTexture() {
   return tex;
 }
 
-// Sprite-quad scale → ring radius factor. Ring is drawn at pixel
-// radius 120 of a 256-px canvas; the sprite quad locally spans
-// −0.5..0.5 in the unit cell. With `sizeAttenuation: false`, sprite
-// scale is in clip-space units and the visible quad spans -scale/2
-// to +scale/2 in NDC. The ring sits at radius
-// `(120/128) * (scale/2) = 0.469 * scale / 2` in NDC. To make the
-// ring's NDC radius equal to a target value `R_ndc`, scale =
-// `R_ndc / (0.469 / 2) ≈ 4.267 * R_ndc`.
-const _HALO_SCALE_PER_NDC = 256 / 60; // ≈ 4.267
+// Sprite-quad scale → ring world radius factor. With
+// `sizeAttenuation: true` the sprite scale is in world units. The
+// quad spans −0.5..0.5 of `scale` in view space (so a sprite of
+// scale `s` is `s` world units across, half-width `s/2`). The
+// texture ring sits at canvas radius 56 of 128 → UV radius
+// 56/128 = 0.4375 from texture center → vertex distance 0.4375 from
+// the sprite center. After scale `s`, the ring's world radius is
+// `0.4375 * s`. Solving for `scale` such that ring radius = R:
+// scale = R / 0.4375 ≈ 2.286 * R.
+const _HALO_SCALE_PER_R = 128 / 56;
 
 // True / apparent position ghost markers. Pairs with
 // `Refraction !== 'off'` and `ShowGeocentricPosition`. Three layers:
@@ -5540,17 +5544,15 @@ export class GeocentricMarkers {
     this._appPoints.frustumCulled = false;
     this.group.add(this._appPoints);
 
-    // Halo ring as a `THREE.Sprite` with `sizeAttenuation: false`,
-    // so the sprite renders at constant screen size regardless of
-    // camera distance. Each frame we project the apparent and true
-    // 3D coords to NDC, measure their pixel-equivalent screen
-    // separation, and set the sprite's scale so the ring's radius
-    // matches that screen distance. Result: the circumference
-    // *always* passes through the true marker on screen, at any
-    // zoom or camera distance, and the ring stays visible at a
-    // fixed line width because the sprite never collapses
-    // sub-pixel. Texture is white so it reads as bright as the
-    // cel-nav stars.
+    // Halo ring as a `THREE.Sprite` (default `sizeAttenuation: true`)
+    // so the sprite scale is interpreted in world units. Setting
+    // `scale = R * _HALO_SCALE_PER_R` makes the ring's world radius
+    // exactly equal to the apparent↔true 3D distance, so the
+    // rendered circumference passes through the true marker by
+    // construction — the body's regular star sprite already lands at
+    // the apparent position via the optical-vault coord, and the
+    // halo geometry is anchored at the same point. The wider canvas
+    // stroke keeps the rendered line visible at small refractions.
     const haloTex = _haloRingTexture();
     this._halos = [];
     for (let i = 0; i < max; i++) {
@@ -5560,7 +5562,6 @@ export class GeocentricMarkers {
         transparent: true,
         opacity: 0.95,
         alphaTest: 0.05,
-        sizeAttenuation: false,
         depthTest: false, depthWrite: false,
       });
       const sp = new THREE.Sprite(mat);
@@ -5585,8 +5586,6 @@ export class GeocentricMarkers {
     }
     const ge = s.WorldModel === 'ge';
     const infos = c.TrackerInfos || [];
-    const _ap = this._tmpAp || (this._tmpAp = new THREE.Vector3());
-    const _tr = this._tmpTr || (this._tmpTr = new THREE.Vector3());
     let n = 0;
     for (const info of infos) {
       if (Number.isFinite(info.elevation) && info.elevation < 0) continue;
@@ -5605,22 +5604,17 @@ export class GeocentricMarkers {
       this._appPos[n * 3]     = ac[0];
       this._appPos[n * 3 + 1] = ac[1];
       this._appPos[n * 3 + 2] = ac[2];
+      const dx = ac[0] - coordTrue[0];
+      const dy = ac[1] - coordTrue[1];
+      const dz = ac[2] - coordTrue[2];
+      const r  = Math.hypot(dx, dy, dz);
       const halo = this._halos[n];
-      if (camera) {
-        // Project both points to NDC, measure their screen-space
-        // distance, and set the sprite's scale so the rendered
-        // ring's NDC radius equals that distance. With
-        // `sizeAttenuation: false` the sprite scale is in clip-space
-        // units, so a ring whose NDC radius equals the apparent↔true
-        // NDC distance lands its circumference exactly on the true
-        // marker — at any zoom level. Below a small floor, clamp so
-        // the ring stays visible.
-        _ap.set(ac[0], ac[1], ac[2]).project(camera);
-        _tr.set(coordTrue[0], coordTrue[1], coordTrue[2]).project(camera);
-        const ndcDist = Math.hypot(_ap.x - _tr.x, _ap.y - _tr.y);
-        const MIN_NDC = 0.012; // ~1.2 % of viewport, ~13 px on 1080
-        const targetNdc = Math.max(ndcDist, MIN_NDC);
-        const scale = targetNdc * _HALO_SCALE_PER_NDC;
+      if (r > 1e-7) {
+        // Sprite scale set in world units so the ring world radius
+        // exactly equals the apparent↔true 3D distance — the
+        // rendered circumference therefore passes through the true
+        // marker, regardless of camera angle or zoom.
+        const scale = r * _HALO_SCALE_PER_R;
         halo.position.set(ac[0], ac[1], ac[2]);
         halo.scale.set(scale, scale, 1);
         halo.visible = true;

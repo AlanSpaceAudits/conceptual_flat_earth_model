@@ -13356,3 +13356,24 @@ Format:
   near zero. White texture so it reads as bright as the cel-nav
   stars.
 - **Revert path:** `git checkout v-s000714 -- .`
+
+## S716 — halo as size-attenuated sprite, world radius = R
+
+- **Date:** 2026-04-30
+- **Files changed:** `js/render/worldObjects.js`
+- **Change:** halo Sprite switched from `sizeAttenuation: false`
+  (clip-space sizing) back to default `sizeAttenuation: true`
+  (world-space sizing). The clip-space approach was rendering the
+  ring at ~50× the apparent↔true projected screen distance because
+  the scale-to-NDC conversion implicitly multiplies by the camera
+  focal factor, which I'd been double-counting. With size
+  attenuation on, sprite scale is in world units, so setting
+  `scale = R * (128/56) ≈ 2.286 R` makes the ring's world radius
+  exactly equal to the apparent↔true 3D distance, and the
+  perspective projection automatically lands the rendered
+  circumference on the true marker on screen — no NDC reprojection
+  needed. Texture canvas reduced to 128 px with an 8-px stroke
+  (~6 % of canvas) so the rendered line stays visible at typical
+  refractions; the dropped helper Vector3s and the NDC
+  computation were removed from `update`.
+- **Revert path:** `git checkout v-s000715 -- .`

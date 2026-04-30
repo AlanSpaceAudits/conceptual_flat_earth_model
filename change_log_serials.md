@@ -13109,3 +13109,38 @@ Format:
     `alphaTest: 0.05` so zero-alpha pixels don't blend in. Result:
     no faint orange fill inside the ring — just the circumference.
 - **Revert path:** `git checkout v-s000705 -- .`
+
+## S707 — below-horizon cull, taller bottom bar, larger ui-zoom band
+
+- **Date:** 2026-04-30
+- **Files changed:**
+  - `js/render/worldObjects.js`
+  - `css/styles.css`
+  - `css/styles.min.css`
+- **Change:**
+  - `worldObjects.js`: `GeocentricMarkers` per-info loop now skips
+    targets with `info.elevation < 0`. The FE
+    `opticalVaultProject` returns a coord even for sub-horizon
+    bodies (no `[0, 0, -1000]` sentinel like the GE branch), which
+    was placing apparent / true / halo markers under the disc on
+    bodies the observer can't actually see.
+  - `styles.css`:
+    - `--ui-zoom` band rewritten as
+      `clamp(0.5, min(100vw/1600, 100vh/900), 2.4)`. Reference
+      viewport drops from 1920×1080 to 1600×900 so 1080p screens
+      already nudge above 1×, and the upper cap rises from 1.6 to
+      2.4 so 4K and 5K monitors actually scale up the bar/HUDs.
+    - `#bottom-bar`: height 88 → 106 px, top padding 44 → 56 px.
+      `#info-bar` height 44 → 50 px, sits at `bottom: 56px`. Tab
+      popups + meeus-warning anchors moved to match. Mobile
+      breakpoint's `.tab-popup` `bottom` follows the new bar
+      height.
+    - Button breathing room: `.time-btn` min-height 24 → 30,
+      padding 4 10 → 6 12, font 13 → 14. The sub-button rules in
+      `.grids-stack`, `.cycle-row`, `.mode-grid`, `.cardinal-grid`,
+      `.swap-stack`, and the presets column all bump to
+      min-width 40, min-height 26, padding 4 10, font 15.
+      `.compass-btn`, `.geo-hops .time-btn`, and
+      `.time-jump-grid .time-btn` get proportional bumps. Tab
+      buttons go from 6 14 / 13 px to 8 16 / 14 px.
+- **Revert path:** `git checkout v-s000706 -- .`

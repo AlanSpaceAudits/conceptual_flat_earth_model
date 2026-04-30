@@ -17,7 +17,7 @@
      clamp band runs from 0.5 (phones / very small windows) up to 1.6
      (4K monitors). The browser's zoom level multiplies on top
      automatically. */
-  --ui-zoom: clamp(0.5, min(calc(100vw / 1920), calc(100vh / 1080)), 1.6);
+  --ui-zoom: clamp(0.5, min(calc(100vw / 1600), calc(100vh / 900)), 2.4);
 }
 
 * { box-sizing: border-box; }
@@ -345,15 +345,15 @@ header .info-popup.legend-popup a { color: var(--accent); }
    popups slide up above the bar when a tab is clicked. */
 #info-bar {
   position: absolute;
-  left: 0; right: 0; bottom: 44px;
-  height: 44px;
+  left: 0; right: 0; bottom: 56px;
+  height: 50px;
   border-top: 1px solid var(--border);
   display: flex;
   flex-direction: column;
   justify-content: center;
   gap: 2px;
-  padding: 2px 280px 2px 14px;
-  font: 12px/1 ui-monospace, Menlo, monospace;
+  padding: 4px 280px 4px 14px;
+  font: 13px/1.1 ui-monospace, Menlo, monospace;
   color: #d6deed;
   background: transparent;
   pointer-events: none;
@@ -397,12 +397,12 @@ header .info-popup.legend-popup a { color: var(--accent); }
 #bottom-bar {
   position: absolute;
   bottom: 0; left: 0; right: 0;
-  height: 88px;
+  height: 106px;
   box-sizing: border-box;
   display: flex;
   align-items: center;
   gap: 18px;
-  padding: 44px 14px 0;
+  padding: 56px 14px 4px;
   background: rgba(14, 18, 26, 0.92);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
@@ -472,10 +472,10 @@ header .info-popup.legend-popup a { color: var(--accent); }
   margin: 0 8px;
 }
 #bottom-bar .geo-hops .time-btn {
-  padding: 4px 6px;
-  min-width: 24px;
-  min-height: 24px;
-  font-size: 10px;
+  padding: 5px 8px;
+  min-width: 28px;
+  min-height: 28px;
+  font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.5px;
 }
@@ -490,13 +490,14 @@ header .info-popup.legend-popup a { color: var(--accent); }
   color: var(--fg);
   border: 1px solid var(--border);
   border-radius: 4px;
-  padding: 4px 10px;
-  min-width: 34px;
-  /* Lighthouse touch-target threshold = 24x24 CSS px. */
-  min-height: 24px;
+  padding: 6px 12px;
+  min-width: 38px;
+  /* Lighthouse touch-target threshold = 24x24 CSS px; we leave extra
+     breathing room for the icons inside the bar. */
+  min-height: 30px;
   cursor: pointer;
   font: inherit;
-  font-size: 13px;
+  font-size: 14px;
   transition: border-color 0.1s, color 0.1s;
 }
 #bottom-bar .time-btn:hover { border-color: var(--accent); color: var(--accent); }
@@ -526,9 +527,10 @@ header .info-popup.legend-popup a { color: var(--accent); }
   flex: 0 0 auto;
 }
 #bottom-bar .time-jump-grid .time-btn {
-  min-width: 32px;
-  padding: 1px 6px;
-  font: 11px/1.1 ui-monospace, Menlo, monospace;
+  min-width: 36px;
+  min-height: 26px;
+  padding: 3px 8px;
+  font: 12px/1.2 ui-monospace, Menlo, monospace;
 }
 #bottom-bar .end-demo-btn {
   font: 11px/1.1 ui-monospace, Menlo, monospace;
@@ -568,10 +570,11 @@ header .info-popup.legend-popup a { color: var(--accent); }
   margin-top: -18px;
 }
 #bottom-bar .bar-left .presets .preset-btn {
-  min-width: 36px;
-  padding: 2px 8px;
-  font-size: 14px;
-  line-height: 18px;
+  min-width: 40px;
+  min-height: 26px;
+  padding: 4px 10px;
+  font-size: 15px;
+  line-height: 20px;
   margin: 0;
 }
 #bottom-bar .compass-controls {
@@ -598,10 +601,11 @@ header .info-popup.legend-popup a { color: var(--accent); }
   align-items: stretch;
 }
 #bottom-bar .grids-stack .time-btn {
-  min-width: 36px;
-  padding: 2px 8px;
-  font-size: 14px;
-  line-height: 18px;
+  min-width: 40px;
+  min-height: 26px;
+  padding: 4px 10px;
+  font-size: 15px;
+  line-height: 20px;
   margin: 0;
 }
 #bottom-bar .grids-stack .world-row {
@@ -611,10 +615,11 @@ header .info-popup.legend-popup a { color: var(--accent); }
 #bottom-bar .mode-grid .time-btn,
 #bottom-bar .cycle-row .time-btn,
 #bottom-bar .cardinal-grid .time-btn {
-  min-width: 36px;
-  padding: 2px 8px;
-  font-size: 14px;
-  line-height: 18px;
+  min-width: 40px;
+  min-height: 26px;
+  padding: 4px 10px;
+  font-size: 15px;
+  line-height: 20px;
   margin: 0;
 }
 #bottom-bar .az-ring-btn[aria-pressed="true"] {
@@ -629,7 +634,7 @@ header .info-popup.legend-popup a { color: var(--accent); }
 #bottom-bar .cardinal-grid .time-btn {
   font-weight: 600;
 }
-#bottom-bar .compass-btn { min-width: 28px; min-height: 24px; padding: 4px 6px; font-weight: 600; }
+#bottom-bar .compass-btn { min-width: 32px; min-height: 28px; padding: 5px 8px; font-weight: 600; }
 #bottom-bar .compass-btn[aria-pressed="true"] {
   border-color: var(--accent);
   color: var(--accent);
@@ -766,11 +771,11 @@ header .info-popup.legend-popup a { color: var(--accent); }
   color: var(--muted);
   border: 0;
   border-radius: 4px;
-  padding: 6px 14px;
-  min-height: 24px;
+  padding: 8px 16px;
+  min-height: 30px;
   cursor: pointer;
   font: inherit;
-  font-size: 13px;
+  font-size: 14px;
   letter-spacing: 0.02em;
   transition: background 0.12s, color 0.12s;
 }
@@ -782,7 +787,7 @@ header .info-popup.legend-popup a { color: var(--accent); }
 
 #tab-popups {
   position: absolute;
-  left: 0; right: 0; bottom: 88px;
+  left: 0; right: 0; bottom: 106px;
   height: 0;   /* anchor only; popups position themselves */
   z-index: 25;
   pointer-events: none;
@@ -1052,7 +1057,7 @@ footer#desc .desc-dynamic { color: var(--fg); }
   position: absolute;
   left: 0;
   right: 0;
-  bottom: 70px; /* clears the bottom bar + info bar */
+  bottom: 88px; /* clears the bottom bar + info bar */
   pointer-events: none;
   text-align: center;
   padding: 6px 10px;
@@ -1154,7 +1159,7 @@ footer#desc .desc-dynamic { color: var(--fg); }
     left: 4px !important;
     right: 4px !important;
     top: 56px !important;
-    bottom: 88px !important;
+    bottom: 106px !important;
     width: auto !important;
     max-width: none !important;
     max-height: none !important;
@@ -1205,9 +1210,10 @@ body.flight-demo-active #tracking-info-popup {
   margin-right: 0;
 }
 #bottom-bar .swap-stack .time-btn {
-  min-width: 36px;
-  padding: 2px 8px;
-  font-size: 14px;
-  line-height: 18px;
+  min-width: 40px;
+  min-height: 26px;
+  padding: 4px 10px;
+  font-size: 15px;
+  line-height: 20px;
   margin: 0;
 }

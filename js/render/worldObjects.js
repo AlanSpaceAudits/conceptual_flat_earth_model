@@ -5574,6 +5574,12 @@ export class GeocentricMarkers {
     const infos = c.TrackerInfos || [];
     let n = 0;
     for (const info of infos) {
+      // Below-horizon cull. GE returns [0, 0, -1000] from
+      // `_globeOpticalProject`; FE's `opticalVaultProject` always
+      // returns a coord (even below the disc), so check
+      // `info.elevation` directly to avoid drawing markers under the
+      // observer in FE mode.
+      if (Number.isFinite(info.elevation) && info.elevation < 0) continue;
       const coordTrue = ge
         ? (info.globeOpticalVaultCoordTrue || info.opticalVaultCoordTrue)
         : info.opticalVaultCoordTrue;

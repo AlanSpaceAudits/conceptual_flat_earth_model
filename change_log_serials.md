@@ -13251,3 +13251,32 @@ Format:
   - `index.js`: passes `this.sm.camera` into the geocentric-markers
     update so the halos can billboard.
 - **Revert path:** `git checkout v-s000710 -- .`
+
+## S712 — halo as LineLoop (1 px); bar-left shrinks to content
+
+- **Date:** 2026-04-30
+- **Files changed:**
+  - `js/render/worldObjects.js`
+  - `css/styles.css`
+  - `css/styles.min.css`
+- **Change:**
+  - `worldObjects.js`: halo replaced again. RingGeometry's stroke
+    band (`outer−inner`) shrinks proportionally with `mesh.scale`,
+    so at small refractions / heavenly camera distances the band
+    became sub-pixel and the ring disappeared. Now a unit-circle
+    `THREE.LineLoop` (96 segments) with `LineBasicMaterial`. WebGL
+    rasterises lines at 1 px regardless of geometry scale, so the
+    halo stays a thin always-visible outline. Per-frame `scale =
+    (R, R, 1)` and `lookAt(camera.position)` keep the radius equal
+    to the apparent↔true world distance and the plane perpendicular
+    to the camera direction.
+  - `styles.css`: `#bottom-bar .bar-left` flex changed from
+    `1 1 0` to `0 1 auto`. The previous flex-1 grew bar-left to
+    fill all available leftover space, pushing the compass cluster
+    far to the right (where it overlapped the body-search input).
+    `0 1 auto` makes bar-left take only its content's natural
+    width, so the compass cluster sits immediately after
+    timeControls and `tabsBar` takes the remaining space — the
+    search input ends up well clear of the FE / clear-trace row on
+    the user's viewport.
+- **Revert path:** `git checkout v-s000711 -- .`

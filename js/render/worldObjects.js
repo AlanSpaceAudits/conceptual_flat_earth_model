@@ -5508,22 +5508,34 @@ export class GeocentricMarkers {
     this._appPoints.frustumCulled = false;
     this.group.add(this._appPoints);
 
-    // Halo ring as a thin annular mesh. Geometry is unit-radius so
-    // the per-frame `scale` directly sets the world radius. Inner
-    // radius 0.985 leaves a 1.5 % stroke band — visually a thin line
-    // that stays readable without becoming a fill. The mesh is
-    // re-oriented per frame to face the camera (manual billboard)
-    // since `lookAt(camera.position)` aims the local +Z axis at the
-    // camera, and `RingGeometry` lies in the local XY plane.
-    const ringGeom = new THREE.RingGeometry(0.985, 1.0, 96);
+    // Halo ring as a `THREE.LineLoop` over a unit circle. WebGL line
+    // width is 1 px on every desktop driver regardless of geometry
+    // scale, so this gives a thin always-visible outline — the
+    // RingGeometry approach had a stroke band that shrank sub-pixel
+    // when scaled to small refractions, making the halo disappear.
+    // The unit circle's per-frame `scale` directly sets the ring's
+    // world radius. `lookAt(camera.position)` faces the local +Z
+    // axis at the camera so the XY-plane circle stays perpendicular
+    // to the view direction.
+    const RING_SEG = 96;
+    const ringGeom = new THREE.BufferGeometry();
+    {
+      const arr = new Float32Array(RING_SEG * 3);
+      for (let i = 0; i < RING_SEG; i++) {
+        const t = (i / RING_SEG) * Math.PI * 2;
+        arr[i * 3]     = Math.cos(t);
+        arr[i * 3 + 1] = Math.sin(t);
+        arr[i * 3 + 2] = 0;
+      }
+      ringGeom.setAttribute('position', new THREE.BufferAttribute(arr, 3));
+    }
     this._halos = [];
     for (let i = 0; i < max; i++) {
-      const mat = new THREE.MeshBasicMaterial({
-        color: 0xff8c00, transparent: true, opacity: 0.65,
-        side: THREE.DoubleSide,
+      const mat = new THREE.LineBasicMaterial({
+        color: 0xff8c00, transparent: true, opacity: 0.85,
         depthTest: false, depthWrite: false,
       });
-      const m = new THREE.Mesh(ringGeom, mat);
+      const m = new THREE.LineLoop(ringGeom, mat);
       m.frustumCulled = false;
       m.renderOrder = 59;
       m.visible = false;

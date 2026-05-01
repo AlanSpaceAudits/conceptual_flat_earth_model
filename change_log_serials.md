@@ -14048,3 +14048,19 @@ Format:
       this band so the camera never escapes the frustum even on
       sustained zoom-out gesture.
 - **Revert path:** `git checkout v-s000743 -- .`
+
+## S745 — search dropdown blocked by #info-bar (stacking)
+
+- **Date:** 2026-04-30
+- **Files changed:** `css/styles.css`.
+- **Change:** `#bottom-bar` is `z-index: 30`, `#info-bar` (the
+  readout strip with End-Tracking / End-Demo buttons) is
+  `z-index: 31`. The body-search suggestion panel lives **inside**
+  `#bottom-bar`, and `#bottom-bar`'s `backdrop-filter: blur(8px)`
+  creates a new stacking context — that traps the panel's
+  `z-index: 40` so its effective layer relative to other stacking
+  contexts is whatever `#bottom-bar` is. With `#bottom-bar` < 31,
+  `#info-bar` paints over the panel. Raised `#bottom-bar`'s
+  `z-index` 30 → 32 so the panel (and the rest of the bar's
+  controls) stack above `#info-bar`.
+- **Revert path:** `git checkout v-s000744 -- .`

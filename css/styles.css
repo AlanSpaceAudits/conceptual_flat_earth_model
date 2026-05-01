@@ -438,7 +438,12 @@ header .info-popup.legend-popup a { color: var(--accent); }
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   border-top: 1px solid var(--border);
-  z-index: 30;
+  /* z-index 32 sits above #info-bar (31) so the body-search
+     suggestion panel (in the bar's stacking context) isn't
+     occluded by info-bar. The bar's `backdrop-filter: blur` also
+     creates its own stacking context, trapping the panel's
+     `z-index: 40` inside the bar regardless of how high it goes. */
+  z-index: 32;
   pointer-events: auto;
   /* If the bar's content is wider than the viewport, slide
      horizontally instead of overlapping. `overflow-y: visible` lets

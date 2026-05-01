@@ -5521,10 +5521,13 @@ export class GeocentricMarkers {
     this._appPoints.frustumCulled = false;
     this.group.add(this._appPoints);
 
-    // Shared ring geometry: outer radius 1.0, inner 0.985 — 1.5 %
-    // band width — split into 96 segments. Thin band reads as a
-    // clean ring outline rather than a thick annulus.
-    const ringGeom = new THREE.RingGeometry(0.985, 1.0, 96);
+    // Shared ring geometry: outer radius 1.0, inner 0.92 — 8 %
+    // stroke band. Wide enough to remain a few pixels of visible
+    // band at typical zoom levels even when the ring's overall
+    // world radius is small (e.g. 0.004 world units at typical
+    // first-person refractions). Thinner bands collapsed
+    // sub-pixel and the rasteriser dropped them.
+    const ringGeom = new THREE.RingGeometry(0.92, 1.0, 96);
     this._halos = [];
     for (let i = 0; i < max; i++) {
       const mat = new THREE.MeshBasicMaterial({

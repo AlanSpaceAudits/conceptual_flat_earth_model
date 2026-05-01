@@ -13468,3 +13468,17 @@ Format:
     above the body sprite even at small refractions; for very
     tight cases the user can zoom in via `OpticalZoom`.
 - **Revert path:** `git checkout v-s000720 -- .`
+
+## S722 — halo: 8 % band (back to visible band width)
+
+- **Date:** 2026-04-30
+- **Files changed:** `js/render/worldObjects.js`
+- **Change:** `RingGeometry` band 1.5 % → 8 % (inner radius 0.985 →
+  0.92). The S721 1.5 % band was sub-pixel at the strict
+  apparent↔true world scale and was getting dropped by the
+  rasteriser, even with `renderOrder = 250`. 8 % is the smallest
+  band that reliably shows up at the user's typical zoom levels
+  while still reading as a ring outline rather than a wide
+  annulus. Strict scale (no angular clamp) preserved so the ring's
+  outer edge sits exactly on the true marker.
+- **Revert path:** `git checkout v-s000721 -- .`

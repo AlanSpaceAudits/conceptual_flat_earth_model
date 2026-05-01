@@ -13935,3 +13935,53 @@ Format:
           `.fi-art` 72 × 72 (was 160 × 160), gap/padding/
           margin trimmed, `.fi-line/.fi-blank/.fi-live` 11 px.
 - **Revert path:** `git checkout v-s000740 -- .`
+
+## S742 — clamp() dynamic scaling + cache bust + auto-reload
+
+- **Date:** 2026-04-30
+- **Files changed:** `sw.js`, `js/main.js`, `index.html`,
+  `css/styles.css`, `js/render/flightRoutes.js`.
+- **Change:**
+    - **`CACHE_VERSION`** bumped `fe-v2-s736 → fe-v3-s742` in
+      `sw.js`. The activate handler already evicts non-matching
+      caches, so installed clients drop the stale S736 cache on
+      next visit.
+    - **Auto-reload on `controllerchange`** in `js/main.js`. When
+      the new SW takes over (skipWaiting + clients.claim) the
+      page reloads once (`_reloaded` flag prevents loops). Users
+      no longer need to hard-refresh to pick up new releases.
+    - **`index.html`** now preloads `css/styles.css` instead of
+      `styles.min.css`. The minified file was hand-maintained
+      and had drifted out of sync with the source; pointing at
+      the non-minified file ends the dual-edit burden.
+    - **About / Legend popup**: continuous viewport-relative
+      sizing via `clamp()` on font-size, padding, headings, table,
+      code. Examples:
+        - body 19→`clamp(13px, 0.9vw + 9px, 19px)`
+        - h1 30→`clamp(18px, 1.6vw + 12px, 30px)`
+        - h2 24→`clamp(16px, 1.2vw + 10px, 24px)`
+        - h3 20→`clamp(14px, 1vw + 9px, 20px)`
+        - padding 18×22→`clamp(10px, 1.4vw + 4px, 22px)`
+      The popup also sets `zoom: calc(1 / var(--ui-zoom))` to
+      cancel the header's `zoom: var(--ui-zoom)` so clamp values
+      map to native CSS pixels regardless of UI scale.
+    - **Flight-info-box runtime style** (`flightRoutes.js`):
+      every fixed pixel size replaced with `clamp()`:
+        - `.flight-info-box` font 14→`clamp(11px, 0.6vw + 8px, 14px)`,
+          max-width 460→`min(460px, calc(50vw - 8px))`,
+          min-width forced to 0.
+        - `.fi-art` 160×160→`clamp(72px, 14vw, 160px)` square.
+        - `.fi-content` padding 14×16→
+          `clamp(8px, 0.8vw + 4px, 14px) clamp(10px, 0.8vw + 6px, 16px)`.
+        - `.fi-line / .fi-blank / .fi-live` 14→`clamp(11px, 0.6vw + 8px, 14px)`.
+      Inline `font: 14px/1.45` and `min-width: 380px` /
+      `max-width: 460px` removed from `el.style.cssText` so the
+      stylesheet owns sizing.
+    - **Flight-info-box positioning** moved out of the mobile
+      media query and applied universally:
+        - primary `left: clamp(4px, 0.5vw, 12px)`
+        - secondary `left: auto; right: clamp(4px, 0.5vw, 12px)`
+      The desktop inline `left: 12px` / `left: 420px` is overridden
+      by `body` + `!important` selectors. Boxes hug viewport edges
+      at every screen width.
+- **Revert path:** `git checkout v-s000741 -- .`

@@ -128,14 +128,11 @@ function buildInfoBoxEl(id, top, left) {
     `top: ${top}px`,
     `left: ${left}px`,
     'padding: 0',
-    'font: 14px/1.45 ui-monospace, Menlo, monospace',
     'color: #f4f6fa',
     'background: rgba(10, 14, 22, 0.94)',
     'border: 1px solid rgba(255, 184, 90, 0.85)',
     'border-radius: 8px',
     'z-index: 30',
-    'min-width: 380px',
-    'max-width: 460px',
     'pointer-events: none',
     'box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35)',
     'display: none',
@@ -314,22 +311,35 @@ function ensureInfoBoxes() {
     const styleTag = document.createElement('style');
     styleTag.id = 'flight-info-box-style';
     styleTag.textContent = `
+      .flight-info-box {
+        font: clamp(11px, 0.6vw + 8px, 14px)/1.45 ui-monospace, Menlo, monospace !important;
+        min-width: 0 !important;
+        max-width: min(460px, calc(50vw - 8px)) !important;
+      }
       .flight-info-box .fi-header {
         display: flex; align-items: center; gap: 8px;
-        padding: 6px 12px;
+        padding: clamp(4px, 0.4vw + 2px, 6px) clamp(8px, 0.6vw + 5px, 12px);
         background: rgba(255, 154, 60, 0.10);
         border-bottom: 1px solid rgba(255, 184, 90, 0.30);
         border-radius: 8px 8px 0 0;
       }
-      .flight-info-box .fi-title { color: #f4a640; font-weight: 700; font-size: 14px; letter-spacing: 0.04em; }
-      .flight-info-box .fi-content { padding: 14px 16px; }
+      .flight-info-box .fi-title {
+        color: #f4a640; font-weight: 700;
+        font-size: clamp(11px, 0.6vw + 8px, 14px);
+        letter-spacing: 0.04em;
+      }
+      .flight-info-box .fi-content {
+        padding: clamp(8px, 0.8vw + 4px, 14px) clamp(10px, 0.8vw + 6px, 16px);
+      }
       .flight-info-box .fi-art-row {
-        display: flex; gap: 16px; align-items: center;
+        display: flex; gap: clamp(6px, 1vw, 16px); align-items: center;
         border-bottom: 1px solid rgba(120, 150, 200, 0.22);
-        padding-bottom: 12px; margin-bottom: 10px;
+        padding-bottom: clamp(6px, 0.8vw, 12px);
+        margin-bottom: clamp(6px, 0.7vw, 10px);
       }
       .flight-info-box .fi-art {
-        width: 160px; height: 160px;
+        width: clamp(72px, 14vw, 160px);
+        height: clamp(72px, 14vw, 160px);
         background: rgba(0, 0, 0, 0.6);
         border: 1px solid rgba(120, 150, 200, 0.3);
         border-radius: 4px;
@@ -338,9 +348,9 @@ function ensureInfoBoxes() {
         flex: 0 0 auto;
       }
       .flight-info-box .fi-readout { display: flex; flex-direction: column; gap: 3px; }
-      .flight-info-box .fi-line  { color: #f4f6fa; font-size: 14px; padding: 2px 4px; }
-      .flight-info-box .fi-blank { color: #6a7385; font-style: italic; font-size: 14px; padding: 2px 4px; }
-      .flight-info-box .fi-live  { color: #ffd698; font-size: 14px; padding: 2px 4px; font-variant-numeric: tabular-nums; }
+      .flight-info-box .fi-line  { color: #f4f6fa; font-size: clamp(11px, 0.6vw + 8px, 14px); padding: 2px 4px; }
+      .flight-info-box .fi-blank { color: #6a7385; font-style: italic; font-size: clamp(11px, 0.6vw + 8px, 14px); padding: 2px 4px; }
+      .flight-info-box .fi-live  { color: #ffd698; font-size: clamp(11px, 0.6vw + 8px, 14px); padding: 2px 4px; font-variant-numeric: tabular-nums; }
     `;
     document.head.appendChild(styleTag);
   }

@@ -361,11 +361,20 @@ window.model = model;
 window.renderer = renderer;
 window.demos = demos;
 
-// Service-worker registration. S736 restored asset caching after
-// the S671 kill-switch removed it; the kill-switch unregistered
-// itself on activate, so a fresh `sw.js` installs cleanly on the
-// next navigation. CACHE_VERSION inside `sw.js` controls eviction.
+// Service-worker registration. CACHE_VERSION inside `sw.js`
+// controls eviction; on `controllerchange` (a new SW just took
+// over from the previous one via skipWaiting + clients.claim) we
+// auto-reload the page once so the user picks up the fresh JS /
+// CSS without manually hard-refreshing. The `_reloaded` flag
+// prevents an infinite reload loop if the activation pings
+// controllerchange more than once.
 if ('serviceWorker' in navigator) {
+  let _reloaded = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (_reloaded) return;
+    _reloaded = true;
+    window.location.reload();
+  });
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('sw.js').catch(() => {});
   });

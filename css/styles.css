@@ -49,49 +49,80 @@ header .info-btn {
   padding: 4px 10px; font: inherit; cursor: pointer; font-size: 12px;
 }
 header .info-btn:hover { border-color: var(--accent); color: var(--accent); }
+/* About / Legend popup: continuous viewport-relative sizing via
+   clamp(). The popup lives inside `<header>` which has
+   `zoom: var(--ui-zoom)`, so we cancel that with the inverse zoom
+   on the popup itself — clamp() values then map to native CSS
+   pixels regardless of the header's UI scale. */
 header .info-popup {
   position: absolute; top: calc(100% + 6px); right: 0;
-  width: 620px; max-width: 94vw;
+  width: min(620px, 94vw);
+  max-width: 94vw;
   background: var(--panel); color: var(--fg);
   border: 1px solid var(--border); border-radius: 6px;
-  padding: 18px 22px; font-size: 19px; line-height: 1.55;
+  padding: clamp(10px, 1.4vw + 4px, 22px);
+  font-size: clamp(13px, 0.9vw + 9px, 19px);
+  line-height: 1.5;
   font-style: italic; color: var(--muted);
   box-shadow: 0 4px 12px rgba(0,0,0,0.5);
   z-index: 50;
+  zoom: calc(1 / var(--ui-zoom));
+  max-height: calc(100vh - 80px);
+  overflow-y: auto;
 }
 header .info-popup p { margin: 0 0 8px; }
 header .info-popup p:last-child { margin-bottom: 0; }
 header .info-box > .info-btn + .info-btn { margin-left: 6px; }
 header .info-popup.legend-popup {
-  width: 1040px; max-width: 96vw;
-  max-height: 86vh; overflow-y: auto;
+  width: min(1040px, 96vw);
+  max-width: 96vw;
+  max-height: calc(100vh - 80px); overflow-y: auto;
   font-style: normal; color: var(--fg);
-  font-size: 19px; line-height: 1.6;
+  font-size: clamp(13px, 0.9vw + 9px, 19px);
+  line-height: 1.55;
 }
-header .info-popup.legend-popup h1 { font-size: 30px; margin: 0 0 14px; color: var(--accent); }
-header .info-popup.legend-popup h2 { font-size: 24px; margin: 24px 0 12px; color: var(--accent); }
-header .info-popup.legend-popup h3 { font-size: 20px; margin: 18px 0 10px; }
-header .info-popup.legend-popup p { margin: 0 0 12px; }
+header .info-popup.legend-popup h1 {
+  font-size: clamp(18px, 1.6vw + 12px, 30px);
+  margin: 0 0 clamp(8px, 1vw, 14px);
+  color: var(--accent);
+}
+header .info-popup.legend-popup h2 {
+  font-size: clamp(16px, 1.2vw + 10px, 24px);
+  margin: clamp(14px, 1.4vw + 6px, 24px) 0 clamp(6px, 0.8vw, 12px);
+  color: var(--accent);
+}
+header .info-popup.legend-popup h3 {
+  font-size: clamp(14px, 1vw + 9px, 20px);
+  margin: clamp(10px, 1vw, 18px) 0 clamp(6px, 0.6vw, 10px);
+}
+header .info-popup.legend-popup p { margin: 0 0 clamp(6px, 0.8vw, 12px); }
 header .info-popup.legend-popup hr {
-  border: 0; border-top: 1px solid var(--border); margin: 20px 0;
+  border: 0; border-top: 1px solid var(--border);
+  margin: clamp(10px, 1.5vw, 20px) 0;
 }
 header .info-popup.legend-popup ul {
-  margin: 8px 0 14px; padding-left: 28px;
+  margin: clamp(4px, 0.6vw, 8px) 0 clamp(8px, 1vw, 14px);
+  padding-left: clamp(18px, 1.5vw + 12px, 28px);
 }
-header .info-popup.legend-popup li { margin: 5px 0; }
+header .info-popup.legend-popup li { margin: clamp(3px, 0.4vw, 5px) 0; }
 header .info-popup.legend-popup table {
-  width: 100%; border-collapse: collapse; margin: 12px 0;
-  font-size: 17px;
+  width: 100%; border-collapse: collapse;
+  margin: clamp(8px, 0.8vw, 12px) 0;
+  font-size: clamp(12px, 0.7vw + 9px, 17px);
 }
 header .info-popup.legend-popup th,
 header .info-popup.legend-popup td {
-  border: 1px solid var(--border); padding: 8px 12px; text-align: left;
+  border: 1px solid var(--border);
+  padding: clamp(5px, 0.5vw + 3px, 8px) clamp(7px, 0.7vw + 4px, 12px);
+  text-align: left;
   vertical-align: top;
 }
 header .info-popup.legend-popup th { background: var(--row); }
 header .info-popup.legend-popup code {
-  background: var(--row); padding: 2px 7px; border-radius: 3px;
-  font-family: ui-monospace, Menlo, monospace; font-size: 16px;
+  background: var(--row);
+  padding: 1px clamp(4px, 0.5vw, 7px); border-radius: 3px;
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: clamp(12px, 0.6vw + 9px, 16px);
 }
 header .info-popup.legend-popup a { color: var(--accent); }
 
@@ -1229,67 +1260,34 @@ footer#desc .desc-dynamic { color: var(--fg); }
   #tracking-info-popup .ti-row { font-size: 12px; }
   #tracking-info-popup .ti-content { padding: 10px 12px; }
 
-  /* About / Legend popups full-width on phone. Body / heading /
-     padding / table font / code font all step down so the dialogue
-     fits inside the viewport without horizontal scroll, and headings
-     don't dwarf the body copy. The popup stays inside the zoomed
-     header but `position: fixed` lifts it to viewport coordinates. */
+  /* About / Legend popup positioning on phone — sizes are already
+     clamp()-driven at the base rule, so only positioning needs to
+     change here so the popup doesn't dangle off the right edge of
+     the viewport. */
   header .info-popup {
     position: fixed;
     left: 6px;
     right: 6px;
     top: 52px;
-    max-width: none;
     width: auto;
-    padding: 12px 14px;
-    font-size: 13px;
-    line-height: 1.45;
-    max-height: calc(100vh - 120px);
-    overflow-y: auto;
+    max-width: none;
   }
   header .info-popup.legend-popup {
     width: auto;
     max-width: none;
-    font-size: 13px;
-    line-height: 1.5;
-    max-height: calc(100vh - 120px);
   }
-  header .info-popup.legend-popup h1 { font-size: 18px; margin: 0 0 8px; }
-  header .info-popup.legend-popup h2 { font-size: 16px; margin: 14px 0 6px; }
-  header .info-popup.legend-popup h3 { font-size: 14px; margin: 10px 0 6px; }
-  header .info-popup.legend-popup p  { margin: 0 0 6px; }
-  header .info-popup.legend-popup ul { padding-left: 18px; margin: 4px 0 8px; }
-  header .info-popup.legend-popup table { font-size: 12px; margin: 8px 0; }
-  header .info-popup.legend-popup th,
-  header .info-popup.legend-popup td { padding: 5px 7px; }
-  header .info-popup.legend-popup code { font-size: 12px; padding: 1px 5px; }
 
-  /* Flight-routes demo info boxes: the South/North readouts are
-     built at runtime in `js/render/flightRoutes.js`, so default
-     min/max-width and `flight-info-box-style` font sizes are baked
-     into inline styles. Override here with higher specificity
-     (`body` prefix) so the mobile rules beat the runtime defaults
-     once attached to `<head>` after stylesheet load. */
-  body .flight-info-box {
-    min-width: 0 !important;
-    max-width: calc(50vw - 8px) !important;
-    font-size: 11px !important;
-    left: 4px !important;
-  }
-  body #flight-info-box-2 {
-    left: auto !important;
-    right: 4px !important;
-  }
-  body .flight-info-box .fi-title { font-size: 12px; }
-  body .flight-info-box .fi-content { padding: 8px 10px; }
-  body .flight-info-box .fi-art {
-    width: 72px; height: 72px;
-  }
-  body .flight-info-box .fi-art-row { gap: 8px; padding-bottom: 6px; margin-bottom: 6px; }
-  body .flight-info-box .fi-line,
-  body .flight-info-box .fi-blank,
-  body .flight-info-box .fi-live { font-size: 11px; padding: 1px 2px; }
 }
+
+/* Flight-routes demo info boxes: position primary at left edge and
+   secondary at right edge of the viewport, regardless of screen
+   width. This replaces the desktop-only inline `left: 12px` /
+   `left: 420px` from `flightRoutes.js` so the secondary box never
+   slides offscreen on narrow viewports. Sizing (font / art / min /
+   max-width) is now controlled by the runtime-injected stylesheet
+   in `flightRoutes.js`, all clamp()-based for continuous scaling. */
+body .flight-info-box        { left: clamp(4px, 0.5vw, 12px) !important; }
+body #flight-info-box-2      { left: auto !important; right: clamp(4px, 0.5vw, 12px) !important; }
 
 /* Phone-sized: even tighter. */
 @media (max-width: 520px) {

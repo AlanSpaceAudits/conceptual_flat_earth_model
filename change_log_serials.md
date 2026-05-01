@@ -14423,3 +14423,35 @@ Format:
   unchanged (already takes the full viewport minus a 12 px margin
   per S740).
 - **Revert path:** `git checkout v-s000757 -- .`
+
+## S759 — haversine + chord + dot-product distance in Tang li
+
+- **Date:** 2026-05-01
+- **Files changed:** `js/core/units.js`, `js-min/**` (rebuilt)
+- **Change:** `js/core/units.js` gains the Tang sphere primitive
+  and three distance functions so callers can compute distances in
+  li directly from lat / lon, without going through the popup
+  formatters' degrees → du → li detour.
+  - `TANG_CIRCUMFERENCE_LI = 351.267 × 365.25 ≈ 128,300.27` —
+    derived solely from Yi Xing's calibration plus the angular
+    convention.
+  - `R_LI = TANG_CIRCUMFERENCE_LI / (2π) ≈ 20,419.62` — Tang sphere
+    radius in li.
+  - `KM_PER_LI = 40,007.863 / TANG_CIRCUMFERENCE_LI ≈ 0.31183` —
+    geodetic SI bridge (WGS84 polar / Tang circumference).
+  - `haversineLi(lat1, lon1, lat2, lon2) → li` — `2·R_LI·asin(√a)`
+    great-circle distance.
+  - `dotProductDistLi(lat1, lon1, lat2, lon2) → li` — `R_LI·acos(...)`
+    radial-vector form (cross-check).
+  - `latLonToUnitVec(lat, lon) → {x, y, z}` — unit-sphere
+    components, dimensionless. Multiply by `R_LI` for a position
+    vector in li.
+  - `chordLi(lat1, lon1, lat2, lon2) → li` — straight-line tunnel
+    distance through the sphere interior.
+  - `fmtLiBuFromLi(li) → "X li Y bu"` — formatter for callers that
+    already have a li value.
+  Smoke-tested: PP observer to a point 0.45° north matches across
+  haversine / dot-product / chord (160.48 li each), and round-trips
+  to 50.04 km via `KM_PER_LI` — consistent with 0.45° × 111.13 km/°
+  along a meridian.
+- **Revert path:** `git checkout v-s000758 -- .`

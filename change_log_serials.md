@@ -13606,3 +13606,21 @@ Format:
   Per-frame transform unchanged: `position = apparent`,
   `scale = (r, r, r)`, `lookAt(camera.position)`.
 - **Revert path:** `git checkout v-s000727 -- .`
+
+## S729 — DEBUG: halo as solid red disc to verify rendering path
+
+- **Date:** 2026-04-30
+- **Files changed:** `js/render/worldObjects.js`
+- **Change:** halo replaced with a solid red `THREE.Mesh +
+  CircleGeometry(1.0, 32)` + `MeshBasicMaterial(0xff0000)`. This
+  is a diagnostic, not a final visual: a solid disc renders the
+  same way every other simple mesh in the scene does, with no
+  sub-pixel outline rasterisation to fail on. If the user sees a
+  bright-red disc at the apparent body position, the per-slot
+  mesh / scale / `lookAt` pipeline works end-to-end and every
+  prior ring failure was strictly about thin-outline rasterisation.
+  If the disc *also* fails to render, the bug is somewhere upstream
+  of `GeocentricMarkers` (state plumbing, `info.opticalVaultCoord*`
+  fields, the camera reference passed to `update`, etc.) and we
+  need to debug there.
+- **Revert path:** `git checkout v-s000728 -- .`

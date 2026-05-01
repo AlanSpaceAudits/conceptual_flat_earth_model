@@ -5526,40 +5526,19 @@ export class GeocentricMarkers {
     // ring stays a visibly thick annulus even when the per-slot
     // scale shrinks to small refractions; thinner bands collapsed
     // sub-pixel and the rasteriser dropped them.
-    // Halo as `THREE.Mesh` carrying a unit `CircleGeometry` (filled
-    // disc) with a `ShaderMaterial` that draws only a fixed-pixel-
-    // width ring band at the disc's edge. The fragment shader uses
-    // `fwidth` (the screen-space gradient of the radial UV
-    // coordinate) to compute a band thickness that always equals
-    // ~1 pixel regardless of how small the mesh's per-slot world
-    // scale is — this is the only way to keep the ring visible at
-    // strict apparent↔true scale without it collapsing sub-pixel.
-    const ringGeom = new THREE.CircleGeometry(1.0, 64);
+    // DEBUG: solid bright-red disc instead of a ring outline. If
+    // this *isn't* visible at the apparent position, the entire
+    // mesh / scale / lookAt pipeline is broken — every prior ring
+    // attempt would have been doomed regardless of geometry. If it
+    // *is* visible, the rendering path works and the previous
+    // failures were strictly about sub-pixel outline rasterisation,
+    // and we can safely move back to a thin-ring approach.
+    const ringGeom = new THREE.CircleGeometry(1.0, 32);
     this._halos = [];
     for (let i = 0; i < max; i++) {
-      const mat = new THREE.ShaderMaterial({
-        uniforms: {},
-        vertexShader: `
-          varying vec2 vUv;
-          void main() {
-            vUv = uv;
-            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-          }
-        `,
-        fragmentShader: `
-          #extension GL_OES_standard_derivatives : enable
-          varying vec2 vUv;
-          void main() {
-            vec2 c = vUv - vec2(0.5);
-            float d = length(c);
-            float fw = fwidth(d);
-            // Keep a band roughly 1 px wide at the disc's edge.
-            if (d < 0.5 - fw * 1.5 || d > 0.5) discard;
-            gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
-          }
-        `,
+      const mat = new THREE.MeshBasicMaterial({
+        color: 0xff0000,
         side: THREE.DoubleSide,
-        transparent: true,
         depthTest: false, depthWrite: false,
       });
       const m = new THREE.Mesh(ringGeom, mat);

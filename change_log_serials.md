@@ -14585,6 +14585,23 @@ Format:
   default when a user has previously persisted the off state.
 - **Revert path:** `git checkout v-s000766 -- .`
 
+## S768 — units reference (`units.md`)
+
+- **Date:** 2026-04-30
+- **Files changed:** `units.md` (new)
+- **Change:** Repo-root reference document covering the model's
+  unit system end-to-end: angular hierarchy (deg / du / fen with
+  the 360 / 365.25 ratio), short-li distance via Yi Xing's 351
+  li 80 bu / du calibration, Tang sphere primitives
+  (`TANG_CIRCUMFERENCE_LI ≈ 128,300`, `R_LI ≈ 20,419.45`), the
+  km-bridge table (geodetic / equatorial / chi-ruler / legacy)
+  with the WGS84 polar anchor as primary, the haversine /
+  dot-product / Euclidean equivalence walkthrough in li, and a
+  conversion cheat sheet. Companion to the new
+  `js/core/units.js` primitives and the View → Distance Calc
+  panel.
+- **Revert path:** `git rm units.md`
+
 ## S766 — live progress on schematic + QF flight info boxes; compass into 2×N grid
 
 - **Date:** 2026-04-30

@@ -13448,3 +13448,23 @@ Format:
   the manual `updateMatrix()` / `matrixAutoUpdate` calls; relying
   on three.js's default per-frame auto-update.
 - **Revert path:** `git checkout v-s000719 -- .`
+
+## S721 — halo: thin band, strict geometry (no angular clamp)
+
+- **Date:** 2026-04-30
+- **Files changed:** `js/render/worldObjects.js`
+- **Change:**
+  - `RingGeometry` band trimmed back to thin: inner radius 0.7 →
+    0.985 (1.5 % stroke band) at 96 segments, so the ring reads as
+    a thin outline rather than a 30 %-wide annulus.
+  - Removed the per-frame `MIN_ANG = 0.010` rad world-radius
+    clamp — the floor was forcing the ring's angular size to ~0.6°
+    regardless of the apparent↔true gap, which at high zoom
+    levels rendered as a huge ring with the markers tiny in the
+    middle. Strict geometry now: `mesh.scale = (r, r, r)` so the
+    ring's world outer radius equals the apparent↔true 3D distance
+    and the rendered circumference passes through the true marker
+    at any zoom. With `renderOrder = 250` the ring stays visible
+    above the body sprite even at small refractions; for very
+    tight cases the user can zoom in via `OpticalZoom`.
+- **Revert path:** `git checkout v-s000720 -- .`

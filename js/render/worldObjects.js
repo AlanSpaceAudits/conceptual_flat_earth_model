@@ -5521,12 +5521,10 @@ export class GeocentricMarkers {
     this._appPoints.frustumCulled = false;
     this.group.add(this._appPoints);
 
-    // Shared ring geometry: outer radius 1.0, inner 0.7 — 30 % band
-    // width — split into 64 segments. The wide band ensures the
-    // ring stays a visibly thick annulus even when the per-slot
-    // scale shrinks to small refractions; thinner bands collapsed
-    // sub-pixel and the rasteriser dropped them.
-    const ringGeom = new THREE.RingGeometry(0.7, 1.0, 64);
+    // Shared ring geometry: outer radius 1.0, inner 0.985 — 1.5 %
+    // band width — split into 96 segments. Thin band reads as a
+    // clean ring outline rather than a thick annulus.
+    const ringGeom = new THREE.RingGeometry(0.985, 1.0, 96);
     this._halos = [];
     for (let i = 0; i < max; i++) {
       const mat = new THREE.MeshBasicMaterial({
@@ -5585,29 +5583,20 @@ export class GeocentricMarkers {
       const dz = ac[2] - coordTrue[2];
       const r  = Math.hypot(dx, dy, dz);
       const halo = this._halos[n];
-      // Set the ring radius so it lands on the true marker, with a
-      // visibility floor based on camera distance.
-      let scaleR = r;
-      if (camera) {
-        const cx = camera.position.x - ac[0];
-        const cy = camera.position.y - ac[1];
-        const cz = camera.position.z - ac[2];
-        const camDist = Math.hypot(cx, cy, cz);
-        const MIN_ANG = 0.010;
-        const minWorldR = MIN_ANG * camDist;
-        if (scaleR < minWorldR) scaleR = minWorldR;
+      if (r > 1e-7) {
+        // Strict geometry: ring's world radius equals the
+        // apparent↔true 3D distance, so the rendered circumference
+        // passes through the true marker. No min-angular clamp —
+        // at very small refractions the ring becomes small but
+        // remains visible thanks to the renderOrder=250 placement;
+        // the user can zoom in (OpticalZoom) to inspect tight cases.
+        halo.position.set(ac[0], ac[1], ac[2]);
+        halo.scale.set(r, r, r);
+        if (camera) halo.lookAt(camera.position);
+        halo.visible = true;
       } else {
-        // No camera: fall back to a generous fixed minimum so the
-        // ring is at least visible.
-        if (scaleR < 0.05) scaleR = 0.05;
+        halo.visible = false;
       }
-      halo.position.set(ac[0], ac[1], ac[2]);
-      halo.scale.set(scaleR, scaleR, scaleR);
-      // Always face the camera. Without `lookAt` the ring lies in
-      // the world XY plane and shows edge-on (i.e. invisible) for
-      // most viewing angles.
-      if (camera) halo.lookAt(camera.position);
-      halo.visible = true;
       n++;
     }
     for (let i = n; i < this._halos.length; i++) this._halos[i].visible = false;

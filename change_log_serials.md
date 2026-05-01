@@ -13766,3 +13766,14 @@ Format:
   expanded the `description` to mirror the meta description in
   `index.html`.
 - **Revert path:** `git checkout v-s000736 -- .`
+
+## S737a — apply manifest body (S737 commit shipped only the log)
+
+- **Date:** 2026-04-30
+- **Files changed:** `manifest.webmanifest`.
+- **Change:** S737 commit pushed the change-log entry but the
+  manifest file write failed silently; this serial actually
+  rewrites `manifest.webmanifest` to match the entry: 192/512 +
+  maskable 192/512 icons under `assets/icons/`, `lang: en`,
+  `categories`, and the expanded description.
+- **Revert path:** `git checkout v-s000737 -- .`

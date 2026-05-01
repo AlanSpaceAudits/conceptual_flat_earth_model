@@ -1,19 +1,39 @@
 {
   "name": "FE Conceptual Model",
   "short_name": "FE Model",
-  "description": "Conceptual flat-earth astronomy simulation",
+  "description": "Conceptual flat-earth astronomy simulation: five ephemeris pipelines, eclipse demos, observer pan, and a kinematic Vault of Heavens projection.",
+  "lang": "en",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "orientation": "any",
   "background_color": "#0e121a",
   "theme_color": "#0e121a",
+  "categories": ["education", "science", "utilities"],
   "icons": [
     {
-      "src": "assets/ac_logo.png",
+      "src": "assets/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/icons/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
+    },
+    {
+      "src": "assets/icons/icon-maskable-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "assets/icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ]
 }

@@ -172,7 +172,7 @@ function attachBodySearch(host, model) {
       if (i === activeIdx) row.classList.add('active');
       row.style.color = m.color;
       row.textContent = m.name;
-      row.addEventListener('mousedown', (e) => {
+      row.addEventListener('pointerdown', (e) => {
         e.preventDefault();
         engage(m);
       });
@@ -310,7 +310,7 @@ function attachFeatureSearch(host, openFeature) {
       row.innerHTML =
         `<span class="feature-row-label">${m.label}</span>`
         + `<span class="feature-row-path">${m.tab} › ${m.group}</span>`;
-      row.addEventListener('mousedown', (e) => {
+      row.addEventListener('pointerdown', (e) => {
         e.preventDefault();
         engage(m);
       });

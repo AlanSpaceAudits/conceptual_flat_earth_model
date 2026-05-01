@@ -454,12 +454,15 @@ header .info-popup.legend-popup a { color: var(--accent); }
   bottom: calc(100% + 4px);
   max-height: 260px;
   overflow-y: auto;
-  background: rgba(20, 24, 33, 0.97);
-  border: 1px solid var(--border);
+  background: #0f1320;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid var(--accent);
   border-radius: 4px;
   z-index: 40;
   display: flex;
   flex-direction: column;
+  box-shadow: 0 -6px 18px rgba(0, 0, 0, 0.6);
 }
 .body-search-row {
   font: 12px/1.2 ui-monospace, Menlo, monospace;
@@ -1182,8 +1185,15 @@ footer#desc .desc-dynamic { color: var(--fg); }
     padding: 3px 4px;
     font-size: 9px;
   }
-  #bottom-bar .body-search { width: 140px; }
+  #bottom-bar .body-search { width: 160px; }
   #bottom-bar .tabs button { padding: 6px 8px; font-size: 12px; }
+
+  /* Search input + suggestion rows: large enough that iOS does not
+     auto-zoom on focus (needs >=16px) and tap targets are usable. */
+  .body-search-input { font-size: 16px; padding: 8px 10px; }
+  .body-search-panel { max-height: 60vh; }
+  .body-search-row { font-size: 14px; padding: 12px 14px; min-height: 44px; }
+  .body-search-row .feature-row-path { font-size: 12px; }
 
   /* Info bar — drop the right padding since the action buttons can
      overflow when the readout strip is tight. */
@@ -1203,11 +1213,21 @@ footer#desc .desc-dynamic { color: var(--fg); }
     overflow-y: auto;
   }
 
-  /* Tracking info popup — ensure it stays on-screen. */
-  .tracking-info-panel {
+  /* Tracking info popup — ensure it stays on-screen. The popup ID is
+     `#tracking-info-popup` (the `.tracking-info-panel` class never
+     existed in the markup, so this rule was a no-op until S740). */
+  #tracking-info-popup {
+    min-width: 0;
     max-width: calc(100vw - 12px);
-    font-size: 11px;
+    width: calc(100vw - 12px);
+    left: 6px !important;
+    right: 6px !important;
+    font-size: 13px;
   }
+  #tracking-info-popup .ti-art { width: 96px; height: 96px; }
+  #tracking-info-popup .ti-name { font-size: 15px; }
+  #tracking-info-popup .ti-row { font-size: 12px; }
+  #tracking-info-popup .ti-content { padding: 10px 12px; }
 
   /* About / Legend popups full-width too. */
   .info-popup {

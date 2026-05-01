@@ -13868,3 +13868,40 @@ Format:
       where either distance is below the floor (jitter / single
       finger landing on top of the other).
 - **Revert path:** `git checkout v-s000738 -- .`
+
+## S740 — Mobile UI: search popup + info-box scaling
+
+- **Date:** 2026-04-30
+- **Files changed:** `index.html`, `css/styles.css`,
+  `css/styles.min.css`, `js/ui/controlPanel.js`.
+- **Change:**
+    - **Viewport.** Added `maximum-scale=1.0, user-scalable=no` so
+      iOS Safari no longer page-pinches the document on form-input
+      focus or stray gestures. Canvas pinch already routes through
+      pointer events (S739).
+    - **Search popup readability.** `.body-search-panel` was
+      `rgba(20,24,33,0.97)` with no blur, which read as washed-out
+      over the canvas. Now `#0f1320` solid + 8 px backdrop-filter
+      blur, accent-coloured border, 0 -6px 18px drop shadow.
+    - **iOS auto-zoom on focus.** Inputs under 16 px trigger
+      iOS's auto-zoom on focus. `.body-search-input` jumps to
+      16 px / 8 × 10 padding inside `@media (max-width: 900px)`.
+    - **Tap targets.** `.body-search-row` on mobile bumped to
+      14 px, 12 × 14 padding, `min-height: 44px` (Apple HIG).
+    - **Suggestion dropdown height.** `max-height` on mobile
+      relaxed from 260 px to `60vh` so long match lists are
+      reachable on tall phones.
+    - **`mousedown` → `pointerdown`** on the suggestion-row
+      handler in both `attachBodySearch` and
+      `attachFeatureSearch`. Touch fired `mousedown` only after
+      a 300 ms delay on some browsers, dropping the tap if the
+      input had already blurred.
+    - **`#tracking-info-popup` mobile rule.** The S009 mobile
+      override targeted `.tracking-info-panel` — a class that
+      doesn't exist in the markup, so the rule was a no-op for
+      ~720 serials. Replaced with `#tracking-info-popup` (the
+      actual ID), set `min-width: 0`,
+      `width / max-width: calc(100vw - 12px)`, `left/right: 6px`,
+      and scaled `.ti-art` 160→96, `.ti-name` 18→15,
+      `.ti-row` 14→12, `.ti-content` padding 14×16→10×12.
+- **Revert path:** `git checkout v-s000739 -- .`

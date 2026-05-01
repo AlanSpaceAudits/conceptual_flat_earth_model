@@ -247,8 +247,8 @@ function qfFlightDemo(track) {
           `Arrival (predicted) : ${formatHMS(predictedSec)}`,
           `Arrival (measured)  : ${formatHMS(actualSec)}`,
           `Air Time            : ${formatHMS(actualSec)}`,
-          `Air Speed (avg)     : ${formatDmsPerHour(aspAvgDegPerH)}`,
-          `Ground Speed (calc) : ${formatDmsPerHour(gsDegPerH)}`,
+          `Air Speed (avg)     : ${formatDmsPerHour(aspAvgDegPerH)}  ·  ${aspAvgDegPerH != null ? arcLiKm(aspAvgDegPerH) + '/h' : '—'}`,
+          `Ground Speed (calc) : ${formatDmsPerHour(gsDegPerH)}  ·  ${gsDegPerH != null ? arcLiKm(gsDegPerH) + '/h' : '—'}`,
         ],
       },
     }),
@@ -417,7 +417,7 @@ function constSpeedBox(route, angle, speedDegPerH, label, accent) {
       `Arrival     : ${formatHMS(arrivalSec)}`,
       `Central Angle : ${angle.toFixed(2)}°`,
       `Arc Distance : ${arcLiKm(angle)}`,
-      `Speed       : ${formatDmsPerHour(speedDegPerH)}`,
+      `Speed       : ${formatDmsPerHour(speedDegPerH)}  ·  ${arcLiKm(speedDegPerH)}/h`,
       (s) => {
         const p = Math.max(0, Math.min(1, s.FlightRoutesProgress || 0));
         const elapsed = angle * p;

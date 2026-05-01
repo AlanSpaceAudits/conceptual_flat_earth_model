@@ -14553,3 +14553,22 @@ Format:
     so both panels now stack on the left side of the viewport
     with the secondary just clear of the primary's max-width.
 - **Revert path:** `git checkout v-s000763 -- .`
+
+## S765 — flight info: speed in li/h + race panel auto-anchor
+
+- **Date:** 2026-04-30
+- **Files changed:** `js/demos/flightRoutes.js`,
+  `js/render/flightRoutes.js`, `js-min/**` (rebuilt)
+- **Change:**
+  - `constSpeedBox` Speed line now appends `arcLiKm(speedDegPerH)/h`
+    next to the existing DMS-per-hour value.
+  - QF27/28 actual-flight box does the same for `Air Speed (avg)`
+    and `Ground Speed (calc)`, with an explicit `'—'` fallback when
+    a sample is missing.
+  - `_updateRacePanel` now repositions `#flight-race-panel`'s
+    `top` to `max(bottom of visible info boxes) + 12 px` per frame,
+    replacing the hard-coded `top: 528 px`. Adding li lines to the
+    info boxes was pushing them past the panel header; the
+    auto-anchor keeps the race panel just below whichever info box
+    is taller for the current demo.
+- **Revert path:** `git checkout v-s000764 -- .`

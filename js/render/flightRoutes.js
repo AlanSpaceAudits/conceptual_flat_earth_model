@@ -718,6 +718,19 @@ export class FlightRoutes {
     const progress = Math.max(0, Math.min(1, state.FlightRoutesProgress || 0));
     drawRaceCanvas(ctx, race, progress);
     panel.style.display = '';
+    // Position the race panel just below the tallest visible flight
+    // info box so adding lines to the box (li distance, segment
+    // readouts) can't push the box past the panel's hardcoded `top`
+    // and overlap the header.
+    const primary   = document.getElementById('flight-info-box');
+    const secondary = document.getElementById('flight-info-box-2');
+    let bottom = 8;
+    for (const b of [primary, secondary]) {
+      if (b && b.style.display !== 'none') {
+        bottom = Math.max(bottom, b.offsetTop + b.offsetHeight);
+      }
+    }
+    panel.style.top = `${bottom + 12}px`;
   }
 
   update(model) {

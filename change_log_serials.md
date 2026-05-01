@@ -14517,3 +14517,14 @@ Format:
     - `Inscribed angle` — `central / 2` per the inscribed-angle
       theorem; same DMS + `du fen` formatting.
 - **Revert path:** `git checkout v-s000761 -- .`
+
+## S763 — Distance Calc header label fix
+
+- **Date:** 2026-04-30
+- **Files changed:** `js/ui/controlPanel.js`, `js-min/**` (rebuilt)
+- **Change:** Removed the `'Distance Calc' → 'grp_distance_calc'`
+  entry from `GROUP_KEY`. The mapping forced the header through
+  `t(...)`, which has no translation registered, so it rendered
+  the raw key. Without an entry the header falls back to the
+  literal title string ("Distance Calc") in every locale.
+- **Revert path:** `git checkout v-s000762 -- .`

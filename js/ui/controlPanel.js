@@ -1764,7 +1764,6 @@ const GROUP_KEY = {
   'Bright Star Catalog': 'grp_bright_star_catalog',
   'Calendar': 'grp_calendar', 'Autoplay': 'grp_autoplay',
   'Language Select': 'grp_language_select',
-  'Distance Calc': 'grp_distance_calc',
 };
 
 function buildGroup(model, title, rows, popupGroups) {

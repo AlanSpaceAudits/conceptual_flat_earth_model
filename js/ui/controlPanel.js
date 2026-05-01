@@ -2,6 +2,7 @@
 // FeModel state. No external framework — plain DOM.
 
 import { dateTimeToString, dateTimeToDate } from '../core/time.js';
+import { fmtDuFen } from '../core/units.js';
 import { TIME_ORIGIN } from '../core/constants.js';
 import { findNextEclipses } from '../core/ephemeris.js';
 import { raDecToAzEl } from '../core/transforms.js';
@@ -835,6 +836,9 @@ const FIELD_GROUPS = [
           min: 800, max: 1100, step: 0.25 },
         { key: 'RefractionTemperatureC', label: 'Temperature', unit: '°C',
           min: -40, max: 50, step: 0.5 },
+      ]},
+      { title: 'Display Units', rows: [
+        { key: 'ShowChineseDu', label: 'Chinese du / fen', bool: true },
       ]},
       { title: 'Celestial Bodies', rows: [
         { key: 'GPOverridePlanets', label: 'GP Override', bool: true },
@@ -3293,7 +3297,12 @@ export function buildTrackerHud(trackerEl, model) {
         : info.category === 'planet' ? 'planet'
         : 'luminary';
       rec.title.textContent = `${info.name} (${cat})`;
-      rec.azel.textContent  = `az ${fmtDmsDegAz(info.azimuth)}   el ${fmtDmsDegEl(info.elevation)}`;
+      const _chineseOn = !!model.state.ShowChineseDu;
+      const _withDu = (deg, dmsStr, signed = false) =>
+        _chineseOn && Number.isFinite(deg)
+          ? `${dmsStr}  ·  ${fmtDuFen(deg, signed)}`
+          : dmsStr;
+      rec.azel.textContent  = `az ${_withDu(info.azimuth, fmtDmsDegAz(info.azimuth))}   el ${_withDu(info.elevation, fmtDmsDegEl(info.elevation), true)}`;
       // Refraction lift in arcminutes when a formula is active and
       // the body is above the horizon. Hidden otherwise so the row
       // doesn't take up space when refraction is off.

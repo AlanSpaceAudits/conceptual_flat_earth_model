@@ -14372,3 +14372,35 @@ Format:
     duplicates that crowded the tracker UI without adding any new
     data).
 - **Revert path:** `git checkout v-s000755 -- .`
+
+## S757 — Chinese du / fen display-units toggle
+
+- **Date:** 2026-05-01
+- **Files changed:**
+  - `js/core/units.js` (new)
+  - `js/core/app.js`
+  - `js/ui/controlPanel.js`
+  - `js/ui/trackingInfoPopup.js`
+  - `js-min/**` (rebuilt)
+- **Change:**
+  - New `js/core/units.js` exporting `fmtDuFen(deg, signed)` and
+    `fmtLiBu(deg)` plus `DEG_PER_DU = 360/365.25 ≈ 0.9856`,
+    `LI_PER_DU = 351.267` (Yi Xing's empirical Tang-era
+    calibration from the Xin Tangshu, `Notes/Chinese_FE.md`),
+    `BU_PER_LI = 300`. `fmtDuFen` returns `"23 du 7.8 fen"`,
+    `fmtLiBu` returns `"1861 li 214 bu"` — both DMS-style
+    two-part splits.
+  - `app.js`: added `ShowChineseDu: false` to `defaultState()`.
+  - `controlPanel.js`: new "Display Units" group in the Tracker
+    tab (between Refraction and Celestial Bodies) with one
+    `Chinese du / fen` boolean row. Tracker HUD per-block azel
+    line appends `· X du Y.Y fen` to both az and el when the
+    toggle is on.
+  - `trackingInfoPopup.js`: every angular row (Azimuth, True /
+    Apparent Elevation, RA, Dec, GP lat, GP lon, refraction CA)
+    appends `· X du Y.Y fen`. Central + Inscribed additionally
+    append `· N li M bu` via the Yi Xing calibration. DMS stays
+    as the primary string; the du / fen runs alongside it
+    separated by `·` so both can be read together.
+- **Revert path:** `git checkout v-s000756 -- .` (and remove
+  `js/core/units.js`).

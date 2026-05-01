@@ -339,6 +339,14 @@ function defaultState() {
     // adjustment factor evaluates to ~0.986 at those values.
     RefractionPressureMbar: 1013.25,
     RefractionTemperatureC: 15,
+    // When true, every angular readout in the tracker HUD and
+    // tracking-info popup is followed by its Chinese-units
+    // equivalent — degrees ↔ du / fen via 360/365.25, and the
+    // `Central` row also gets the Yi Xing 351.267 li/du calibration
+    // for a li / bu ground-distance readout. DMS stays where it is;
+    // the du / fen runs alongside it so the two can be read
+    // together.
+    ShowChineseDu: false,
     // Active Cel-Theo preset code (e.g. 'PP') or null. Drives the
     // toggle behaviour of the preset buttons — clicking an active
     // preset deactivates it and reverts the atmosphere knobs.

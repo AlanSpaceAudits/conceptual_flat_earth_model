@@ -7,6 +7,8 @@
 // Panel is fixed in the upper-left of the viewport; classed
 // `info-popup` for shared styling.
 
+import { fmtDuFen, fmtLiBu } from '../core/units.js';
+
 const ART_SIZE = 96;        // canvas pixel grid
 const SCALE    = 4;         // chunky pixel-art zoom
 const W = ART_SIZE * SCALE;
@@ -443,18 +445,28 @@ export function buildTrackingInfoPopup(panelEl, model) {
     elHeaderName.textContent = `Tracking · ${info.name || info.target}`;
     paint(info, c);
 
-    const az = fmtDms(info.azimuth);
-    const el = fmtSignedDms(info.elevation);
-    const gpLat = fmtSignedDms(info.gpLat);
-    const gpLon = fmtSignedDms(info.gpLon);
+    // When the user has Chinese display units toggled on, every
+    // angular readout gets a `· N du M.M fen` suffix appended so the
+    // DMS and du / fen sit side by side. `withDu` is a no-op when
+    // the toggle is off, keeping the default look unchanged.
+    const chineseOn = !!s.ShowChineseDu;
+    const withDu = (deg, dmsStr, signed = false) =>
+      chineseOn && Number.isFinite(deg)
+        ? `${dmsStr}  ·  ${fmtDuFen(deg, signed)}`
+        : dmsStr;
+
+    const az = withDu(info.azimuth, fmtDms(info.azimuth));
+    const el = withDu(info.elevation, fmtSignedDms(info.elevation), true);
+    const gpLat = withDu(info.gpLat, fmtSignedDms(info.gpLat), true);
+    const gpLon = withDu(info.gpLon, fmtSignedDms(info.gpLon), true);
     // True (unrefracted) vs apparent (refracted) elevation. Shown as
     // a pair when a refraction formula is active; collapse to a
     // single Elevation row when refraction is off.
     const refrDeg = Number.isFinite(info.refractionDeg) ? info.refractionDeg : 0;
     const refrOn = !!s.Refraction && s.Refraction !== 'off';
-    const elTrue = fmtSignedDms(info.elevation);
+    const elTrue = withDu(info.elevation, fmtSignedDms(info.elevation), true);
     const elApparent = refrOn && refrDeg !== 0
-      ? fmtSignedDms(info.elevation + refrDeg)
+      ? withDu(info.elevation + refrDeg, fmtSignedDms(info.elevation + refrDeg), true)
       : elTrue;
     // Tracking-popup RA / Dec come from the **active** ephemeris
     // pipeline (carried directly on `info` as `ra`/`dec`). The
@@ -467,8 +479,13 @@ export function buildTrackingInfoPopup(panelEl, model) {
       ? { ra: info.ra, dec: info.dec }
       : (info.astropixelsReading || info.geoReading || info.helioReading
          || info.vsop87Reading || info.ptolemyReading || null);
-    const ra  = r ? fmtH(r.ra)  : '—';
-    const dec = r ? fmtSignedDms(r.dec * 180 / Math.PI) : '—';
+    // RA stays in HMS as the primary string; the du suffix uses the
+    // RA expressed as degrees so the conversion is consistent with
+    // every other angle in the popup.
+    const raDeg  = r ? r.ra  * 180 / Math.PI : NaN;
+    const decDeg = r ? r.dec * 180 / Math.PI : NaN;
+    const ra  = r ? withDu(raDeg,  fmtH(r.ra)) : '—';
+    const dec = r ? withDu(decDeg, fmtSignedDms(decDeg), true) : '—';
     const mag = (info.mag != null && Number.isFinite(info.mag))
       ? info.mag.toFixed(2)
       : '—';
@@ -486,8 +503,17 @@ export function buildTrackingInfoPopup(panelEl, model) {
       const cosC = Math.sin(oLat) * Math.sin(gLat)
                  + Math.cos(oLat) * Math.cos(gLat) * Math.cos(oLon - gLon);
       const centralDeg = Math.acos(Math.max(-1, Math.min(1, cosC))) * 180 / Math.PI;
-      centralStr = fmtDms(centralDeg);
-      inscribedStr = fmtDms(centralDeg / 2);
+      // Central row optionally appends both the du / fen angle and
+      // the Yi Xing 351.267 li/du ground-distance equivalent. The
+      // li / bu term is meaningful only along a meridian, but we
+      // surface it here as the closest analog to "how far apart
+      // are the observer and the body's GP" in Tang-era units.
+      centralStr = chineseOn
+        ? `${fmtDms(centralDeg)}  ·  ${fmtDuFen(centralDeg)}  ·  ${fmtLiBu(centralDeg)}`
+        : fmtDms(centralDeg);
+      inscribedStr = chineseOn
+        ? `${fmtDms(centralDeg / 2)}  ·  ${fmtDuFen(centralDeg / 2)}  ·  ${fmtLiBu(centralDeg / 2)}`
+        : fmtDms(centralDeg / 2);
     }
 
     const formulaName = s.Refraction === 'bennett' ? 'Bennett'
@@ -497,7 +523,7 @@ export function buildTrackingInfoPopup(panelEl, model) {
       ? `<div class="ti-row ti-refr-info"><span>↳ ${formulaName}</span><span>+${refrArcmin.toFixed(2)}′</span></div>`
       : '';
     const refrCaRow = refrOn
-      ? `<div class="ti-row"><span>CA (Apparent ↔ True)</span><span>${fmtSignedDms(refrDeg)}</span></div>`
+      ? `<div class="ti-row"><span>CA (Apparent ↔ True)</span><span>${withDu(refrDeg, fmtSignedDms(refrDeg), true)}</span></div>`
       : '';
     const elevationRows = refrOn
       ? `<div class="ti-row"><span>Apparent Elevation</span><span>${elApparent}</span></div>

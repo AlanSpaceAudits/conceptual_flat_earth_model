@@ -13395,3 +13395,23 @@ Format:
   gap and the true dot sits inside the ring; that's the only way to
   keep the visualisation present at small refractions.
 - **Revert path:** `git checkout v-s000716 -- .`
+
+## S718 — halo as plain Mesh + RingGeometry (no sprite, no texture)
+
+- **Date:** 2026-04-30
+- **Files changed:** `js/render/worldObjects.js`
+- **Change:** halo refactored once more, this time dropping the
+  `THREE.Sprite + CanvasTexture` pipeline entirely. Sprite-based
+  rings kept disappearing in the user's setup regardless of the
+  size or alphaTest combinations tried. Replaced with a plain
+  `THREE.Mesh` carrying a shared `RingGeometry(0.86, 1.0, 64)` —
+  outer radius 1.0, inner 0.86 (14 % band width) — and
+  `MeshBasicMaterial` (white, double-sided, opaque). A solid mesh
+  ring renders the same way every other Mesh in the scene does, no
+  texture / alpha-test path involved. Per-slot transform: scale =
+  `(R, R, 1)` so the mesh's outer edge lands at the apparent↔true
+  world distance, plus `lookAt(camera.position)` so the ring's
+  plane stays perpendicular to view. The 0.010-rad min-angular
+  floor (~0.57°) is preserved so the ring remains visible at small
+  refractions / far camera distances.
+- **Revert path:** `git checkout v-s000717 -- .`

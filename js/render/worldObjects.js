@@ -5457,41 +5457,18 @@ export class TrackedGroundPoints {
   }
 }
 
-// Halo ring texture: a clean white circle outline on a fully
-// transparent canvas. Mipmaps off so the stroke doesn't average
-// itself into a soft fill at small render sizes. Stroke width is
-// generous (~6 % of canvas) so the ring stays a visible band even
-// when the sprite is rendered at small sizes — sub-pixel strokes
-// from a thinner texture were why the earlier attempts went
-// invisible.
-function _haloRingTexture() {
-  const canvas = document.createElement('canvas');
-  canvas.width = 128; canvas.height = 128;
-  const ctx = canvas.getContext('2d');
-  ctx.clearRect(0, 0, 128, 128);
-  ctx.beginPath();
-  ctx.arc(64, 64, 56, 0, Math.PI * 2);
-  ctx.lineWidth = 8;
-  ctx.strokeStyle = 'rgba(255, 255, 255, 1)';
-  ctx.stroke();
-  const tex = new THREE.CanvasTexture(canvas);
-  tex.minFilter = THREE.LinearFilter;
-  tex.magFilter = THREE.LinearFilter;
-  tex.generateMipmaps = false;
-  tex.needsUpdate = true;
-  return tex;
-}
-
-// Sprite-quad scale → ring world radius factor. With
-// `sizeAttenuation: true` the sprite scale is in world units. The
-// quad spans −0.5..0.5 of `scale` in view space (so a sprite of
-// scale `s` is `s` world units across, half-width `s/2`). The
-// texture ring sits at canvas radius 56 of 128 → UV radius
-// 56/128 = 0.4375 from texture center → vertex distance 0.4375 from
-// the sprite center. After scale `s`, the ring's world radius is
-// `0.4375 * s`. Solving for `scale` such that ring radius = R:
-// scale = R / 0.4375 ≈ 2.286 * R.
-const _HALO_SCALE_PER_R = 128 / 56;
+// Halo ring as a plain `THREE.Mesh` with `RingGeometry`. Bypasses
+// the Sprite + CanvasTexture pipeline entirely — sprite-based ring
+// outlines were collapsing invisible at small render sizes (and on
+// at least one user setup, every variant failed to render at all).
+// A solid ring mesh is unambiguous: it renders the same way every
+// other Mesh in the scene does.
+//
+// Geometry: outer radius 1.0, inner 0.86 → 14% band width. Per
+// slot, `mesh.scale = (R, R, 1)` so outer radius in world space
+// equals `R` (the apparent↔true 3D distance) and the rendered
+// circumference passes through the true marker. `lookAt(camera)`
+// keeps the ring face-on to the camera.
 
 // True / apparent position ghost markers. Pairs with
 // `Refraction !== 'off'` and `ShowGeocentricPosition`. Three layers:
@@ -5544,32 +5521,24 @@ export class GeocentricMarkers {
     this._appPoints.frustumCulled = false;
     this.group.add(this._appPoints);
 
-    // Halo ring as a `THREE.Sprite` (default `sizeAttenuation: true`)
-    // so the sprite scale is interpreted in world units. Setting
-    // `scale = R * _HALO_SCALE_PER_R` makes the ring's world radius
-    // exactly equal to the apparent↔true 3D distance, so the
-    // rendered circumference passes through the true marker by
-    // construction — the body's regular star sprite already lands at
-    // the apparent position via the optical-vault coord, and the
-    // halo geometry is anchored at the same point. The wider canvas
-    // stroke keeps the rendered line visible at small refractions.
-    const haloTex = _haloRingTexture();
+    // Shared ring geometry: outer radius 1.0, inner 0.86 — 14 % band
+    // width — split into 64 segments. Each per-slot mesh is scaled
+    // and re-oriented per frame.
+    const ringGeom = new THREE.RingGeometry(0.86, 1.0, 64);
     this._halos = [];
     for (let i = 0; i < max; i++) {
-      const mat = new THREE.SpriteMaterial({
-        map: haloTex,
+      const mat = new THREE.MeshBasicMaterial({
         color: 0xffffff,
-        transparent: true,
-        opacity: 0.95,
-        alphaTest: 0.05,
+        side: THREE.DoubleSide,
+        transparent: false,
         depthTest: false, depthWrite: false,
       });
-      const sp = new THREE.Sprite(mat);
-      sp.frustumCulled = false;
-      sp.renderOrder = 59;
-      sp.visible = false;
-      this._halos.push(sp);
-      this.group.add(sp);
+      const m = new THREE.Mesh(ringGeom, mat);
+      m.frustumCulled = false;
+      m.renderOrder = 59;
+      m.visible = false;
+      this._halos.push(m);
+      this.group.add(m);
     }
   }
 
@@ -5610,30 +5579,25 @@ export class GeocentricMarkers {
       const r  = Math.hypot(dx, dy, dz);
       const halo = this._halos[n];
       if (r > 1e-7) {
-        // Sprite scale set in world units so the ring world radius
-        // exactly equals the apparent↔true 3D distance — perspective
-        // then lands the rendered circumference on the true marker.
-        // Visibility floor: at small refractions (or far heavenly
-        // camera distances) the ring's projected size collapses
-        // sub-pixel and the rasterizer drops it. Compute the minimum
-        // world radius required to keep the ring at least
-        // ~0.6° angular from the camera (~6 px on a 1080-tall
-        // viewport at 60° FOV). Below that the ring is bigger than
-        // the apparent↔true gap and the true dot sits inside it;
-        // above the floor the strict-geometry relation holds.
+        // World radius equals the apparent↔true 3D distance, so the
+        // ring's outer edge (the unit circle of the geometry) lands
+        // exactly on the true marker. Visibility floor of
+        // 0.010 rad (~0.6°) prevents the ring from collapsing
+        // sub-pixel at small refractions; above the floor strict
+        // geometry holds.
         let scaleR = r;
         if (camera) {
           const cx = camera.position.x - ac[0];
           const cy = camera.position.y - ac[1];
           const cz = camera.position.z - ac[2];
           const camDist = Math.hypot(cx, cy, cz);
-          const MIN_ANG = 0.010; // rad; ~0.57°
+          const MIN_ANG = 0.010;
           const minWorldR = MIN_ANG * camDist;
           if (scaleR < minWorldR) scaleR = minWorldR;
         }
-        const scale = scaleR * _HALO_SCALE_PER_R;
         halo.position.set(ac[0], ac[1], ac[2]);
-        halo.scale.set(scale, scale, 1);
+        halo.scale.set(scaleR, scaleR, 1);
+        if (camera) halo.lookAt(camera.position);
         halo.visible = true;
       } else {
         halo.visible = false;

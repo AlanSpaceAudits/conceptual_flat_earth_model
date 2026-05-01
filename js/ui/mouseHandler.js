@@ -19,6 +19,11 @@ const ROT_INCR = 200;
 const FP_LOOK_INCR = 180;
 const POS_INCR = 300;
 const ZOOM_STEP   = 1.1;
+const ZOOM_MIN    = 0.05;    // Heavenly orbit Zoom floor; prevents
+                              // dist = CameraDistance / Zoom from
+                              // exploding past the camera's far plane
+                              // and producing flicker / clipping.
+const ZOOM_MAX    = 200;     // matching ceiling for symmetric zoom-in.
 const FP_ZOOM_MIN = 0.2;
 const FP_ZOOM_MAX = 75;      // fov_min = 75/75 = 1°
 const CLICK_DRAG_PX   = 8;    // pointer movement below this counts as click
@@ -343,7 +348,9 @@ export function attachMouseHandler(canvas, model, renderer = null) {
       const next = Math.max(FP_ZOOM_MIN, Math.min(FP_ZOOM_MAX, cur * ratio));
       scheduleMovePatch({ OpticalZoom: next });
     } else {
-      scheduleMovePatch({ Zoom: model.state.Zoom * ratio });
+      const next = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX,
+        model.state.Zoom * ratio));
+      scheduleMovePatch({ Zoom: next });
     }
   };
 
@@ -735,7 +742,9 @@ export function attachMouseHandler(canvas, model, renderer = null) {
       model.setState({ OpticalZoom: opticalWheelStep(cur, dir) });
     } else {
       const factor = e.deltaY > 0 ? 1 / ZOOM_STEP : ZOOM_STEP;
-      model.setState({ Zoom: model.state.Zoom * factor });
+      const next = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX,
+        model.state.Zoom * factor));
+      model.setState({ Zoom: next });
     }
   }, { passive: false });
 

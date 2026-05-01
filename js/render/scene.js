@@ -76,12 +76,20 @@ export class SceneManager {
     this.nightColor = new THREE.Color(0x040810);
     this.scene.background = this.dayColor.clone();
 
-    this.camera = new THREE.PerspectiveCamera(35, 16 / 9, 0.01, 1000);
+    // far = 50_000 keeps the FE Heavenly disc inside the frustum at
+    // any reachable zoom-out (`dist = CameraDistance / max(0.1, Zoom)`
+    // tops out around 10× CameraDistance). `logarithmicDepthBuffer`
+    // keeps z-precision usable across that wide near/far range so
+    // coplanar map / line / marker layers don't z-fight at extreme
+    // zoom. Static far avoids the per-frame `updateProjectionMatrix`
+    // call dynamic recomputation would impose.
+    this.camera = new THREE.PerspectiveCamera(35, 16 / 9, 0.01, 50000);
     this.camera.up.set(0, 0, 1);
 
     this.renderer = new THREE.WebGLRenderer({
       canvas, antialias: true, alpha: false,
       preserveDrawingBuffer: true,
+      logarithmicDepthBuffer: true,
     });
     this.renderer.setPixelRatio(window.devicePixelRatio || 1);
 

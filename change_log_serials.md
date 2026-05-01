@@ -14023,3 +14023,28 @@ Format:
       `focus` and on every `input` event, so opening either
       search clears the screen of competing popups.
 - **Revert path:** `git checkout v-s000742 -- .`
+
+## S744 — FE map zoom-out flicker + clipping fix
+
+- **Date:** 2026-04-30
+- **Files changed:** `js/render/scene.js`,
+  `js/ui/mouseHandler.js`.
+- **Change:**
+    - **`PerspectiveCamera` far plane** raised from 1000 → 50000.
+      In Heavenly orbit, `dist = CameraDistance / max(0.1, Zoom)`
+      grows as `Zoom` shrinks; static `far = 1000` was clipping
+      the disc as soon as `dist + scene_radius` crossed it,
+      producing the disappearing-map flicker on zoom-out.
+    - **`logarithmicDepthBuffer: true`** on the
+      `WebGLRenderer` so the wider near/far range (0.01 → 50000)
+      keeps usable z-precision. Without it the coplanar map /
+      lineart / observer-marker layers (all `depthTest: false`
+      with explicit `renderOrder` already, but the underlying
+      depth values still feed downstream fragment-depth checks)
+      collapse into ndc-z noise at extreme zoom.
+    - **`Zoom` clamp** in `mouseHandler.js`:
+      `ZOOM_MIN = 0.05` floor and `ZOOM_MAX = 200` ceiling.
+      Wheel handler and pinch handler both pin `Zoom` inside
+      this band so the camera never escapes the frustum even on
+      sustained zoom-out gesture.
+- **Revert path:** `git checkout v-s000743 -- .`

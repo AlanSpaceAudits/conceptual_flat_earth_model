@@ -1,0 +1,11 @@
+{
+  "appId": "com.aethercosmology.femodel",
+  "appName": "FE Model",
+  "webDir": "dist",
+  "server": {
+    "androidScheme": "https"
+  },
+  "android": {
+    "allowMixedContent": false
+  }
+}

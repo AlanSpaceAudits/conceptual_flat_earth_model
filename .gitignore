@@ -4,3 +4,15 @@ node_modules/
 *.log
 .vscode/
 .idea/
+
+# Capacitor
+dist/
+android/.gradle/
+android/build/
+android/app/build/
+android/captures/
+android/local.properties
+android/app/release/
+ios/App/build/
+ios/App/Pods/
+ios/App/.gradle/

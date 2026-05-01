@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">FE Model</string>
+    <string name="title_activity_main">FE Model</string>
+    <string name="package_name">com.aethercosmology.femodel</string>
+    <string name="custom_url_scheme">com.aethercosmology.femodel</string>
+</resources>

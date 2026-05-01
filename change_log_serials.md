@@ -13796,3 +13796,42 @@ Format:
   `overflow-x: auto` finally takes effect — the whole row slides
   horizontally with no overlap.
 - **Revert path:** `git checkout v-s000734 -- .`
+
+## S738 — Capacitor Android scaffold
+
+- **Date:** 2026-04-30
+- **Files changed:** `package.json`, `package-lock.json`,
+  `capacitor.config.json`, `scripts/build-cap.mjs`,
+  `.gitignore`, `android/` (full Capacitor 6 scaffold), Android
+  launcher icons in `android/app/src/main/res/mipmap-*/`,
+  `android/app/src/main/res/values/ic_launcher_background.xml`.
+- **Change:** Wrapped the PWA in a Capacitor 6 Android project.
+    - `package.json` (private, ESM) lists Capacitor CLI / core /
+      android as dev deps and exposes `cap:build`, `cap:sync`,
+      `cap:open`, `cap:run` scripts.
+    - `capacitor.config.json` sets appId
+      `com.aethercosmology.femodel`, appName "FE Model",
+      `webDir: "dist"`, `androidScheme: "https"`,
+      `allowMixedContent: false`.
+    - `scripts/build-cap.mjs` copies the runtime files
+      (`index.html`, `manifest.webmanifest`, `sw.js`,
+      `.nojekyll`, `css/`, `js/`, `assets/`) into `dist/`,
+      excluding `change_log_serials.md`, `README.md`,
+      `scripts/`, `node_modules/`, `android/`, `.git/`. Keeps
+      the APK lean.
+    - `npx cap add android` produced the `android/` Gradle
+      project; `dist/` is bundled into
+      `android/app/src/main/assets/public/` by `cap sync`.
+    - Launcher icons regenerated from `assets/ac_logo.png` for
+      mdpi → xxxhdpi (square + round + adaptive foreground with
+      30 % safe-zone padding). Adaptive background colour
+      changed `#FFFFFF → #0E121A` to match the app theme.
+    - `.gitignore` adds `dist/`, `android/.gradle/`,
+      `android/build/`, `android/app/build/`, `android/captures/`,
+      `android/local.properties`, `android/app/release/`,
+      `ios/App/build/`, `ios/App/Pods/`, `ios/App/.gradle/`.
+  Producing an installable APK still needs the Android SDK
+  (`cmdline-tools` + `platform-tools` + `platforms;android-34`)
+  and a JDK ≤ 21; system JDK is currently 26 which AGP rejects.
+  Both are out-of-scope for this serial.
+- **Revert path:** `git checkout v-s000737a -- . && rm -rf android dist node_modules package.json package-lock.json capacitor.config.json scripts/build-cap.mjs`

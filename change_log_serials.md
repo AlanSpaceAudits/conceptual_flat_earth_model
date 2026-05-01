@@ -13754,3 +13754,15 @@ Format:
   comment updated to remove kill-switch language. Bumping
   `CACHE_VERSION` in future serials invalidates clients cleanly.
 - **Revert path:** `git checkout v-s000735 -- .`
+
+## S737 — manifest icons + categories + lang
+
+- **Date:** 2026-04-30
+- **Files changed:** `manifest.webmanifest`.
+- **Change:** Manifest now lists 192 + 512 PNGs at `purpose: any`
+  and 192 + 512 maskable PNGs at `purpose: maskable`, pointing at
+  the S735 icon set under `assets/icons/`. Added `lang: en`,
+  `categories: ["education", "science", "utilities"]`, and
+  expanded the `description` to mirror the meta description in
+  `index.html`.
+- **Revert path:** `git checkout v-s000736 -- .`

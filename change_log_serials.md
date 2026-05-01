@@ -14330,3 +14330,17 @@ Format:
   the no-op shim swallows — re-clicking the tab after demos
   resolve renders normally.
 - **Revert path:** `git checkout v-s000753 -- .`
+
+## S755 — revert lazy demos (broke Demos tab)
+
+- **Date:** 2026-05-01
+- **Files changed:** `js/main.js`, `js-min/**` (rebuilt).
+- **Change:** S754's Proxy stand-in returned a `_noop` for any
+  unknown method, so opening the Demos tab before
+  `requestIdleCallback` resolved (~600 ms after first paint)
+  invoked `demos.renderInto(host)` against the no-op — the
+  panel stayed empty and re-clicks didn't recover. Reverted
+  to the static `import { Demos } from './demos/index.js'`
+  + eager `new Demos(model)` from S753. Mobile Performance
+  drops ~1 point (99 vs 100) but the Demos tab works again.
+- **Revert path:** `git checkout v-s000754 -- .`

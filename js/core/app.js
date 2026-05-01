@@ -1481,7 +1481,9 @@ export class FeModel extends EventTarget {
           gpLat: c.SunCelestLatLong.lat,
           gpLon: wrapLon(c.SunRA * 180 / Math.PI - c.SkyRotAngle),
           vaultCoord: c.SunVaultCoord,
-          opticalVaultCoordTrue: c.SunOpticalVaultCoordTrue,
+          opticalVaultCoord:          c.SunOpticalVaultCoord,
+          globeOpticalVaultCoord:     c.SunGlobeOpticalVaultCoord,
+          opticalVaultCoordTrue:      c.SunOpticalVaultCoordTrue,
           globeOpticalVaultCoordTrue: c.SunGlobeOpticalVaultCoordTrue,
         };
       } else if (target === 'moon') {
@@ -1498,7 +1500,9 @@ export class FeModel extends EventTarget {
           gpLat: c.MoonCelestLatLong.lat,
           gpLon: wrapLon(c.MoonRA * 180 / Math.PI - c.SkyRotAngle),
           vaultCoord: c.MoonVaultCoord,
-          opticalVaultCoordTrue: c.MoonOpticalVaultCoordTrue,
+          opticalVaultCoord:          c.MoonOpticalVaultCoord,
+          globeOpticalVaultCoord:     c.MoonGlobeOpticalVaultCoord,
+          opticalVaultCoordTrue:      c.MoonOpticalVaultCoordTrue,
           globeOpticalVaultCoordTrue: c.MoonGlobeOpticalVaultCoordTrue,
         };
       } else if (PLANET_NAMES.includes(target)) {
@@ -1521,7 +1525,9 @@ export class FeModel extends EventTarget {
             gpLat: p.celestLatLong.lat,
             gpLon: wrapLon(p.ra * 180 / Math.PI - c.SkyRotAngle),
             vaultCoord: p.vaultCoord,
-            opticalVaultCoordTrue: p.opticalVaultCoordTrue,
+            opticalVaultCoord:          p.opticalVaultCoord,
+            globeOpticalVaultCoord:     p.globeOpticalVaultCoord,
+            opticalVaultCoordTrue:      p.opticalVaultCoordTrue,
             globeOpticalVaultCoordTrue: p.globeOpticalVaultCoordTrue,
           };
         }
@@ -1588,7 +1594,9 @@ export class FeModel extends EventTarget {
             gpLat: entry.celestLatLong.lat,
             gpLon: wrapLon(entry.ra * 180 / Math.PI - c.SkyRotAngle),
             vaultCoord: entry.vaultCoord,
-            opticalVaultCoordTrue: entry.opticalVaultCoordTrue,
+            opticalVaultCoord:          entry.opticalVaultCoord,
+            globeOpticalVaultCoord:     entry.globeOpticalVaultCoord,
+            opticalVaultCoordTrue:      entry.opticalVaultCoordTrue,
             globeOpticalVaultCoordTrue: entry.globeOpticalVaultCoordTrue,
           };
         }

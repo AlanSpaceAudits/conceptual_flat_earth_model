@@ -13624,3 +13624,27 @@ Format:
   fields, the camera reference passed to `update`, etc.) and we
   need to debug there.
 - **Revert path:** `git checkout v-s000728 -- .`
+
+## S730 — TrackerInfos missing `opticalVaultCoord`; halo ring restored
+
+- **Date:** 2026-04-30
+- **Files changed:**
+  - `js/core/app.js`
+  - `js/render/worldObjects.js`
+- **Change:** root-cause fix. The user diagnosis was correct: the
+  ring kept appearing centred on the true position because
+  `info.opticalVaultCoord` (the *apparent* / refracted coord) was
+  never being written onto the per-target `TrackerInfo` objects in
+  `app.js`. Only `info.opticalVaultCoordTrue` was. The halo's
+  position-resolver in `worldObjects.js` read `info.opticalVaultCoord`,
+  got `undefined`, and fell through to the safety-net default of
+  `coordTrue` — so every ring was anchored on the true marker
+  rather than the apparent. Added the apparent-coord fields
+  (`opticalVaultCoord`, `globeOpticalVaultCoord`) to all four
+  TrackerInfo build sites: sun, moon, planet, and star. Halo now
+  correctly centres on the apparent coord, with the rendered
+  circumference passing through the true marker.
+  Also reverted the S729 debug red disc back to a thin `THREE.LineLoop`
+  (32 segments, white, `LineBasicMaterial`) now that the
+  underlying pipeline is verified working.
+- **Revert path:** `git checkout v-s000729 -- .`

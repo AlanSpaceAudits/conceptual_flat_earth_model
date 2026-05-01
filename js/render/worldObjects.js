@@ -5526,22 +5526,26 @@ export class GeocentricMarkers {
     // ring stays a visibly thick annulus even when the per-slot
     // scale shrinks to small refractions; thinner bands collapsed
     // sub-pixel and the rasteriser dropped them.
-    // DEBUG: solid bright-red disc instead of a ring outline. If
-    // this *isn't* visible at the apparent position, the entire
-    // mesh / scale / lookAt pipeline is broken — every prior ring
-    // attempt would have been doomed regardless of geometry. If it
-    // *is* visible, the rendering path works and the previous
-    // failures were strictly about sub-pixel outline rasterisation,
-    // and we can safely move back to a thin-ring approach.
-    const ringGeom = new THREE.CircleGeometry(1.0, 32);
+    // Halo as `THREE.LineLoop` over a 32-vertex unit circle. WebGL
+    // rasterises lines at 1 px regardless of mesh scale, so the
+    // outline stays a thin always-visible ring at any per-slot
+    // world radius.
+    const SEG = 32;
+    const ringPos = new Float32Array(SEG * 3);
+    for (let i = 0; i < SEG; i++) {
+      const t = (i / SEG) * Math.PI * 2;
+      ringPos[i * 3]     = Math.cos(t);
+      ringPos[i * 3 + 1] = Math.sin(t);
+      ringPos[i * 3 + 2] = 0;
+    }
+    const ringGeom = new THREE.BufferGeometry();
+    ringGeom.setAttribute('position', new THREE.BufferAttribute(ringPos, 3));
     this._halos = [];
     for (let i = 0; i < max; i++) {
-      const mat = new THREE.MeshBasicMaterial({
-        color: 0xff0000,
-        side: THREE.DoubleSide,
+      const m = new THREE.LineLoop(ringGeom, new THREE.LineBasicMaterial({
+        color: 0xffffff,
         depthTest: false, depthWrite: false,
-      });
-      const m = new THREE.Mesh(ringGeom, mat);
+      }));
       m.frustumCulled = false;
       m.renderOrder = 250;
       m.visible = false;

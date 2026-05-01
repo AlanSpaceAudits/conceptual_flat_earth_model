@@ -96,7 +96,7 @@ header .info-popup.legend-popup code {
 header .info-popup.legend-popup a { color: var(--accent); }
 
 #view { grid-area: view; position: relative; background: #000; min-height: 0; overflow: hidden; }
-#feCanvas { display: block; width: 100%; height: 100%; }
+#feCanvas { display: block; width: 100%; height: 100%; touch-action: none; }
 #logo {
   position: absolute;
   right: 16px;

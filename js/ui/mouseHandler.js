@@ -21,9 +21,10 @@ const POS_INCR = 300;
 const ZOOM_STEP   = 1.1;
 const FP_ZOOM_MIN = 0.2;
 const FP_ZOOM_MAX = 75;      // fov_min = 75/75 = 1°
-const CLICK_DRAG_PX   = 4;    // pointer movement below this counts as click
+const CLICK_DRAG_PX   = 8;    // pointer movement below this counts as click
 const CLICK_EPS_DEG   = 0.01; // heading/pitch diff for follow setState skip
 const HEAVENLY_HIT_PX = 40;   // screen-space hover radius in Heavenly / free-cam
+const PINCH_MIN_DIST_PX = 10; // ignore pinch deltas under this — fingertip jitter
 
 function opticalCadenceStepDeg(fovDeg) {
   if (fovDeg >= 8) return 5;
@@ -317,6 +318,35 @@ export function attachMouseHandler(canvas, model, renderer = null) {
   let dragDist = 0;
   const hoverTip = ensureHoverTooltip();
 
+  // Multi-pointer state for pinch-to-zoom. activePointers holds every
+  // currently-down pointer keyed by pointerId; once size reaches 2 we
+  // enter pinch mode and suspend single-pointer drag/click logic until
+  // every pointer releases. pinchLastDist tracks the prior frame's
+  // 2-pointer distance so each move event applies a multiplicative
+  // zoom delta. multiTouchActive stays sticky through the gesture so a
+  // released finger never reverts mid-pinch into camera-pan mode.
+  const activePointers = new Map();
+  let multiTouchActive = false;
+  let pinchLastDist = 0;
+  const pointerDistance = () => {
+    const pts = [...activePointers.values()];
+    if (pts.length < 2) return 0;
+    return Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+  };
+  const applyPinch = (newDist) => {
+    if (newDist < PINCH_MIN_DIST_PX || pinchLastDist < PINCH_MIN_DIST_PX) return;
+    const ratio = newDist / pinchLastDist;
+    if (ratio === 1) return;
+    const inVault = !!model.state.InsideVault;
+    if (inVault && !model.state.FreeCameraMode) {
+      const cur = model.state.OpticalZoom || 5.09;
+      const next = Math.max(FP_ZOOM_MIN, Math.min(FP_ZOOM_MAX, cur * ratio));
+      scheduleMovePatch({ OpticalZoom: next });
+    } else {
+      scheduleMovePatch({ Zoom: model.state.Zoom * ratio });
+    }
+  };
+
   // rAF-coalesced setState for pointer-move work. Touch / trackpad
   // pointermove events fire at 90–144 Hz on modern devices; each
   // setState triggers the full `app.update` pass which dominates
@@ -421,6 +451,15 @@ export function attachMouseHandler(canvas, model, renderer = null) {
   };
 
   canvas.addEventListener('pointerdown', (e) => {
+    activePointers.set(e.pointerId, { x: e.offsetX, y: e.offsetY });
+    if (activePointers.size >= 2) {
+      multiTouchActive = true;
+      dragging = false;
+      cancelDotDrag();
+      hideHover();
+      pinchLastDist = pointerDistance();
+      return;
+    }
     dragging = true;
     canvas.setPointerCapture(e.pointerId);
     lastX = e.offsetX; lastY = e.offsetY;
@@ -435,6 +474,15 @@ export function attachMouseHandler(canvas, model, renderer = null) {
   });
 
   canvas.addEventListener('pointerup', (e) => {
+    activePointers.delete(e.pointerId);
+    if (multiTouchActive) {
+      if (activePointers.size === 0) {
+        multiTouchActive = false;
+        pinchLastDist = 0;
+      }
+      try { canvas.releasePointerCapture(e.pointerId); } catch {}
+      return;
+    }
     const wasClick = dragging && dragDist < CLICK_DRAG_PX;
     const wasDotDrag = dotDragging;
     const wasDotClick = pressedOnDot && wasClick;
@@ -496,7 +544,31 @@ export function attachMouseHandler(canvas, model, renderer = null) {
     }
   });
 
+  canvas.addEventListener('pointercancel', (e) => {
+    activePointers.delete(e.pointerId);
+    if (activePointers.size === 0) {
+      multiTouchActive = false;
+      pinchLastDist = 0;
+      dragging = false;
+      cancelDotDrag();
+      hideHover();
+    }
+    try { canvas.releasePointerCapture(e.pointerId); } catch {}
+  });
+
   canvas.addEventListener('pointermove', (e) => {
+    if (activePointers.has(e.pointerId)) {
+      activePointers.set(e.pointerId, { x: e.offsetX, y: e.offsetY });
+    }
+    if (multiTouchActive) {
+      if (activePointers.size >= 2) {
+        const newDist = pointerDistance();
+        applyPinch(newDist);
+        pinchLastDist = newDist;
+      }
+      return;
+    }
+
     const w = canvas.clientWidth || 1;
     const h = canvas.clientHeight || 1;
 

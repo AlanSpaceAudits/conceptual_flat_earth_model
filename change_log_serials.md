@@ -13835,3 +13835,36 @@ Format:
   and a JDK ≤ 21; system JDK is currently 26 which AGP rejects.
   Both are out-of-scope for this serial.
 - **Revert path:** `git checkout v-s000737a -- . && rm -rf android dist node_modules package.json package-lock.json capacitor.config.json scripts/build-cap.mjs`
+
+## S739 — pinch-to-zoom + touch tweaks (all modes)
+
+- **Date:** 2026-04-30
+- **Files changed:** `js/ui/mouseHandler.js`, `css/styles.css`,
+  `css/styles.min.css`.
+- **Change:**
+    - `#feCanvas` gets `touch-action: none` in both `styles.css`
+      and `styles.min.css` so the browser stops consuming pinch
+      gestures for native page-zoom and routes them to the
+      pointer-event handler.
+    - `mouseHandler.js` tracks all active pointers in an
+      `activePointers: Map<id, {x,y}>`. Once size reaches 2,
+      `multiTouchActive` flips on (sticky until every pointer
+      releases): single-pointer drag/dot-drag/click logic is
+      suppressed, hover tooltip hidden, and `pinchLastDist`
+      seeded with the current 2-pointer distance.
+      `pointermove` updates the map and applies a multiplicative
+      zoom delta (`ratio = newDist / pinchLastDist`) — Optical
+      mode scales `OpticalZoom` clamped to
+      `[FP_ZOOM_MIN, FP_ZOOM_MAX]`, every other mode scales the
+      world `Zoom`, mirroring the wheel handler.
+      `pointerup`/`pointercancel` remove the released pointer;
+      single-pointer click logic is skipped while
+      `multiTouchActive` is set, and the flag clears only when
+      the pointer count reaches zero so a released finger never
+      drops the gesture into camera-pan mode.
+    - `CLICK_DRAG_PX` raised 4 → 8 to absorb fingertip wobble
+      on tap.
+    - New constant `PINCH_MIN_DIST_PX = 10` rejects pinch deltas
+      where either distance is below the floor (jitter / single
+      finger landing on top of the other).
+- **Revert path:** `git checkout v-s000738 -- .`

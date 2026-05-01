@@ -67,10 +67,22 @@ export class Autoplay {
 
   _tick(ts) {
     if (!this.playing) return;
-    const dt = Math.max(0, Math.min(0.1, (ts - this._last) / 1000));  // clamp to 100 ms
+    const dt = (ts - this._last) / 1000;
+    // Throttle the actual `setState` to ~30 Hz. Each setState
+    // cascades into a full `app.update()` (ephemeris, refraction,
+    // tracker positions, scene rebuild on world-mode flip) which
+    // dominated mobile CPU at 60 Hz; halving the cadence halves the
+    // autoplay cost without visibly slowing the animation. Frames
+    // where dt < 33 ms still keep the rAF loop going so the next
+    // tick fires at the correct cadence.
+    if (dt < 0.033) {
+      requestAnimationFrame(this._tick);
+      return;
+    }
+    const dtClamped = Math.min(0.1, dt);  // clamp to 100 ms
     this._last = ts;
     const cur = this.model.state.DateTime;
-    this.model.setState({ DateTime: cur + this.speed * dt });
+    this.model.setState({ DateTime: cur + this.speed * dtClamped });
     requestAnimationFrame(this._tick);
   }
 

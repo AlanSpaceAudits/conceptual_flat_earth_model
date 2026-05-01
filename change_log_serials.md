@@ -14135,3 +14135,50 @@ Format:
       `min(620px, calc(100vw - 16px))`.
     - **CACHE_VERSION** bumped `fe-v4-s746 → fe-v5-s747`.
 - **Revert path:** `git checkout v-s000746 -- .`
+
+## S748 — PageSpeed audit pass
+
+- **Date:** 2026-04-30
+- **Files changed:** `index.html`, `js/ui/controlPanel.js`,
+  `js/demos/index.js`, `js/ui/autoplay.js`,
+  `assets/starfield_*.webp`, `assets/ac_logo.webp`, `sw.js`.
+- **Change:**
+    - **Starfield WebPs recompressed q=100 → q=82**:
+        - `starfield_ae_aries.webp`    1403 → 250 KiB (-82 %)
+        - `starfield_ae_aries_2.webp`  1424 → 582 KiB (-59 %)
+        - `starfield_ae_aries_3.webp`  1317 → 151 KiB (-89 %)
+        - `starfield_dark.webp`        1140 → 188 KiB (-84 %)
+        - `starfield_light.webp`        876 → 145 KiB (-83 %)
+      Total payload trimmed ~5.2 MiB (Lighthouse phone "Avoid
+      enormous network payloads" was 15.5 MiB before).
+    - **`ac_logo.webp`** recompressed q=100 → q=80, 9 → 6 KiB.
+    - **`role="tablist"`** + `aria-orientation="horizontal"`
+      added to the bottom-bar tabs container (`.tabs`) in
+      `attachBottomBar`. Closes the Lighthouse a11y failure
+      "[role]s are not contained by their required parent
+      element" — the six `role="tab"` buttons now have a valid
+      tablist parent.
+    - **Removed `maximum-scale=1.0, user-scalable=no`** from
+      the viewport meta. Lighthouse Best Practices flagged it
+      as accessibility-hostile (low-vision users rely on
+      pinch-zoom for legibility). Inputs are already 16 px on
+      mobile (S740) so iOS no longer auto-zooms on focus, and
+      `touch-action: none` on `#feCanvas` (S739) keeps the
+      canvas pinch routed to the model. The page is once again
+      pinch-zoomable on iOS.
+    - **`Demos` rAF tick is now on-demand.** Previously the
+      tick polled the animator every frame from boot until the
+      tab was closed — Lighthouse counted ~29 s of `demos/
+      index.js` CPU on the Moto G Power, almost all of it idle
+      polling. Tick now early-exits + stops the rAF loop when
+      `!nowRunning && !this._queue`; `_ensureTick()` restarts
+      it inside `_playSingle` whenever a demo starts. Demo
+      end-detection still works because the first tick after
+      `_ensureTick` captures `wasRunning = true`.
+    - **`Autoplay._tick` throttled to ~30 Hz**, halving the
+      autoplay CPU cost. Each `setState({ DateTime })` cascades
+      through `app.update()` (ephemeris + refraction + tracker
+      positions); 60 → 30 Hz is invisible to the eye but cuts
+      the per-frame model update by half.
+    - **CACHE_VERSION** bumped `fe-v5-s747 → fe-v6-s748`.
+- **Revert path:** `git checkout v-s000747 -- .`

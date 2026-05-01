@@ -2446,6 +2446,11 @@ export function buildControlPanel(host, model, demos) {
 
   const tabsBar = document.createElement('div');
   tabsBar.className = 'tabs';
+  // role=tablist is the required parent for child role=tab buttons
+  // (Lighthouse a11y: "[role]s are not contained by their required
+  // parent element"). aria-orientation hints at horizontal layout.
+  tabsBar.setAttribute('role', 'tablist');
+  tabsBar.setAttribute('aria-orientation', 'horizontal');
   // No `role="tablist"` on the bar itself: it carries two
   // `<input type="search">` hosts alongside the tab buttons, and
   // ARIA forbids non-`role="tab"` children of a tablist. Each tab

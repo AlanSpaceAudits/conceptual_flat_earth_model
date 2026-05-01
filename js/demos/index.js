@@ -25,32 +25,46 @@ export class Demos {
     // means no demo is holding a snapshot.
     this._savedState = null;
 
-    // Poll the animator each rAF. Two separate transitions matter:
+    // On-demand rAF tick. Two transitions matter:
     //   running → !running  → demo truly ended (queue empty, or
     //     stop() called). Snap to DE405 default ONLY here, so
     //     pausing via the bar's ▶/⏸ button doesn't reset time.
     //   wasPlaying && !nowPlaying while running → advance queue.
-    let wasPlaying = false;
-    let wasRunning = false;
-    const tick = () => {
+    // The loop only runs while a demo is active; it idles out when
+    // both the animator is stopped and the queue is empty so the
+    // browser doesn't burn 60 Hz of polling for the whole session
+    // (Lighthouse counted ~29 s of `demos/index.js` CPU on a Moto G
+    // Power, almost all of it from this idle tick). `_ensureTick`
+    // restarts the loop the next time `_playSingle` is invoked.
+    this._tickActive = false;
+    this._wasRunning = false;
+    this._tick = () => {
       const nowRunning = this.animator.running;
       const nowPlaying = this.animator.isPlaying();
-      if (wasRunning && !nowRunning) {
+      if (this._wasRunning && !nowRunning) {
         const queueDone = !this._queue
           || this._queueCursor >= this._queue.length;
         if (queueDone) this._restoreSavedState();
       }
-      wasRunning = nowRunning;
-      wasPlaying = nowPlaying;
+      this._wasRunning = nowRunning;
       if (this._queue && !nowPlaying && !this.animator.isPaused()
           && this._queueCursor < this._queue.length) {
         const next = this._queue[this._queueCursor++];
         // Defer to microtask so any state-mutation hooks settle.
         Promise.resolve().then(() => this._playSingle(next, /* fromQueue */ true));
       }
-      requestAnimationFrame(tick);
+      if (!nowRunning && !this._queue) {
+        this._tickActive = false;
+        return;
+      }
+      requestAnimationFrame(this._tick);
     };
-    requestAnimationFrame(tick);
+  }
+
+  _ensureTick() {
+    if (this._tickActive) return;
+    this._tickActive = true;
+    requestAnimationFrame(this._tick);
   }
 
   // Restore the model.state snapshot taken at demo / queue start so
@@ -65,6 +79,7 @@ export class Demos {
 
   _playSingle(index, fromQueue = false) {
     if (index < 0 || index >= this.list.length) return;
+    this._ensureTick();
     this.animator.stop();
     // Snapshot pre-demo state on the first play of a (possibly
     // queued) sequence — subsequent queued demos share the same

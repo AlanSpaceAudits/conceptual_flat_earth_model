@@ -346,7 +346,7 @@ function defaultState() {
     // for a li / bu ground-distance readout. DMS stays where it is;
     // the du / fen runs alongside it so the two can be read
     // together.
-    ShowChineseDu: false,
+    ShowChineseDu: true,
     // Compass-mode distance picker. When on, map clicks drop a
     // From / To pair instead of routing through the normal body-
     // pick handler; the pair drives a marker + connector renderer

@@ -14573,6 +14573,18 @@ Format:
     is taller for the current demo.
 - **Revert path:** `git checkout v-s000764 -- .`
 
+## S767 — Chinese du / fen / li display on by default
+
+- **Date:** 2026-04-30
+- **Files changed:** `js/core/app.js`, `js-min/**` (rebuilt)
+- **Change:** `ShowChineseDu` default flipped from `false` to
+  `true` in `defaultState()`. The tracker HUD and tracking-info
+  popup ship with the Chinese du / fen + li / bu readouts visible
+  on first load; the View → Show toggle (`Chinese du / fen`) still
+  hides them on demand and the URL serializer overrides the
+  default when a user has previously persisted the off state.
+- **Revert path:** `git checkout v-s000766 -- .`
+
 ## S766 — live progress on schematic + QF flight info boxes; compass into 2×N grid
 
 - **Date:** 2026-04-30

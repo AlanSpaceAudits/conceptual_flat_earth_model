@@ -16,7 +16,7 @@ const INCLUDE = [
   'sw.js',
   '.nojekyll',
   'css',
-  'js',
+  'js-min',
   'assets',
 ];
 

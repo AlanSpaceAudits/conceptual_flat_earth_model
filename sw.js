@@ -12,7 +12,7 @@
 // itself, so installing a fresh worker (here, S736) takes effect on
 // the next navigation cycle.
 
-const CACHE_VERSION = 'fe-v6-s748';
+const CACHE_VERSION = 'fe-v7-s749';
 const STATIC_CACHE  = `${CACHE_VERSION}-static`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 
@@ -27,8 +27,18 @@ const PRECACHE_URLS = [
   './assets/icons/apple-touch-icon-180.png',
 ];
 
+// `_isFirstInstall` is true when this SW boots into a brand-new
+// origin (no caches present at install time). On first install
+// the activate handler MUST NOT force-reload its claimed clients —
+// that produces a redirect on the very first page load (Lighthouse
+// "Avoid multiple page redirects"). Subsequent installs (CACHE_VERSION
+// bump) DO force-reload so old-bundle tabs pick up the new code.
+let _isFirstInstall = false;
+
 self.addEventListener('install', (event) => {
   event.waitUntil((async () => {
+    const existingKeys = await caches.keys();
+    _isFirstInstall = existingKeys.length === 0;
     const cache = await caches.open(STATIC_CACHE);
     await cache.addAll(PRECACHE_URLS);
     self.skipWaiting();
@@ -43,11 +53,11 @@ self.addEventListener('activate', (event) => {
       return null;
     }));
     await self.clients.claim();
+    if (_isFirstInstall) return;
     // Force-reload every controlled tab so any client still
     // running pre-CACHE_VERSION JS / CSS picks up the fresh
-    // bundle immediately. Without this, clients only refresh on
-    // their next manual navigation, so the user can be stuck
-    // looking at stale code for an entire session.
+    // bundle immediately. Skipped on first install — there's
+    // nothing to evict, and the navigate counts as a redirect.
     const clients = await self.clients.matchAll({ type: 'window' });
     for (const client of clients) {
       try { await client.navigate(client.url); } catch {}

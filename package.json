@@ -5,14 +5,16 @@
   "type": "module",
   "description": "Conceptual flat-earth astronomy simulation. PWA + Capacitor Android wrapper.",
   "scripts": {
-    "cap:build": "node scripts/build-cap.mjs",
+    "build": "node scripts/build-min.mjs",
+    "cap:build": "npm run build && node scripts/build-cap.mjs",
     "cap:sync": "npm run cap:build && npx cap sync android",
     "cap:open": "npx cap open android",
     "cap:run": "npm run cap:sync && npx cap run android"
   },
   "devDependencies": {
+    "@capacitor/android": "^6.1.2",
     "@capacitor/cli": "^6.1.2",
     "@capacitor/core": "^6.1.2",
-    "@capacitor/android": "^6.1.2"
+    "esbuild": "^0.28.0"
   }
 }

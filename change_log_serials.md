@@ -14182,3 +14182,43 @@ Format:
       the per-frame model update by half.
     - **CACHE_VERSION** bumped `fe-v5-s747 → fe-v6-s748`.
 - **Revert path:** `git checkout v-s000747 -- .`
+
+## S749 — a11y tabs fix + SW first-install + JS/CSS minify pipeline
+
+- **Date:** 2026-04-30
+- **Files changed:** `index.html`, `js/ui/controlPanel.js`,
+  `css/styles.css`, `css/styles.min.css`, `sw.js`,
+  `package.json`, `package-lock.json`, `scripts/build-min.mjs`,
+  `scripts/build-cap.mjs`, `js-min/**` (build artifact).
+- **Change:**
+    - **A11y `aria-required-children` regression** from S748:
+      `role="tablist"` was placed on `.tabs`, which also holds
+      the two `<input type="search">` hosts. Tablists may only
+      contain `role="tab"` children. Split the structure into
+      `.tabs` (visual flex wrapper, no role) and `.tabs-list`
+      (`role="tablist"`, only the six tab buttons). Tab buttons
+      now `tabsList.appendChild(btn)`.
+    - **SW first-install redirect.** `client.navigate(url)` on
+      every activate produced a 1.6 s redirect on the very first
+      page load (Lighthouse "Avoid multiple page redirects").
+      Install handler now snapshots `caches.keys().length === 0`
+      into `_isFirstInstall`; activate skips the navigate when
+      true. Subsequent CACHE_VERSION bumps still force-reload
+      stale clients.
+    - **CSS minify pipeline** via esbuild:
+      `css/styles.css` (44 KiB) → `css/styles.min.css` (29 KiB).
+      `index.html` preloads the minified file again.
+    - **JS minify pipeline** via esbuild's `transform` API
+      (no bundling, ESM imports preserved):
+        - 73 `.js` files under `js/` → `js-min/` mirror
+        - total 3546 → 2612 KiB on disk (-934 KiB)
+        - `index.html` modulepreloads + entry script switched
+          from `js/...` → `js-min/...`
+        - `scripts/build-cap.mjs` ships `js-min/` instead of
+          `js/` into the Capacitor `dist/`
+      `package.json` adds `"build": "node scripts/build-min.mjs"`
+      and prepends it to `cap:build`. `js-min/` is committed so
+      GitHub Pages serves the minified bundle directly. Bare
+      specifiers (`three`) stay intact for the importmap.
+    - **CACHE_VERSION** bumped `fe-v6-s748 → fe-v7-s749`.
+- **Revert path:** `git checkout v-s000748 -- . && rm -rf js-min`

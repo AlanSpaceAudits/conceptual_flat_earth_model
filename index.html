@@ -13,8 +13,8 @@
 <link rel="icon" type="image/png" sizes="192x192" href="assets/icons/icon-192.png">
 <link rel="icon" type="image/png" sizes="512x512" href="assets/icons/icon-512.png">
 <link rel="apple-touch-icon" sizes="180x180" href="assets/icons/apple-touch-icon-180.png">
-<link rel="preload" href="css/styles.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
-<noscript><link rel="stylesheet" href="css/styles.css"></noscript>
+<link rel="preload" href="css/styles.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link rel="stylesheet" href="css/styles.min.css"></noscript>
 <!-- The importmap MUST be declared before any <link rel="modulepreload">
      or <script type="module">. Firefox enforces this strictly: a
      modulepreload kicks off the module-load pipeline, after which
@@ -30,14 +30,14 @@
 </script>
 <link rel="modulepreload" href="assets/vendor/three.module.min.js">
 <link rel="preload" href="assets/ne_110m_land.geojson" as="fetch" type="application/geo+json" crossorigin>
-<link rel="modulepreload" href="js/main.js">
-<link rel="modulepreload" href="js/render/index.js">
-<link rel="modulepreload" href="js/render/worldObjects.js">
-<link rel="modulepreload" href="js/core/app.js">
-<link rel="modulepreload" href="js/core/ephemerisAstropixels.js">
-<link rel="modulepreload" href="js/data/astropixels.js">
-<link rel="modulepreload" href="js/ui/controlPanel.js">
-<link rel="modulepreload" href="js/ui/i18n.js">
+<link rel="modulepreload" href="js-min/main.js">
+<link rel="modulepreload" href="js-min/render/index.js">
+<link rel="modulepreload" href="js-min/render/worldObjects.js">
+<link rel="modulepreload" href="js-min/core/app.js">
+<link rel="modulepreload" href="js-min/core/ephemerisAstropixels.js">
+<link rel="modulepreload" href="js-min/data/astropixels.js">
+<link rel="modulepreload" href="js-min/ui/controlPanel.js">
+<link rel="modulepreload" href="js-min/ui/i18n.js">
 </head>
 <body>
 
@@ -89,6 +89,6 @@
   </footer>
 </main>
 
-<script type="module" src="js/main.js"></script>
+<script type="module" src="js-min/main.js"></script>
 </body>
 </html>

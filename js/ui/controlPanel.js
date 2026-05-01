@@ -2444,27 +2444,26 @@ export function buildControlPanel(host, model, demos) {
   const featureOpen = { fn: () => {} };
   attachFeatureSearch(featureHost, (tab, group) => featureOpen.fn(tab, group));
 
+  // Two-layer wrapper:
+  //   `tabsBar` (no ARIA role) — visual flex container that also
+  //              carries the search inputs. ARIA forbids non-tab
+  //              children inside a tablist, so this can't itself
+  //              be `role="tablist"`.
+  //   `tabsList` (`role="tablist"`) — narrow inner container that
+  //              ONLY holds the role="tab" buttons.
   const tabsBar = document.createElement('div');
   tabsBar.className = 'tabs';
-  // role=tablist is the required parent for child role=tab buttons
-  // (Lighthouse a11y: "[role]s are not contained by their required
-  // parent element"). aria-orientation hints at horizontal layout.
-  tabsBar.setAttribute('role', 'tablist');
-  tabsBar.setAttribute('aria-orientation', 'horizontal');
-  // No `role="tablist"` on the bar itself: it carries two
-  // `<input type="search">` hosts alongside the tab buttons, and
-  // ARIA forbids non-`role="tab"` children of a tablist. Each tab
-  // button still announces as `role="tab"` individually.
-  // Search hosts live inside tabsBar so they sit immediately to the
-  // left of the View tab in the right-aligned tab cluster. The two
-  // are stacked in a column wrapper so they share horizontal space —
-  // body search on top, feature search below — instead of doubling
-  // the bar's horizontal footprint.
   const searchStack = document.createElement('div');
   searchStack.className = 'search-stack';
   searchStack.appendChild(searchHost);
   searchStack.appendChild(featureHost);
   tabsBar.appendChild(searchStack);
+
+  const tabsList = document.createElement('div');
+  tabsList.className = 'tabs-list';
+  tabsList.setAttribute('role', 'tablist');
+  tabsList.setAttribute('aria-orientation', 'horizontal');
+  tabsBar.appendChild(tabsList);
 
   bar.append(barLeft, timeControls, compassControls, tabsBar);
 
@@ -2630,7 +2629,7 @@ export function buildControlPanel(host, model, demos) {
     const key = TAB_KEY[label];
     btn.textContent = key ? t(key) : label;
     if (key) onLangChange(() => { btn.textContent = t(key); });
-    tabsBar.appendChild(btn);
+    tabsList.appendChild(btn);
 
     const popup = document.createElement('div');
     popup.className = 'tab-popup';

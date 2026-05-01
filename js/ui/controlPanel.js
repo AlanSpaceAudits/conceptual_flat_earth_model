@@ -107,6 +107,25 @@ function resolveTargetAngles(targetId, c) {
   return null;
 }
 
+// Hide every other open popup (tab popup, About / Legend dialog,
+// the *other* search panel) when one of the search inputs is focused
+// or starts typing. The active-tab state lives inside `attachBottomBar`
+// closures, so we send the `fe-close-active-tab` custom event for that
+// scope to react to. `exceptPanel` is the search panel currently being
+// activated — it must NOT be closed by this call.
+function closeOtherPopups(exceptPanel) {
+  for (const id of ['about-popup', 'legend-popup']) {
+    const el = document.getElementById(id);
+    if (el) el.hidden = true;
+  }
+  document.dispatchEvent(new CustomEvent('fe-close-active-tab'));
+  document.querySelectorAll('.body-search-panel').forEach((p) => {
+    if (p === exceptPanel) return;
+    p.hidden = true;
+    p.replaceChildren();
+  });
+}
+
 // Search box + suggestion dropdown. Typing 3+ characters filters the
 // index by prefix match (case-insensitive); clicking a suggestion or
 // pressing Enter on the highlighted row engages the tracking protocol:
@@ -181,7 +200,9 @@ function attachBodySearch(host, model) {
     panel.hidden = false;
   };
 
+  input.addEventListener('focus', () => closeOtherPopups(panel));
   input.addEventListener('input', () => {
+    closeOtherPopups(panel);
     const q = input.value.trim().toLowerCase();
     if (q.length < 3) { hide(); return; }
     matches = BODY_SEARCH_INDEX
@@ -319,7 +340,9 @@ function attachFeatureSearch(host, openFeature) {
     panel.hidden = false;
   };
 
+  input.addEventListener('focus', () => closeOtherPopups(panel));
   input.addEventListener('input', () => {
+    closeOtherPopups(panel);
     if (!index) index = buildIndex();
     const q = input.value.trim().toLowerCase();
     if (q.length < 2) { hide(); return; }
@@ -2484,6 +2507,17 @@ export function buildControlPanel(host, model, demos) {
     tabEntries[i].btn.setAttribute('aria-selected', 'true');
     activeIdx = i;
   };
+
+  // Closing a tab from outside (currently dispatched by the search
+  // inputs in `closeOtherPopups`). Without this hook the search would
+  // hide the popup via DOM but `activeIdx` would still point at the
+  // hidden tab, requiring two extra clicks to re-open it.
+  document.addEventListener('fe-close-active-tab', () => {
+    if (activeIdx < 0) return;
+    tabEntries[activeIdx].popup.hidden = true;
+    tabEntries[activeIdx].btn.setAttribute('aria-selected', 'false');
+    activeIdx = -1;
+  });
 
   // Wire the feature-search's "open this tab + expand this group"
   // callback now that tabEntries / openTab exist. Always forces the

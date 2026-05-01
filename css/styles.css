@@ -1182,7 +1182,10 @@ footer#desc .desc-dynamic { color: var(--fg); }
     padding: 8px 8px 6px;
     gap: 8px;
     overflow-x: auto;
-    overflow-y: hidden;
+    /* `overflow-y: visible` so the body-search dropdown can pop UP
+       above the input. Earlier `overflow-y: hidden` clipped the
+       suggestion panel completely on phones. */
+    overflow-y: visible;
     flex-wrap: nowrap;
     align-items: center;
     -webkit-overflow-scrolling: touch;
@@ -1289,6 +1292,14 @@ footer#desc .desc-dynamic { color: var(--fg); }
 body .flight-info-box        { left: clamp(4px, 0.5vw, 12px) !important; }
 body #flight-info-box-2      { left: auto !important; right: clamp(4px, 0.5vw, 12px) !important; }
 
+/* On narrow viewports the readout column has too little width to
+   show "Distance / Lap / Heading" etc. next to a 72-px portrait,
+   so drop the portrait entirely below 600 px and hand the full
+   width to the text. */
+@media (max-width: 600px) {
+  body .flight-info-box .fi-art-row { display: none !important; }
+}
+
 /* Phone-sized: even tighter. */
 @media (max-width: 520px) {
   #app > header h1 { font-size: 12px; }
@@ -1298,12 +1309,13 @@ body #flight-info-box-2      { left: auto !important; right: clamp(4px, 0.5vw, 1
   #hud { font-size: 10px; }
 }
 
-/* Flight-routes demo mode: hide the Live Moon Phases collapsible
-   and the Live Ephemeris side tab so the SOUTH / NORTH info boxes
-   own the top-left of the viewport without clutter. The
-   `.flight-demo-active` class is toggled on `body` by
-   `FlightRoutes.update` whenever `state.ShowFlightRoutes` is on. */
-body.flight-demo-active #hud .moon-phase-wrapper,
+/* Flight-routes demo mode: hide the entire HUD overlay, the Live
+   Ephemeris side tab, and the tracking-info popup so the SOUTH /
+   NORTH info boxes own the viewport top without colliding with
+   the date / lat / lon strip. The `.flight-demo-active` class is
+   toggled on `body` by `FlightRoutes.update` whenever
+   `state.ShowFlightRoutes` is on. */
+body.flight-demo-active #hud,
 body.flight-demo-active #live-ephem-tab,
 body.flight-demo-active #tracking-info-popup {
   display: none !important;

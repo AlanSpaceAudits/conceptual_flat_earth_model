@@ -13985,3 +13985,41 @@ Format:
       by `body` + `!important` selectors. Boxes hug viewport edges
       at every screen width.
 - **Revert path:** `git checkout v-s000741 -- .`
+
+## S743 — search dropdown clip + close-others + flight-info compact
+
+- **Date:** 2026-04-30
+- **Files changed:** `css/styles.css`,
+  `js/ui/controlPanel.js`.
+- **Change:**
+    - **Mobile dropdown clip.** `#bottom-bar` mobile rule had
+      `overflow-y: hidden` which truncated the body-search and
+      feature-search suggestion panels (they pop UP via
+      `bottom: calc(100% + 4px)`) to zero visible height. Set
+      `overflow-y: visible` so the dropdowns extend above the
+      bar into the canvas region.
+    - **Hide `#hud` during flight demo.** Previously only the
+      moon-phase widget inside `#hud` was hidden during
+      flight-routes demo, leaving the date / lat / lon strip
+      to collide with the SOUTH / NORTH info boxes' shared
+      `top: 8px`. The whole `#hud` now hides while
+      `body.flight-demo-active` is set.
+    - **Compact flight-info-box on narrow phones.** Below 600 px
+      viewport width the `.fi-art-row` (72-px portrait + border)
+      hides via `display: none !important`, handing the full
+      box width to the 11-px readout column. Pixel-art portrait
+      reappears at ≥ 600 px.
+    - **Close-others on search.** New `closeOtherPopups(panel)`
+      helper in `controlPanel.js`:
+        - hides `#about-popup`, `#legend-popup`,
+        - dispatches `fe-close-active-tab` so the tab system
+          (whose `activeIdx` lives in an `attachBottomBar`
+          closure) can reset its state cleanly,
+        - hides every other `.body-search-panel`.
+      `attachBottomBar` adds a `document.addEventListener
+      ('fe-close-active-tab')` that hides the active popup and
+      sets `activeIdx = -1`. Both `attachBodySearch` and
+      `attachFeatureSearch` call `closeOtherPopups(panel)` on
+      `focus` and on every `input` event, so opening either
+      search clears the screen of competing popups.
+- **Revert path:** `git checkout v-s000742 -- .`

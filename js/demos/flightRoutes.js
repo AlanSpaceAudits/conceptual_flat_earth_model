@@ -172,6 +172,16 @@ function schematicInfoBox(route) {
       '~Air Time            : (no flight data)',
       '~Air Speed (avg)     : (no flight data)',
       '~Ground Speed (calc) : (no flight data)',
+      (s) => {
+        const p = Math.max(0, Math.min(1, s.FlightRoutesProgress || 0));
+        const trav = angle * p;
+        return `!Traversed (live)   : ${trav.toFixed(2)}° / ${angle.toFixed(2)}°  ·  ${arcLiKm(trav)}`;
+      },
+      (s) => {
+        const p = Math.max(0, Math.min(1, s.FlightRoutesProgress || 0));
+        const rem = angle * (1 - p);
+        return `!Remaining (live)   : ${rem.toFixed(2)}°  ·  ${arcLiKm(rem)}`;
+      },
     ],
   };
 }
@@ -249,6 +259,20 @@ function qfFlightDemo(track) {
           `Air Time            : ${formatHMS(actualSec)}`,
           `Air Speed (avg)     : ${formatDmsPerHour(aspAvgDegPerH)}  ·  ${aspAvgDegPerH != null ? arcLiKm(aspAvgDegPerH) + '/h' : '—'}`,
           `Ground Speed (calc) : ${formatDmsPerHour(gsDegPerH)}  ·  ${gsDegPerH != null ? arcLiKm(gsDegPerH) + '/h' : '—'}`,
+          (s) => {
+            const p = Math.max(0, Math.min(1, s.FlightRoutesProgress || 0));
+            return `!Elapsed (live)     : ${formatHMS(p * (actualSec || 0))}`;
+          },
+          (s) => {
+            const p = Math.max(0, Math.min(1, s.FlightRoutesProgress || 0));
+            const trav = angle * p;
+            return `!Traversed (live)   : ${trav.toFixed(2)}° / ${angle.toFixed(2)}°  ·  ${arcLiKm(trav)}`;
+          },
+          (s) => {
+            const p = Math.max(0, Math.min(1, s.FlightRoutesProgress || 0));
+            const rem = angle * (1 - p);
+            return `!Remaining (live)   : ${rem.toFixed(2)}°  ·  ${arcLiKm(rem)}`;
+          },
         ],
       },
     }),

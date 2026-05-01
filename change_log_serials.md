@@ -14572,3 +14572,25 @@ Format:
     auto-anchor keeps the race panel just below whichever info box
     is taller for the current demo.
 - **Revert path:** `git checkout v-s000764 -- .`
+
+## S766 — live progress on schematic + QF flight info boxes; compass into 2×N grid
+
+- **Date:** 2026-04-30
+- **Files changed:** `js/demos/flightRoutes.js`,
+  `js/ui/controlPanel.js`, `js-min/**` (rebuilt)
+- **Change:**
+  - `schematicInfoBox` (labeled-route demos) gains two function-typed
+    `!`-prefixed lines: `Traversed (live)` (deg + arc li/km) and
+    `Remaining (live)` (deg + arc li/km), driven by
+    `FlightRoutesProgress`.
+  - QF27/28 actual-flight box gets the same pair plus
+    `Elapsed (live)` (formatHMS(p × actualSec)) so the user can
+    watch the in-game flight clock advance against the predicted /
+    measured arrival rows.
+  - Bottom-bar icon stack collapses from 3 rows × 2 cols (with
+    spacer) back to 2 rows × 3 cols. The drafting-compass toggle
+    moves up into the top row alongside `▦` (grids) and `B/—/S`
+    (refraction); the bottom row carries `FE/GE/DP` + `⌫` plus a
+    hidden `world-row-spacer` so both rows share the same 3-slot
+    width.
+- **Revert path:** `git checkout v-s000765 -- .`

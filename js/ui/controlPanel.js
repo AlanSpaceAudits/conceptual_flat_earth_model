@@ -2643,29 +2643,25 @@ export function buildControlPanel(host, model, demos) {
   model.addEventListener('update', refreshDistCompass);
   refreshDistCompass();
 
-  const worldRow = document.createElement('div');
-  worldRow.className = 'world-row';
-  worldRow.append(btnWorld, btnClearTrace);
-
-  // Top row of the column: tracer (▦) + refraction (— / B / S).
-  // Symmetric with the FE / ⌫ row below.
+  // Two-row icon stack. Compass joins the top row alongside the
+  // tracer and refraction toggles so the cluster stays 2 rows tall
+  // (3 cols wide) instead of 3 rows tall.
   const tracerRow = document.createElement('div');
   tracerRow.className = 'world-row';
-  tracerRow.append(btnGrids, btnRefr);
+  tracerRow.append(btnGrids, btnRefr, btnDistCompass);
 
-  // Third row: distance compass + invisible spacer (preserves the
-  // 2-column width of the icon stack so the third row matches the
-  // first two visually).
-  const distSpacer = document.createElement('span');
-  distSpacer.className = 'world-row-spacer';
-  distSpacer.setAttribute('aria-hidden', 'true');
-  const distRow = document.createElement('div');
-  distRow.className = 'world-row';
-  distRow.append(btnDistCompass, distSpacer);
+  // Bottom row carries the world-model toggle + clear-trace, with a
+  // hidden spacer to match the top row's 3-slot width.
+  const worldSpacer = document.createElement('span');
+  worldSpacer.className = 'world-row-spacer';
+  worldSpacer.setAttribute('aria-hidden', 'true');
+  const worldRow = document.createElement('div');
+  worldRow.className = 'world-row';
+  worldRow.append(btnWorld, btnClearTrace, worldSpacer);
 
   const gridsStack = document.createElement('div');
   gridsStack.className = 'grids-stack';
-  gridsStack.append(tracerRow, worldRow, distRow);
+  gridsStack.append(tracerRow, worldRow);
   compassControls.appendChild(gridsStack);
 
 

@@ -13706,3 +13706,19 @@ Format:
     - added `min-height: 96px` and explicit `align-items: center`
       to the bar so the row has consistent vertical breathing.
 - **Revert path:** `git checkout v-s000732 -- .`
+
+## S734 — bottom bar slides horizontally on overflow
+
+- **Date:** 2026-04-30
+- **Files changed:** `css/styles.css`, `css/styles.min.css`
+- **Change:** `#bottom-bar` now sets `overflow-x: auto;
+  overflow-y: visible; flex-wrap: nowrap;` and every direct child
+  gets `flex-shrink: 0`. When the bar's content is wider than the
+  viewport (which is the rule on narrow desktop windows + mobile),
+  the row scrolls horizontally instead of squeezing or overlapping
+  itself. `bar-left` flex changed from `1 1 0` to `0 0 auto` so it
+  takes only the natural width of its content rather than growing
+  to fill remaining space (which made the search input get
+  squeezed before). `overflow-y: visible` keeps the body-search
+  dropdown popping UP above the bar without getting clipped.
+- **Revert path:** `git checkout v-s000733 -- .`

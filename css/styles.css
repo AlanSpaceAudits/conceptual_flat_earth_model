@@ -409,11 +409,21 @@ header .info-popup.legend-popup a { color: var(--accent); }
   border-top: 1px solid var(--border);
   z-index: 30;
   pointer-events: auto;
+  /* If the bar's content is wider than the viewport, slide
+     horizontally instead of overlapping. `overflow-y: visible` lets
+     the body-search dropdown still pop UP above the bar. */
+  overflow-x: auto;
+  overflow-y: visible;
+  flex-wrap: nowrap;
+  -webkit-overflow-scrolling: touch;
   /* Scale the entire bottom bar with the viewport so panels stay
      readable on every monitor + browser-zoom level. */
   zoom: var(--ui-zoom);
 }
-#bottom-bar .bar-left { flex: 1 1 0; min-width: 0; display: flex; align-items: center; }
+/* Keep every cluster at its natural width so it slides under the
+   bar's overflow rather than getting squeezed and overlapping. */
+#bottom-bar > * { flex-shrink: 0; }
+#bottom-bar .bar-left { flex: 0 0 auto; min-width: 0; display: flex; align-items: center; }
 
 #bottom-bar .search-host { flex: 0 0 auto; margin-right: 8px; }
 #bottom-bar .search-stack {

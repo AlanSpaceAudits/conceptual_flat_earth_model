@@ -13506,3 +13506,19 @@ Format:
   match the cel-nav star sprite size. Below-horizon and missing-coord
   cases short-circuit to invisible.
 - **Revert path:** `git checkout v-s000722 -- .`
+
+## S724 — halo replaced with apparent→true connector line
+
+- **Date:** 2026-04-30
+- **Files changed:** `js/render/worldObjects.js`
+- **Change:** the LineLoop ring kept failing to land at a usable
+  size — the user requested dropping it for a simpler
+  visualisation. Halo replaced with a single shared
+  `THREE.LineSegments` carrying 2 vertices per tracker slot
+  (apparent endpoint, true endpoint). `setDrawRange(0, n * 2)`
+  scopes the draw to active slots each frame. The line connects
+  the apparent dot to the true dot directly, so the rendered
+  segment length equals the on-screen gap between them at any zoom
+  — no scaling guesswork. White, 1 px line width via
+  `LineBasicMaterial`, `renderOrder = 250`.
+- **Revert path:** `git checkout v-s000723 -- .`

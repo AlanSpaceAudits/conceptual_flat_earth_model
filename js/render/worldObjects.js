@@ -5464,19 +5464,15 @@ export class TrackedGroundPoints {
 //   1. A 3 px cyan point at its TRUE (geocentric, unrefracted)
 //      optical-vault coord.
 //   2. A 3 px orange point at its APPARENT (refracted) coord.
-//   3. A per-slot circle outline anchored on the APPARENT coord
-//      whose world radius equals the apparent↔true 3D distance —
-//      so the rendered circumference passes through the true point
-//      and grows/shrinks live with the refraction lift.
+//   3. A 1 px white line connecting apparent → true. Length lives
+//      in world units (the apparent↔true 3D distance) so the line's
+//      rendered length always matches the on-screen gap between
+//      the two dots.
 //
-// The circle is a `THREE.LineLoop` over a 64-vertex unit circle.
-// `LineBasicMaterial` rasterises lines at 1 px width on every
-// platform, so the outline stays a clean thin line regardless of
-// the ring's overall scale. Each frame the loop is positioned at
-// the apparent coord, scaled by `r`, and re-oriented via
-// `lookAt(camera.position)` so its plane is perpendicular to the
-// camera (without that, the loop lies in the world XY plane and
-// shows edge-on).
+// The connector is a single shared `THREE.LineSegments` whose
+// position buffer holds 2 vertices per tracker slot (apparent then
+// true). `setDrawRange(0, n * 2)` scopes the draw to the active
+// slots each frame.
 export class GeocentricMarkers {
   constructor(max = 64) {
     this.group = new THREE.Group();
@@ -5509,30 +5505,22 @@ export class GeocentricMarkers {
     this._appPoints.frustumCulled = false;
     this.group.add(this._appPoints);
 
-    // Unit-circle vertex buffer reused by every halo LineLoop.
-    const SEG = 64;
-    const ringPos = new Float32Array(SEG * 3);
-    for (let i = 0; i < SEG; i++) {
-      const t = (i / SEG) * Math.PI * 2;
-      ringPos[i * 3]     = Math.cos(t);
-      ringPos[i * 3 + 1] = Math.sin(t);
-      ringPos[i * 3 + 2] = 0;
-    }
-    const ringGeom = new THREE.BufferGeometry();
-    ringGeom.setAttribute('position', new THREE.BufferAttribute(ringPos, 3));
-
-    this._halos = [];
-    for (let i = 0; i < max; i++) {
-      const m = new THREE.LineLoop(ringGeom, new THREE.LineBasicMaterial({
-        color: 0xffffff,
-        depthTest: false, depthWrite: false,
-      }));
-      m.frustumCulled = false;
-      m.renderOrder = 250;
-      m.visible = false;
-      this._halos.push(m);
-      this.group.add(m);
-    }
+    // Apparent → true connector. One `THREE.LineSegments` covers
+    // every tracker target: 2 vertices per slot (apparent endpoint
+    // followed by true endpoint), so `n` tracked targets occupy the
+    // first `n * 2` vertices and `setDrawRange(0, n * 2)` controls
+    // how many segments are drawn.
+    this._linePos = new Float32Array(max * 2 * 3);
+    const lineGeom = new THREE.BufferGeometry();
+    lineGeom.setAttribute('position', new THREE.BufferAttribute(this._linePos, 3));
+    lineGeom.setDrawRange(0, 0);
+    this._lines = new THREE.LineSegments(lineGeom, new THREE.LineBasicMaterial({
+      color: 0xffffff,
+      depthTest: false, depthWrite: false,
+    }));
+    this._lines.renderOrder = 250;
+    this._lines.frustumCulled = false;
+    this.group.add(this._lines);
   }
 
   update(model, camera) {
@@ -5543,7 +5531,7 @@ export class GeocentricMarkers {
     if (!on) {
       this._truePoints.geometry.setDrawRange(0, 0);
       this._appPoints.geometry.setDrawRange(0, 0);
-      for (const m of this._halos) m.visible = false;
+      this._lines.geometry.setDrawRange(0, 0);
       return;
     }
     const ge = s.WorldModel === 'ge';
@@ -5568,27 +5556,22 @@ export class GeocentricMarkers {
       this._appPos[n * 3 + 1]  = ac[1];
       this._appPos[n * 3 + 2]  = ac[2];
 
-      const dx = ac[0] - coordTrue[0];
-      const dy = ac[1] - coordTrue[1];
-      const dz = ac[2] - coordTrue[2];
-      const r  = Math.hypot(dx, dy, dz);
+      // Connector segment vertex 0 = apparent, vertex 1 = true.
+      this._linePos[n * 6 + 0] = ac[0];
+      this._linePos[n * 6 + 1] = ac[1];
+      this._linePos[n * 6 + 2] = ac[2];
+      this._linePos[n * 6 + 3] = coordTrue[0];
+      this._linePos[n * 6 + 4] = coordTrue[1];
+      this._linePos[n * 6 + 5] = coordTrue[2];
 
-      const halo = this._halos[n];
-      if (r > 1e-7) {
-        halo.position.set(ac[0], ac[1], ac[2]);
-        halo.scale.set(r, r, r);
-        if (camera) halo.lookAt(camera.position);
-        halo.visible = true;
-      } else {
-        halo.visible = false;
-      }
       n++;
     }
-    for (let i = n; i < this._halos.length; i++) this._halos[i].visible = false;
     this._truePoints.geometry.attributes.position.needsUpdate = true;
     this._truePoints.geometry.setDrawRange(0, n);
     this._appPoints.geometry.attributes.position.needsUpdate  = true;
     this._appPoints.geometry.setDrawRange(0, n);
+    this._lines.geometry.attributes.position.needsUpdate = true;
+    this._lines.geometry.setDrawRange(0, n * 2);
   }
 }
 

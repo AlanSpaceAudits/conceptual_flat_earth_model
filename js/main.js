@@ -362,15 +362,24 @@ window.renderer = renderer;
 window.demos = demos;
 
 // Service-worker registration. CACHE_VERSION inside `sw.js`
-// controls eviction; on `controllerchange` (a new SW just took
-// over from the previous one via skipWaiting + clients.claim) we
+// controls eviction; on `controllerchange` (an existing SW was
+// replaced by a new one via skipWaiting + clients.claim) we
 // auto-reload the page once so the user picks up the fresh JS /
-// CSS without manually hard-refreshing. The `_reloaded` flag
-// prevents an infinite reload loop if the activation pings
-// controllerchange more than once.
+// CSS without manually hard-refreshing.
+//
+// `_controlledAtStart` records whether this page was already
+// controlled by a prior SW when the bootstrap ran. On a brand-new
+// visit (no prior SW) the activate handler claims this client and
+// `controllerchange` fires for the first claim; reloading there
+// would be a wasteful redirect on the very first page load
+// (Lighthouse "Avoid multiple page redirects" caught this). The
+// page only auto-reloads when an *existing* controller is replaced
+// — i.e. the user is upgrading from a previous CACHE_VERSION.
 if ('serviceWorker' in navigator) {
+  const _controlledAtStart = !!navigator.serviceWorker.controller;
   let _reloaded = false;
   navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!_controlledAtStart) return;
     if (_reloaded) return;
     _reloaded = true;
     window.location.reload();

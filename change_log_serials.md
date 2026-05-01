@@ -14222,3 +14222,20 @@ Format:
       specifiers (`three`) stay intact for the importmap.
     - **CACHE_VERSION** bumped `fe-v6-s748 → fe-v7-s749`.
 - **Revert path:** `git checkout v-s000748 -- . && rm -rf js-min`
+
+## S750 — controllerchange first-claim no-reload
+
+- **Date:** 2026-04-30
+- **Files changed:** `js/main.js`, `sw.js`.
+- **Change:** S749 stopped the SW activate handler from
+  navigating clients on first install, but the *page-side*
+  `controllerchange` listener (S742) still fired the moment
+  `clients.claim()` ran for the first time, reloading the
+  brand-new page. Lighthouse counted that as a 1.3 s redirect.
+  Snapshotted `navigator.serviceWorker.controller` into
+  `_controlledAtStart` at bootstrap; the listener early-exits
+  unless the page was *already* controlled by a prior SW (i.e.
+  this `controllerchange` is the user upgrading to a new
+  CACHE_VERSION, not a brand-new install). CACHE_VERSION
+  bumped `fe-v7-s749 → fe-v8-s750`.
+- **Revert path:** `git checkout v-s000749 -- .`

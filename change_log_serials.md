@@ -13905,3 +13905,33 @@ Format:
       and scaled `.ti-art` 160→96, `.ti-name` 18→15,
       `.ti-row` 14→12, `.ti-content` padding 14×16→10×12.
 - **Revert path:** `git checkout v-s000739 -- .`
+
+## S741 — dynamic mobile scaling: About / Legend / flight-info
+
+- **Date:** 2026-04-30
+- **Files changed:** `css/styles.css`, `css/styles.min.css`.
+- **Change:** Replaced the prior single-line mobile rule
+  `.info-popup{position:fixed;left:4px;right:4px;max-width:none}`
+  (which only repositioned the popup; font / heading / padding
+  stayed at desktop sizes — 19 px body, 30/24/20 px h1/h2/h3,
+  17 px tables, 16 px code) with a comprehensive
+  `@media (max-width: 900px)` block:
+    - `header .info-popup` 13 / 1.45, padding 12×14, fixed
+      6 px gutters, top 52 px, max-height `calc(100vh - 120px)`,
+      `overflow-y: auto`.
+    - `header .info-popup.legend-popup` 13 / 1.5; h1 18 px,
+      h2 16 px, h3 14 px; ul padding-left 18 px; table 12 px,
+      th/td 5×7; code 12 px.
+    - `.flight-info-box` runtime-injected sizing (min-width
+      380 px, max-width 460 px, font 14 px, art 160 px) was
+      written as inline `style.cssText` + a runtime `<style>`,
+      so styles.css overrides need `body` prefix + `!important`
+      to beat inline. Mobile rules:
+        - `body .flight-info-box` min-width 0, max-width
+          `calc(50vw - 8px)`, font 11 px, left 4 px.
+        - `body #flight-info-box-2` left auto / right 4 px so
+          North + South readouts split the width 50/50.
+        - `.fi-title` 12 px, `.fi-content` padding 8×10,
+          `.fi-art` 72 × 72 (was 160 × 160), gap/padding/
+          margin trimmed, `.fi-line/.fi-blank/.fi-live` 11 px.
+- **Revert path:** `git checkout v-s000740 -- .`

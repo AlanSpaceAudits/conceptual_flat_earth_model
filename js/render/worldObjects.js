@@ -5457,36 +5457,26 @@ export class TrackedGroundPoints {
   }
 }
 
-// Halo ring as a plain `THREE.Mesh` with `RingGeometry`. Bypasses
-// the Sprite + CanvasTexture pipeline entirely — sprite-based ring
-// outlines were collapsing invisible at small render sizes (and on
-// at least one user setup, every variant failed to render at all).
-// A solid ring mesh is unambiguous: it renders the same way every
-// other Mesh in the scene does.
+// Geocentric-position visualization.
 //
-// Geometry: outer radius 1.0, inner 0.86 → 14% band width. Per
-// slot, `mesh.scale = (R, R, 1)` so outer radius in world space
-// equals `R` (the apparent↔true 3D distance) and the rendered
-// circumference passes through the true marker. `lookAt(camera)`
-// keeps the ring face-on to the camera.
-
-// True / apparent position ghost markers. Pairs with
-// `Refraction !== 'off'` and `ShowGeocentricPosition`. Three layers:
-//   • cyan point cloud at every tracker target's UNREFRACTED
-//     optical-vault coord (true / geocentric position),
-//   • orange point cloud at the REFRACTED coord (apparent),
-//   • per-slot orange ring mesh centred on the apparent point with
-//     world radius equal to the apparent↔true distance, billboarded
-//     to face the camera so the true marker sits exactly on the
-//     circumference. As the body drops toward the horizon the
-//     refraction lift grows and the ring expands; near zenith it
-//     shrinks.
-// Both dot clouds use `sizeAttenuation: false` and 3 px size — the
-// same size the cel-nav star sprite renders — so the apparent ghost
-// overlays the regular star sprite cleanly and the true ghost reads
-// at the same scale rather than dwarfing the body. The halo uses a
-// thin `RingGeometry` annulus (1.5 % stroke band) so the line stays
-// readable at any distance without smearing into a fill.
+// When `Refraction !== 'off'` and `ShowGeocentricPosition` is on,
+// every tracker target gets:
+//   1. A 3 px cyan point at its TRUE (geocentric, unrefracted)
+//      optical-vault coord.
+//   2. A 3 px orange point at its APPARENT (refracted) coord.
+//   3. A per-slot circle outline anchored on the APPARENT coord
+//      whose world radius equals the apparent↔true 3D distance —
+//      so the rendered circumference passes through the true point
+//      and grows/shrinks live with the refraction lift.
+//
+// The circle is a `THREE.LineLoop` over a 64-vertex unit circle.
+// `LineBasicMaterial` rasterises lines at 1 px width on every
+// platform, so the outline stays a clean thin line regardless of
+// the ring's overall scale. Each frame the loop is positioned at
+// the apparent coord, scaled by `r`, and re-oriented via
+// `lookAt(camera.position)` so its plane is perpendicular to the
+// camera (without that, the loop lies in the world XY plane and
+// shows edge-on).
 export class GeocentricMarkers {
   constructor(max = 64) {
     this.group = new THREE.Group();
@@ -5495,54 +5485,49 @@ export class GeocentricMarkers {
     this._truePos = new Float32Array(max * 3);
     this._appPos  = new Float32Array(max * 3);
 
+    // True (cyan) and apparent (orange) point clouds, sized to
+    // match the cel-nav star sprite (3 px, screen-space).
     const trueGeom = new THREE.BufferGeometry();
     trueGeom.setAttribute('position', new THREE.BufferAttribute(this._truePos, 3));
     trueGeom.setDrawRange(0, 0);
-    const trueMat = new THREE.PointsMaterial({
+    this._truePoints = new THREE.Points(trueGeom, new THREE.PointsMaterial({
       color: 0x40e0d0, size: 3, sizeAttenuation: false,
-      transparent: true, opacity: 1.0,
       depthTest: false, depthWrite: false,
-    });
-    this._truePoints = new THREE.Points(trueGeom, trueMat);
-    this._truePoints.renderOrder = 60;
+    }));
+    this._truePoints.renderOrder = 251;
     this._truePoints.frustumCulled = false;
     this.group.add(this._truePoints);
 
     const appGeom = new THREE.BufferGeometry();
     appGeom.setAttribute('position', new THREE.BufferAttribute(this._appPos, 3));
     appGeom.setDrawRange(0, 0);
-    const appMat = new THREE.PointsMaterial({
+    this._appPoints = new THREE.Points(appGeom, new THREE.PointsMaterial({
       color: 0xff8c00, size: 3, sizeAttenuation: false,
-      transparent: true, opacity: 1.0,
       depthTest: false, depthWrite: false,
-    });
-    this._appPoints = new THREE.Points(appGeom, appMat);
-    this._appPoints.renderOrder = 60;
+    }));
+    this._appPoints.renderOrder = 251;
     this._appPoints.frustumCulled = false;
     this.group.add(this._appPoints);
 
-    // Shared ring geometry: outer radius 1.0, inner 0.92 — 8 %
-    // stroke band. Wide enough to remain a few pixels of visible
-    // band at typical zoom levels even when the ring's overall
-    // world radius is small (e.g. 0.004 world units at typical
-    // first-person refractions). Thinner bands collapsed
-    // sub-pixel and the rasteriser dropped them.
-    const ringGeom = new THREE.RingGeometry(0.92, 1.0, 96);
+    // Unit-circle vertex buffer reused by every halo LineLoop.
+    const SEG = 64;
+    const ringPos = new Float32Array(SEG * 3);
+    for (let i = 0; i < SEG; i++) {
+      const t = (i / SEG) * Math.PI * 2;
+      ringPos[i * 3]     = Math.cos(t);
+      ringPos[i * 3 + 1] = Math.sin(t);
+      ringPos[i * 3 + 2] = 0;
+    }
+    const ringGeom = new THREE.BufferGeometry();
+    ringGeom.setAttribute('position', new THREE.BufferAttribute(ringPos, 3));
+
     this._halos = [];
     for (let i = 0; i < max; i++) {
-      const mat = new THREE.MeshBasicMaterial({
+      const m = new THREE.LineLoop(ringGeom, new THREE.LineBasicMaterial({
         color: 0xffffff,
-        side: THREE.DoubleSide,
-        transparent: true,
-        opacity: 0.85,
         depthTest: false, depthWrite: false,
-      });
-      const m = new THREE.Mesh(ringGeom, mat);
+      }));
       m.frustumCulled = false;
-      // Very high renderOrder so the halo always lands on top of
-      // the body sprite, dome, and other transparents — earlier
-      // attempts at lower values were getting visually buried under
-      // the body sprite or its dome halo.
       m.renderOrder = 250;
       m.visible = false;
       this._halos.push(m);
@@ -5574,25 +5559,22 @@ export class GeocentricMarkers {
         : info.opticalVaultCoord;
       if (!coordTrue || coordTrue[2] === -1000) continue;
       if (n >= this._max) break;
+      const ac = (coordAppRaw && coordAppRaw[2] !== -1000) ? coordAppRaw : coordTrue;
+
       this._truePos[n * 3]     = coordTrue[0];
       this._truePos[n * 3 + 1] = coordTrue[1];
       this._truePos[n * 3 + 2] = coordTrue[2];
-      const ac = (coordAppRaw && coordAppRaw[2] !== -1000) ? coordAppRaw : coordTrue;
-      this._appPos[n * 3]     = ac[0];
-      this._appPos[n * 3 + 1] = ac[1];
-      this._appPos[n * 3 + 2] = ac[2];
+      this._appPos[n * 3]      = ac[0];
+      this._appPos[n * 3 + 1]  = ac[1];
+      this._appPos[n * 3 + 2]  = ac[2];
+
       const dx = ac[0] - coordTrue[0];
       const dy = ac[1] - coordTrue[1];
       const dz = ac[2] - coordTrue[2];
       const r  = Math.hypot(dx, dy, dz);
+
       const halo = this._halos[n];
       if (r > 1e-7) {
-        // Strict geometry: ring's world radius equals the
-        // apparent↔true 3D distance, so the rendered circumference
-        // passes through the true marker. No min-angular clamp —
-        // at very small refractions the ring becomes small but
-        // remains visible thanks to the renderOrder=250 placement;
-        // the user can zoom in (OpticalZoom) to inspect tight cases.
         halo.position.set(ac[0], ac[1], ac[2]);
         halo.scale.set(r, r, r);
         if (camera) halo.lookAt(camera.position);

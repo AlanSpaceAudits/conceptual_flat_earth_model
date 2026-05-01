@@ -13482,3 +13482,27 @@ Format:
   annulus. Strict scale (no angular clamp) preserved so the ring's
   outer edge sits exactly on the true marker.
 - **Revert path:** `git checkout v-s000721 -- .`
+
+## S723 — clean rewrite of GeocentricMarkers halo
+
+- **Date:** 2026-04-30
+- **Files changed:** `js/render/worldObjects.js`
+- **Change:** clean rewrite of `GeocentricMarkers` after the user
+  asked for a fresh start. Removed every prior attempt's accumulated
+  cruft (sprite + canvas texture, RingGeometry annulus, angular
+  clamps, screen-space scale tables). Halo is now a per-slot
+  `THREE.LineLoop` over a 64-vertex unit circle with
+  `LineBasicMaterial` (white). Per-frame transform:
+    - `position = apparent coord`
+    - `scale = (r, r, r)` where `r` is the apparent↔true 3D distance
+    - `lookAt(camera.position)` so the loop's plane stays
+       perpendicular to view
+  WebGL rasterises lines at 1 px width regardless of mesh scale, so
+  the outline is always a clean thin line whose world radius equals
+  the apparent↔true distance — the rendered circumference therefore
+  passes through the true marker by construction. `renderOrder = 250`
+  on the loop (251 on the dots) keeps everything on top of the body
+  sprite and dome layers. Marker dots stay at 3 px screen-space to
+  match the cel-nav star sprite size. Below-horizon and missing-coord
+  cases short-circuit to invisible.
+- **Revert path:** `git checkout v-s000722 -- .`

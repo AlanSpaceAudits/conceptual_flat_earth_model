@@ -219,8 +219,15 @@ header .info-popup.legend-popup a { color: var(--accent); }
   border: 1px solid rgba(120, 150, 200, 0.45);
   border-radius: 8px;
   padding: 0;
+  /* Popup auto-sizes to its widest row up to a viewport-aware cap.
+     With Chinese du / fen on, rows like
+     `Central  87° 53' 51.0"  ·  89 du 1.8 fen  ·  31325 li 229 bu`
+     run to ~500 px and would wrap or overflow at the prior fixed
+     460 px max-width. `min(96vw, 720px)` keeps the popup from
+     pushing past the viewport on mobile. */
+  width: max-content;
   min-width: 380px;
-  max-width: 460px;
+  max-width: min(96vw, 720px);
   zoom: var(--ui-zoom);
   z-index: 12;
   /* `zoom` was breaking drag math (clientX in viewport pixels vs.
@@ -285,9 +292,16 @@ header .info-popup.legend-popup a { color: var(--accent); }
   display: flex; justify-content: space-between; gap: 14px;
   padding: 2px 4px;
   font-size: 14px;
+  /* Row wraps to a second line if the value won't fit on the same
+     line as the label — only kicks in on viewports too narrow to
+     fit the popup's `max-content` width without truncation. */
+  flex-wrap: wrap;
 }
 #tracking-info-popup .ti-row span:first-child { color: var(--muted); }
-#tracking-info-popup .ti-row span:last-child  { font-variant-numeric: tabular-nums; }
+#tracking-info-popup .ti-row span:last-child  {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
 #tracking-info-popup .ti-vis-ok { color: #7fe39a; }
 #tracking-info-popup .ti-vis-no { color: #ff7b6b; }
 #tracker-hud .line { white-space: pre; }

@@ -14404,3 +14404,22 @@ Format:
     separated by `·` so both can be read together.
 - **Revert path:** `git checkout v-s000756 -- .` (and remove
   `js/core/units.js`).
+
+## S758 — tracking-info popup widens for Chinese mode + viewport-aware
+
+- **Date:** 2026-05-01
+- **Files changed:** `css/styles.css`, `css/styles.min.css`
+- **Change:** popup width replaced from fixed `min: 380, max: 460`
+  to `width: max-content; min-width: 380px; max-width: min(96vw,
+  720px);` so the panel auto-sizes to its widest row (the Chinese
+  mode rows that read e.g.
+  `Central  87° 53' 51.0"  ·  89 du 1.8 fen  ·  31325 li 229 bu`
+  run to ~500 px and were wrapping mid-row at the prior 460 px
+  cap). Cap stays viewport-aware via `min(96vw, 720px)` so the
+  popup never bleeds past the screen edge on mobile. `.ti-row`
+  also gains `flex-wrap: wrap` as a safety net for very narrow
+  viewports, and the value `<span>` keeps `text-align: right` so
+  wrapped values stay right-aligned. Mobile media-query rule
+  unchanged (already takes the full viewport minus a 12 px margin
+  per S740).
+- **Revert path:** `git checkout v-s000757 -- .`

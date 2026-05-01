@@ -2395,9 +2395,15 @@ export function buildControlPanel(host, model, demos) {
   // ARIA forbids non-`role="tab"` children of a tablist. Each tab
   // button still announces as `role="tab"` individually.
   // Search hosts live inside tabsBar so they sit immediately to the
-  // left of the View tab in the right-aligned tab cluster.
-  tabsBar.appendChild(searchHost);
-  tabsBar.appendChild(featureHost);
+  // left of the View tab in the right-aligned tab cluster. The two
+  // are stacked in a column wrapper so they share horizontal space —
+  // body search on top, feature search below — instead of doubling
+  // the bar's horizontal footprint.
+  const searchStack = document.createElement('div');
+  searchStack.className = 'search-stack';
+  searchStack.appendChild(searchHost);
+  searchStack.appendChild(featureHost);
+  tabsBar.appendChild(searchStack);
 
   bar.append(barLeft, timeControls, compassControls, tabsBar);
 

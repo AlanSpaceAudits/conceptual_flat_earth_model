@@ -13661,3 +13661,30 @@ Format:
   existing `MIN_SPEED = (1/24) / 128 ≈ 0.000326` d/s would otherwise
   prevent reaching real-time (`1.157e-5` d/s).
 - **Revert path:** `git checkout v-s000730 -- .`
+
+## S732 — search inputs stacked vertically to free horizontal space
+
+- **Date:** 2026-04-30
+- **Files changed:**
+  - `js/ui/controlPanel.js`
+  - `css/styles.css`
+  - `css/styles.min.css`
+- **Change:** the two search inputs (body search on top, feature
+  search below) now share horizontal space rather than doubling
+  it. Wrapped both `.search-host` divs in a new `.search-stack`
+  flex-column inside `tabsBar`. The RT button push that re-broke
+  the bar layout (S731) is absorbed by the freed horizontal real
+  estate. CSS:
+  ```
+  #bottom-bar .search-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-left: 12px;
+    flex: 0 0 auto;
+  }
+  ```
+  The body search-host's old `margin-left: 16px` was moved to the
+  stack wrapper since both children share the same left buffer
+  now.
+- **Revert path:** `git checkout v-s000731 -- .`

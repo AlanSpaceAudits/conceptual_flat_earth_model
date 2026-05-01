@@ -2,7 +2,7 @@
 // FeModel state. No external framework — plain DOM.
 
 import { dateTimeToString, dateTimeToDate } from '../core/time.js';
-import { fmtDuFen, fmtLiBuFromLi, haversineLi, KM_PER_LI } from '../core/units.js';
+import { fmtDuFen, fmtLiBuFromLi, haversineLi, KM_PER_LI, R_LI } from '../core/units.js';
 import { TIME_ORIGIN } from '../core/constants.js';
 import { findNextEclipses } from '../core/ephemeris.js';
 import { raDecToAzEl } from '../core/transforms.js';
@@ -1563,6 +1563,159 @@ function bindTip(el, key) {
   onLangChange(refresh);
 }
 
+// Distance Calc panel for the View tab. Renders 4 lat/lon inputs,
+// a two-button "use observer" cluster, and a computed readout that
+// shows: great-circle distance (li bu + km), central angle (DMS +
+// du fen), and inscribed angle (DMS + du fen, half the central by
+// the inscribed-angle theorem). Auto-fills P1 with the observer's
+// (lat, lon) the first time the panel renders while all four
+// inputs are still null. Returns the rendered element so the View
+// tab can append it inside a collapsible group.
+function distanceCalcPanel(model) {
+  const wrap = document.createElement('div');
+  wrap.className = 'dist-calc-panel';
+
+  const mkNum = (label, key, range) => {
+    const row = document.createElement('div');
+    row.className = 'row';
+    row.innerHTML = `<label>${label}</label>
+      <input type="number" class="num" step="0.0001"
+             min="${range[0]}" max="${range[1]}">
+      <span class="unit">°</span>`;
+    const num = row.querySelector('input.num');
+    let editing = false;
+    const refresh = () => {
+      const v = model.state[key];
+      if (!editing) num.value = Number.isFinite(v) ? (+v).toFixed(4) : '';
+    };
+    num.addEventListener('focus', () => { editing = true; });
+    const commit = () => {
+      editing = false;
+      const v = parseFloat(num.value);
+      model.setState({ [key]: Number.isFinite(v) ? v : null });
+    };
+    num.addEventListener('blur', commit);
+    num.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter')  num.blur();
+      if (e.key === 'Escape') { editing = false; refresh(); num.blur(); }
+    });
+    model.addEventListener('update', refresh);
+    refresh();
+    return row;
+  };
+
+  wrap.appendChild(mkNum('Lat 1', 'DistCalcLat1', [-90,  90]));
+  wrap.appendChild(mkNum('Lon 1', 'DistCalcLon1', [-180, 180]));
+  wrap.appendChild(mkNum('Lat 2', 'DistCalcLat2', [-90,  90]));
+  wrap.appendChild(mkNum('Lon 2', 'DistCalcLon2', [-180, 180]));
+
+  const btnRow = document.createElement('div');
+  btnRow.className = 'row action-group-row';
+  const mkBtn = (text, onClick) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'action-btn';
+    b.textContent = text;
+    b.addEventListener('click', onClick);
+    return b;
+  };
+  btnRow.appendChild(mkBtn('Use Obs → P1', () => {
+    model.setState({
+      DistCalcLat1: model.state.ObserverLat,
+      DistCalcLon1: model.state.ObserverLong,
+    });
+  }));
+  btnRow.appendChild(mkBtn('Use Obs → P2', () => {
+    model.setState({
+      DistCalcLat2: model.state.ObserverLat,
+      DistCalcLon2: model.state.ObserverLong,
+    });
+  }));
+  btnRow.appendChild(mkBtn('Clear', () => {
+    model.setState({
+      DistCalcLat1: null, DistCalcLon1: null,
+      DistCalcLat2: null, DistCalcLon2: null,
+    });
+  }));
+  wrap.appendChild(btnRow);
+
+  const out = document.createElement('div');
+  out.className = 'dist-calc-output';
+  out.innerHTML = `
+    <div class="dc-line"><span class="dc-label">Distance</span>
+      <span class="dc-val" data-k="dist">—</span></div>
+    <div class="dc-line"><span class="dc-label">Central angle</span>
+      <span class="dc-val" data-k="ca">—</span></div>
+    <div class="dc-line"><span class="dc-label">Inscribed angle</span>
+      <span class="dc-val" data-k="ia">—</span></div>`;
+  wrap.appendChild(out);
+
+  const slotDist = out.querySelector('[data-k="dist"]');
+  const slotCa   = out.querySelector('[data-k="ca"]');
+  const slotIa   = out.querySelector('[data-k="ia"]');
+
+  const fmtDmsUnsigned = (deg) => {
+    if (!Number.isFinite(deg)) return '—';
+    const a = Math.abs(deg);
+    const d = Math.floor(a);
+    const mF = (a - d) * 60;
+    const m = Math.floor(mF);
+    const sec = (mF - m) * 60;
+    return `${d}° ${String(m).padStart(2, '0')}' ${sec.toFixed(2)}"`;
+  };
+
+  const refresh = () => {
+    const s = model.state;
+    const have = Number.isFinite(s.DistCalcLat1)
+              && Number.isFinite(s.DistCalcLon1)
+              && Number.isFinite(s.DistCalcLat2)
+              && Number.isFinite(s.DistCalcLon2);
+    if (!have) {
+      slotDist.textContent = '—';
+      slotCa.textContent   = '—';
+      slotIa.textContent   = '—';
+      return;
+    }
+    const li = haversineLi(
+      s.DistCalcLat1, s.DistCalcLon1,
+      s.DistCalcLat2, s.DistCalcLon2);
+    const km = li * KM_PER_LI;
+    // Central angle = arc / R_LI in radians, expressed in degrees.
+    // Equivalent to the spherical-law-of-cosines value the dot-
+    // product distance uses; haversine / R_LI keeps the formulas
+    // consistent across the panel.
+    const central = (li / R_LI) * 180 / Math.PI;
+    // Inscribed-angle theorem: an inscribed angle subtending the
+    // same arc is half the central angle.
+    const inscribed = central / 2;
+
+    slotDist.textContent =
+      `${fmtLiBuFromLi(li)}  (${km.toFixed(2)} km)`;
+    slotCa.textContent =
+      `${fmtDmsUnsigned(central)}  ·  ${fmtDuFen(central)}`;
+    slotIa.textContent =
+      `${fmtDmsUnsigned(inscribed)}  ·  ${fmtDuFen(inscribed)}`;
+  };
+
+  // Auto-fill P1 with the observer's position the first time the
+  // panel renders while all four inputs are still null. Subsequent
+  // edits stand on their own; the explicit "Use Obs → P1" button
+  // is the user-driven way to refresh.
+  const s0 = model.state;
+  const allNull = s0.DistCalcLat1 == null && s0.DistCalcLon1 == null
+               && s0.DistCalcLat2 == null && s0.DistCalcLon2 == null;
+  if (allNull) {
+    model.setState({
+      DistCalcLat1: s0.ObserverLat,
+      DistCalcLon1: s0.ObserverLong,
+    });
+  }
+
+  model.addEventListener('update', refresh);
+  refresh();
+  return wrap;
+}
+
 // Dispatch a field-group row definition to the right row-builder.
 function buildRow(model, row) {
   let el;
@@ -1611,6 +1764,7 @@ const GROUP_KEY = {
   'Bright Star Catalog': 'grp_bright_star_catalog',
   'Calendar': 'grp_calendar', 'Autoplay': 'grp_autoplay',
   'Language Select': 'grp_language_select',
+  'Distance Calc': 'grp_distance_calc',
 };
 
 function buildGroup(model, title, rows, popupGroups) {
@@ -2753,6 +2907,11 @@ export function buildControlPanel(host, model, demos) {
         const auto = buildGroup(model, 'Autoplay', [], popupGroups);
         autoplay.renderInto(auto.body);
         popup.appendChild(auto.el);
+      }
+      if (tab.tab === 'View') {
+        const dc = buildGroup(model, 'Distance Calc', [], popupGroups);
+        dc.body.appendChild(distanceCalcPanel(model));
+        popup.appendChild(dc.el);
       }
     });
   }

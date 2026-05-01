@@ -357,6 +357,14 @@ function defaultState() {
     DistancePairFromLon:   null,
     DistancePairToLat:     null,
     DistancePairToLon:     null,
+    // Manual lat/lon inputs for the View → Distance Calc panel.
+    // P1 lat/lon auto-fill from the observer position the first time
+    // the panel renders with all four still null; thereafter the
+    // inputs hold whatever the user typed.
+    DistCalcLat1: null,
+    DistCalcLon1: null,
+    DistCalcLat2: null,
+    DistCalcLon2: null,
     // Active Cel-Theo preset code (e.g. 'PP') or null. Drives the
     // toggle behaviour of the preset buttons — clicking an active
     // preset deactivates it and reverts the atmosphere knobs.

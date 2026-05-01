@@ -14496,3 +14496,24 @@ Format:
     `world-row-spacer` next to the new button so the column keeps
     its 2-wide footprint instead of shrinking to a single tile.
 - **Revert path:** `git checkout v-s000760 -- .`
+
+## S762 — View → Distance Calc submenu (manual lat/lon inputs)
+
+- **Date:** 2026-04-30
+- **Files changed:** `js/core/app.js`, `js/ui/controlPanel.js`,
+  `css/styles.css`, `js-min/**` (rebuilt)
+- **Change:** Adds a "Distance Calc" group to the View tab.
+  - Four numeric inputs: `Lat 1`, `Lon 1`, `Lat 2`, `Lon 2`,
+    backed by new state keys `DistCalcLat1 / DistCalcLon1 /
+    DistCalcLat2 / DistCalcLon2` (default `null`). On first render
+    with all four still `null`, P1 auto-fills from the observer's
+    current `(ObserverLat, ObserverLong)`.
+  - Three buttons: `Use Obs → P1`, `Use Obs → P2`, `Clear`.
+  - Computed readout panel shows three lines:
+    - `Distance` — `haversineLi(...)` formatted as `li bu`, plus a
+      parenthetical `km` value via `KM_PER_LI`.
+    - `Central angle` — `(li / R_LI) × 180/π`, displayed in DMS
+      (`D° MM' SS.SS"`) and `du fen` (`fmtDuFen`).
+    - `Inscribed angle` — `central / 2` per the inscribed-angle
+      theorem; same DMS + `du fen` formatting.
+- **Revert path:** `git checkout v-s000761 -- .`

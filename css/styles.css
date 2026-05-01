@@ -709,6 +709,27 @@ header .info-popup.legend-popup a { color: var(--accent); }
   display: block;
   margin: 0 auto;
 }
+
+.dist-calc-panel { display: flex; flex-direction: column; gap: 4px; }
+.dist-calc-panel .row.action-group-row { gap: 4px; }
+.dist-calc-output {
+  margin-top: 6px;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: rgba(255, 224, 64, 0.04);
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.dist-calc-output .dc-line {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 12px;
+}
+.dist-calc-output .dc-label { color: var(--muted); }
+.dist-calc-output .dc-val   { color: #ffe040; font-variant-numeric: tabular-nums; }
 #bottom-bar .mode-grid .time-btn,
 #bottom-bar .cycle-row .time-btn,
 #bottom-bar .cardinal-grid .time-btn {

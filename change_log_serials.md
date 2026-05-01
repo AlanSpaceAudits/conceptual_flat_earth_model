@@ -13777,3 +13777,22 @@ Format:
   maskable 192/512 icons under `assets/icons/`, `lang: en`,
   `categories`, and the expanded description.
 - **Revert path:** `git checkout v-s000737 -- .`
+
+## S735 — `.tabs` flex 1→0, margin-left:auto for right-edge alignment
+
+- **Date:** 2026-04-30
+- **Files changed:** `css/styles.css`, `css/styles.min.css`
+- **Change:** the `.tabs` cluster (containing the search-stack and
+  tab buttons) had `flex: 1 1 0; min-width: 0;` — that let the
+  bar's flex layout *shrink it* when total content exceeded the
+  viewport, squeezing the search input and tab buttons together
+  into each other. Even with the bar's `overflow-x: auto` the
+  squeeze ran first and the scroll never triggered. Changed to
+  `flex: 0 0 auto` (natural width, no shrink) plus
+  `margin-left: auto`. When the bar fits the viewport, that auto
+  margin absorbs the leftover space and pushes the tab cluster to
+  the right edge as before; when content overflows the viewport,
+  the auto margin collapses to 0 and the bar's
+  `overflow-x: auto` finally takes effect — the whole row slides
+  horizontally with no overlap.
+- **Revert path:** `git checkout v-s000734 -- .`

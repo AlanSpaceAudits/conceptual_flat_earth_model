@@ -781,8 +781,12 @@ header .info-popup.legend-popup a { color: var(--accent); }
 #bottom-bar .tabs {
   display: flex;
   gap: 2px;
-  flex: 1 1 0;
-  min-width: 0;
+  flex: 0 0 auto;
+  /* When the bar's content fits the viewport, this pushes the tabs
+     cluster to the right edge by absorbing the leftover space as a
+     margin. When content overflows, the auto margin collapses and
+     the row scrolls horizontally — no squeeze, no overlap. */
+  margin-left: auto;
   justify-content: flex-end;
 }
 #bottom-bar .tab-btn {

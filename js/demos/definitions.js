@@ -340,18 +340,24 @@ function snapNoonVault(model, mode) {
 }
 
 function makeAnalemmaMonthly(label, lat, mode) {
-  const heading = lat >= 0 ? 180 : 0;
+  // Equator: face east instead of south so the meridian-aligned
+  // figure-8 lays *horizontally* in screen space. The horizontal
+  // FOV at OpticalZoom=1.0 is ~107° (vs ~42° vertical), which is
+  // the only orientation that fits the full ±23.44° meridian span
+  // of the equator analemma without clipping one solstice end.
+  // Earlier `heading=180` at lat=0 oriented the figure vertically
+  // and the Jun (north-of-zenith) loop fell outside the vertical
+  // FOV, faking an extreme size asymmetry that hid the real
+  // (eq-of-time) loop ratio.
+  const heading = lat === 0 ? 90
+                : lat > 0   ? 180
+                :             0;
   // Camera pitch tracks the noon-sun altitude band per latitude so
   // the analemma actually fills the frame:
   //   lat=0    → noon altitude 66.6°–90° (zenith band) → camH=85
   //   |lat|=45 → noon altitude 21.5°–68.4°             → camH=45
   //   |lat|=90 → noon altitude −23.4°–+23.4° (mostly
   //              just above the horizon when above at all)→ camH=12
-  // The earlier `camH=85` at the pole pointed at the zenith, but
-  // the polar analemma sits *near* the horizon (altitude = sun
-  // declination), so the camera was looking the wrong way and the
-  // figure-8 at every latitude appeared to share the same on-screen
-  // framing.
   const camH = lat === 0 ? 85
              : Math.abs(lat) === 90 ? 12
              : 45;

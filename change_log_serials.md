@@ -14585,6 +14585,25 @@ Format:
   default when a user has previously persisted the off state.
 - **Revert path:** `git checkout v-s000766 -- .`
 
+## S773 — equator analemma: heading=90 to fit figure in horizontal FOV
+
+- **Date:** 2026-04-30
+- **Files changed:** `js/demos/definitions.js`, `js-min/**`
+  (rebuilt)
+- **Change:** `makeAnalemmaMonthly` now uses `heading=90` (face
+  east) only for `lat=0`; mid-lat / pole cases keep their
+  hemisphere-appropriate `180 / 0` headings. At the equator the
+  noon-sun analemma sits at the zenith and spans ±23.44° along
+  the meridian (47° total). With `heading=180` + `camH=85` the
+  figure was oriented vertically in screen space and the Jun
+  (north-of-zenith) end fell outside the camera's vertical FOV
+  (~42° at OpticalZoom=1.0), faking an extreme loop-size
+  asymmetry that hid the real eq-of-time loop ratio. Switching to
+  `heading=90` (east) lays the meridian-aligned figure-8
+  horizontally in screen space, where the horizontal FOV (~107°)
+  fits the full ±23° span without clipping either solstice end.
+- **Revert path:** `git checkout v-s000772 -- .`
+
 ## S772 — analemma demo: correct polar camera pitch
 
 - **Date:** 2026-04-30

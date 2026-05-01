@@ -13583,3 +13583,26 @@ Format:
   indistinguishable from a circle once the user zooms in to
   inspect.
 - **Revert path:** `git checkout v-s000726 -- .`
+
+## S728 — halo as ShaderMaterial ring (fixed-pixel-width band)
+
+- **Date:** 2026-04-30
+- **Files changed:** `js/render/worldObjects.js`
+- **Change:** every prior approach hit the same wall: at strict
+  scale = `r` (apparent↔true world distance), the rendered ring is
+  often only a few pixels in radius at default zoom, and any ring
+  outline whose thickness scales with the geometry collapses
+  sub-pixel and gets dropped by the rasteriser. A `LineLoop` had
+  the inverse problem: its 1-px line width is constant, but each
+  line *segment* still has to be ≥ 1 px on screen, and at small
+  ring sizes 16 segments still produced sub-pixel chords.
+  Replaced with `THREE.Mesh` + `THREE.CircleGeometry(1.0, 64)` +
+  `ShaderMaterial`. The fragment shader uses `fwidth` (the
+  screen-space gradient of the radial UV) to compute a band
+  thickness that always equals ~1 pixel regardless of how small
+  the per-slot scale is — pixels far from the disc edge are
+  `discard`-ed. This guarantees a visible 1-pixel-wide ring at any
+  zoom or refraction.
+  Per-frame transform unchanged: `position = apparent`,
+  `scale = (r, r, r)`, `lookAt(camera.position)`.
+- **Revert path:** `git checkout v-s000727 -- .`

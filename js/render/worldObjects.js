@@ -5526,32 +5526,43 @@ export class GeocentricMarkers {
     // ring stays a visibly thick annulus even when the per-slot
     // scale shrinks to small refractions; thinner bands collapsed
     // sub-pixel and the rasteriser dropped them.
-    // Halo as `THREE.LineLoop` over a 16-vertex unit circle. WebGL
-    // rasterises lines at 1 px regardless of mesh scale, BUT each
-    // individual line segment must be at least ~1 px on screen for
-    // the rasteriser to draw it. With 64 segments around a typical
-    // small refraction ring (~3 px radius on default zoom), each
-    // chord is 0.27 px — sub-pixel — and gets dropped. 16 segments
-    // around a 3 px ring give chords ~1.2 px, which renders cleanly
-    // and reads as a smooth circle at any moderate zoom. The
-    // hexadecagon shape is indistinguishable from a circle once the
-    // user zooms in.
-    const SEG = 16;
-    const ringPos = new Float32Array(SEG * 3);
-    for (let i = 0; i < SEG; i++) {
-      const t = (i / SEG) * Math.PI * 2;
-      ringPos[i * 3]     = Math.cos(t);
-      ringPos[i * 3 + 1] = Math.sin(t);
-      ringPos[i * 3 + 2] = 0;
-    }
-    const ringGeom = new THREE.BufferGeometry();
-    ringGeom.setAttribute('position', new THREE.BufferAttribute(ringPos, 3));
+    // Halo as `THREE.Mesh` carrying a unit `CircleGeometry` (filled
+    // disc) with a `ShaderMaterial` that draws only a fixed-pixel-
+    // width ring band at the disc's edge. The fragment shader uses
+    // `fwidth` (the screen-space gradient of the radial UV
+    // coordinate) to compute a band thickness that always equals
+    // ~1 pixel regardless of how small the mesh's per-slot world
+    // scale is — this is the only way to keep the ring visible at
+    // strict apparent↔true scale without it collapsing sub-pixel.
+    const ringGeom = new THREE.CircleGeometry(1.0, 64);
     this._halos = [];
     for (let i = 0; i < max; i++) {
-      const m = new THREE.LineLoop(ringGeom, new THREE.LineBasicMaterial({
-        color: 0xffffff,
+      const mat = new THREE.ShaderMaterial({
+        uniforms: {},
+        vertexShader: `
+          varying vec2 vUv;
+          void main() {
+            vUv = uv;
+            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+          }
+        `,
+        fragmentShader: `
+          #extension GL_OES_standard_derivatives : enable
+          varying vec2 vUv;
+          void main() {
+            vec2 c = vUv - vec2(0.5);
+            float d = length(c);
+            float fw = fwidth(d);
+            // Keep a band roughly 1 px wide at the disc's edge.
+            if (d < 0.5 - fw * 1.5 || d > 0.5) discard;
+            gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
+          }
+        `,
+        side: THREE.DoubleSide,
+        transparent: true,
         depthTest: false, depthWrite: false,
-      }));
+      });
+      const m = new THREE.Mesh(ringGeom, mat);
       m.frustumCulled = false;
       m.renderOrder = 250;
       m.visible = false;

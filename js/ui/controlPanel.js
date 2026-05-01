@@ -2458,7 +2458,20 @@ export function buildControlPanel(host, model, demos) {
   const btnDistCompass = document.createElement('button');
   btnDistCompass.className = 'time-btn dist-compass-btn';
   btnDistCompass.type = 'button';
-  btnDistCompass.textContent = '📐';
+  // Inline SVG drafting compass (two diverging legs joined at a
+  // pivot, with the adjustment crossbar). Unicode has no drafting-
+  // compass glyph; 🧭 is the magnetic-navigation kind, 📐 is a set
+  // square. SVG keeps the icon legible and scales with currentColor.
+  btnDistCompass.innerHTML =
+    '<svg viewBox="0 0 16 16" width="14" height="14" '
+    + 'fill="none" stroke="currentColor" stroke-width="1.4" '
+    + 'stroke-linecap="round" stroke-linejoin="round" '
+    + 'aria-hidden="true">'
+    + '<circle cx="8" cy="2.4" r="0.9" fill="currentColor" stroke="none"/>'
+    + '<line x1="8" y1="3.1" x2="3" y2="13.6"/>'
+    + '<line x1="8" y1="3.1" x2="13" y2="13.6"/>'
+    + '<line x1="5.6" y1="8.4" x2="10.4" y2="8.4"/>'
+    + '</svg>';
   btnDistCompass.title = 'Distance compass — click two map points to measure (li)';
   btnDistCompass.addEventListener('click', () => {
     const next = !model.state.DistanceCompassMode;
@@ -2487,11 +2500,15 @@ export function buildControlPanel(host, model, demos) {
   tracerRow.className = 'world-row';
   tracerRow.append(btnGrids, btnRefr);
 
-  // Third row: distance compass + spacer (placed where world-row's
-  // second slot is, to keep the column visually balanced).
+  // Third row: distance compass + invisible spacer (preserves the
+  // 2-column width of the icon stack so the third row matches the
+  // first two visually).
+  const distSpacer = document.createElement('span');
+  distSpacer.className = 'world-row-spacer';
+  distSpacer.setAttribute('aria-hidden', 'true');
   const distRow = document.createElement('div');
   distRow.className = 'world-row';
-  distRow.append(btnDistCompass);
+  distRow.append(btnDistCompass, distSpacer);
 
   const gridsStack = document.createElement('div');
   gridsStack.className = 'grids-stack';

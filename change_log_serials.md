@@ -14480,3 +14480,19 @@ Format:
     point…".
   - Toggling OFF clears the pair and hides the readout.
 - **Revert path:** `git checkout v-s000759 -- .`
+
+## S761 — drafting-compass icon + 2-wide row preserved
+
+- **Date:** 2026-04-30
+- **Files changed:** `js/ui/controlPanel.js`, `css/styles.css`,
+  `js-min/**` (rebuilt)
+- **Change:**
+  - Distance-compass button icon swapped from `📐` (set square)
+    to an inline SVG of a drafting compass (two diverging legs +
+    crossbar pivot). Unicode has no drafting-compass glyph; SVG
+    inherits `currentColor` so it tracks the existing button
+    pressed / hover styles.
+  - Third row of the icon stack now carries a hidden
+    `world-row-spacer` next to the new button so the column keeps
+    its 2-wide footprint instead of shrinking to a single tile.
+- **Revert path:** `git checkout v-s000760 -- .`

@@ -699,6 +699,16 @@ header .info-popup.legend-popup a { color: var(--accent); }
   display: flex;
   gap: 2px;
 }
+#bottom-bar .grids-stack .world-row-spacer {
+  min-width: 36px;
+  min-height: 26px;
+  visibility: hidden;
+  pointer-events: none;
+}
+#bottom-bar .dist-compass-btn svg {
+  display: block;
+  margin: 0 auto;
+}
 #bottom-bar .mode-grid .time-btn,
 #bottom-bar .cycle-row .time-btn,
 #bottom-bar .cardinal-grid .time-btn {

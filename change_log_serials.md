@@ -13722,3 +13722,18 @@ Format:
   squeezed before). `overflow-y: visible` keeps the body-search
   dropdown popping UP above the bar without getting clipped.
 - **Revert path:** `git checkout v-s000733 -- .`
+
+## S735 — PWA icons (192/512/maskable, apple-touch)
+
+- **Date:** 2026-04-30
+- **Files changed:** `assets/icons/icon-192.png`,
+  `assets/icons/icon-512.png`, `assets/icons/icon-maskable-192.png`,
+  `assets/icons/icon-maskable-512.png`,
+  `assets/icons/apple-touch-icon-180.png`, `index.html`.
+- **Change:** Generated proper PWA icon set from `ac_logo.png`
+  (180x180 source) at 192px, 512px, 180px (Apple touch), plus
+  maskable variants at 192/512 with 80% safe-zone padding on a
+  `#0e121a` background. `index.html` now links 192/512 favicons
+  by `sizes` and a 180px `apple-touch-icon`. Manifest update
+  follows in S737.
+- **Revert path:** `git checkout v-s000734 -- .`

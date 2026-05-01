@@ -14300,3 +14300,33 @@ Format:
   gzipped over the wire); the new `.map` lets Lighthouse +
   devtools resolve stack traces back into three's source.
 - **Revert path:** `git checkout v-s000752 -- assets/vendor/three.module.min.js && rm assets/vendor/three.module.min.js.map`
+
+## S754 — dynamic-import Demos for mobile TBT
+
+- **Date:** 2026-04-30
+- **Files changed:** `js/main.js`, `js-min/**` (rebuilt).
+- **Change:** `demos/index.js` plus its dependency
+  `demos/definitions.js` (876 lines of demo metadata) parsed
+  on the critical path, contributing ~150 ms of mobile TBT
+  (Lighthouse showed Total Blocking Time at 140 ms).
+  Replaced the static
+  `import { Demos } from './demos/index.js'` with:
+    - a `Proxy` stand-in (`demos`) backed by
+      `_demosHolder.current`. Property access returns the real
+      value once loaded, `undefined` for known property names
+      (`animator`, `list`, `currentIndex`, `then`), and a no-op
+      function for unknown methods. All `controlPanel.js`
+      callsites already null-check
+      `demos && demos.animator` etc. before invoking
+      methods, so the shim is transparent.
+    - a `requestIdleCallback` (1500 ms timeout fallback to
+      `setTimeout(600)`) that dynamically `import()`s the
+      Demos module after first paint and stamps
+      `_demosHolder.current = new Demos(model)`.
+  `attachUrlState`, `window.demos`, and the bottom-bar play
+  controls all consume the proxy unchanged. Demos tab opens
+  empty for the first ~0.6 s if the user races the load; the
+  `registerTab` lazy-build runs `demos.renderInto(host)` which
+  the no-op shim swallows — re-clicking the tab after demos
+  resolve renders normally.
+- **Revert path:** `git checkout v-s000753 -- .`

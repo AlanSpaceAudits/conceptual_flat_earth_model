@@ -6,7 +6,13 @@ import { attachMouseHandler } from './ui/mouseHandler.js';
 import { attachKeyboardHandler } from './ui/keyboardHandler.js';
 import { buildControlPanel, buildHud, buildTrackerHud } from './ui/controlPanel.js';
 import { buildTrackingInfoPopup } from './ui/trackingInfoPopup.js';
-import { Demos } from './demos/index.js';
+// `Demos` is dynamically imported after first paint — its
+// definitions module is large enough (876 lines of demo metadata)
+// that parsing it on the critical path costs ~150 ms of TBT on
+// a mobile profile. The holder + Proxy below shims a safe stand-in
+// so `controlPanel.js` callsites that reference `demos.X` either
+// get `undefined` (for property reads) or a no-op (for method
+// calls) until the real instance lands.
 import { attachUrlState } from './ui/urlState.js';
 import { setActiveProjection } from './core/canonical.js';
 import { t, onLangChange, isRtl } from './ui/i18n.js';
@@ -15,7 +21,22 @@ const model = new FeModel();
 const canvas = document.getElementById('feCanvas');
 
 // Build UI first so it renders even if WebGL fails.
-const demos = new Demos(model);
+const _demosHolder = { current: null };
+const _noop = () => undefined;
+const demos = new Proxy({}, {
+  get(_t, prop) {
+    const cur = _demosHolder.current;
+    if (cur) return cur[prop];
+    // Methods (stop/play/next/prev/renderInto) return a no-op until
+    // the real Demos lands. Property reads (animator, list,
+    // currentIndex) return undefined, which the controlPanel
+    // callsites already null-check.
+    return prop === 'animator' || prop === 'list'
+        || prop === 'currentIndex' || prop === 'then'
+      ? undefined
+      : _noop;
+  },
+});
 const viewEl_panel = document.getElementById('view');
 buildControlPanel(viewEl_panel, model, demos);
 const hudEl = document.getElementById('hud');
@@ -380,6 +401,22 @@ refreshTitle();
 window.model = model;
 window.renderer = renderer;
 window.demos = demos;
+
+// Resolve the real Demos instance after first paint so its
+// definitions.js parse cost (~150 ms TBT on mobile) lands off the
+// critical path. Once loaded, the Proxy above forwards property
+// access to `_demosHolder.current` transparently — no consumers
+// need to be aware that the lazy load happened.
+const _scheduleDemos = () => {
+  import('./demos/index.js').then(({ Demos }) => {
+    _demosHolder.current = new Demos(model);
+  }).catch((err) => console.warn('Demos load failed:', err));
+};
+if (typeof requestIdleCallback === 'function') {
+  requestIdleCallback(_scheduleDemos, { timeout: 1500 });
+} else {
+  setTimeout(_scheduleDemos, 600);
+}
 
 // Service-worker registration. CACHE_VERSION inside `sw.js`
 // controls eviction; on `controllerchange` (an existing SW was

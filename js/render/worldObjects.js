@@ -1488,8 +1488,12 @@ export class Shadow {
   update(model) {
     const s = model.state;
     const c = model.computed;
-    this.group.visible = !!s.ShowShadow;
-    if (!s.ShowShadow) return;
+    // GE has its own sphere day/night shader (`uDayNightOn` in
+    // WorldGlobe); the AE shadow disc is FE / DP only and would
+    // otherwise paint a pink ring through the sphere shell.
+    const ge = s.WorldModel === 'ge';
+    this.group.visible = !!s.ShowShadow && !ge;
+    if (!this.group.visible) return;
     const u = this.material.uniforms;
     u.uSunRA.value   = c.SunRA;
     u.uSunDec.value  = c.SunDec;

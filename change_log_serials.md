@@ -14585,6 +14585,21 @@ Format:
   default when a user has previously persisted the off state.
 - **Revert path:** `git checkout v-s000766 -- .`
 
+## S771 — hide AE shadow disc in GE mode
+
+- **Date:** 2026-04-30
+- **Files changed:** `js/render/worldObjects.js`, `js-min/**`
+  (rebuilt)
+- **Change:** `Shadow.update` now gates visibility on
+  `!!s.ShowShadow && WorldModel !== 'ge'`. The AE shadow disc was
+  bleeding through the GE sphere (visible as a pink terminator
+  ring intersecting the globe) because `index.js`'s
+  `this.shadow.group.visible = !ge` was being overridden by the
+  in-class `update`'s `!!s.ShowShadow` assignment. GE has its own
+  sphere day/night shader (`uDayNightOn` in `WorldGlobe`); the AE
+  shadow is FE / DP only.
+- **Revert path:** `git checkout v-s000770 -- .`
+
 ## S770 — FE disc shadow depthTest off (log-depth z-fight fix)
 
 - **Date:** 2026-04-30

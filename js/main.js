@@ -55,16 +55,36 @@ const refreshActiveProjection = () => {
 model.addEventListener('update', refreshActiveProjection);
 refreshActiveProjection();
 
+// Feature-detect WebGL before instantiating the Renderer. THREE's
+// constructor logs `console.error` ("WebGLRenderer: A WebGL context
+// could not be created") *before* throwing on environments without
+// a GPU (headless Chrome / Lighthouse, locked-down kiosks). Catching
+// the throw doesn't suppress the error, which Lighthouse counts
+// against Best Practices. Probing first lets us route those
+// environments straight to the fallback message without invoking
+// THREE at all.
+const _hasWebGL = (() => {
+  try {
+    const c = document.createElement('canvas');
+    return !!(c.getContext('webgl2') || c.getContext('webgl'));
+  } catch { return false; }
+})();
+
 let renderer = null;
-try {
-  renderer = new Renderer(canvas, model);
-  renderer.loadLand().catch((err) => {
-    console.warn('Failed to load land data:', err);
-  });
-  attachMouseHandler(canvas, model, renderer);
-  attachKeyboardHandler(model);
-} catch (err) {
-  console.error('WebGL unavailable — 3D view disabled:', err);
+if (_hasWebGL) {
+  try {
+    renderer = new Renderer(canvas, model);
+    renderer.loadLand().catch((err) => {
+      console.warn('Failed to load land data:', err);
+    });
+    attachMouseHandler(canvas, model, renderer);
+    attachKeyboardHandler(model);
+  } catch (err) {
+    console.warn('WebGL unavailable — 3D view disabled:', err);
+    renderer = null;
+  }
+}
+if (!renderer) {
   const warn = document.createElement('div');
   warn.style.cssText = 'position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:#fff; padding:24px; text-align:center;';
   warn.textContent = 'WebGL could not be initialised. The controls still work; the 3D view is disabled.';

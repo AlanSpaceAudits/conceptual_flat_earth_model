@@ -14239,3 +14239,21 @@ Format:
   CACHE_VERSION, not a brand-new install). CACHE_VERSION
   bumped `fe-v7-s749 → fe-v8-s750`.
 - **Revert path:** `git checkout v-s000749 -- .`
+
+## S751 — feature-detect WebGL before Renderer to silence Lighthouse
+
+- **Date:** 2026-04-30
+- **Files changed:** `js/main.js`, `js-min/main.js`.
+- **Change:** Lighthouse counted 8 `console.error` entries from
+  THREE.WebGLRenderer attempting to create a WebGL context in
+  the headless Chrome runner. THREE's constructor calls
+  `console.error` *before* throwing on GPU-less environments,
+  so the surrounding try/catch never silences them. Added a
+  `_hasWebGL` probe that creates a throwaway canvas and asks
+  for `webgl2`/`webgl`; only when that succeeds do we
+  instantiate `Renderer`. Lighthouse's GPU-less profile now
+  skips the `new Renderer` branch entirely. Real users with
+  GPUs see no behaviour change. Fallback message text retained.
+  Demoted our own caught-error log to `console.warn` so it
+  doesn't itself trip the audit on edge GPUs that fail later.
+- **Revert path:** `git checkout v-s000750 -- .`

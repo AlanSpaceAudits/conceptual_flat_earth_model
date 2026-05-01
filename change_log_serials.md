@@ -14283,3 +14283,20 @@ Format:
       `#info-bar .info-row { gap: 12px }` mobile keeps the bar
       from overflowing now that the readout glyphs are wider.
 - **Revert path:** `git checkout v-s000751 -- .`
+
+## S753 — re-minify three.js with sourcemap
+
+- **Date:** 2026-04-30
+- **Files changed:** `assets/vendor/three.module.min.js`,
+  `assets/vendor/three.module.min.js.map`.
+- **Change:** The vendored `three.module.min.js` shipped without
+  a sourcemap (the upstream three.js dist doesn't publish one
+  for the minified ESM bundle). Lighthouse's
+  `valid-source-maps` audit failed against the 675 KiB file.
+  Downloaded the unminified `three.module.js` from
+  `cdn.jsdelivr.net/npm/three@0.162.0/build/three.module.js`,
+  re-minified it with `esbuild --minify --sourcemap`. Output
+  size matches the previous build (675 KiB on disk, ~170 KiB
+  gzipped over the wire); the new `.map` lets Lighthouse +
+  devtools resolve stack traces back into three's source.
+- **Revert path:** `git checkout v-s000752 -- assets/vendor/three.module.min.js && rm assets/vendor/three.module.min.js.map`

@@ -2,7 +2,7 @@
 // FeModel state. No external framework — plain DOM.
 
 import { dateTimeToString, dateTimeToDate } from '../core/time.js';
-import { fmtDuFen } from '../core/units.js';
+import { fmtDuFen, fmtLiBuFromLi, haversineLi, KM_PER_LI } from '../core/units.js';
 import { TIME_ORIGIN } from '../core/constants.js';
 import { findNextEclipses } from '../core/ephemeris.js';
 import { raDecToAzEl } from '../core/transforms.js';
@@ -1689,6 +1689,7 @@ export function buildControlPanel(host, model, demos) {
       <span class="info-slot" data-k="speed">—</span>
       <span class="info-sep">│</span>
       <span class="info-slot info-track" data-k="track">Tracking: —</span>
+      <span class="info-slot info-dist" data-k="dist" hidden></span>
       <span class="info-actions" data-k="actions"></span>
     </div>
   `;
@@ -1706,6 +1707,7 @@ export function buildControlPanel(host, model, demos) {
     setLang(model.state.Language || 'en');
   });
   const slotTrack = infoBar.querySelector('[data-k="track"]');
+  const slotDist  = infoBar.querySelector('[data-k="dist"]');
   const fmtLat = (v) => `Lat ${v >= 0 ? '+' : ''}${v.toFixed(4)}°`;
   const fmtLon = (v) => `Lon ${v >= 0 ? '+' : ''}${v.toFixed(4)}°`;
   const fmtSignedDeg = (v) => `${v >= 0 ? '+' : ''}${v.toFixed(2)}°`;
@@ -1762,6 +1764,33 @@ export function buildControlPanel(host, model, demos) {
       }
     } else {
       slotTrack.textContent = 'Tracking: —';
+    }
+    // Distance-compass readout. Shows From → To pair status while
+    // the mode is active; once both pins are placed, computes the
+    // haversine distance via the Tang sphere primitive (R_LI) and
+    // reports it as `li bu` plus a parenthetical km value via the
+    // KM_PER_LI bridge.
+    if (s.DistanceCompassMode) {
+      slotDist.hidden = false;
+      const haveFrom = Number.isFinite(s.DistancePairFromLat)
+                    && Number.isFinite(s.DistancePairFromLon);
+      const haveTo   = Number.isFinite(s.DistancePairToLat)
+                    && Number.isFinite(s.DistancePairToLon);
+      if (haveFrom && haveTo) {
+        const li = haversineLi(
+          s.DistancePairFromLat, s.DistancePairFromLon,
+          s.DistancePairToLat,   s.DistancePairToLon);
+        const km = li * KM_PER_LI;
+        slotDist.textContent =
+          `Dist: ${fmtLiBuFromLi(li)}  (${km.toFixed(1)} km)`;
+      } else if (haveFrom) {
+        slotDist.textContent = 'Dist: click second point…';
+      } else {
+        slotDist.textContent = 'Dist: click first point…';
+      }
+    } else {
+      slotDist.hidden = true;
+      slotDist.textContent = '';
     }
   };
   model.addEventListener('update', refreshInfoBar);
@@ -2422,6 +2451,32 @@ export function buildControlPanel(host, model, demos) {
     model.setState({ ClearTraceCount: (model.state.ClearTraceCount | 0) + 1 });
   });
 
+  // Distance-compass toggle. ON: map clicks drop From / Then To
+  // pins instead of selecting bodies; renderer paints the pair +
+  // connector and the info-bar shows the li distance. Click again
+  // to toggle off (clears pair).
+  const btnDistCompass = document.createElement('button');
+  btnDistCompass.className = 'time-btn dist-compass-btn';
+  btnDistCompass.type = 'button';
+  btnDistCompass.textContent = '📐';
+  btnDistCompass.title = 'Distance compass — click two map points to measure (li)';
+  btnDistCompass.addEventListener('click', () => {
+    const next = !model.state.DistanceCompassMode;
+    model.setState({
+      DistanceCompassMode: next,
+      DistancePairFromLat: next ? model.state.DistancePairFromLat : null,
+      DistancePairFromLon: next ? model.state.DistancePairFromLon : null,
+      DistancePairToLat:   next ? model.state.DistancePairToLat   : null,
+      DistancePairToLon:   next ? model.state.DistancePairToLon   : null,
+    });
+  });
+  const refreshDistCompass = () => {
+    btnDistCompass.setAttribute('aria-pressed',
+      model.state.DistanceCompassMode ? 'true' : 'false');
+  };
+  model.addEventListener('update', refreshDistCompass);
+  refreshDistCompass();
+
   const worldRow = document.createElement('div');
   worldRow.className = 'world-row';
   worldRow.append(btnWorld, btnClearTrace);
@@ -2432,9 +2487,15 @@ export function buildControlPanel(host, model, demos) {
   tracerRow.className = 'world-row';
   tracerRow.append(btnGrids, btnRefr);
 
+  // Third row: distance compass + spacer (placed where world-row's
+  // second slot is, to keep the column visually balanced).
+  const distRow = document.createElement('div');
+  distRow.className = 'world-row';
+  distRow.append(btnDistCompass);
+
   const gridsStack = document.createElement('div');
   gridsStack.className = 'grids-stack';
-  gridsStack.append(tracerRow, worldRow);
+  gridsStack.append(tracerRow, worldRow, distRow);
   compassControls.appendChild(gridsStack);
 
 

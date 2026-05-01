@@ -347,6 +347,16 @@ function defaultState() {
     // the du / fen runs alongside it so the two can be read
     // together.
     ShowChineseDu: false,
+    // Compass-mode distance picker. When on, map clicks drop a
+    // From / To pair instead of routing through the normal body-
+    // pick handler; the pair drives a marker + connector renderer
+    // and a li / bu distance readout. Tracking is suppressed in
+    // this mode by the mouseHandler.
+    DistanceCompassMode:   false,
+    DistancePairFromLat:   null,
+    DistancePairFromLon:   null,
+    DistancePairToLat:     null,
+    DistancePairToLon:     null,
     // Active Cel-Theo preset code (e.g. 'PP') or null. Drives the
     // toggle behaviour of the preset buttons — clicking an active
     // preset deactivates it and reverts the atmosphere knobs.

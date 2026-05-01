@@ -505,6 +505,30 @@ export function attachMouseHandler(canvas, model, renderer = null) {
       return;
     }
     if (!wasClick) return;
+    // Distance-compass mode: hijack the click to drop the From / To
+    // pair rather than route into body picking + tracking. First
+    // click sets From; second sets To; third resets to a fresh
+    // From=this-click and To=null.
+    if (model.state.DistanceCompassMode) {
+      const ll = cursorToLatLon(e.offsetX, e.offsetY);
+      if (!ll) return;
+      const haveFrom = Number.isFinite(model.state.DistancePairFromLat);
+      const haveTo   = Number.isFinite(model.state.DistancePairToLat);
+      if (!haveFrom || (haveFrom && haveTo)) {
+        model.setState({
+          DistancePairFromLat: ll.lat,
+          DistancePairFromLon: ll.lon,
+          DistancePairToLat:   null,
+          DistancePairToLon:   null,
+        });
+      } else {
+        model.setState({
+          DistancePairToLat: ll.lat,
+          DistancePairToLon: ll.lon,
+        });
+      }
+      return;
+    }
     // Prefer the hovered hit (the body whose tooltip is currently
     // shown) over a fresh nearest-search — the user clicked the info
     // box they could see, even if another body is slightly nearer

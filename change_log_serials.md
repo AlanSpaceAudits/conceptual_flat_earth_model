@@ -14455,3 +14455,28 @@ Format:
   to 50.04 km via `KM_PER_LI` — consistent with 0.45° × 111.13 km/°
   along a meridian.
 - **Revert path:** `git checkout v-s000758 -- .`
+
+## S760 — distance-compass map-pick mode (li readout)
+
+- **Date:** 2026-04-30
+- **Files changed:** `js/core/app.js`, `js/ui/mouseHandler.js`,
+  `js/render/worldObjects.js`, `js/render/index.js`,
+  `js/ui/controlPanel.js`, `css/styles.css`, `js-min/**` (rebuilt)
+- **Change:** Compass icon button (`📐`) added to the bottom-bar
+  grids stack (third row, under `▦ — / B / S` and `🌐 ⌫`). Toggles
+  `DistanceCompassMode`. While ON:
+  - Map clicks drop a From / To pin pair (`DistancePairFromLat/Lon`,
+    `DistancePairToLat/Lon`) instead of routing to the body-pick
+    handler — sky objects can't be selected from the map in this
+    mode.
+  - Renderer paints the two pins (yellow `0xffe040`, `THREE.Points`,
+    `renderOrder 252`) and a connector line (yellow, `renderOrder
+    251`, `depthTest false`). FE / DP run the connector through
+    `canonicalLatLongToDisc` lerp; GE uses `slerp` on unit vectors
+    (great-circle).
+  - Info-bar exposes a `Dist:` slot that reports the haversine
+    distance in `li bu` plus a parenthetical km value via
+    `KM_PER_LI`. Empty / partial pairs show "click first/second
+    point…".
+  - Toggling OFF clears the pair and hides the readout.
+- **Revert path:** `git checkout v-s000759 -- .`

@@ -5611,6 +5611,142 @@ export class GeocentricMarkers {
   }
 }
 
+// Distance-compass pair markers + connector. Renders a yellow pin
+// at `DistancePairFrom*` and `DistancePairTo*` plus a connecting
+// line on the disc (FE / DP) or great-circle arc on the globe
+// (GE). Visible whenever `DistanceCompassMode` is on OR when a
+// completed pair sits in state — both cases are useful: live mode
+// for picking, persistent state for re-reading the last pair.
+export class DistanceCompassPair {
+  constructor() {
+    this.group = new THREE.Group();
+    this.group.name = 'distance-compass-pair';
+
+    // Two pin points, single shared buffer (max 2 verts).
+    this._pinPos = new Float32Array(2 * 3);
+    const pinGeom = new THREE.BufferGeometry();
+    pinGeom.setAttribute('position', new THREE.BufferAttribute(this._pinPos, 3));
+    pinGeom.setDrawRange(0, 0);
+    this._pins = new THREE.Points(pinGeom, new THREE.PointsMaterial({
+      color: 0xffe040, size: 9, sizeAttenuation: false,
+      depthTest: false, depthWrite: false,
+    }));
+    this._pins.renderOrder = 252;
+    this._pins.frustumCulled = false;
+    this.group.add(this._pins);
+
+    // Connector line. Up to 64 segments to render a smooth
+    // great-circle arc on the globe; FE / DP use just 2 endpoints.
+    const SEG = 64;
+    this._linePos = new Float32Array((SEG + 1) * 3);
+    const lineGeom = new THREE.BufferGeometry();
+    lineGeom.setAttribute('position', new THREE.BufferAttribute(this._linePos, 3));
+    lineGeom.setDrawRange(0, 0);
+    this._line = new THREE.Line(lineGeom, new THREE.LineBasicMaterial({
+      color: 0xffe040,
+      depthTest: false, depthWrite: false,
+    }));
+    this._line.renderOrder = 251;
+    this._line.frustumCulled = false;
+    this.group.add(this._line);
+    this._SEG = SEG;
+  }
+
+  update(model) {
+    const s = model.state;
+    const haveFrom = Number.isFinite(s.DistancePairFromLat) && Number.isFinite(s.DistancePairFromLon);
+    const haveTo   = Number.isFinite(s.DistancePairToLat)   && Number.isFinite(s.DistancePairToLon);
+    if (!haveFrom && !haveTo) {
+      this._pins.geometry.setDrawRange(0, 0);
+      this._line.geometry.setDrawRange(0, 0);
+      return;
+    }
+    const ge = s.WorldModel === 'ge';
+    const pts = [];
+    if (haveFrom) pts.push([s.DistancePairFromLat, s.DistancePairFromLon]);
+    if (haveTo)   pts.push([s.DistancePairToLat,   s.DistancePairToLon]);
+
+    // Pin world positions.
+    for (let i = 0; i < pts.length; i++) {
+      const [lat, lon] = pts[i];
+      let x, y, z;
+      if (ge) {
+        const phi = lat * Math.PI / 180;
+        const lam = lon * Math.PI / 180;
+        const cp = Math.cos(phi);
+        const Rg = FE_RADIUS * 1.001;
+        x = Rg * cp * Math.cos(lam);
+        y = Rg * cp * Math.sin(lam);
+        z = Rg * Math.sin(phi);
+      } else {
+        const [dx, dy] = canonicalLatLongToDisc(lat, lon, FE_RADIUS);
+        x = dx; y = dy; z = 0.005;
+      }
+      this._pinPos[i * 3]     = x;
+      this._pinPos[i * 3 + 1] = y;
+      this._pinPos[i * 3 + 2] = z;
+    }
+    this._pins.geometry.attributes.position.needsUpdate = true;
+    this._pins.geometry.setDrawRange(0, pts.length);
+
+    // Connector line.
+    if (haveFrom && haveTo) {
+      const φ1 = s.DistancePairFromLat * Math.PI / 180;
+      const λ1 = s.DistancePairFromLon * Math.PI / 180;
+      const φ2 = s.DistancePairToLat   * Math.PI / 180;
+      const λ2 = s.DistancePairToLon   * Math.PI / 180;
+      const N = this._SEG;
+      if (ge) {
+        // Great-circle arc via slerp on unit vectors.
+        const cp1 = Math.cos(φ1), cp2 = Math.cos(φ2);
+        const a = [cp1 * Math.cos(λ1), cp1 * Math.sin(λ1), Math.sin(φ1)];
+        const b = [cp2 * Math.cos(λ2), cp2 * Math.sin(λ2), Math.sin(φ2)];
+        let dot = a[0]*b[0] + a[1]*b[1] + a[2]*b[2];
+        dot = Math.max(-1, Math.min(1, dot));
+        const ω = Math.acos(dot);
+        const sω = Math.sin(ω);
+        const Rg = FE_RADIUS * 1.001;
+        for (let i = 0; i <= N; i++) {
+          const t = i / N;
+          let p;
+          if (sω < 1e-9) {
+            p = a;
+          } else {
+            const c1 = Math.sin((1 - t) * ω) / sω;
+            const c2 = Math.sin(t * ω) / sω;
+            p = [c1 * a[0] + c2 * b[0], c1 * a[1] + c2 * b[1], c1 * a[2] + c2 * b[2]];
+          }
+          this._linePos[i * 3]     = Rg * p[0];
+          this._linePos[i * 3 + 1] = Rg * p[1];
+          this._linePos[i * 3 + 2] = Rg * p[2];
+        }
+      } else {
+        // Disc projection: straight line between two
+        // canonical-projected points. Each interior sample is
+        // re-projected through `canonicalLatLongToDisc` so the line
+        // follows the projection's curvature in DP.
+        for (let i = 0; i <= N; i++) {
+          const t = i / N;
+          const lat = s.DistancePairFromLat + t * (s.DistancePairToLat - s.DistancePairFromLat);
+          // Longitude lerp wraps via shortest path.
+          let dλ = s.DistancePairToLon - s.DistancePairFromLon;
+          if (dλ > 180) dλ -= 360;
+          if (dλ < -180) dλ += 360;
+          const lon = s.DistancePairFromLon + t * dλ;
+          const [dx, dy] = canonicalLatLongToDisc(lat, lon, FE_RADIUS);
+          this._linePos[i * 3]     = dx;
+          this._linePos[i * 3 + 1] = dy;
+          this._linePos[i * 3 + 2] = 0.004;
+        }
+      }
+      this._line.geometry.attributes.position.needsUpdate = true;
+      this._line.geometry.setDrawRange(0, N + 1);
+    } else {
+      this._line.geometry.setDrawRange(0, 0);
+    }
+  }
+}
+
 // Central-angle / inscribed-angle helper for GE mode.
 //
 // Per `c.TrackerInfos` entry, draws a great-circle arc on the

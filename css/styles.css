@@ -388,7 +388,12 @@ header .info-popup.legend-popup a { color: var(--accent); }
   color: #d6deed;
   background: transparent;
   pointer-events: none;
-  z-index: 31;
+  /* z-index 33 stays above #bottom-bar (32) so the bar's opaque
+     background + backdrop-filter doesn't cover the info-bar text
+     in the overlap region (info-bar sits at bottom: 56 px, bar
+     starts at bottom: 0 with height 106, so the upper half of the
+     bar overlaps the info-bar). */
+  z-index: 33;
   text-shadow: 0 0 2px rgba(0, 0, 0, 0.9);
   zoom: var(--ui-zoom);
 }

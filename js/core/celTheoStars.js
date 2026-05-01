@@ -42,7 +42,6 @@ export const CEL_THEO_STARS = [
   // panel 2
   { id: 'ct_hd_217533',    name: 'HD 217533',           raH: 23.02357, decD: -14.27192, mag: 7.28 },
   { id: 'ct_hd_217533_2',  name: 'HD 217533 (2)',       raH: 23.02357, decD: -14.27192, mag: 7.28 },
-  { id: 'ct_39_aqr_moon',  name: '39 Aquarii (Moon)',   raH: 22.20716, decD: -14.19396, mag: 6.04 },
   { id: 'ct_hd_76600',     name: 'HD 76600',            raH:  8.95386, decD:  +0.53543, mag: 7.67 },
   { id: 'ct_hd_76525',     name: 'HD 76525',            raH:  8.94597, decD:  +0.39015, mag: 8.10 },
   { id: 'ct_sao_117309',   name: 'SAO 117309',          raH:  8.96472, decD:  +0.23013, mag: 8.85 },
@@ -53,7 +52,6 @@ export const CEL_THEO_STARS = [
   { id: 'ct_hip_45592',    name: 'HIP 45592',           raH:  9.29248, decD:  +0.55488, mag: 6.96 },
   { id: 'ct_sao_117565',   name: 'SAO 117565',          raH:  9.28856, decD:  +0.41969, mag: 8.82 },
   { id: 'ct_hd_80537',     name: 'HD 80537',            raH:  9.34064, decD:  +0.28383, mag: 7.55 },
-  { id: 'ct_39_aqr_3',     name: '39 Aquarii (3)',      raH: 22.20716, decD: -14.19396, mag: 6.04 },
   // panel 3 (Orion belt + Sigma Ori)
   { id: 'ct_mintaka',      name: 'Mintaka',                                                                extId: 'mintaka' },
   { id: 'ct_rigel',        name: 'Rigel',                                                                  extId: 'rigel' },

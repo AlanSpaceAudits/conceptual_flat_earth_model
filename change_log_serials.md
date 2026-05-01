@@ -14344,3 +14344,31 @@ Format:
   + eager `new Demos(model)` from S753. Mobile Performance
   drops ~1 point (99 vs 100) but the Demos tab works again.
 - **Revert path:** `git checkout v-s000754 -- .`
+
+## S756 — info-bar visibility restored + Cel Theo dedup
+
+- **Date:** 2026-05-01
+- **Files changed:**
+  - `css/styles.css`
+  - `css/styles.min.css` (rebuilt)
+  - `js/core/celTheoStars.js`
+  - `js-min/**` (rebuilt)
+- **Change:**
+  - `#info-bar` z-index 31 → 33. The S745 bump of `#bottom-bar`
+    z-index from 30 to 32 (added so the body-search panel could
+    escape the bar's stacking context) left `#info-bar`
+    underneath the bar — and the bar's
+    `background: rgba(14, 18, 26, 0.92)` + `backdrop-filter: blur`
+    covered the info-bar's text in the overlap region (info-bar
+    sits at `bottom: 56 px`; bar starts at `bottom: 0` with
+    `height: 106 px`, so the bar's upper half overlapped). With
+    info-bar at 33 the lat / lon / az / el / time / tracking
+    readout strip is visible again. `pointer-events: none` is
+    preserved so clicks still pass through to the bar buttons.
+  - `js/core/celTheoStars.js`: dropped the duplicate
+    `ct_39_aqr_moon` and `ct_39_aqr_3` rows (both share the
+    `(22.20716 h, -14.19396°)` coordinates of the canonical
+    `ct_39_aqr` entry — they were Cel-Theo panel-2 / panel-2
+    duplicates that crowded the tracker UI without adding any new
+    data).
+- **Revert path:** `git checkout v-s000755 -- .`

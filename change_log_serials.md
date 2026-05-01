@@ -13648,3 +13648,16 @@ Format:
   (32 segments, white, `LineBasicMaterial`) now that the
   underlying pipeline is verified working.
 - **Revert path:** `git checkout v-s000729 -- .`
+
+## S731 — RT (real-time) playback button
+
+- **Date:** 2026-04-30
+- **Files changed:** `js/ui/controlPanel.js`
+- **Change:** added an `RT` button to the playback strip,
+  immediately after `2×`. Click sets the autoplay speed to
+  `1 / 86400` days per real second — i.e., simulation time
+  advances at exactly the same rate as the wall clock — and
+  starts playback. The bypass of `clampMag` is intentional: the
+  existing `MIN_SPEED = (1/24) / 128 ≈ 0.000326` d/s would otherwise
+  prevent reaching real-time (`1.157e-5` d/s).
+- **Revert path:** `git checkout v-s000730 -- .`

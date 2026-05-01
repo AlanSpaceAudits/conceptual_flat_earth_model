@@ -1889,6 +1889,10 @@ export function buildControlPanel(host, model, demos) {
   btnSpeed.className = 'time-btn';  btnSpeed.type = 'button';
   btnSpeed.textContent = '2×';
   bindTip(btnSpeed, 'tip_speed');
+  const btnRealtime = document.createElement('button');
+  btnRealtime.className = 'time-btn';  btnRealtime.type = 'button';
+  btnRealtime.textContent = 'RT';
+  btnRealtime.title = 'Real time (1 sim sec per real sec)';
   const speedStack = document.createElement('div');
   speedStack.className = 'speed-stack';
   const btnEndDemo = document.createElement('button');
@@ -1988,7 +1992,7 @@ export function buildControlPanel(host, model, demos) {
   model.addEventListener('update', refreshAxisBtn);
   refreshAxisBtn();
 
-  timeControls.append(btnRew, btnPlay, btnFf, btnSlow, btnSpeed, jumpGrid, speedStack);
+  timeControls.append(btnRew, btnPlay, btnFf, btnSlow, btnSpeed, btnRealtime, jumpGrid, speedStack);
   barLeft.appendChild(geoHops);
 
   // Cel Theo presets. Each entry seeds observer lat/lon, tracker
@@ -2800,6 +2804,14 @@ export function buildControlPanel(host, model, demos) {
     const s = autoplay.speed || DEFAULT_SPEED;
     const next = clampSign(s) * clampMag(Math.abs(s) * 2);
     autoplay.setSpeed(next);
+    if (!autoplay.playing) autoplay.play();
+    refreshTimeControls();
+  });
+  btnRealtime.addEventListener('click', () => {
+    // 1 sim second per real second = 1 / 86400 days/sec. Set the
+    // speed directly (bypassing `clampMag`'s lower bound, which is
+    // still ~30× faster than real time) and start playback.
+    autoplay.setSpeed(1 / 86400);
     if (!autoplay.playing) autoplay.play();
     refreshTimeControls();
   });

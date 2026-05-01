@@ -1471,11 +1471,17 @@ export class Shadow {
       vertexShader: SHADOW_VERT,
       fragmentShader: SHADOW_FRAG,
       transparent: true,
+      // depthTest off so the log-depth buffer (S744) can't z-fight
+      // the shadow away from the disc base — the renderOrder pass
+      // is enough to keep it above land / grid without depth
+      // comparison. depthWrite stays off so transparent layers
+      // above (vault dots, markers) still composite correctly.
+      depthTest: false,
       depthWrite: false,
     });
     this.mesh = new THREE.Mesh(geom, this.material);
-    this.mesh.position.z = 3e-4; // just above land + grid
-    this.mesh.renderOrder = 5;   // after opaque land, before vault dots
+    this.mesh.position.z = 0.0015; // well clear of land + grid
+    this.mesh.renderOrder = 5;     // after opaque land, before vault dots
     this.group.add(this.mesh);
   }
 

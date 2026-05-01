@@ -14585,6 +14585,23 @@ Format:
   default when a user has previously persisted the off state.
 - **Revert path:** `git checkout v-s000766 -- .`
 
+## S770 — FE disc shadow depthTest off (log-depth z-fight fix)
+
+- **Date:** 2026-04-30
+- **Files changed:** `js/render/worldObjects.js`, `js-min/**`
+  (rebuilt)
+- **Change:** `Shadow` material now sets `depthTest: false` and the
+  mesh's z-offset is bumped from `3e-4` to `0.0015`. S744 enabled
+  `logarithmicDepthBuffer: true` on the renderer to keep the FE
+  disc inside the frustum at extreme zoom-out, but the log-depth
+  remap shrunk the precision band around z=0 enough that the
+  3e-4 shadow offset z-fought the opaque disc base — the disc
+  won, so the FE day/night terminator never painted while GE
+  (which uses its own sphere shader, no AE shadow disc) was
+  unaffected. Disabling depthTest on the shadow lets `renderOrder
+  5` alone keep it above land + grid without depth comparison.
+- **Revert path:** `git checkout v-s000769 -- .`
+
 ## S769 — day/night flags survive flight-routes demo cleanup
 
 - **Date:** 2026-04-30

@@ -13737,3 +13737,20 @@ Format:
   by `sizes` and a 180px `apple-touch-icon`. Manifest update
   follows in S737.
 - **Revert path:** `git checkout v-s000734 -- .`
+
+## S736 — service worker restored (versioned offline cache)
+
+- **Date:** 2026-04-30
+- **Files changed:** `sw.js`, `js/main.js`.
+- **Change:** Replaced the S671 kill-switch worker with a versioned
+  cache (`CACHE_VERSION = 'fe-v2-s736'`). Strategy:
+    - precache `index.html`, manifest, manifest icons on install,
+    - `assets/*` cache-first,
+    - `.js`/`.css` stale-while-revalidate via `RUNTIME_CACHE`,
+    - HTML / navigation requests network-first with cached fallback
+      to `index.html` for offline use.
+  Only same-origin GETs with status 200 and no opaque-redirect type
+  are cached. Old caches are evicted on activate. `js/main.js`
+  comment updated to remove kill-switch language. Bumping
+  `CACHE_VERSION` in future serials invalidates clients cleanly.
+- **Revert path:** `git checkout v-s000735 -- .`

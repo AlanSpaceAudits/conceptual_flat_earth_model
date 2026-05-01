@@ -361,13 +361,10 @@ window.model = model;
 window.renderer = renderer;
 window.demos = demos;
 
-// Service-worker registration kept ALIVE so browsers running the
-// broken S669 worker pull the S671 kill-switch on next page load,
-// which clears caches and self-unregisters. Without this call the
-// old worker would persist for up to 24 h (browser passive update
-// interval) before auto-checking the new `sw.js`. The kill switch
-// itself runs `self.registration.unregister()` on activate, so
-// after one navigation cycle no worker remains installed.
+// Service-worker registration. S736 restored asset caching after
+// the S671 kill-switch removed it; the kill-switch unregistered
+// itself on activate, so a fresh `sw.js` installs cleanly on the
+// next navigation. CACHE_VERSION inside `sw.js` controls eviction.
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('sw.js').catch(() => {});

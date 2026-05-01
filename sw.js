@@ -1,44 +1,109 @@
 // Service worker — asset caching for the FE model.
 //
-// GitHub Pages serves all static files with a 10-minute cache TTL,
-// which Lighthouse flags as "Use efficient cache lifetimes" (~10
-// MiB of starfields and JS modules). A client-side service worker
-// caches assets aggressively, so repeat visits skip the network for
-// anything that hasn't changed.
+// Strategy:
+//   `assets/`  cache-first (textures, vendored libs, geojson, icons)
+//   .js / .css stale-while-revalidate (cached returns immediately,
+//                                      network fetches in background,
+//                                      cache updated for next nav)
+//   HTML       network-first, cached fallback for offline use.
 //
-// Strategy
-//   `assets/`  — cache-first (textures, vendored libs, geojson)
-//   JS / CSS   — stale-while-revalidate (returns cached, fetches in
-//                background, swaps on next nav)
-//   HTML       — network-first with cached fallback (so a fresh
-//                deploy is always picked up when online)
-//
-// Versioning: bumping `CACHE_VERSION` invalidates the old cache on
-// the next install. The current value should be advanced any time a
-// release introduces breaking asset changes that older clients
-// would otherwise serve from cache (a renamed file etc.).
+// CACHE_VERSION must be bumped whenever asset names change so old
+// caches are dropped on activate. The S671 kill-switch unregistered
+// itself, so installing a fresh worker (here, S736) takes effect on
+// the next navigation cycle.
 
-// KILL SWITCH (S671): the v1 service worker shipped in S669 caused a
-// black-screen-on-refresh report. This replacement clears every
-// previously installed cache and unregisters itself on activation,
-// returning the page to a no-SW baseline. The fetch handler is also
-// stripped so requests bypass the worker entirely.
-//
-// To re-introduce caching later, restore the prior strategy under a
-// fresh `CACHE_VERSION` so installed kill-switch workers swap out
-// cleanly on activate.
+const CACHE_VERSION = 'fe-v2-s736';
+const STATIC_CACHE  = `${CACHE_VERSION}-static`;
+const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
+
+const PRECACHE_URLS = [
+  './',
+  './index.html',
+  './manifest.webmanifest',
+  './assets/icons/icon-192.png',
+  './assets/icons/icon-512.png',
+  './assets/icons/icon-maskable-192.png',
+  './assets/icons/icon-maskable-512.png',
+  './assets/icons/apple-touch-icon-180.png',
+];
 
 self.addEventListener('install', (event) => {
-  self.skipWaiting();
+  event.waitUntil((async () => {
+    const cache = await caches.open(STATIC_CACHE);
+    await cache.addAll(PRECACHE_URLS);
+    self.skipWaiting();
+  })());
 });
 
 self.addEventListener('activate', (event) => {
   event.waitUntil((async () => {
     const keys = await caches.keys();
-    await Promise.all(keys.map((k) => caches.delete(k)));
-    await self.registration.unregister();
+    await Promise.all(keys.map((k) => {
+      if (k !== STATIC_CACHE && k !== RUNTIME_CACHE) return caches.delete(k);
+      return null;
+    }));
+    await self.clients.claim();
   })());
 });
 
-// No fetch handler — every request bypasses the worker.
+function isCacheableResponse(res) {
+  return res && res.status === 200 && res.type !== 'opaqueredirect';
+}
 
+async function cacheFirst(request) {
+  const cached = await caches.match(request);
+  if (cached) return cached;
+  const res = await fetch(request);
+  if (isCacheableResponse(res)) {
+    const cache = await caches.open(RUNTIME_CACHE);
+    cache.put(request, res.clone());
+  }
+  return res;
+}
+
+async function staleWhileRevalidate(request) {
+  const cache = await caches.open(RUNTIME_CACHE);
+  const cached = await cache.match(request);
+  const networkPromise = fetch(request).then((res) => {
+    if (isCacheableResponse(res)) cache.put(request, res.clone());
+    return res;
+  }).catch(() => cached);
+  return cached || networkPromise;
+}
+
+async function networkFirst(request) {
+  const cache = await caches.open(RUNTIME_CACHE);
+  try {
+    const res = await fetch(request);
+    if (isCacheableResponse(res)) cache.put(request, res.clone());
+    return res;
+  } catch (err) {
+    const cached = await cache.match(request) || await caches.match('./index.html');
+    if (cached) return cached;
+    throw err;
+  }
+}
+
+self.addEventListener('fetch', (event) => {
+  const req = event.request;
+  if (req.method !== 'GET') return;
+
+  const url = new URL(req.url);
+  if (url.origin !== self.location.origin) return;
+
+  if (req.mode === 'navigate' || req.destination === 'document') {
+    event.respondWith(networkFirst(req));
+    return;
+  }
+
+  if (url.pathname.includes('/assets/')) {
+    event.respondWith(cacheFirst(req));
+    return;
+  }
+
+  if (req.destination === 'script' || req.destination === 'style' ||
+      url.pathname.endsWith('.js') || url.pathname.endsWith('.css')) {
+    event.respondWith(staleWhileRevalidate(req));
+    return;
+  }
+});

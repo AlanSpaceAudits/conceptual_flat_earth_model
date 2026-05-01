@@ -484,18 +484,19 @@ header .info-popup.legend-popup a { color: var(--accent); }
 }
 .body-search-input:focus { border-color: var(--accent); }
 .body-search-panel {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: calc(100% + 4px);
-  max-height: 260px;
+  /* `position: fixed` + portal to `<body>` so the panel escapes the
+     `#bottom-bar` stacking context (whose `backdrop-filter: blur`
+     trapped previous z-index attempts beneath `#info-bar`). Geometry
+     is set from JS via the input's `getBoundingClientRect`. */
+  position: fixed;
+  max-height: 60vh;
   overflow-y: auto;
   background: #0f1320;
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   border: 1px solid var(--accent);
   border-radius: 4px;
-  z-index: 40;
+  z-index: 9000;
   display: flex;
   flex-direction: column;
   box-shadow: 0 -6px 18px rgba(0, 0, 0, 0.6);

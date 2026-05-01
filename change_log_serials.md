@@ -14064,3 +14064,34 @@ Format:
   `z-index` 30 → 32 so the panel (and the rest of the bar's
   controls) stack above `#info-bar`.
 - **Revert path:** `git checkout v-s000744 -- .`
+
+## S746 — search panel portalled to body + SW force-reload
+
+- **Date:** 2026-04-30
+- **Files changed:** `sw.js`, `css/styles.css`,
+  `js/ui/controlPanel.js`.
+- **Change:**
+    - **Portal `body-search-panel` to `<body>`.** S745 raised
+      `#bottom-bar` to `z-index: 32` but `backdrop-filter: blur`
+      on the bar still creates its own stacking context. Even at
+      `z-index: 9999` inside the bar, the panel can't paint
+      above other contexts whose z exceeds the bar's. Moved
+      `panel` from `wrap.appendChild` to
+      `document.body.appendChild` so the panel lives at the body
+      stacking context root. Applied to both `attachBodySearch`
+      and `attachFeatureSearch`.
+    - **`position: fixed`** on `.body-search-panel`, geometry set
+      from JS via `getBoundingClientRect`. New helper
+      `positionSearchPanel(panel, input)` writes
+      `left / width / bottom` from the input rect; called inside
+      `renderSuggestions` and on `resize` / capture-phase
+      `scroll`. `z-index: 9000`.
+    - **CACHE_VERSION** bumped `fe-v3-s742 → fe-v4-s746`.
+    - **SW activate force-reload.** Activate handler now also
+      iterates `clients.matchAll({ type: 'window' })` and calls
+      `client.navigate(client.url)` so any tab still running the
+      previous bundle reloads itself the moment the new SW takes
+      over. Pre-S742 clients without the `controllerchange`
+      listener used to stay on stale code until the user
+      manually refreshed; this evicts them server-side instead.
+- **Revert path:** `git checkout v-s000745 -- .`

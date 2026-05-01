@@ -107,6 +107,21 @@ function resolveTargetAngles(targetId, c) {
   return null;
 }
 
+// Position a fixed-positioned suggestion panel just above its
+// search input, sized to the input's width. The panel is portalled
+// to `<body>` (see `attachBodySearch` / `attachFeatureSearch`) so
+// it escapes the `#bottom-bar` stacking context — without that, the
+// panel painted underneath `#info-bar` regardless of its z-index.
+// `panel.dataset.feSearchInput` is left undefined on purpose: the
+// caller passes `input` directly each time.
+function positionSearchPanel(panel, input) {
+  const r = input.getBoundingClientRect();
+  const vh = window.innerHeight;
+  panel.style.left   = `${r.left}px`;
+  panel.style.width  = `${r.width}px`;
+  panel.style.bottom = `${vh - r.top + 4}px`;
+}
+
 // Hide every other open popup (tab popup, About / Legend dialog,
 // the *other* search panel) when one of the search inputs is focused
 // or starts typing. The active-tab state lives inside `attachBottomBar`
@@ -146,7 +161,7 @@ function attachBodySearch(host, model) {
   const panel = document.createElement('div');
   panel.className = 'body-search-panel';
   panel.hidden = true;
-  wrap.appendChild(panel);
+  document.body.appendChild(panel);
 
   host.appendChild(wrap);
 
@@ -197,8 +212,14 @@ function attachBodySearch(host, model) {
       });
       panel.appendChild(row);
     });
+    positionSearchPanel(panel, input);
     panel.hidden = false;
   };
+  const reposition = () => {
+    if (!panel.hidden) positionSearchPanel(panel, input);
+  };
+  window.addEventListener('resize', reposition);
+  window.addEventListener('scroll', reposition, true);
 
   input.addEventListener('focus', () => closeOtherPopups(panel));
   input.addEventListener('input', () => {
@@ -263,7 +284,7 @@ function attachFeatureSearch(host, openFeature) {
   const panel = document.createElement('div');
   panel.className = 'body-search-panel';
   panel.hidden = true;
-  wrap.appendChild(panel);
+  document.body.appendChild(panel);
 
   host.appendChild(wrap);
 
@@ -337,8 +358,14 @@ function attachFeatureSearch(host, openFeature) {
       });
       panel.appendChild(row);
     });
+    positionSearchPanel(panel, input);
     panel.hidden = false;
   };
+  const reposition = () => {
+    if (!panel.hidden) positionSearchPanel(panel, input);
+  };
+  window.addEventListener('resize', reposition);
+  window.addEventListener('scroll', reposition, true);
 
   input.addEventListener('focus', () => closeOtherPopups(panel));
   input.addEventListener('input', () => {

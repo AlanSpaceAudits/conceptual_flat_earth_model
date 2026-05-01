@@ -12,7 +12,7 @@
 // itself, so installing a fresh worker (here, S736) takes effect on
 // the next navigation cycle.
 
-const CACHE_VERSION = 'fe-v3-s742';
+const CACHE_VERSION = 'fe-v4-s746';
 const STATIC_CACHE  = `${CACHE_VERSION}-static`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 
@@ -43,6 +43,15 @@ self.addEventListener('activate', (event) => {
       return null;
     }));
     await self.clients.claim();
+    // Force-reload every controlled tab so any client still
+    // running pre-CACHE_VERSION JS / CSS picks up the fresh
+    // bundle immediately. Without this, clients only refresh on
+    // their next manual navigation, so the user can be stuck
+    // looking at stale code for an entire session.
+    const clients = await self.clients.matchAll({ type: 'window' });
+    for (const client of clients) {
+      try { await client.navigate(client.url); } catch {}
+    }
   })());
 });
 

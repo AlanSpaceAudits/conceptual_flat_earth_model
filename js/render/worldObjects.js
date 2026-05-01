@@ -5521,16 +5521,19 @@ export class GeocentricMarkers {
     this._appPoints.frustumCulled = false;
     this.group.add(this._appPoints);
 
-    // Shared ring geometry: outer radius 1.0, inner 0.86 — 14 % band
-    // width — split into 64 segments. Each per-slot mesh is scaled
-    // and re-oriented per frame.
-    const ringGeom = new THREE.RingGeometry(0.86, 1.0, 64);
+    // Shared ring geometry: outer radius 1.0, inner 0.7 — 30 % band
+    // width — split into 64 segments. The wide band ensures the
+    // ring stays a visibly thick annulus even when the per-slot
+    // scale shrinks to small refractions; thinner bands collapsed
+    // sub-pixel and the rasteriser dropped them.
+    const ringGeom = new THREE.RingGeometry(0.7, 1.0, 64);
     this._halos = [];
     for (let i = 0; i < max; i++) {
       const mat = new THREE.MeshBasicMaterial({
         color: 0xffffff,
         side: THREE.DoubleSide,
-        transparent: false,
+        transparent: true,
+        opacity: 0.85,
         depthTest: false, depthWrite: false,
       });
       const m = new THREE.Mesh(ringGeom, mat);
@@ -5579,12 +5582,14 @@ export class GeocentricMarkers {
       const r  = Math.hypot(dx, dy, dz);
       const halo = this._halos[n];
       if (r > 1e-7) {
-        // World radius equals the apparent↔true 3D distance, so the
-        // ring's outer edge (the unit circle of the geometry) lands
-        // exactly on the true marker. Visibility floor of
-        // 0.010 rad (~0.6°) prevents the ring from collapsing
-        // sub-pixel at small refractions; above the floor strict
-        // geometry holds.
+        // Outer radius of the unit-circle RingGeometry equals 1 —
+        // applying uniform scale `(R, R, R)` makes the ring's outer
+        // world radius equal `R`, so its edge sits exactly on the
+        // true marker. Visibility floor of 0.010 rad (~0.6°)
+        // prevents sub-pixel collapse at small refractions; above
+        // the floor strict geometry holds. `lookAt` orients the
+        // ring's plane (local XY) perpendicular to the camera so
+        // the ring renders face-on rather than edge-on.
         let scaleR = r;
         if (camera) {
           const cx = camera.position.x - ac[0];
@@ -5596,8 +5601,10 @@ export class GeocentricMarkers {
           if (scaleR < minWorldR) scaleR = minWorldR;
         }
         halo.position.set(ac[0], ac[1], ac[2]);
-        halo.scale.set(scaleR, scaleR, 1);
+        halo.scale.set(scaleR, scaleR, scaleR);
         if (camera) halo.lookAt(camera.position);
+        halo.updateMatrix();
+        halo.matrixAutoUpdate = true;
         halo.visible = true;
       } else {
         halo.visible = false;

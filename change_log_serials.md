@@ -13415,3 +13415,19 @@ Format:
   floor (~0.57°) is preserved so the ring remains visible at small
   refractions / far camera distances.
 - **Revert path:** `git checkout v-s000717 -- .`
+
+## S719 — halo Mesh: thicker band, uniform scale, explicit matrix update
+
+- **Date:** 2026-04-30
+- **Files changed:** `js/render/worldObjects.js`
+- **Change:** halo `RingGeometry` band widened from 14 % (inner
+  0.86) to 30 % (inner 0.7). Per-frame transform changed from
+  `scale.set(R, R, 1)` to uniform `scale.set(R, R, R)` so `lookAt`
+  composes with a clean uniform-scale matrix; the previous
+  asymmetric scale combined with `lookAt`'s rotation produced a
+  matrix that some configurations were rejecting silently. Added
+  explicit `halo.updateMatrix()` after the transform writes to
+  force the local matrix recomputation before render. Material now
+  has `transparent: true, opacity: 0.85` so it composites cleanly
+  rather than relying on the opaque pipeline.
+- **Revert path:** `git checkout v-s000718 -- .`

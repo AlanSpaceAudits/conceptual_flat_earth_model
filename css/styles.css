@@ -1358,15 +1358,16 @@ footer#desc .desc-dynamic { color: var(--fg); }
 
 }
 
-/* Flight-routes demo info boxes: position primary at left edge and
-   secondary at right edge of the viewport, regardless of screen
-   width. This replaces the desktop-only inline `left: 12px` /
-   `left: 420px` from `flightRoutes.js` so the secondary box never
-   slides offscreen on narrow viewports. Sizing (font / art / min /
-   max-width) is now controlled by the runtime-injected stylesheet
-   in `flightRoutes.js`, all clamp()-based for continuous scaling. */
+/* Flight-routes demo info boxes: stack both panels on the left
+   side, primary against the viewport edge and secondary directly
+   to its right (no longer pinned to the right edge). The 50vw
+   anchor keeps the secondary clear of the primary's max-width
+   (min(460 px, 50vw - 8 px)) without overshooting on wide
+   monitors. Sizing (font / art / min / max-width) is controlled
+   by the runtime-injected stylesheet in `flightRoutes.js`, all
+   clamp()-based for continuous scaling. */
 body .flight-info-box        { left: clamp(4px, 0.5vw, 12px) !important; }
-body #flight-info-box-2      { left: auto !important; right: clamp(4px, 0.5vw, 12px) !important; }
+body #flight-info-box-2      { left: clamp(380px, calc(50vw + 4px), 480px) !important; right: auto !important; }
 
 /* On narrow viewports the readout column has too little width to
    show "Distance / Lap / Heading" etc. next to a 72-px portrait,

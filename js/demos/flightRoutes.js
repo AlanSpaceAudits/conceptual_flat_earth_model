@@ -17,6 +17,17 @@ import {
 } from '../data/flightRoutes.js';
 import { FLIGHT_TRACKS } from '../data/flightTracks.js';
 import { canonicalLatLongToDisc } from '../core/canonical.js';
+import { fmtLiBu, KM_PER_LI, R_LI } from '../core/units.js';
+
+// Render an arc length expressed as a central angle (degrees) into
+// a Tang li / km string for the flight-info readouts. The arc is
+// `R_LI × θ_rad` in li, then × KM_PER_LI for the SI cross-check.
+function arcLiKm(angleDeg) {
+  const rad = angleDeg * Math.PI / 180;
+  const li  = R_LI * rad;
+  const km  = li * KM_PER_LI;
+  return `${fmtLiBu(angleDeg)}  (${km.toFixed(0)} km)`;
+}
 
 // Pixel length of a route's great-circle arc as drawn on the
 // FE_RADIUS = 1 AE disc. Sample at 192 points and sum consecutive
@@ -155,6 +166,7 @@ function schematicInfoBox(route) {
       `Depart              : ${a.name}  ${aCoord}`,
       `Destination         : ${b.name}  ${bCoord}`,
       `Central Angle       : ${angle.toFixed(2)}°`,
+      `Arc Distance        : ${arcLiKm(angle)}`,
       '~Arrival (predicted) : (no flight data)',
       '~Arrival (measured)  : (no flight data)',
       '~Air Time            : (no flight data)',
@@ -231,6 +243,7 @@ function qfFlightDemo(track) {
           `Depart              : ${depart}  (${startWp.lat.toFixed(2)}°, ${startWp.lon.toFixed(2)}°)`,
           `Destination         : ${dest}  (${endWp.lat.toFixed(2)}°, ${endWp.lon.toFixed(2)}°)`,
           `Central Angle       : ${angle.toFixed(2)}°`,
+          `Arc Distance        : ${arcLiKm(angle)}`,
           `Arrival (predicted) : ${formatHMS(predictedSec)}`,
           `Arrival (measured)  : ${formatHMS(actualSec)}`,
           `Air Time            : ${formatHMS(actualSec)}`,
@@ -258,11 +271,11 @@ function qfFlightDemo(track) {
 const QF_FLIGHT_DEMOS = FLIGHT_TRACKS.map(qfFlightDemo);
 
 function combinedInfoBox() {
-  const lines = ['Routes (central angle):'];
+  const lines = ['Routes (central angle  ·  arc distance):'];
   for (const r of FLIGHT_ROUTES) {
     const a = cityById(r.from), b = cityById(r.to);
     const angle = centralAngleDeg(a.lat, a.lon, b.lat, b.lon);
-    lines.push(`  ${r.label}  ${angle.toFixed(2)}°`);
+    lines.push(`  ${r.label}  ${angle.toFixed(2)}°  ·  ${arcLiKm(angle)}`);
   }
   lines.push('~Air / ground speed: (no flight data)');
   return { title: 'All routes — Southern Non-Stop', lines };
@@ -306,7 +319,7 @@ function centralAngleInfoBox() {
     const a = cityById(r.from), b = cityById(r.to);
     const south = centralAngleDeg(a.lat, a.lon, b.lat, b.lon);
     const north = centralAngleDeg(-a.lat, a.lon, -b.lat, b.lon);
-    lines.push(`  ${r.label}  S=${south.toFixed(2)}° = N=${north.toFixed(2)}°`);
+    lines.push(`  ${r.label}  S=${south.toFixed(2)}° = N=${north.toFixed(2)}°  ·  ${arcLiKm(south)}`);
   }
   lines.push('~Air / ground speed: (no flight data)');
   return { title: 'Central-angle parity', lines };
@@ -403,16 +416,17 @@ function constSpeedBox(route, angle, speedDegPerH, label, accent) {
       `Takeoff     : ${formatHMS(0)}`,
       `Arrival     : ${formatHMS(arrivalSec)}`,
       `Central Angle : ${angle.toFixed(2)}°`,
+      `Arc Distance : ${arcLiKm(angle)}`,
       `Speed       : ${formatDmsPerHour(speedDegPerH)}`,
       (s) => {
         const p = Math.max(0, Math.min(1, s.FlightRoutesProgress || 0));
         const elapsed = angle * p;
-        return `!Traversed   : ${elapsed.toFixed(2)}° / ${angle.toFixed(2)}°`;
+        return `!Traversed   : ${elapsed.toFixed(2)}° / ${angle.toFixed(2)}°  ·  ${arcLiKm(elapsed)}`;
       },
       (s) => {
         const p = Math.max(0, Math.min(1, s.FlightRoutesProgress || 0));
         const remaining = angle * (1 - p);
-        return `!Remaining   : ${remaining.toFixed(2)}°`;
+        return `!Remaining   : ${remaining.toFixed(2)}°  ·  ${arcLiKm(remaining)}`;
       },
       // Live elapsed flight clock — counts up from Takeoff so the
       // user can see both lanes hit `Arrival` at the same instant.

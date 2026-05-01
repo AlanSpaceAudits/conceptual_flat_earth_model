@@ -14528,3 +14528,28 @@ Format:
   the raw key. Without an entry the header falls back to the
   literal title string ("Distance Calc") in every locale.
 - **Revert path:** `git checkout v-s000762 -- .`
+
+## S764 — flight-route info boxes: arc distance + left-side stacking
+
+- **Date:** 2026-04-30
+- **Files changed:** `js/demos/flightRoutes.js`, `css/styles.css`,
+  `js-min/**` (rebuilt)
+- **Change:**
+  - Every flight-route demo info box now reports the central
+    angle's arc distance in Tang li and km via a shared
+    `arcLiKm(angleDeg)` helper (`R_LI × θ_rad → li`, then
+    `× KM_PER_LI → km`).
+    - `schematicInfoBox` and the QF27/28 actual-flight box gain
+      an "Arc Distance" line under "Central Angle".
+    - `combinedInfoBox` and `centralAngleInfoBox` append the arc
+      string to each per-route line.
+    - `constSpeedBox` adds an "Arc Distance" line and extends the
+      live "Traversed" / "Remaining" rows with the corresponding
+      li / km arc segments.
+  - Secondary info box (`#flight-info-box-2`) repositioned: the
+    `left: auto; right: clamp(...)` rule that pinned it to the
+    viewport's right edge is replaced with
+    `left: clamp(380px, calc(50vw + 4px), 480px); right: auto`,
+    so both panels now stack on the left side of the viewport
+    with the secondary just clear of the primary's max-width.
+- **Revert path:** `git checkout v-s000763 -- .`

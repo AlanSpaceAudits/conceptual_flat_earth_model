@@ -12,7 +12,7 @@
 // itself, so installing a fresh worker (here, S736) takes effect on
 // the next navigation cycle.
 
-const CACHE_VERSION = 'fe-v4-s746';
+const CACHE_VERSION = 'fe-v5-s747';
 const STATIC_CACHE  = `${CACHE_VERSION}-static`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 

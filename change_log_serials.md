@@ -14095,3 +14095,43 @@ Format:
       listener used to stay on stale code until the user
       manually refreshed; this evicts them server-side instead.
 - **Revert path:** `git checkout v-s000745 -- .`
+
+## S747 — search panel `[hidden]` override + mobile tap-target pass
+
+- **Date:** 2026-04-30
+- **Files changed:** `sw.js`, `css/styles.css`,
+  `js/ui/controlPanel.js`.
+- **Change:**
+    - **Root cause of the still-hidden search panel.** The CSS
+      `display: flex` on `.body-search-panel` has the same
+      specificity (0,1,0) as the UA stylesheet's
+      `[hidden] { display: none }`, and being author-origin it
+      wins the cascade. So `panel.hidden = true` was a no-op:
+      the panel rendered as a 0-height empty box, expanded to
+      content height when populated, then collapsed back. From
+      the user's view it looked like the panel wasn't there or
+      was "behind a layer" — it was right there, just empty.
+      Added `.body-search-panel[hidden] { display: none !important; }`
+      so the hidden attribute actually hides it, and the show
+      path (set `panel.hidden = false` in `renderSuggestions`)
+      now produces the expected pop.
+    - **`min-width / max-width` moved to CSS** so the panel can
+      be wider than a narrow phone-input (220 → up to
+      `min(90vw, 480px)`). `positionSearchPanel` no longer
+      writes `width`; only `left` (clamped so the panel never
+      spills off the right edge) and `bottom`.
+    - **Tap-target pass.**
+        - `#bottom-bar .time-btn`: 28 × 30 → 36 × 36 mobile,
+          padding 6×9 → 8×11; phone keeps 36 px height with
+          12 px font.
+        - `#bottom-bar .geo-hops .time-btn`: bumped 9 → 10 px
+          font, padding 3×4 → 4×6, `min-height: 30px`.
+        - `#bottom-bar .tabs button`: padding 6×8 → 10×14,
+          font 12 → 13 px, `min-height: 40px`.
+        - `#app > header .info-btn` on phone: 32 px tall.
+    - **`#tracker-hud .tracker-block` width** was a hard 360 px
+      that overflowed phones < 360 CSS px. Now
+      `min(360px, calc(100vw - 16px))`; expanded variant
+      `min(620px, calc(100vw - 16px))`.
+    - **CACHE_VERSION** bumped `fe-v4-s746 → fe-v5-s747`.
+- **Revert path:** `git checkout v-s000746 -- .`

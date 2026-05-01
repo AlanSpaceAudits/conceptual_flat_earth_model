@@ -294,7 +294,7 @@ header .info-popup.legend-popup a { color: var(--accent); }
 #tracker-hud .tracker-title { color: #f4a640; font-weight: 600; margin-bottom: 2px; }
 #tracker-hud .tracker-foot { color: #9aa3b3; font-size: 11px; margin-top: 1px; }
 #tracker-hud .tracker-block {
-  width: 360px;
+  width: min(360px, calc(100vw - 16px));
   box-sizing: border-box;
   padding: 4px 9px;
   margin-bottom: 4px;
@@ -307,7 +307,7 @@ header .info-popup.legend-popup a { color: var(--accent); }
    columns per pipeline row — RA / Dec / Az / El — so the block
    grows wide enough to render each row on a single line at the
    ui-monospace default size. */
-#tracker-hud.expanded .tracker-block { width: 620px; }
+#tracker-hud.expanded .tracker-block { width: min(620px, calc(100vw - 16px)); }
 
 #live-ephem-tab {
   display: block;
@@ -487,8 +487,12 @@ header .info-popup.legend-popup a { color: var(--accent); }
   /* `position: fixed` + portal to `<body>` so the panel escapes the
      `#bottom-bar` stacking context (whose `backdrop-filter: blur`
      trapped previous z-index attempts beneath `#info-bar`). Geometry
-     is set from JS via the input's `getBoundingClientRect`. */
+     is set from JS via the input's `getBoundingClientRect`; CSS owns
+     min-width / max-width so the panel can be wider than the input
+     when the input is narrow on phones. */
   position: fixed;
+  min-width: 220px;
+  max-width: min(90vw, 480px);
   max-height: 60vh;
   overflow-y: auto;
   background: #0f1320;
@@ -501,6 +505,10 @@ header .info-popup.legend-popup a { color: var(--accent); }
   flex-direction: column;
   box-shadow: 0 -6px 18px rgba(0, 0, 0, 0.6);
 }
+/* Author `display: flex` above wins on specificity over the UA's
+   `[hidden] { display: none }`, so the panel rendered as a 0-height
+   empty box even when `panel.hidden = true`. Force the override. */
+.body-search-panel[hidden] { display: none !important; }
 .body-search-row {
   font: 12px/1.2 ui-monospace, Menlo, monospace;
   padding: 6px 10px;
@@ -1210,10 +1218,14 @@ footer#desc .desc-dynamic { color: var(--fg); }
   #bottom-bar .compass-controls,
   #bottom-bar .search-stack { margin-top: 0; }
   #bottom-bar .compass-controls { margin-right: 8px; }
+  /* Tap targets — desktop uses 28-30 px buttons; touch needs ~40 px
+     minimum for reliable taps. Bumps the bar's primary buttons +
+     mode/cardinal grids to 36 px high (the dense geo-hops grid stays
+     compact since it has 10 buttons in two rows). */
   #bottom-bar .time-btn {
-    min-width: 30px;
-    min-height: 28px;
-    padding: 6px 9px;
+    min-width: 36px;
+    min-height: 36px;
+    padding: 8px 11px;
     font-size: 13px;
   }
   #bottom-bar .geo-hops {
@@ -1222,11 +1234,12 @@ footer#desc .desc-dynamic { color: var(--fg); }
     margin: 0 4px;
   }
   #bottom-bar .geo-hops .time-btn {
-    padding: 3px 4px;
-    font-size: 9px;
+    min-height: 30px;
+    padding: 4px 6px;
+    font-size: 10px;
   }
   #bottom-bar .body-search { width: 160px; }
-  #bottom-bar .tabs button { padding: 6px 8px; font-size: 12px; }
+  #bottom-bar .tabs button { padding: 10px 14px; font-size: 13px; min-height: 40px; }
 
   /* Search input + suggestion rows: large enough that iOS does not
      auto-zoom on focus (needs >=16px) and tap targets are usable. */
@@ -1306,12 +1319,13 @@ body #flight-info-box-2      { left: auto !important; right: clamp(4px, 0.5vw, 1
   body .flight-info-box .fi-art-row { display: none !important; }
 }
 
-/* Phone-sized: even tighter. */
+/* Phone-sized: even tighter. Keeps tap targets at 36 px so they
+   stay touch-friendly even on the narrowest viewports. */
 @media (max-width: 520px) {
   #app > header h1 { font-size: 12px; }
-  #app > header .info-btn { padding: 3px 6px; font-size: 11px; }
-  #bottom-bar .time-btn { min-width: 26px; min-height: 24px; padding: 5px 6px; font-size: 11px; }
-  #bottom-bar .body-search { width: 110px; }
+  #app > header .info-btn { padding: 6px 8px; font-size: 11px; min-height: 32px; }
+  #bottom-bar .time-btn { min-width: 32px; min-height: 36px; padding: 6px 8px; font-size: 12px; }
+  #bottom-bar .body-search { width: 130px; }
   #hud { font-size: 10px; }
 }
 

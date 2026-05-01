@@ -116,9 +116,15 @@ function resolveTargetAngles(targetId, c) {
 // caller passes `input` directly each time.
 function positionSearchPanel(panel, input) {
   const r = input.getBoundingClientRect();
+  const vw = window.innerWidth;
   const vh = window.innerHeight;
-  panel.style.left   = `${r.left}px`;
-  panel.style.width  = `${r.width}px`;
+  // CSS owns min/max-width; JS only places the panel. Clamp `left`
+  // so the panel never spills off the right edge of the viewport
+  // when the input is right-aligned (e.g. narrow phone where the
+  // input lives at the far end of a horizontally-scrolled bar).
+  const minWidth = 220;
+  const left = Math.max(4, Math.min(r.left, vw - minWidth - 4));
+  panel.style.left   = `${left}px`;
   panel.style.bottom = `${vh - r.top + 4}px`;
 }
 

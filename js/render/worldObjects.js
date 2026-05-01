@@ -5538,7 +5538,11 @@ export class GeocentricMarkers {
       });
       const m = new THREE.Mesh(ringGeom, mat);
       m.frustumCulled = false;
-      m.renderOrder = 59;
+      // Very high renderOrder so the halo always lands on top of
+      // the body sprite, dome, and other transparents — earlier
+      // attempts at lower values were getting visually buried under
+      // the body sprite or its dome halo.
+      m.renderOrder = 250;
       m.visible = false;
       this._halos.push(m);
       this.group.add(m);
@@ -5581,34 +5585,29 @@ export class GeocentricMarkers {
       const dz = ac[2] - coordTrue[2];
       const r  = Math.hypot(dx, dy, dz);
       const halo = this._halos[n];
-      if (r > 1e-7) {
-        // Outer radius of the unit-circle RingGeometry equals 1 —
-        // applying uniform scale `(R, R, R)` makes the ring's outer
-        // world radius equal `R`, so its edge sits exactly on the
-        // true marker. Visibility floor of 0.010 rad (~0.6°)
-        // prevents sub-pixel collapse at small refractions; above
-        // the floor strict geometry holds. `lookAt` orients the
-        // ring's plane (local XY) perpendicular to the camera so
-        // the ring renders face-on rather than edge-on.
-        let scaleR = r;
-        if (camera) {
-          const cx = camera.position.x - ac[0];
-          const cy = camera.position.y - ac[1];
-          const cz = camera.position.z - ac[2];
-          const camDist = Math.hypot(cx, cy, cz);
-          const MIN_ANG = 0.010;
-          const minWorldR = MIN_ANG * camDist;
-          if (scaleR < minWorldR) scaleR = minWorldR;
-        }
-        halo.position.set(ac[0], ac[1], ac[2]);
-        halo.scale.set(scaleR, scaleR, scaleR);
-        if (camera) halo.lookAt(camera.position);
-        halo.updateMatrix();
-        halo.matrixAutoUpdate = true;
-        halo.visible = true;
+      // Set the ring radius so it lands on the true marker, with a
+      // visibility floor based on camera distance.
+      let scaleR = r;
+      if (camera) {
+        const cx = camera.position.x - ac[0];
+        const cy = camera.position.y - ac[1];
+        const cz = camera.position.z - ac[2];
+        const camDist = Math.hypot(cx, cy, cz);
+        const MIN_ANG = 0.010;
+        const minWorldR = MIN_ANG * camDist;
+        if (scaleR < minWorldR) scaleR = minWorldR;
       } else {
-        halo.visible = false;
+        // No camera: fall back to a generous fixed minimum so the
+        // ring is at least visible.
+        if (scaleR < 0.05) scaleR = 0.05;
       }
+      halo.position.set(ac[0], ac[1], ac[2]);
+      halo.scale.set(scaleR, scaleR, scaleR);
+      // Always face the camera. Without `lookAt` the ring lies in
+      // the world XY plane and shows edge-on (i.e. invisible) for
+      // most viewing angles.
+      if (camera) halo.lookAt(camera.position);
+      halo.visible = true;
       n++;
     }
     for (let i = n; i < this._halos.length; i++) this._halos[i].visible = false;

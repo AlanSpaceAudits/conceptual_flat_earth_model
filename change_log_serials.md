@@ -13431,3 +13431,20 @@ Format:
   has `transparent: true, opacity: 0.85` so it composites cleanly
   rather than relying on the opaque pipeline.
 - **Revert path:** `git checkout v-s000718 -- .`
+
+## S720 — halo Mesh: renderOrder 250 (above all other transparents)
+
+- **Date:** 2026-04-30
+- **Files changed:** `js/render/worldObjects.js`
+- **Change:** halo `Mesh.renderOrder` raised from 59 to 250. The
+  scene contains transparent meshes at renderOrder up to 124 (e.g.
+  observer figure layers, central-angle helpers); my halo at 59
+  was rendering BEFORE those, and with `depthTest: false` they
+  would draw over it. 250 is unambiguously above everything else
+  in this codebase. Also dropped the `r > 1e-7` early-out around
+  the per-slot transform — the outer `if (!on)` short-circuit
+  already guarantees we're only here when refraction is active, and
+  the min-angular floor handles the r=0 case safely. Cleaned up
+  the manual `updateMatrix()` / `matrixAutoUpdate` calls; relying
+  on three.js's default per-frame auto-update.
+- **Revert path:** `git checkout v-s000719 -- .`

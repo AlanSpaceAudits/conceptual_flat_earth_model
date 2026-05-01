@@ -1130,16 +1130,29 @@ footer#desc .desc-dynamic { color: var(--fg); }
      scrollable. */
   #bottom-bar {
     height: auto;
+    min-height: 96px;
     padding: 8px 8px 6px;
     gap: 8px;
     overflow-x: auto;
     overflow-y: hidden;
     flex-wrap: nowrap;
+    align-items: center;
     -webkit-overflow-scrolling: touch;
     zoom: 1;  /* let media query own the scale */
   }
   #bottom-bar > * { flex-shrink: 0; }
   #bottom-bar .bar-left { flex: 0 0 auto; }
+  /* Reset all the negative top-margins the desktop layout uses to
+     vertically nudge sub-clusters — on mobile the bar lays out in
+     a single horizontal scroll row centred on `align-items: center`,
+     and the negative margins were the source of the overlap. */
+  #bottom-bar .presets,
+  #bottom-bar .time-controls,
+  #bottom-bar .geo-hops,
+  #bottom-bar .cel-theo-hops,
+  #bottom-bar .compass-controls,
+  #bottom-bar .search-stack { margin-top: 0; }
+  #bottom-bar .compass-controls { margin-right: 8px; }
   #bottom-bar .time-btn {
     min-width: 30px;
     min-height: 28px;

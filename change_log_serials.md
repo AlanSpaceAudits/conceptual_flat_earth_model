@@ -13688,3 +13688,21 @@ Format:
   stack wrapper since both children share the same left buffer
   now.
 - **Revert path:** `git checkout v-s000731 -- .`
+
+## S733 — mobile bar: reset negative margins, bump min-height
+
+- **Date:** 2026-04-30
+- **Files changed:** `css/styles.css`, `css/styles.min.css`
+- **Change:** the desktop layout uses `margin-top: -18px` on
+  `.presets`, `.time-controls`, `.geo-hops`, `.cel-theo-hops`, and
+  `.compass-controls` to nudge those clusters upward into the
+  info-bar's empty space. On mobile the bar collapses to
+  `height: auto` and those negative margins were pulling each
+  cluster up over its neighbours, producing the visible overlap.
+  Inside the existing `@media (max-width: 900px)` block:
+    - reset `margin-top` to 0 on every cluster (and `margin-top: 0`
+      on the new `.search-stack`),
+    - dropped `.compass-controls margin-right: 80 → 8`,
+    - added `min-height: 96px` and explicit `align-items: center`
+      to the bar so the row has consistent vertical breathing.
+- **Revert path:** `git checkout v-s000732 -- .`

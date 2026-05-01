@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["data/stellariumTraces.js"],
+  "sourcesContent": ["// Stellarium-exported geocentric trace overlays.\n//\n// Populate `STELLARIUM_TRACES[body]` with arrays of\n// `{ jd?, ra, dec }` rows where `ra` and `dec` are in DEGREES\n// (right-ascension can be 0..360 OR -180..180 \u2014 both wrap fine).\n// Optional `jd` (Julian Date) is unused by the renderer; included\n// so you can paste full Stellarium CSV rows without trimming.\n//\n// Stellarium quick-export workflow:\n//   1. Right-click body \u2192 \"Information\" \u2192 enable RA/Dec readout\n//   2. Tools \u2192 \"Solar System Editor\" \u2192 open the orbit-output panel\n//      (or use the AstroCalc \u2192 \"Ephemeris\" tool: pick body, range,\n//       step, copy the table to CSV)\n//   3. Paste rows here as { ra: <deg>, dec: <deg> }\n//\n// The renderer reads each entry, projects via `canonicalLatLongToDisc`\n// (the same AE math the FE-model GP tracer uses), and draws the\n// trace as a connected polyline at the disc's z=0.004 lift. RA wraps\n// near the 0/360 boundary trigger a pen-up so the line doesn't\n// jump across the disc.\n\nexport const STELLARIUM_TRACES = {\n  sun:     [],\n  moon:    [],\n  mercury: [],\n  venus:   [],\n  mars:    [],\n  jupiter: [],\n  saturn:  [],\n  uranus:  [],\n  neptune: [],\n};\n"],
+  "mappings": "AAqBO,MAAMA,EAAoB,CAC/B,IAAS,CAAC,EACV,KAAS,CAAC,EACV,QAAS,CAAC,EACV,MAAS,CAAC,EACV,KAAS,CAAC,EACV,QAAS,CAAC,EACV,OAAS,CAAC,EACV,OAAS,CAAC,EACV,QAAS,CAAC,CACZ",
+  "names": ["STELLARIUM_TRACES"]
+}

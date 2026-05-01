@@ -1,1 +1,3 @@
 const n=[{id:"sun",name:"Sun",kind:"planet",color:16762948},{id:"moon",name:"Moon",kind:"planet",color:16053492},{id:"mercury",name:"Mercury",kind:"planet",color:13676688},{id:"venus",name:"Venus",kind:"planet",color:16773320},{id:"mars",name:"Mars",kind:"planet",color:13652032},{id:"jupiter",name:"Jupiter",kind:"planet",color:16752736},{id:"saturn",name:"Saturn",kind:"planet",color:14993544},{id:"uranus",name:"Uranus",kind:"planet",color:11065568},{id:"neptune",name:"Neptune",kind:"planet",color:8365800},{id:"pluto",name:"Pluto",raH:16.78639,decD:-11.37361,mag:14.5,color:10517606}];export{n as SOLAR_SYSTEM_BSC};
+
+//# sourceMappingURL=solarSystem.js.map

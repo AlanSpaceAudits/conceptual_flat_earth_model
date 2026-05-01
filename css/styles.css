@@ -1186,7 +1186,7 @@ footer#desc .desc-dynamic { color: var(--fg); }
   #app > header .info-box { gap: 4px; }
 
   /* HUD overlay — smaller fonts, tighter padding. */
-  #hud { font-size: 11px; padding: 6px; }
+  #hud { font-size: 12px; padding: 6px; }
   #hud .moon-phase-wrapper canvas { width: 60px !important; height: 60px !important; }
 
   /* Bottom bar: scroll horizontally instead of wrapping the controls
@@ -1252,7 +1252,11 @@ footer#desc .desc-dynamic { color: var(--fg); }
 
   /* Info bar — drop the right padding since the action buttons can
      overflow when the readout strip is tight. */
-  #info-bar { padding: 4px 10px; font-size: 11px; }
+  /* Mobile font-size 11→12 px so Lighthouse "Document doesn't use
+     legible font sizes" passes (#info-bar carries ~25 % of text). */
+  #info-bar { padding: 4px 10px; font-size: 12px; }
+  #hud { font-size: 12px; padding: 6px; }
+  #info-bar .info-row { gap: 12px; }
 
   /* Tab popups: near-fullscreen on mobile so dense controls become
      usable instead of a tiny dropdown that clips offscreen. */
@@ -1324,11 +1328,11 @@ body #flight-info-box-2      { left: auto !important; right: clamp(4px, 0.5vw, 1
 /* Phone-sized: even tighter. Keeps tap targets at 36 px so they
    stay touch-friendly even on the narrowest viewports. */
 @media (max-width: 520px) {
-  #app > header h1 { font-size: 12px; }
-  #app > header .info-btn { padding: 6px 8px; font-size: 11px; min-height: 32px; }
+  #app > header h1 { font-size: 13px; }
+  #app > header .info-btn { padding: 6px 8px; font-size: 12px; min-height: 32px; }
   #bottom-bar .time-btn { min-width: 32px; min-height: 36px; padding: 6px 8px; font-size: 12px; }
   #bottom-bar .body-search { width: 130px; }
-  #hud { font-size: 10px; }
+  #hud { font-size: 12px; }
 }
 
 /* Flight-routes demo mode: hide the entire HUD overlay, the Live

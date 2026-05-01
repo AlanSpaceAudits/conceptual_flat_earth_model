@@ -56,18 +56,26 @@ async function buildJs() {
     const dst = path.join(JS_OUT, rel);
     await fs.mkdir(path.dirname(dst), { recursive: true });
     const code = await fs.readFile(src, 'utf8');
-    const { code: out } = await esbuild.transform(code, {
+    const baseName = path.basename(dst);
+    // External sourcemap: write `<name>.js.map` next to the minified
+    // file and append `//# sourceMappingURL=<name>.js.map` so browsers
+    // (and Lighthouse's `valid-source-maps` audit) can locate it.
+    const { code: out, map } = await esbuild.transform(code, {
       minify: true,
       target: 'es2020',
       loader: 'js',
       format: 'esm',
+      sourcemap: 'external',
+      sourcefile: rel,
     });
-    await fs.writeFile(dst, out);
+    const withRef = `${out}\n//# sourceMappingURL=${baseName}.map\n`;
+    await fs.writeFile(dst, withRef);
+    await fs.writeFile(`${dst}.map`, map);
     totalIn  += code.length;
-    totalOut += out.length;
+    totalOut += withRef.length;
     files++;
   }
-  console.log(`[js] ${files} files: ${(totalIn / 1024).toFixed(1)} → ${(totalOut / 1024).toFixed(1)} KiB`);
+  console.log(`[js] ${files} files: ${(totalIn / 1024).toFixed(1)} → ${(totalOut / 1024).toFixed(1)} KiB (+ sourcemaps)`);
 }
 
 await buildCss();

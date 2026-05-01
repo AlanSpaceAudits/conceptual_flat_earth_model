@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["math/utils.js"],
+  "sourcesContent": ["// Scalar helpers. Unit-agnostic.\n\nexport const ToRad = (deg) => deg * Math.PI / 180;\nexport const ToDeg = (rad) => rad * 180 / Math.PI;\nexport const sqr   = (x)   => x * x;\n\nexport const Limit1  = (x) => (x < -1 ? -1 : x > 1 ? 1 : x);\nexport const Limit01 = (x) => (x < 0 ? 0 : x > 1 ? 1 : x);\nexport const Clamp   = (x, lo, hi) => (x < lo ? lo : x > hi ? hi : x);\n\n// Wrap x into [0, max) (for positive x) or [-max, 0) (for negative x).\nexport function ToRange(x, max) {\n  let v = Math.abs(x) % max;\n  if (x < 0) v = max - v;\n  return v;\n}\n"],
+  "mappings": "AAEO,MAAMA,EAASC,GAAQA,EAAM,KAAK,GAAK,IACjCC,EAASC,GAAQA,EAAM,IAAM,KAAK,GAClCC,EAASC,GAAQA,EAAIA,EAErBC,EAAWD,GAAOA,EAAI,GAAK,GAAKA,EAAI,EAAI,EAAIA,EAC5CE,EAAWF,GAAOA,EAAI,EAAI,EAAIA,EAAI,EAAI,EAAIA,EAC1CG,EAAU,CAACH,EAAGI,EAAIC,IAAQL,EAAII,EAAKA,EAAKJ,EAAIK,EAAKA,EAAKL,EAG5D,SAASM,EAAQN,EAAGO,EAAK,CAC9B,IAAIC,EAAI,KAAK,IAAIR,CAAC,EAAIO,EACtB,OAAIP,EAAI,IAAGQ,EAAID,EAAMC,GACdA,CACT",
+  "names": ["ToRad", "deg", "ToDeg", "rad", "sqr", "x", "Limit1", "Limit01", "Clamp", "lo", "hi", "ToRange", "max", "v"]
+}

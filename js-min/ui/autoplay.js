@@ -2,3 +2,5 @@ import{t as a,onLangChange as m}from"./i18n.js";const y=[{label:"Day",days_per_s
       <input type="number" class="num" min="0.001" max="100" step="0.001">
       <span class="unit">d/s</span>
       <input type="range" class="slider" min="-4" max="2" step="0.01">`;const _=i.querySelector("label");_.textContent=a("lbl_speed"),m(()=>{_.textContent=a("lbl_speed")});const c=i.querySelector("input.num"),d=i.querySelector("input.slider");d.addEventListener("input",()=>this.setSpeed(Math.pow(10,parseFloat(d.value)))),c.addEventListener("change",()=>{const s=parseFloat(c.value);s>0&&this.setSpeed(s)}),e.appendChild(i),n.addEventListener("click",()=>this.toggle());const h=()=>{n.textContent=this.playing?"\u23F8  "+a("btn_pause"):"\u25B6  "+a("btn_play"),r.textContent=this.playing?a("status_running"):a("status_paused"),c.value=(+this.speed).toFixed(4),d.value=Math.log10(Math.max(1e-6,this.speed)).toFixed(2),g.forEach(s=>{const u=Math.abs(parseFloat(s.dataset.speed)-this.speed)<1e-6;s.setAttribute("aria-current",u?"true":"false")})};this.onChange(h),m(h),h()}}export{C as Autoplay};
+
+//# sourceMappingURL=autoplay.js.map

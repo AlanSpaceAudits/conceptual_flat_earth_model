@@ -28,3 +28,5 @@ const ht=96,Lt=4,vt=384;function l(t,o,y,n,i=4){t.fillStyle=n,t.fillRect(o*i,y*i
       <div class="ti-row"><span>Inscribed</span><span>${P}</span></div>
       <div class="ti-row"><span>Mag</span><span>${Q}</span></div>
     `}o.addEventListener("update",F),F()}export{At as buildTrackingInfoPopup};
+
+//# sourceMappingURL=trackingInfoPopup.js.map

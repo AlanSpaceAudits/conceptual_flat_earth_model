@@ -14257,3 +14257,29 @@ Format:
   Demoted our own caught-error log to `console.warn` so it
   doesn't itself trip the audit on edge GPUs that fail later.
 - **Revert path:** `git checkout v-s000750 -- .`
+
+## S752 — sourcemaps + mobile font ≥ 12 px
+
+- **Date:** 2026-04-30
+- **Files changed:** `scripts/build-min.mjs`, `css/styles.css`,
+  `js-min/**` (build output incl. `.map` files).
+- **Change:**
+    - **Sourcemaps.** `build-min.mjs` now passes
+      `sourcemap: 'external'` + `sourcefile: rel` to
+      `esbuild.transform` and writes `<file>.js.map` next to
+      every minified `.js`. Each output gets a trailing
+      `//# sourceMappingURL=<name>.js.map` so
+      Lighthouse's `valid-source-maps` audit (Best Practices)
+      finds them, and devtools-on-prod can reverse-map stack
+      traces.
+    - **Mobile font sizes ≥ 12 px.** Lighthouse "Document
+      doesn't use legible font sizes" was at 58.97 % legible
+      (#info-bar = 11 px = ~25 % of all page text). Bumped:
+        - `#info-bar` 11 → 12 px (mobile)
+        - `#hud` 11 → 12 px (mobile @ ≤ 900 px) and
+          10 → 12 px (phone @ ≤ 520 px)
+        - `#app > header h1` 12 → 13 px (phone)
+        - `#app > header .info-btn` 11 → 12 px (phone)
+      `#info-bar .info-row { gap: 12px }` mobile keeps the bar
+      from overflowing now that the readout glyphs are wider.
+- **Revert path:** `git checkout v-s000751 -- .`

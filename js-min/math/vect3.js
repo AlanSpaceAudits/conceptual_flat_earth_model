@@ -1,1 +1,3 @@
 import{ToRad as e}from"./utils.js";const l={Null:()=>[0,0,0],Copy:t=>[t[0],t[1],t[2]],Add:(t,o)=>[t[0]+o[0],t[1]+o[1],t[2]+o[2]],Sub:(t,o)=>[t[0]-o[0],t[1]-o[1],t[2]-o[2]],Scale:(t,o)=>[t[0]*o,t[1]*o,t[2]*o],ScalarProd:(t,o)=>t[0]*o[0]+t[1]*o[1]+t[2]*o[2],Mult:(t,o)=>[t[1]*o[2]-t[2]*o[1],t[2]*o[0]-t[0]*o[2],t[0]*o[1]-t[1]*o[0]],Length:t=>Math.sqrt(t[0]*t[0]+t[1]*t[1]+t[2]*t[2]),Norm:t=>{const o=Math.sqrt(t[0]*t[0]+t[1]*t[1]+t[2]*t[2]);return o===0?[0,0,0]:[t[0]/o,t[1]/o,t[2]/o]},FromAngle:(t,o,r)=>{const c=e(t),n=e(o),s=Math.cos(n);return[r*s*Math.cos(c),r*s*Math.sin(c),r*Math.sin(n)]}};var M=l;export{l as V,M as default};
+
+//# sourceMappingURL=vect3.js.map

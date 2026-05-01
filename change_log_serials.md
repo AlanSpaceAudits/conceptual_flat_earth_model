@@ -14585,6 +14585,23 @@ Format:
   default when a user has previously persisted the off state.
 - **Revert path:** `git checkout v-s000766 -- .`
 
+## S769 — day/night flags survive flight-routes demo cleanup
+
+- **Date:** 2026-04-30
+- **Files changed:** `js/core/app.js`, `js-min/**` (rebuilt)
+- **Change:** Added `ShowDayNightShadow: true` and
+  `ShowDayNightSky: true` defaults to `defaultState()`. The
+  flight-routes intro turns both flags off for the line-art
+  backdrop (`js/demos/flightRoutes.js`); without a default key
+  the demo's pre-run state snapshot (`{...this.model.state}` in
+  `demos/index.js#_playSingle`) skipped them, so
+  `_restoreSavedState` on demo-stop had nothing to write back and
+  the GE sphere terminator + optical-vault sky cap stayed off
+  permanently. Adding the defaults forces the keys to exist on
+  page load, which means the snapshot captures them and restore
+  flips them back to `true` when the demo ends.
+- **Revert path:** `git checkout v-s000768 -- .`
+
 ## S768 — units reference (`units.md`)
 
 - **Date:** 2026-04-30

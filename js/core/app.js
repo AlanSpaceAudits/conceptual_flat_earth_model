@@ -382,6 +382,13 @@ function defaultState() {
     EclipseMoonRadiusFE:     null,
     // Eclipse ground-shadow feature gate (disabled pending rework).
     ShowEclipseShadow:       false,
+    // GE sphere day/night terminator + optical-vault sky-cap shading.
+    // Both default ON. These flags must exist in defaultState so the
+    // demos snapshot includes them — otherwise a flight-routes intro
+    // that flips them off has no key to restore on demo-stop, leaving
+    // the user with a permanently lit globe + flat sky.
+    ShowDayNightShadow:      true,
+    ShowDayNightSky:         true,
     // Deprecated circular-decal overrides, kept for URL back-compat.
     EclipseUmbraRadiusFE:    null,
     EclipsePenumbraRadiusFE: null,

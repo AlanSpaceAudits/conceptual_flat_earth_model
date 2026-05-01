@@ -341,13 +341,19 @@ function snapNoonVault(model, mode) {
 
 function makeAnalemmaMonthly(label, lat, mode) {
   const heading = lat >= 0 ? 180 : 0;
-  // At the equator the noon sun is near zenith and the analemma
-  // straddles the up-vector; at the poles the sun's daily motion is a
-  // horizontal circle around the zenith. In both cases the cleanest
-  // single-camera view is nearly straight up. Mid-latitudes still
-  // read best at a 45° tilt.
+  // Camera pitch tracks the noon-sun altitude band per latitude so
+  // the analemma actually fills the frame:
+  //   lat=0    → noon altitude 66.6°–90° (zenith band) → camH=85
+  //   |lat|=45 → noon altitude 21.5°–68.4°             → camH=45
+  //   |lat|=90 → noon altitude −23.4°–+23.4° (mostly
+  //              just above the horizon when above at all)→ camH=12
+  // The earlier `camH=85` at the pole pointed at the zenith, but
+  // the polar analemma sits *near* the horizon (altitude = sun
+  // declination), so the camera was looking the wrong way and the
+  // figure-8 at every latitude appeared to share the same on-screen
+  // framing.
   const camH = lat === 0 ? 85
-             : Math.abs(lat) === 90 ? 85
+             : Math.abs(lat) === 90 ? 12
              : 45;
   const groupId = mode === 'sun'  ? 'sun-analemma'
                 : mode === 'moon' ? 'moon-analemma'

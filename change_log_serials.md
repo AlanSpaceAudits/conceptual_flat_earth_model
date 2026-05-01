@@ -14585,6 +14585,25 @@ Format:
   default when a user has previously persisted the off state.
 - **Revert path:** `git checkout v-s000766 -- .`
 
+## S772 — analemma demo: correct polar camera pitch
+
+- **Date:** 2026-04-30
+- **Files changed:** `js/demos/definitions.js`, `js-min/**`
+  (rebuilt)
+- **Change:** `makeAnalemmaMonthly`'s `camH` at `|lat|=90` drops
+  from `85` to `12` so the camera looks where the polar
+  analemma actually sits — the noon-sun altitude band at the
+  pole is `−23.4°…+23.4°` (sun's declination, mostly just above
+  the horizon when above at all), not the zenith. Earlier
+  `camH=85` pointed up at the zenith with the figure-8 lying
+  along the horizon, which made every latitude's demo appear to
+  share the same on-screen framing because the polar variant
+  framed empty zenith sky instead of the actual analemma. Brings
+  the monthly variant in line with the older 365-day
+  `makeAnalemma` which already used `camH=12` at the pole.
+  Comment block updated to match the alt-band reasoning.
+- **Revert path:** `git checkout v-s000771 -- .`
+
 ## S771 — hide AE shadow disc in GE mode
 
 - **Date:** 2026-04-30

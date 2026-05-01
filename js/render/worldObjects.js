@@ -5457,22 +5457,36 @@ export class TrackedGroundPoints {
   }
 }
 
-// Geocentric-position visualization.
+// Halo ring as a plain `THREE.Mesh` with `RingGeometry`. Bypasses
+// the Sprite + CanvasTexture pipeline entirely — sprite-based ring
+// outlines were collapsing invisible at small render sizes (and on
+// at least one user setup, every variant failed to render at all).
+// A solid ring mesh is unambiguous: it renders the same way every
+// other Mesh in the scene does.
 //
-// When `Refraction !== 'off'` and `ShowGeocentricPosition` is on,
-// every tracker target gets:
-//   1. A 3 px cyan point at its TRUE (geocentric, unrefracted)
-//      optical-vault coord.
-//   2. A 3 px orange point at its APPARENT (refracted) coord.
-//   3. A 1 px white line connecting apparent → true. Length lives
-//      in world units (the apparent↔true 3D distance) so the line's
-//      rendered length always matches the on-screen gap between
-//      the two dots.
-//
-// The connector is a single shared `THREE.LineSegments` whose
-// position buffer holds 2 vertices per tracker slot (apparent then
-// true). `setDrawRange(0, n * 2)` scopes the draw to the active
-// slots each frame.
+// Geometry: outer radius 1.0, inner 0.86 → 14% band width. Per
+// slot, `mesh.scale = (R, R, 1)` so outer radius in world space
+// equals `R` (the apparent↔true 3D distance) and the rendered
+// circumference passes through the true marker. `lookAt(camera)`
+// keeps the ring face-on to the camera.
+
+// True / apparent position ghost markers. Pairs with
+// `Refraction !== 'off'` and `ShowGeocentricPosition`. Three layers:
+//   • cyan point cloud at every tracker target's UNREFRACTED
+//     optical-vault coord (true / geocentric position),
+//   • orange point cloud at the REFRACTED coord (apparent),
+//   • per-slot orange ring mesh centred on the apparent point with
+//     world radius equal to the apparent↔true distance, billboarded
+//     to face the camera so the true marker sits exactly on the
+//     circumference. As the body drops toward the horizon the
+//     refraction lift grows and the ring expands; near zenith it
+//     shrinks.
+// Both dot clouds use `sizeAttenuation: false` and 3 px size — the
+// same size the cel-nav star sprite renders — so the apparent ghost
+// overlays the regular star sprite cleanly and the true ghost reads
+// at the same scale rather than dwarfing the body. The halo uses a
+// thin `RingGeometry` annulus (1.5 % stroke band) so the line stays
+// readable at any distance without smearing into a fill.
 export class GeocentricMarkers {
   constructor(max = 64) {
     this.group = new THREE.Group();
@@ -5481,46 +5495,58 @@ export class GeocentricMarkers {
     this._truePos = new Float32Array(max * 3);
     this._appPos  = new Float32Array(max * 3);
 
-    // True (cyan) and apparent (orange) point clouds, sized to
-    // match the cel-nav star sprite (3 px, screen-space).
     const trueGeom = new THREE.BufferGeometry();
     trueGeom.setAttribute('position', new THREE.BufferAttribute(this._truePos, 3));
     trueGeom.setDrawRange(0, 0);
-    this._truePoints = new THREE.Points(trueGeom, new THREE.PointsMaterial({
+    const trueMat = new THREE.PointsMaterial({
       color: 0x40e0d0, size: 3, sizeAttenuation: false,
+      transparent: true, opacity: 1.0,
       depthTest: false, depthWrite: false,
-    }));
-    this._truePoints.renderOrder = 251;
+    });
+    this._truePoints = new THREE.Points(trueGeom, trueMat);
+    this._truePoints.renderOrder = 60;
     this._truePoints.frustumCulled = false;
     this.group.add(this._truePoints);
 
     const appGeom = new THREE.BufferGeometry();
     appGeom.setAttribute('position', new THREE.BufferAttribute(this._appPos, 3));
     appGeom.setDrawRange(0, 0);
-    this._appPoints = new THREE.Points(appGeom, new THREE.PointsMaterial({
+    const appMat = new THREE.PointsMaterial({
       color: 0xff8c00, size: 3, sizeAttenuation: false,
+      transparent: true, opacity: 1.0,
       depthTest: false, depthWrite: false,
-    }));
-    this._appPoints.renderOrder = 251;
+    });
+    this._appPoints = new THREE.Points(appGeom, appMat);
+    this._appPoints.renderOrder = 60;
     this._appPoints.frustumCulled = false;
     this.group.add(this._appPoints);
 
-    // Apparent → true connector. One `THREE.LineSegments` covers
-    // every tracker target: 2 vertices per slot (apparent endpoint
-    // followed by true endpoint), so `n` tracked targets occupy the
-    // first `n * 2` vertices and `setDrawRange(0, n * 2)` controls
-    // how many segments are drawn.
-    this._linePos = new Float32Array(max * 2 * 3);
-    const lineGeom = new THREE.BufferGeometry();
-    lineGeom.setAttribute('position', new THREE.BufferAttribute(this._linePos, 3));
-    lineGeom.setDrawRange(0, 0);
-    this._lines = new THREE.LineSegments(lineGeom, new THREE.LineBasicMaterial({
-      color: 0xffffff,
-      depthTest: false, depthWrite: false,
-    }));
-    this._lines.renderOrder = 250;
-    this._lines.frustumCulled = false;
-    this.group.add(this._lines);
+    // Shared ring geometry: outer radius 1.0, inner 0.7 — 30 % band
+    // width — split into 64 segments. The wide band ensures the
+    // ring stays a visibly thick annulus even when the per-slot
+    // scale shrinks to small refractions; thinner bands collapsed
+    // sub-pixel and the rasteriser dropped them.
+    const ringGeom = new THREE.RingGeometry(0.7, 1.0, 64);
+    this._halos = [];
+    for (let i = 0; i < max; i++) {
+      const mat = new THREE.MeshBasicMaterial({
+        color: 0xffffff,
+        side: THREE.DoubleSide,
+        transparent: true,
+        opacity: 0.85,
+        depthTest: false, depthWrite: false,
+      });
+      const m = new THREE.Mesh(ringGeom, mat);
+      m.frustumCulled = false;
+      // Very high renderOrder so the halo always lands on top of
+      // the body sprite, dome, and other transparents — earlier
+      // attempts at lower values were getting visually buried under
+      // the body sprite or its dome halo.
+      m.renderOrder = 250;
+      m.visible = false;
+      this._halos.push(m);
+      this.group.add(m);
+    }
   }
 
   update(model, camera) {
@@ -5531,7 +5557,7 @@ export class GeocentricMarkers {
     if (!on) {
       this._truePoints.geometry.setDrawRange(0, 0);
       this._appPoints.geometry.setDrawRange(0, 0);
-      this._lines.geometry.setDrawRange(0, 0);
+      for (const m of this._halos) m.visible = false;
       return;
     }
     const ge = s.WorldModel === 'ge';
@@ -5547,31 +5573,48 @@ export class GeocentricMarkers {
         : info.opticalVaultCoord;
       if (!coordTrue || coordTrue[2] === -1000) continue;
       if (n >= this._max) break;
-      const ac = (coordAppRaw && coordAppRaw[2] !== -1000) ? coordAppRaw : coordTrue;
-
       this._truePos[n * 3]     = coordTrue[0];
       this._truePos[n * 3 + 1] = coordTrue[1];
       this._truePos[n * 3 + 2] = coordTrue[2];
-      this._appPos[n * 3]      = ac[0];
-      this._appPos[n * 3 + 1]  = ac[1];
-      this._appPos[n * 3 + 2]  = ac[2];
-
-      // Connector segment vertex 0 = apparent, vertex 1 = true.
-      this._linePos[n * 6 + 0] = ac[0];
-      this._linePos[n * 6 + 1] = ac[1];
-      this._linePos[n * 6 + 2] = ac[2];
-      this._linePos[n * 6 + 3] = coordTrue[0];
-      this._linePos[n * 6 + 4] = coordTrue[1];
-      this._linePos[n * 6 + 5] = coordTrue[2];
-
+      const ac = (coordAppRaw && coordAppRaw[2] !== -1000) ? coordAppRaw : coordTrue;
+      this._appPos[n * 3]     = ac[0];
+      this._appPos[n * 3 + 1] = ac[1];
+      this._appPos[n * 3 + 2] = ac[2];
+      const dx = ac[0] - coordTrue[0];
+      const dy = ac[1] - coordTrue[1];
+      const dz = ac[2] - coordTrue[2];
+      const r  = Math.hypot(dx, dy, dz);
+      const halo = this._halos[n];
+      // Set the ring radius so it lands on the true marker, with a
+      // visibility floor based on camera distance.
+      let scaleR = r;
+      if (camera) {
+        const cx = camera.position.x - ac[0];
+        const cy = camera.position.y - ac[1];
+        const cz = camera.position.z - ac[2];
+        const camDist = Math.hypot(cx, cy, cz);
+        const MIN_ANG = 0.010;
+        const minWorldR = MIN_ANG * camDist;
+        if (scaleR < minWorldR) scaleR = minWorldR;
+      } else {
+        // No camera: fall back to a generous fixed minimum so the
+        // ring is at least visible.
+        if (scaleR < 0.05) scaleR = 0.05;
+      }
+      halo.position.set(ac[0], ac[1], ac[2]);
+      halo.scale.set(scaleR, scaleR, scaleR);
+      // Always face the camera. Without `lookAt` the ring lies in
+      // the world XY plane and shows edge-on (i.e. invisible) for
+      // most viewing angles.
+      if (camera) halo.lookAt(camera.position);
+      halo.visible = true;
       n++;
     }
+    for (let i = n; i < this._halos.length; i++) this._halos[i].visible = false;
     this._truePoints.geometry.attributes.position.needsUpdate = true;
     this._truePoints.geometry.setDrawRange(0, n);
     this._appPoints.geometry.attributes.position.needsUpdate  = true;
     this._appPoints.geometry.setDrawRange(0, n);
-    this._lines.geometry.attributes.position.needsUpdate = true;
-    this._lines.geometry.setDrawRange(0, n * 2);
   }
 }
 

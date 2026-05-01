@@ -13522,3 +13522,30 @@ Format:
   — no scaling guesswork. White, 1 px line width via
   `LineBasicMaterial`, `renderOrder = 250`.
 - **Revert path:** `git checkout v-s000723 -- .`
+
+## S725 — revert GeocentricMarkers halo to S720 state
+
+- **Date:** 2026-04-30
+- **Files changed:** `js/render/worldObjects.js`
+- **Change:** restored `js/render/worldObjects.js` to the S720
+  snapshot per `git checkout v-s000720 -- ...`. That was the last
+  state in which the halo ring rendered visibly: `RingGeometry(0.7,
+  1.0, 64)` (30 % band), `MeshBasicMaterial` (white, double-sided,
+  transparent opacity 0.85), `renderOrder = 250`, per-frame
+  `MIN_ANG = 0.010` rad world-radius clamp. The user's complaint
+  about that state was that the ring was *too big*, not invisible
+  — so this is the right baseline to tune from. The intervening
+  S721–S724 attempts (thinner band, sprite reroutes, line
+  segment) are reverted.
+  - **Tuning the ring size** lives in `update(model, camera)`
+    around line 5605:
+    `halo.scale.set(scaleR, scaleR, scaleR);` — `scaleR` is the
+    apparent↔true world distance, with a floor of `MIN_ANG *
+    camDist` (line 5596). Lowering `MIN_ANG` shrinks the ring at
+    typical refractions; multiplying `scaleR` by a constant scales
+    the whole ring uniformly.
+  - **Tuning the band thickness** lives in the constructor at line
+    5529: `new THREE.RingGeometry(0.7, 1.0, 64)` — increase the
+    inner radius (e.g. to 0.95) for a thinner outline.
+- **Revert path:** `git checkout v-s000724 -- .` to come back to
+  the connector-line state.

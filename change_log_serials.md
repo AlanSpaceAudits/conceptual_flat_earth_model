@@ -13567,3 +13567,19 @@ Format:
   level. `renderOrder = 250` keeps the line on top of body sprites
   and dome layers.
 - **Revert path:** `git checkout v-s000725 -- .`
+
+## S727 — halo LineLoop: 64 → 16 segments
+
+- **Date:** 2026-04-30
+- **Files changed:** `js/render/worldObjects.js`
+- **Change:** `LineLoop` segment count cut from 64 to 16. The
+  rasteriser draws each line segment as a 1-px raster, but each
+  segment's *projected length* still has to be at least ~1 px or
+  the GPU drops it. With strict scale = `r` (apparent↔true world
+  distance) and a 64-vertex ring, each chord at typical default-
+  zoom refractions was 0.27 px — sub-pixel — so the entire ring
+  dropped. 16 segments produce ~1.2 px chords at the same scale,
+  which the rasteriser draws cleanly. The 16-gon is visually
+  indistinguishable from a circle once the user zooms in to
+  inspect.
+- **Revert path:** `git checkout v-s000726 -- .`

@@ -5526,13 +5526,17 @@ export class GeocentricMarkers {
     // ring stays a visibly thick annulus even when the per-slot
     // scale shrinks to small refractions; thinner bands collapsed
     // sub-pixel and the rasteriser dropped them.
-    // Halo as `THREE.LineLoop` over a 64-vertex unit circle. WebGL
-    // rasterises lines at 1 px regardless of mesh scale, so the
-    // ring stays a thin always-visible outline even when the
-    // per-slot world radius shrinks to small refractions. A
-    // RingGeometry mesh with thin band would collapse sub-pixel and
-    // disappear at strict scale.
-    const SEG = 64;
+    // Halo as `THREE.LineLoop` over a 16-vertex unit circle. WebGL
+    // rasterises lines at 1 px regardless of mesh scale, BUT each
+    // individual line segment must be at least ~1 px on screen for
+    // the rasteriser to draw it. With 64 segments around a typical
+    // small refraction ring (~3 px radius on default zoom), each
+    // chord is 0.27 px — sub-pixel — and gets dropped. 16 segments
+    // around a 3 px ring give chords ~1.2 px, which renders cleanly
+    // and reads as a smooth circle at any moderate zoom. The
+    // hexadecagon shape is indistinguishable from a circle once the
+    // user zooms in.
+    const SEG = 16;
     const ringPos = new Float32Array(SEG * 3);
     for (let i = 0; i < SEG; i++) {
       const t = (i / SEG) * Math.PI * 2;

@@ -5526,22 +5526,29 @@ export class GeocentricMarkers {
     // ring stays a visibly thick annulus even when the per-slot
     // scale shrinks to small refractions; thinner bands collapsed
     // sub-pixel and the rasteriser dropped them.
-    const ringGeom = new THREE.RingGeometry(0.7, 1.0, 64);
+    // Halo as `THREE.LineLoop` over a 64-vertex unit circle. WebGL
+    // rasterises lines at 1 px regardless of mesh scale, so the
+    // ring stays a thin always-visible outline even when the
+    // per-slot world radius shrinks to small refractions. A
+    // RingGeometry mesh with thin band would collapse sub-pixel and
+    // disappear at strict scale.
+    const SEG = 64;
+    const ringPos = new Float32Array(SEG * 3);
+    for (let i = 0; i < SEG; i++) {
+      const t = (i / SEG) * Math.PI * 2;
+      ringPos[i * 3]     = Math.cos(t);
+      ringPos[i * 3 + 1] = Math.sin(t);
+      ringPos[i * 3 + 2] = 0;
+    }
+    const ringGeom = new THREE.BufferGeometry();
+    ringGeom.setAttribute('position', new THREE.BufferAttribute(ringPos, 3));
     this._halos = [];
     for (let i = 0; i < max; i++) {
-      const mat = new THREE.MeshBasicMaterial({
+      const m = new THREE.LineLoop(ringGeom, new THREE.LineBasicMaterial({
         color: 0xffffff,
-        side: THREE.DoubleSide,
-        transparent: true,
-        opacity: 0.85,
         depthTest: false, depthWrite: false,
-      });
-      const m = new THREE.Mesh(ringGeom, mat);
+      }));
       m.frustumCulled = false;
-      // Very high renderOrder so the halo always lands on top of
-      // the body sprite, dome, and other transparents — earlier
-      // attempts at lower values were getting visually buried under
-      // the body sprite or its dome halo.
       m.renderOrder = 250;
       m.visible = false;
       this._halos.push(m);
@@ -5585,29 +5592,17 @@ export class GeocentricMarkers {
       const dz = ac[2] - coordTrue[2];
       const r  = Math.hypot(dx, dy, dz);
       const halo = this._halos[n];
-      // Set the ring radius so it lands on the true marker, with a
-      // visibility floor based on camera distance.
-      let scaleR = r;
-      if (camera) {
-        const cx = camera.position.x - ac[0];
-        const cy = camera.position.y - ac[1];
-        const cz = camera.position.z - ac[2];
-        const camDist = Math.hypot(cx, cy, cz);
-        const MIN_ANG = 0.010;
-        const minWorldR = MIN_ANG * camDist;
-        if (scaleR < minWorldR) scaleR = minWorldR;
+      // Strict apparent↔true geometry: world radius = `r`. No floor
+      // — the ring's circumference lands exactly on the true marker
+      // at any zoom or camera distance.
+      if (r > 1e-9) {
+        halo.position.set(ac[0], ac[1], ac[2]);
+        halo.scale.set(r, r, r);
+        if (camera) halo.lookAt(camera.position);
+        halo.visible = true;
       } else {
-        // No camera: fall back to a generous fixed minimum so the
-        // ring is at least visible.
-        if (scaleR < 0.05) scaleR = 0.05;
+        halo.visible = false;
       }
-      halo.position.set(ac[0], ac[1], ac[2]);
-      halo.scale.set(scaleR, scaleR, scaleR);
-      // Always face the camera. Without `lookAt` the ring lies in
-      // the world XY plane and shows edge-on (i.e. invisible) for
-      // most viewing angles.
-      if (camera) halo.lookAt(camera.position);
-      halo.visible = true;
       n++;
     }
     for (let i = n; i < this._halos.length; i++) this._halos[i].visible = false;

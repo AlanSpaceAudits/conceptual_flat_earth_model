@@ -13549,3 +13549,21 @@ Format:
     inner radius (e.g. to 0.95) for a thinner outline.
 - **Revert path:** `git checkout v-s000724 -- .` to come back to
   the connector-line state.
+
+## S726 — halo as LineLoop, strict r-only scale
+
+- **Date:** 2026-04-30
+- **Files changed:** `js/render/worldObjects.js`
+- **Change:** the halo is now a per-slot `THREE.LineLoop` over a
+  64-vertex unit circle, drawn with `LineBasicMaterial` (white).
+  WebGL rasterises lines at 1 px regardless of mesh scale, so the
+  outline stays a thin always-visible ring at any per-slot world
+  radius — the prior `RingGeometry` 1 % band became sub-pixel and
+  disappeared once the user wanted strict-radius scaling. Per-frame
+  transform: `position = apparent`, `scale = (r, r, r)` where `r`
+  is the apparent↔true 3D distance, `lookAt(camera.position)`.
+  `MIN_ANG = 0.010` floor removed — the ring's circumference now
+  passes exactly through the true marker at every refraction
+  level. `renderOrder = 250` keeps the line on top of body sprites
+  and dome layers.
+- **Revert path:** `git checkout v-s000725 -- .`

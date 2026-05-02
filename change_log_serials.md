@@ -14585,6 +14585,18 @@ Format:
   default when a user has previously persisted the off state.
 - **Revert path:** `git checkout v-s000766 -- .`
 
+## S792 — lat-line info: single "LI" suffix at end
+
+- **Date:** 2026-04-30
+- **Files changed:** `js/render/worldObjects.js`,
+  `js-min/**` (rebuilt)
+- **Change:** Drop the duplicate `LI` after the first number.
+  Format goes from `"X LI  ·  Y LI"` → `"X  ·  Y LI"` so the
+  unit only shows once at the end, where both values share the
+  same units. Reads cleaner around the ring's antimeridian
+  arc.
+- **Revert path:** `git checkout v-s000791 -- .`
+
 ## S791 — lat-line info: strip "FROM POLE" descriptor, just the units
 
 - **Date:** 2026-04-30

@@ -960,16 +960,30 @@ export class LatitudeLines {
       // Hidden until `state.ShowLatLineInfo` is on AND the ring
       // itself is visible. Centred on the antimeridian (lon =
       // 180°) so it sits on the opposite side of the AE disc
-      // from the name label. Same arc-spacing scale so polar
-      // rings get the wider per-character spacing.
+      // from the name label.
+      //
+      // Shrink-to-fit: with arc-spacing scaled per ring, the
+      // info string can still overrun the polar circles
+      // (Arctic / Antarctic at lat ±66.56° have a ring radius
+      // ~13 % of the equator's, so even the 4× cap leaves the
+      // text wrapping the entire ring). When the natural Δlon
+      // would push the string past `MAX_ARC_DEG` of the ring,
+      // tighten the spacing and shrink the per-character size
+      // to match so letters don't overlap each other.
       const radiusLi = (90 - c.lat) / 180 * HALF_GC;
       const ringCircLi = TANG_CIRCUMFERENCE_LI * Math.cos(c.lat * Math.PI / 180);
-      const infoText = `${fmtLi(radiusLi)} LI FROM POLE  ·  ${fmtLi(ringCircLi)} LI RING`;
+      const infoText = `${fmtLi(radiusLi)} LI FROM POLE  ·  ${fmtLi(ringCircLi)} LI`;
       const infoGroup = new THREE.Group();
       infoGroup.name = `info-${c.label}`;
       infoGroup.visible = false;
-      const infoCharSize = 0.020;
-      const infoCharSpacing = 3.0 * arcSpacingScale;
+      const MAX_ARC_DEG = 280;
+      const naturalInfoSpacing = 3.0 * arcSpacingScale;
+      const fitInfoSpacing = MAX_ARC_DEG / Math.max(1, infoText.length);
+      const infoCharSpacing = Math.min(naturalInfoSpacing, fitInfoSpacing);
+      const infoSizeScale = naturalInfoSpacing > 0
+        ? Math.min(1, infoCharSpacing / naturalInfoSpacing)
+        : 1;
+      const infoCharSize = 0.020 * infoSizeScale;
       const infoSpan = infoText.length * infoCharSpacing;
       const infoStartLon = -infoSpan / 2;
       for (let i = 0; i < infoText.length; i++) {

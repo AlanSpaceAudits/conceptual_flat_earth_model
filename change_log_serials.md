@@ -14585,6 +14585,29 @@ Format:
   default when a user has previously persisted the off state.
 - **Revert path:** `git checkout v-s000766 -- .`
 
+## S790 — lat-line info: drop "RING" + shrink-to-fit on small rings
+
+- **Date:** 2026-04-30
+- **Files changed:** `js/render/worldObjects.js`,
+  `js-min/**` (rebuilt)
+- **Change:**
+  - Info-label format trimmed: `"… LI FROM POLE  ·  … LI RING"`
+    → `"… LI FROM POLE  ·  … LI"`. The trailing "RING" was
+    redundant when paired with the ring it's already drawn on.
+  - Shrink-to-fit logic added for the info row: if the natural
+    `arcSpacingScale × baseSpacing × charCount` would overrun
+    `MAX_ARC_DEG = 280°`, the per-character Δlon and size both
+    scale down to fit. The Arctic / Antarctic rings (lat
+    ±66.56°, AE disc radius ~13 % of the equator's) were
+    wrapping the full ring; now the string lays cleanly within a
+    280° arc with characters sized to match the tightened
+    spacing so they don't overlap.
+  - Antarctic ring's li readouts share the same code path —
+    same shrink-to-fit, same format — so its `55,797 LI FROM
+    POLE  ·  51,063 LI` reads correctly on the much larger
+    Antarctic ring without crowding either.
+- **Revert path:** `git checkout v-s000789 -- .`
+
 ## S789 — lat-line labels: white info text + per-ring arc-spacing scale
 
 - **Date:** 2026-04-30

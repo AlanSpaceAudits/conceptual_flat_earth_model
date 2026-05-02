@@ -926,12 +926,24 @@ export class LatitudeLines {
       // get labels; text always renders white so the label stays
       // legible against any backdrop and reads as a separate piece
       // of UI rather than blending with the ring itself.
+      // Per-ring longitude-spacing scale so character runs stay
+      // visually even on small (high-latitude) rings. The disc
+      // ring radius collapses as `(90 − |lat|) / 180`, so a
+      // fixed Δlon translates to ~4× shorter linear arc on the
+      // Arctic / Antarctic circles than on the equator —
+      // clumping the letters. Scaling Δlon by `equator_radius /
+      // ring_radius` keeps each character's arc length constant.
+      // Cap at 4× so polar rings don't end up wrapping the
+      // entire circumference.
+      const ringRadiusFrac = Math.max(0.05, (90 - Math.abs(c.lat)) / 180);
+      const arcSpacingScale = Math.min(4, 0.5 / ringRadiusFrac);
+
       const lg = new THREE.Group();
       lg.name = `label-${c.label}`;
       lg.visible = false;
       const text = c.label.toUpperCase();
       const charSize = 0.028;
-      const charDegSpacing = 4.5;
+      const charDegSpacing = 4.5 * arcSpacingScale;
       const span = text.length * charDegSpacing;
       const startLon = -span / 2;
       for (let i = 0; i < text.length; i++) {
@@ -946,8 +958,10 @@ export class LatitudeLines {
 
       // Secondary "info" label — shows the ring's li dimensions.
       // Hidden until `state.ShowLatLineInfo` is on AND the ring
-      // itself is visible. Sits one row below the main label so
-      // the two stack cleanly.
+      // itself is visible. Centred on the antimeridian (lon =
+      // 180°) so it sits on the opposite side of the AE disc
+      // from the name label. Same arc-spacing scale so polar
+      // rings get the wider per-character spacing.
       const radiusLi = (90 - c.lat) / 180 * HALF_GC;
       const ringCircLi = TANG_CIRCUMFERENCE_LI * Math.cos(c.lat * Math.PI / 180);
       const infoText = `${fmtLi(radiusLi)} LI FROM POLE  ·  ${fmtLi(ringCircLi)} LI RING`;
@@ -955,16 +969,11 @@ export class LatitudeLines {
       infoGroup.name = `info-${c.label}`;
       infoGroup.visible = false;
       const infoCharSize = 0.020;
-      const infoCharSpacing = 3.0;
+      const infoCharSpacing = 3.0 * arcSpacingScale;
       const infoSpan = infoText.length * infoCharSpacing;
       const infoStartLon = -infoSpan / 2;
-      // Centre the info string on the antimeridian (lon = 180°)
-      // so it sits on the opposite side of the disc from the name
-      // label (centred on lon = 0°). The two ride the same ring
-      // at the same latitude — clean read either side, no
-      // crowding at the prime meridian.
       for (let i = 0; i < infoText.length; i++) {
-        const sp = makeCharSprite(infoText[i], '#ffe080');
+        const sp = makeCharSprite(infoText[i], '#ffffff');
         sp.scale.set(infoCharSize, infoCharSize, 1);
         sp.userData.charLon = 180 + infoStartLon + (i + 0.5) * infoCharSpacing;
         sp.userData.charLat = c.lat;

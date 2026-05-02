@@ -14585,6 +14585,25 @@ Format:
   default when a user has previously persisted the off state.
 - **Revert path:** `git checkout v-s000766 -- .`
 
+## S789 — lat-line labels: white info text + per-ring arc-spacing scale
+
+- **Date:** 2026-04-30
+- **Files changed:** `js/render/worldObjects.js`,
+  `js-min/**` (rebuilt)
+- **Change:**
+  - Display-Info character sprites flip from yellow `#ffe080` to
+    white `#ffffff` so the li readout matches the name label's
+    style.
+  - New `arcSpacingScale = min(4, 0.5 / ((90 − |lat|) / 180))`
+    multiplier applied to both the name and info Δlon spacing.
+    The AE-disc ring radius collapses as `(90 − |lat|) / 180`, so
+    a fixed Δlon translated to ~4× shorter linear arc on the
+    Arctic / Antarctic circles than on the equator — clumping
+    the letters. The scale keeps each character's arc length
+    roughly constant; capped at 4× so polar rings don't wrap
+    the entire circumference.
+- **Revert path:** `git checkout v-s000788 -- .`
+
 ## S788 — lat-line li info: opposite-side placement on antimeridian
 
 - **Date:** 2026-04-30

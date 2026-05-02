@@ -231,10 +231,10 @@ export const PROJECTIONS = {
     imageAsset: 'assets/map_proportional.png',
     imageNativeWidth: 1920, imageNativeHeight: 1080,
     imageInscribedRadius: 0.5,
-    // +79.5° about z. 3° east of the S817 +82.5° iteration
-    // (= 4.5° west of the +75° S815 baseline) to land the
-    // heavenly-vault 0° marker on the artwork's 90° label.
-    imageRotationDeg: 79.5,
+    // +80° about z aligns the artwork's prime meridian with
+    // the math projection's +x axis. Final value after
+    // iterating from +90° (S812).
+    imageRotationDeg: 80,
     notes: 'Artwork-driven AE power-law tweak (exponent 0.75).',
     project(lat, lon, r = 1) { return polarFromRadial(lat, lon, r, RADIAL_PROPORTIONAL); },
   },

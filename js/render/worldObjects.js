@@ -6586,22 +6586,33 @@ export class BesselianEclipsePath {
 
   update(model) {
     const s = model.state;
+    const c = model.computed;
+    // Live-detected eclipse path takes the renderer through the
+    // same state-driven code path the demos do — solid when the
+    // simulator clock sits inside the ±2 h window around an
+    // Espenak event during free play.
+    const livePath = c && c.LiveEclipseShadowPath;
+    const liveAnchor = c && c.LiveEclipseShadowAnchorDt;
+    const liveHalfWindow = c && c.LiveEclipseShadowHalfWindowDays;
     const visible =
-      (!!s.ShowBesselianEclipsePath || !!s.ShowEclipseShadowPath)
+      (
+        !!s.ShowBesselianEclipsePath
+        || !!s.ShowEclipseShadowPath
+        || !!livePath
+      )
       && !s.InsideVault;
     this.group.visible = visible;
     if (!visible) return;
 
-    // State-driven path swap: solar-eclipse demos compute their
-    // own (lat, lon, t) sublunar samples on intro and stash them
-    // on `state.EclipseShadowPath`. The reference identity check
-    // detects swaps; bands are rebuilt only when the array
-    // actually changes, not every frame.
-    if (Array.isArray(s.EclipseShadowPath)
-        && s.EclipseShadowPath !== this._activePathRef
-        && s.EclipseShadowPath.length >= 2) {
-      this._activePathRef = s.EclipseShadowPath;
-      this._rebuildFromPath(s.EclipseShadowPath);
+    // Pick the active path: explicit demo state wins, then the
+    // live free-play detector, otherwise keep whatever was last
+    // active (defaults to the hardcoded Apr 8 2024 NASA table).
+    const activePath = Array.isArray(s.EclipseShadowPath) && s.EclipseShadowPath.length >= 2
+      ? s.EclipseShadowPath
+      : (Array.isArray(livePath) && livePath.length >= 2 ? livePath : null);
+    if (activePath && activePath !== this._activePathRef) {
+      this._activePathRef = activePath;
+      this._rebuildFromPath(activePath);
     }
     if (!this._samples.length) return;
 
@@ -6615,16 +6626,20 @@ export class BesselianEclipsePath {
     // existing eclipse timeline. Falls back to 1 (full path) for
     // the static view.
     let progress;
-    if (Number.isFinite(s.EclipseShadowAnchorDt)
-        && Number.isFinite(s.EclipseShadowHalfWindowDays)
-        && s.EclipseShadowHalfWindowDays > 0
+    const anchor = Number.isFinite(s.EclipseShadowAnchorDt)
+      ? s.EclipseShadowAnchorDt
+      : (Number.isFinite(liveAnchor) ? liveAnchor : null);
+    const halfW = Number.isFinite(s.EclipseShadowHalfWindowDays)
+      ? s.EclipseShadowHalfWindowDays
+      : (Number.isFinite(liveHalfWindow) ? liveHalfWindow : null);
+    if (Number.isFinite(anchor) && Number.isFinite(halfW) && halfW > 0
         && Number.isFinite(s.DateTime)) {
-      // State-driven solar-eclipse demo: derive sweep progress
-      // from the simulator clock so the shadow path fills in
-      // lockstep with the existing observer-side animation.
-      const tFromAnchor = s.DateTime - s.EclipseShadowAnchorDt;
-      progress = (tFromAnchor + s.EclipseShadowHalfWindowDays)
-               / (2 * s.EclipseShadowHalfWindowDays);
+      // Anchor-driven sweep: progress derives from the current
+      // simulator clock so the shadow paints in lockstep with
+      // the active eclipse moment (works for both demo intros
+      // and the live-detected free-play case).
+      const tFromAnchor = s.DateTime - anchor;
+      progress = (tFromAnchor + halfW) / (2 * halfW);
     } else if (Number.isFinite(s.BesselianEclipseProgress)) {
       progress = s.BesselianEclipseProgress;
     } else {

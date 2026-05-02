@@ -1,0 +1,3 @@
+import{ASTROPIXELS_ECLIPSES as i}from"../data/astropixelsEclipses.js";import{TIME_ORIGIN as l}from"./constants.js";let s=null;function a(){return s||(s=i.solar.map(e=>{const r=new Date(e.utISO).getTime();return{...e,anchorMs:r,anchorDt:r/l.msPerDay-l.ZeroDate}}).sort((e,t)=>e.anchorDt-t.anchorDt),s)}function h(e){const t=a();if(t.length===0)return null;let r=t[0],n=Math.abs(r.anchorDt-e);for(let o=1;o<t.length;o++){const c=Math.abs(t[o].anchorDt-e);c<n&&(r=t[o],n=c)}return{...r,distDays:n}}function D(e){const t=a();if(t.length===0)return null;const r=1e-6;for(const n of t)if(n.anchorDt>e+r)return n;return t[0]}export{h as findNearestSolarEclipse,D as findNextSolarEclipseAfter,a as solarEclipseSchedule};
+
+//# sourceMappingURL=solarEclipseSchedule.js.map

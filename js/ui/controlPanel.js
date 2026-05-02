@@ -5,6 +5,7 @@ import { dateTimeToString, dateTimeToDate } from '../core/time.js';
 import { fmtDuFen, fmtLiBuFromLi, haversineLi, KM_PER_LI, R_LI } from '../core/units.js';
 import { TIME_ORIGIN } from '../core/constants.js';
 import { findNextEclipses } from '../core/ephemeris.js';
+import { findNextSolarEclipseAfter } from '../core/solarEclipseSchedule.js';
 import { raDecToAzEl } from '../core/transforms.js';
 import { CEL_NAV_SELECT_OPTIONS, CEL_NAV_STARS } from '../core/celnavStars.js';
 import { CATALOGUED_STARS, CONSTELLATIONS } from '../core/constellations.js';
@@ -2332,6 +2333,39 @@ export function buildControlPanel(host, model, demos) {
   model.addEventListener('update', refreshCelTheoPresets);
   refreshCelTheoPresets();
   barLeft.appendChild(celTheoHops);
+
+  // Skip-to-next-eclipse shortcut. Sits in the same hop bar as the
+  // Cel-Theo PP button. Each click advances DateTime to the next
+  // catalogued solar eclipse (Espenak / DE405, 2021–2040), landing
+  // ~30 min before greatest eclipse so the auto-detected shadow
+  // path has time to sweep in. Tooltip carries the upcoming
+  // event's date / type so the user knows what they're jumping to.
+  const btnSkipEclipse = document.createElement('button');
+  btnSkipEclipse.className = 'time-btn geo-hop cel-theo-hop skip-eclipse-btn';
+  btnSkipEclipse.type = 'button';
+  btnSkipEclipse.textContent = '☀️◓';
+  btnSkipEclipse.addEventListener('click', () => {
+    const cur = model.state.DateTime || 0;
+    const next = findNextSolarEclipseAfter(cur);
+    if (!next) return;
+    // Drop the clock 30 min before greatest eclipse so the shadow
+    // sweep starts from "first contact" within the live window.
+    const leadIn = 0.5 / 24;
+    model.setState({ DateTime: next.anchorDt - leadIn });
+  });
+  const refreshSkipEclipse = () => {
+    const cur = model.state.DateTime || 0;
+    const next = findNextSolarEclipseAfter(cur);
+    if (next) {
+      btnSkipEclipse.title = `Jump to next solar eclipse · ${next.date} ${next.type}`
+        + (next.magnitude != null ? ` · mag ${next.magnitude.toFixed(2)}` : '');
+    } else {
+      btnSkipEclipse.title = 'Jump to next solar eclipse';
+    }
+  };
+  model.addEventListener('update', refreshSkipEclipse);
+  refreshSkipEclipse();
+  celTheoHops.appendChild(btnSkipEclipse);
 
   const compassControls = document.createElement('div');
   compassControls.className = 'compass-controls';

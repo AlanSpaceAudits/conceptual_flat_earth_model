@@ -35,6 +35,8 @@ import {
 } from './feGeometry.js';
 import { canonicalLatLongToDisc } from './canonical.js';
 import { applyRefractionLocalGlobe, refractionDeg } from './refraction.js';
+import { findNearestSolarEclipse } from './solarEclipseSchedule.js';
+import { computeSolarEclipseShadowPath } from './besselianEclipse.js';
 
 // Mirrors PLANET_STYLE colours in render/index.js and the Tracker
 // button grid. Keep in sync.
@@ -266,6 +268,20 @@ function defaultState() {
     EclipseShadowAnchorDt: null,
     EclipseShadowHalfWindowDays: null,
     ShowEclipseShadowPath: false,
+    // Free-play live-eclipse detector. When ON (default), the
+    // simulator's `update()` watches `DateTime` for a ±2 h window
+    // around any 2021–2040 Espenak solar eclipse and stuffs the
+    // sublunar shadow path into `computed.LiveEclipseShadowPath`
+    // so `BesselianEclipsePath` paints the umbra + penumbra bands
+    // automatically as each event passes. Toggle off to silence
+    // the overlay.
+    LiveEclipseShadows: true,
+    // Cursor for the "skip to next solar eclipse" button next to
+    // the Cel-Theo PP shortcut. Each click advances DateTime to
+    // the next eclipse anchor (minus a small lead-in) and bumps
+    // this index — wraps to the first eclipse past the catalogue
+    // end. Re-zeroed when the user manually rewinds the clock.
+    SkipEclipseIndex: 0,
     ShowSunMoonNine:         false,
     ShowGPTracer:            false,
     ShowOpticalVaultTrace:   false,
@@ -1145,6 +1161,42 @@ export class FeModel extends EventTarget {
     } else {
       const sunElev = c.SunAnglesGlobe.elevation;
       c.NightFactor = Limit01((-sunElev) / 12.0);
+    }
+
+    // Live solar-eclipse path detector. Whenever the simulator
+    // clock sits within ±2 h of a catalogued solar eclipse, build
+    // the sublunar shadow path on demand and stash it in
+    // `computed`. The renderer (BesselianEclipsePath) prefers an
+    // explicit `state.EclipseShadowPath` (set by the eclipse-demo
+    // intros), then falls back to this live path so free-play
+    // autoplay through 2021–2040 paints the shadow naturally as
+    // each eclipse moment passes by. Path is cached by anchor
+    // time + body source so day-by-day autoplay doesn't recompute
+    // the 33-sample sublunar trace every frame.
+    const _liveEclipse = s.LiveEclipseShadows !== false
+      ? findNearestSolarEclipse(s.DateTime) : null;
+    if (_liveEclipse && _liveEclipse.distDays < 2 / 24) {
+      const cacheKey = `${_liveEclipse.anchorMs}|${bodySource}`;
+      if (!this._liveEclipsePathCache
+          || this._liveEclipsePathCache.key !== cacheKey) {
+        const moonFn = (d) => bodyRADec('moon', d, bodySource);
+        const path = computeSolarEclipseShadowPath(
+          new Date(_liveEclipse.anchorMs), moonFn, 1.0, 33);
+        this._liveEclipsePathCache = {
+          key:      cacheKey,
+          path,
+          anchorDt: _liveEclipse.anchorDt,
+          halfWindow: 1 / 24,
+        };
+      }
+      c.LiveEclipseShadowPath           = this._liveEclipsePathCache.path;
+      c.LiveEclipseShadowAnchorDt       = this._liveEclipsePathCache.anchorDt;
+      c.LiveEclipseShadowHalfWindowDays = this._liveEclipsePathCache.halfWindow;
+    } else {
+      c.LiveEclipseShadowPath           = null;
+      c.LiveEclipseShadowAnchorDt       = null;
+      c.LiveEclipseShadowHalfWindowDays = null;
+      this._liveEclipsePathCache        = null;
     }
 
     // Planets slave to the sun's ecliptic. Default height tracks

@@ -14585,6 +14585,41 @@ Format:
   default when a user has previously persisted the off state.
 - **Revert path:** `git checkout v-s000766 -- .`
 
+## S784 — live eclipse shadows in free play + skip-eclipse shortcut
+
+- **Date:** 2026-04-30
+- **Files changed:** `js/core/solarEclipseSchedule.js` (new),
+  `js/core/app.js`, `js/render/worldObjects.js`,
+  `js/ui/controlPanel.js`, `js-min/**` (rebuilt)
+- **Change:**
+  - New `solarEclipseSchedule.js` — sorted ASTROPIXELS solar-
+    eclipse anchors with `anchorMs / anchorDt`, plus
+    `findNearestSolarEclipse(dt)` and
+    `findNextSolarEclipseAfter(dt)` for the live detector and
+    skip button.
+  - `App.update()` now scans `state.DateTime` against the
+    schedule every frame; within ±2 h of an eclipse it computes
+    the sublunar path (cached by `anchorMs|bodySource` so day-
+    by-day autoplay doesn't redo the 33-sample trace) and
+    publishes it on `computed.LiveEclipseShadowPath /
+    LiveEclipseShadowAnchorDt /
+    LiveEclipseShadowHalfWindowDays`. State default
+    `LiveEclipseShadows: true` toggles the detector.
+  - `BesselianEclipsePath.update` now picks the active path in
+    priority order: explicit `state.EclipseShadowPath` (demo
+    intros) → `computed.LiveEclipseShadowPath` (free play) →
+    Apr-08-2024 fallback. Visibility opens whenever any of the
+    three paths is in play (still gated on `!InsideVault`).
+    Sweep progress derives from
+    `DateTime − (state||live anchor) ± half-window`.
+  - New shortcut button "☀️◓" in the bottom bar next to the
+    Cel-Theo PP preset: jumps the simulator clock to
+    `nextSolarEclipse.anchorDt − 30 min` so each click drops
+    you into a fresh eclipse window with the live detector
+    already armed. Tooltip carries the upcoming event's date,
+    type, and magnitude.
+- **Revert path:** `git checkout v-s000783 -- .`
+
 ## S783 — shadow-path overlay for every solar-eclipse demo
 
 - **Date:** 2026-04-30

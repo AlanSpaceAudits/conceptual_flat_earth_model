@@ -5904,8 +5904,28 @@ export class DistanceCompassPair {
 
   update(model) {
     const s = model.state;
-    const haveFrom = Number.isFinite(s.DistancePairFromLat) && Number.isFinite(s.DistancePairFromLon);
-    const haveTo   = Number.isFinite(s.DistancePairToLat)   && Number.isFinite(s.DistancePairToLon);
+    // Pair source: compass-pin pair takes priority when its
+    // coords are set (live drawing during DistanceCompassMode).
+    // Fall back to the View → Distance Calc panel's manual
+    // (Lat 1 / Lon 1 / Lat 2 / Lon 2) entries so the central-
+    // angle arc + pins also render when the calculator is the
+    // input. Either pathway feeds the same renderer below.
+    const hasCompass =
+      Number.isFinite(s.DistancePairFromLat) || Number.isFinite(s.DistancePairToLat);
+    let fromLat, fromLon, toLat, toLon;
+    if (hasCompass) {
+      fromLat = s.DistancePairFromLat;
+      fromLon = s.DistancePairFromLon;
+      toLat   = s.DistancePairToLat;
+      toLon   = s.DistancePairToLon;
+    } else {
+      fromLat = s.DistCalcLat1;
+      fromLon = s.DistCalcLon1;
+      toLat   = s.DistCalcLat2;
+      toLon   = s.DistCalcLon2;
+    }
+    const haveFrom = Number.isFinite(fromLat) && Number.isFinite(fromLon);
+    const haveTo   = Number.isFinite(toLat)   && Number.isFinite(toLon);
     if (!haveFrom && !haveTo) {
       this._pins.geometry.setDrawRange(0, 0);
       this._line.geometry.setDrawRange(0, 0);
@@ -5913,8 +5933,8 @@ export class DistanceCompassPair {
     }
     const ge = s.WorldModel === 'ge';
     const pts = [];
-    if (haveFrom) pts.push([s.DistancePairFromLat, s.DistancePairFromLon]);
-    if (haveTo)   pts.push([s.DistancePairToLat,   s.DistancePairToLon]);
+    if (haveFrom) pts.push([fromLat, fromLon]);
+    if (haveTo)   pts.push([toLat,   toLon]);
 
     // Pin world positions.
     for (let i = 0; i < pts.length; i++) {
@@ -5941,10 +5961,10 @@ export class DistanceCompassPair {
 
     // Connector line.
     if (haveFrom && haveTo) {
-      const φ1 = s.DistancePairFromLat * Math.PI / 180;
-      const λ1 = s.DistancePairFromLon * Math.PI / 180;
-      const φ2 = s.DistancePairToLat   * Math.PI / 180;
-      const λ2 = s.DistancePairToLon   * Math.PI / 180;
+      const φ1 = fromLat * Math.PI / 180;
+      const λ1 = fromLon * Math.PI / 180;
+      const φ2 = toLat   * Math.PI / 180;
+      const λ2 = toLon   * Math.PI / 180;
       const N = this._SEG;
       if (ge) {
         // Great-circle arc via slerp on unit vectors.
@@ -5977,12 +5997,12 @@ export class DistanceCompassPair {
         // follows the projection's curvature in DP.
         for (let i = 0; i <= N; i++) {
           const t = i / N;
-          const lat = s.DistancePairFromLat + t * (s.DistancePairToLat - s.DistancePairFromLat);
+          const lat = fromLat + t * (toLat - fromLat);
           // Longitude lerp wraps via shortest path.
-          let dλ = s.DistancePairToLon - s.DistancePairFromLon;
+          let dλ = toLon - fromLon;
           if (dλ > 180) dλ -= 360;
           if (dλ < -180) dλ += 360;
-          const lon = s.DistancePairFromLon + t * dλ;
+          const lon = fromLon + t * dλ;
           const [dx, dy] = canonicalLatLongToDisc(lat, lon, FE_RADIUS);
           this._linePos[i * 3]     = dx;
           this._linePos[i * 3 + 1] = dy;

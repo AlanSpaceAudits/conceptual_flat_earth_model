@@ -14585,6 +14585,20 @@ Format:
   default when a user has previously persisted the off state.
 - **Revert path:** `git checkout v-s000766 -- .`
 
+## S795 — distance-calc panel: central-angle arc renders on the map
+
+- **Date:** 2026-05-02
+- **Files changed:** `js/render/worldObjects.js`,
+  `js-min/**` (rebuilt)
+- **Change:** `DistanceCompassPair` now falls back to the
+  View → Distance Calc panel's `DistCalcLat1 / Lon1 / Lat2 /
+  Lon2` fields when the compass-mode pair (`DistancePair*`) is
+  empty. Same yellow pins + great-circle (GE) / canonical-disc
+  (FE / DP) connector arc; manual lat / lon entry from the
+  calculator now paints the exact same on-map central-angle
+  visualisation the compass-click flow produces.
+- **Revert path:** `git checkout v-s000794 -- .`
+
 ## S794 — lat-line info: just the ring circumference, single value
 
 - **Date:** 2026-04-30

@@ -1346,19 +1346,28 @@ export class TangSphereDimensions {
     const s = model.state;
     const c = model.computed || {};
     const ge = s.WorldModel === 'ge';
-    this.group.visible = !!s.ShowTangSphereDims && !ge;
+    this.group.visible = !!s.ShowTangSphereDims;
     if (!this.group.visible) return;
-    // Geometry tracks the live optical vault — overlay sits 1:1
-    // on the same hemisphere the observer sees. Labels stay
-    // hard-coded from R_LI (Tang sphere math) since the overlay
-    // names what those dimensions ARE in li, not the canonical
-    // disc-unit value of the slider. Falls back to the canonical
-    // Tang radius (`1/π`) on first frame before computed lands.
-    const fallback = R_LI / (TANG_CIRCUMFERENCE_LI / 2);
-    const R = Number.isFinite(c.OpticalVaultRadius)
-      ? c.OpticalVaultRadius : (s.OpticalVaultSize || fallback);
-    const H = Number.isFinite(c.OpticalVaultHeightEffective)
-      ? c.OpticalVaultHeightEffective : R;
+    // Geometry: in FE / DP track the live optical vault so the
+    // overlay sits 1:1 on the hemisphere the observer sees.
+    // In GE the optical-vault radius is forced to FE_RADIUS
+    // (planet surface), so the overlay would be coincident with
+    // the planet shell and unreadable; lock to the canonical
+    // Tang sphere (`R = R_LI / (TANG_CIRC/2) = 1/π`) instead so
+    // the dome sits clearly INSIDE the GE sphere with the
+    // dashed lines + labels visible. Labels stay R_LI-derived
+    // either way.
+    const tangR = R_LI / (TANG_CIRCUMFERENCE_LI / 2);
+    let R, H;
+    if (ge) {
+      R = tangR;
+      H = tangR;
+    } else {
+      R = Number.isFinite(c.OpticalVaultRadius)
+        ? c.OpticalVaultRadius : (s.OpticalVaultSize || tangR);
+      H = Number.isFinite(c.OpticalVaultHeightEffective)
+        ? c.OpticalVaultHeightEffective : R;
+    }
     if (R !== this._cachedR || H !== this._cachedH) {
       this._rebuild(R, H);
       this._cachedR = R;

@@ -14585,6 +14585,23 @@ Format:
   default when a user has previously persisted the off state.
 - **Revert path:** `git checkout v-s000766 -- .`
 
+## S806 — Tang dimensions: visible in GE, locked to canonical Tang sphere
+
+- **Date:** 2026-05-02
+- **Files changed:** `js/render/worldObjects.js`,
+  `js-min/**` (rebuilt)
+- **Change:** Drop the `!ge` visibility gate so the overlay
+  paints in every world model. In GE the dome's geometry locks
+  to the canonical Tang sphere (`R = R_LI / (TANG_CIRC / 2) =
+  1/π`) so it sits clearly INSIDE the planet sphere
+  (`FE_RADIUS = 1`) instead of being coincident with the shell.
+  All overlay materials already use `depthTest: false` +
+  `renderOrder ≥ 50`, so the lines + character sprites paint
+  through the planet shell from any orbit angle. FE / DP keep
+  the live-optical-vault tracking from S803. Labels stay
+  R_LI-derived in both modes.
+- **Revert path:** `git checkout v-s000805 -- .`
+
 ## S805 — Tang dimensions: bump char size 0.018 → 0.024
 
 - **Date:** 2026-05-02

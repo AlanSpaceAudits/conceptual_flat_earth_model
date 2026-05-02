@@ -14585,6 +14585,26 @@ Format:
   default when a user has previously persisted the off state.
 - **Revert path:** `git checkout v-s000766 -- .`
 
+## S793 — Tang dimensions overlay tracks the live optical vault size
+
+- **Date:** 2026-04-30
+- **Files changed:** `js/render/worldObjects.js`,
+  `js-min/**` (rebuilt)
+- **Change:** `TangSphereDimensions` now reads
+  `computed.OpticalVaultRadius` and
+  `computed.OpticalVaultHeightEffective` instead of hard-coding
+  the radius at `R_LI / (TANG_CIRC / 2) = 1/π`. Constructor
+  defers all geometry until `update()`; on size changes the
+  class disposes the previous mesh + sprite buffers, rebuilds
+  the dashed dimension lines + dome wireframe at the new (R, H),
+  and re-derives the labels via `_tangFmtLi(canonical)` =
+  `canonical · TANG_CIRC / 2` li so the readout always matches
+  what the optical vault is actually rendering. Slider-driven
+  resizes propagate live; default `OpticalVaultSize = 0.5` reads
+  ~32,075 li, dialing down to ~0.318 lands on the canonical
+  20,419 li / 40,839 li Tang values.
+- **Revert path:** `git checkout v-s000792 -- .`
+
 ## S792 — lat-line info: single "LI" suffix at end
 
 - **Date:** 2026-04-30

@@ -1092,41 +1092,63 @@ export class LatitudeLines {
 
 // --- Tang-sphere dimensions overlay -------------------------------------
 //
-// Shows the Tang heavenly-vault hemisphere (radius = R_LI ≈
-// 20,419.45 li) on the AE disc with dimension annotations:
-//   • Dashed vertical line from the N-pole-centred origin up to
-//     the dome apex, labeled "20,419.45 LI" (height).
-//   • Dashed radial line on the ground from origin to the dome's
-//     rim at +x, labeled "20,419.45 LI" (radius).
-//   • Dashed diameter line spanning the dome's footprint, labeled
-//     "40,838.9 LI" (= 2 R_LI).
-//   • Wireframe of the dome itself: ground circle + meridian arcs
-//     in the y=0 and x=0 planes so the hemisphere reads in 3D
-//     when the camera tilts above the disc plane.
+// Dimension annotations sized to match the live optical vault.
+// Reads `computed.OpticalVaultRadius` and
+// `computed.OpticalVaultHeightEffective`, rebuilds geometry when
+// either changes, and re-derives the li labels from the canonical
+// size each rebuild.
 //
 // Canonical-disc scale: `FE_RADIUS = 1` represents the meridian
-// arc from N pole to S pole, i.e. half the great circle =
-// `TANG_CIRCUMFERENCE_LI / 2` li. The Tang-sphere radius
-// `R_LI = TANG_CIRCUMFERENCE_LI / (2π)` therefore lands at
-// `1 / π ≈ 0.31831` in canonical disc units. Hidden in GE — the
-// dome here is an FE-disc construct.
+// arc from N pole to S pole, i.e. one canonical unit ≈ 64,150 li
+// (= TANG_CIRCUMFERENCE_LI / 2). A dome at the Tang-sphere radius
+// `R_LI / (TANG_CIRC / 2) = 1 / π` lands on the published
+// 20,419.45 li. Default `OpticalVaultSize = 0.5` ⇒ the overlay
+// reads ~32,075 li out of the box; pulling the slider down to
+// ~0.318 makes the labels read 20,419 li and the dome footprint
+// coincide with the Tang sphere.
+//
+// Hidden in GE — the dome here is an FE-disc construct.
+const TANG_DIM_COLOR = 0xffd060;
+const TANG_DIM_LI_PER_UNIT = TANG_CIRCUMFERENCE_LI / 2;  // 64,150.13 li / canonical
+function _tangFmtLi(canonical) {
+  const n = canonical * TANG_DIM_LI_PER_UNIT;
+  return (Math.round(n * 100) / 100).toLocaleString();
+}
+
 export class TangSphereDimensions {
   constructor() {
     this.group = new THREE.Group();
     this.group.name = 'tang-sphere-dimensions';
     this.group.visible = false;
+    this._cachedR = -1;
+    this._cachedH = -1;
+  }
 
-    // Canonical radius in disc units: r = R_LI / (TANG_CIRC / 2)
-    // = 2 R_LI / TANG_CIRC = 1 / π. Hard-code via the constants so
-    // a future calibration change propagates here automatically.
-    const R = R_LI / (TANG_CIRCUMFERENCE_LI / 2);
+  // Drop every child mesh / line / sprite + free its GPU buffers
+  // before a rebuild. Per-axis label groups are nested groups of
+  // sprites, so dispose recurses.
+  _disposeChildren(node) {
+    while (node.children.length > 0) {
+      const c = node.children[0];
+      this._disposeChildren(c);
+      if (c.geometry) c.geometry.dispose();
+      if (c.material) {
+        if (c.material.map) c.material.map.dispose();
+        c.material.dispose();
+      }
+      node.remove(c);
+    }
+  }
+
+  _rebuild(R, H) {
+    this._disposeChildren(this.group);
 
     // Helper: dashed line segments along a polyline.
-    const mkDashed = (pts, color, dashSize = 0.015, gapSize = 0.008) => {
+    const mkDashed = (pts, dashSize = 0.015, gapSize = 0.008) => {
       const geom = new THREE.BufferGeometry();
       geom.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
       const mat = new THREE.LineDashedMaterial({
-        color,
+        color: TANG_DIM_COLOR,
         dashSize, gapSize,
         transparent: true, opacity: 0.95,
         depthTest: false, depthWrite: false,
@@ -1138,76 +1160,60 @@ export class TangSphereDimensions {
       return line;
     };
 
-    const COLOR = 0xffd060;
+    // Dashed dimension lines: vertical height, ground radius,
+    // ground diameter.
+    this.group.add(mkDashed([0, 0, 1e-3,  0, 0, H]));
+    this.group.add(mkDashed([0, 0, 1e-3,  R, 0, 1e-3]));
+    this.group.add(mkDashed([-R, 0, 8e-4, R, 0, 8e-4], 0.020, 0.010));
 
-    // Vertical height: (0, 0, 0) → (0, 0, R).
-    this._vertical = mkDashed([0, 0, 1e-3, 0, 0, R], COLOR);
-    this.group.add(this._vertical);
-
-    // Ground radius: (0, 0, 0) → (R, 0, 0).
-    this._radius = mkDashed([0, 0, 1e-3, R, 0, 1e-3], COLOR);
-    this.group.add(this._radius);
-
-    // Ground diameter: (-R, 0, 0) → (R, 0, 0). Drawn separately
-    // so the radius half stays distinguishable when both labels
-    // share the +x side.
-    this._diameter = mkDashed([-R, 0, 8e-4, R, 0, 8e-4], COLOR, 0.020, 0.010);
-    this.group.add(this._diameter);
-
-    // Dome wireframe: ground circle + two great-circle meridian
-    // arcs through the apex. Solid lines so the hemisphere reads
-    // as a solid construct beneath the dashed annotations.
+    // Solid wireframe of the dome: ground circle + two great-
+    // circle arcs in the y=0 and x=0 vertical planes (height
+    // scaled by H so a flatter cap renders correctly).
     const SEGS = 64;
-    const ground = [];
+    const ring = [];
     for (let k = 0; k <= SEGS; k++) {
       const a = (k / SEGS) * Math.PI * 2;
-      ground.push(R * Math.cos(a), R * Math.sin(a), 5e-4);
+      ring.push(R * Math.cos(a), R * Math.sin(a), 5e-4);
     }
-    const groundGeom = new THREE.BufferGeometry();
-    groundGeom.setAttribute('position', new THREE.Float32BufferAttribute(ground, 3));
-    this._groundCircle = new THREE.Line(groundGeom, new THREE.LineBasicMaterial({
-      color: COLOR, transparent: true, opacity: 0.55,
+    const ringGeom = new THREE.BufferGeometry();
+    ringGeom.setAttribute('position', new THREE.Float32BufferAttribute(ring, 3));
+    const ringLine = new THREE.Line(ringGeom, new THREE.LineBasicMaterial({
+      color: TANG_DIM_COLOR, transparent: true, opacity: 0.55,
       depthTest: false, depthWrite: false,
     }));
-    this._groundCircle.renderOrder = 49;
-    this._groundCircle.frustumCulled = false;
-    this.group.add(this._groundCircle);
+    ringLine.renderOrder = 49;
+    ringLine.frustumCulled = false;
+    this.group.add(ringLine);
 
-    // Two vertical great-circle arcs (y=0 plane and x=0 plane).
     const arcY = []; const arcX = [];
     for (let k = 0; k <= SEGS / 2; k++) {
       const a = (k / (SEGS / 2)) * Math.PI;
-      arcY.push(R * Math.cos(a), 0, R * Math.sin(a));
-      arcX.push(0, R * Math.cos(a), R * Math.sin(a));
+      arcY.push(R * Math.cos(a), 0, H * Math.sin(a));
+      arcX.push(0, R * Math.cos(a), H * Math.sin(a));
     }
+    const arcMat = new THREE.LineBasicMaterial({
+      color: TANG_DIM_COLOR, transparent: true, opacity: 0.45,
+      depthTest: false, depthWrite: false,
+    });
     const arcYGeom = new THREE.BufferGeometry();
     arcYGeom.setAttribute('position', new THREE.Float32BufferAttribute(arcY, 3));
-    this._arcY = new THREE.Line(arcYGeom, new THREE.LineBasicMaterial({
-      color: COLOR, transparent: true, opacity: 0.45,
-      depthTest: false, depthWrite: false,
-    }));
-    this._arcY.renderOrder = 49;
-    this._arcY.frustumCulled = false;
-    this.group.add(this._arcY);
-
+    const arcYLine = new THREE.Line(arcYGeom, arcMat);
+    arcYLine.renderOrder = 49;
+    arcYLine.frustumCulled = false;
+    this.group.add(arcYLine);
     const arcXGeom = new THREE.BufferGeometry();
     arcXGeom.setAttribute('position', new THREE.Float32BufferAttribute(arcX, 3));
-    this._arcX = new THREE.Line(arcXGeom, new THREE.LineBasicMaterial({
-      color: COLOR, transparent: true, opacity: 0.45,
-      depthTest: false, depthWrite: false,
-    }));
-    this._arcX.renderOrder = 49;
-    this._arcX.frustumCulled = false;
-    this.group.add(this._arcX);
+    const arcXLine = new THREE.Line(arcXGeom, arcMat.clone());
+    arcXLine.renderOrder = 49;
+    arcXLine.frustumCulled = false;
+    this.group.add(arcXLine);
 
-    // Sprite labels: height (along the vertical), radius (along
-    // +x), and diameter (centred on the ground line). Text uses
-    // the same per-character sprite system as the lat-line labels
-    // so the look stays consistent.
-    const fmt = (n) => Math.round(n * 100) / 100;
-    const heightTxt = `HEIGHT  ${fmt(R_LI).toLocaleString()}  LI`;
-    const radiusTxt = `RADIUS  ${fmt(R_LI).toLocaleString()}  LI`;
-    const diameterTxt = `DIAMETER  ${fmt(2 * R_LI).toLocaleString()}  LI`;
+    // Sprite labels — re-derived from the live (R, H) so when
+    // the OpticalVaultSize / Height sliders move, the labels
+    // track the new dome shape and the new li values.
+    const heightTxt   = `HEIGHT ${_tangFmtLi(H)} LI`;
+    const radiusTxt   = `RADIUS ${_tangFmtLi(R)} LI`;
+    const diameterTxt = `DIAMETER ${_tangFmtLi(2 * R)} LI`;
     const mkLabel = (text, anchor, axis) => {
       const grp = new THREE.Group();
       grp.position.set(anchor[0], anchor[1], anchor[2]);
@@ -1227,18 +1233,30 @@ export class TangSphereDimensions {
       }
       return grp;
     };
-    this._heightLabel = mkLabel(heightTxt, [0.04, 0, R / 2], 'z');
-    this._radiusLabel = mkLabel(radiusTxt, [R / 2, -0.04, 1.5e-3], 'x');
-    this._diameterLabel = mkLabel(diameterTxt, [0, 0.05, 1.5e-3], 'x');
-    this.group.add(this._heightLabel);
-    this.group.add(this._radiusLabel);
-    this.group.add(this._diameterLabel);
+    this.group.add(mkLabel(heightTxt,   [0.04, 0, H / 2], 'z'));
+    this.group.add(mkLabel(radiusTxt,   [R / 2, -0.04, 1.5e-3], 'x'));
+    this.group.add(mkLabel(diameterTxt, [0, 0.05, 1.5e-3], 'x'));
   }
 
   update(model) {
     const s = model.state;
+    const c = model.computed || {};
     const ge = s.WorldModel === 'ge';
     this.group.visible = !!s.ShowTangSphereDims && !ge;
+    if (!this.group.visible) return;
+    // Pull live optical-vault dimensions; fall back to the Tang
+    // sphere's natural size (1/π canonical) if computed values
+    // aren't ready (first frame, GE→FE swap mid-update, etc.).
+    const fallback = R_LI / (TANG_CIRCUMFERENCE_LI / 2);
+    const R = Number.isFinite(c.OpticalVaultRadius)
+      ? c.OpticalVaultRadius : (s.OpticalVaultSize || fallback);
+    const H = Number.isFinite(c.OpticalVaultHeightEffective)
+      ? c.OpticalVaultHeightEffective : R;
+    if (R !== this._cachedR || H !== this._cachedH) {
+      this._rebuild(R, H);
+      this._cachedR = R;
+      this._cachedH = H;
+    }
   }
 }
 

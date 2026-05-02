@@ -14585,6 +14585,18 @@ Format:
   default when a user has previously persisted the off state.
 - **Revert path:** `git checkout v-s000766 -- .`
 
+## S816 — Proportional AE map: rotation +75° → +67.5° (7.5° east)
+
+- **Date:** 2026-05-02
+- **Files changed:** `js/core/projections.js`,
+  `js-min/**` (rebuilt)
+- **Change:** `projections.proportional.imageRotationDeg`
+  from `75` to `67.5`. Fine-tune to align the heavenly-vault
+  0° marker with the artwork's 90° meridian label per user
+  observation. +75° remains the saved fallback if this
+  iteration overshoots.
+- **Revert path:** `git checkout v-s000815 -- .`
+
 ## S815 — Proportional AE map: rotation +105° → +75° (flip direction)
 
 - **Date:** 2026-05-02

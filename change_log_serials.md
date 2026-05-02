@@ -14585,6 +14585,22 @@ Format:
   default when a user has previously persisted the off state.
 - **Revert path:** `git checkout v-s000766 -- .`
 
+## S777 — feature search indexes demos
+
+- **Date:** 2026-04-30
+- **Files changed:** `js/ui/controlPanel.js`, `js-min/**` (rebuilt)
+- **Change:** `attachFeatureSearch` gains a third `demos` argument
+  (forwarded from `buildControlPanel`'s demos handle). The index
+  builder now appends one entry per registered demo —
+  `{ kind: 'demo', tab: 'Demos', group: d.group, label: d.name,
+  index: i }` — and the `engage` callback dispatches on `kind`:
+  demo results call `demos.play(index)` (matching the side-panel
+  click path); existing settings results still route through
+  `openFeature(tab, group)`. Placeholder text flips from
+  "Search Show / Tracker settings" to "Search settings or demos"
+  when `demos` is available.
+- **Revert path:** `git checkout v-s000776 -- .`
+
 ## S776 — 2024-04-08 Besselian eclipse demo entry
 
 - **Date:** 2026-04-30

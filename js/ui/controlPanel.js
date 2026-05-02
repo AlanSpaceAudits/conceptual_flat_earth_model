@@ -276,14 +276,16 @@ function attachBodySearch(host, model) {
 // callback from buildControlPanel because that's where the tab/group
 // DOM actually lives. Index is built lazily on first keystroke so
 // FIELD_GROUPS has been fully populated.
-function attachFeatureSearch(host, openFeature) {
+function attachFeatureSearch(host, openFeature, demos) {
   const wrap = document.createElement('div');
   wrap.className = 'body-search';
 
   const input = document.createElement('input');
   input.type = 'search';
   input.className = 'body-search-input';
-  input.placeholder = 'Search Show / Tracker settings';
+  input.placeholder = demos
+    ? 'Search settings or demos'
+    : 'Search Show / Tracker settings';
   input.autocomplete = 'off';
   input.spellcheck = false;
   wrap.appendChild(input);
@@ -302,8 +304,8 @@ function attachFeatureSearch(host, openFeature) {
   const buildIndex = () => {
     const out = [];
     // Search Show + Tracker tabs — where visibility and per-category
-    // toggles live. View / Time / Demos / Info are intentionally
-    // excluded: their settings aren't visibility-related.
+    // toggles live. View / Time / Info are intentionally excluded:
+    // their settings aren't visibility-related.
     for (const tab of FIELD_GROUPS) {
       if (tab.tab !== 'Show' && tab.tab !== 'Tracker') continue;
       for (const g of tab.groups) {
@@ -330,6 +332,24 @@ function attachFeatureSearch(host, openFeature) {
         }
       }
     }
+    // Demos — every entry in the registry indexed by name + group
+    // so a query like "analemma 45" or "april 2024" finds the
+    // right one. Click of a demo result calls `demos.play(idx)`
+    // directly (matching the side-panel button click path) so the
+    // tab popup doesn't open at the same time.
+    if (demos && Array.isArray(demos.list)) {
+      demos.list.forEach((d, idx) => {
+        if (!d || !d.name) return;
+        out.push({
+          kind:  'demo',
+          tab:   'Demos',
+          group: d.group || 'demo',
+          label: d.name,
+          index: idx,
+          matchText: (d.name + ' ' + (d.group || '')).toLowerCase(),
+        });
+      });
+    }
     return out;
   };
 
@@ -342,7 +362,11 @@ function attachFeatureSearch(host, openFeature) {
 
   const engage = (match) => {
     if (!match) return;
-    openFeature(match.tab, match.group);
+    if (match.kind === 'demo' && demos && typeof demos.play === 'function') {
+      demos.play(match.index);
+    } else {
+      openFeature(match.tab, match.group);
+    }
     input.value = '';
     input.blur();
     hide();
@@ -2673,7 +2697,7 @@ export function buildControlPanel(host, model, demos) {
   featureHost.className = 'search-host';
   // Placeholder function — replaced once tabEntries / openTab exist.
   const featureOpen = { fn: () => {} };
-  attachFeatureSearch(featureHost, (tab, group) => featureOpen.fn(tab, group));
+  attachFeatureSearch(featureHost, (tab, group) => featureOpen.fn(tab, group), demos);
 
   // Two-layer wrapper:
   //   `tabsBar` (no ARIA role) — visual flex container that also

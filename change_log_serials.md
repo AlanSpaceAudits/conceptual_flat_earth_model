@@ -14585,6 +14585,23 @@ Format:
   default when a user has previously persisted the off state.
 - **Revert path:** `git checkout v-s000766 -- .`
 
+## S796 — distance pair: draw central-angle radii from P1 / P2 to centre
+
+- **Date:** 2026-05-02
+- **Files changed:** `js/render/worldObjects.js`,
+  `js-min/**` (rebuilt)
+- **Change:** `DistanceCompassPair` now also paints two radii —
+  P1 → centre and P2 → centre — alongside the great-circle /
+  disc-projection arc. Centre = `(0, 0, 0)` in scene space, which
+  is the sphere origin in GE and the disc origin (= N pole) in
+  FE / AE / DP. The two segments are the actual sides of the
+  central angle (≡ the inscribed-angle theorem's `2·θ_inscribed`
+  visualisation). Implemented as a single `LineSegments` with a
+  4-vertex buffer (`P1, O, P2, O`) so the two radii share one
+  draw call. Dimmer (`opacity 0.55`) than the arc so the eye
+  reads them as supporting geometry.
+- **Revert path:** `git checkout v-s000795 -- .`
+
 ## S795 — distance-calc panel: central-angle arc renders on the map
 
 - **Date:** 2026-05-02

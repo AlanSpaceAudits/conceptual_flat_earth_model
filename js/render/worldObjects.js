@@ -5900,6 +5900,26 @@ export class DistanceCompassPair {
     this._line.frustumCulled = false;
     this.group.add(this._line);
     this._SEG = SEG;
+
+    // Radii P1 → centre and P2 → centre — the two sides of the
+    // central angle. Centre = sphere origin (0, 0, 0) on GE,
+    // N pole (also disc origin) on FE / DP. Drawn as a single
+    // 4-vertex line buffer (P1-O-P2-O so the two radii share a
+    // line strip without an extra geometry); the disconnected
+    // segment between O and P2 lays back on top of itself so it
+    // doesn't show as a stray line. Slightly dimmer than the
+    // arc so the eye treats them as supporting geometry.
+    this._radiiPos = new Float32Array(4 * 3);
+    const radiiGeom = new THREE.BufferGeometry();
+    radiiGeom.setAttribute('position', new THREE.BufferAttribute(this._radiiPos, 3));
+    radiiGeom.setDrawRange(0, 0);
+    this._radii = new THREE.LineSegments(radiiGeom, new THREE.LineBasicMaterial({
+      color: 0xffe040, transparent: true, opacity: 0.55,
+      depthTest: false, depthWrite: false,
+    }));
+    this._radii.renderOrder = 250;
+    this._radii.frustumCulled = false;
+    this.group.add(this._radii);
   }
 
   update(model) {
@@ -6011,8 +6031,24 @@ export class DistanceCompassPair {
       }
       this._line.geometry.attributes.position.needsUpdate = true;
       this._line.geometry.setDrawRange(0, N + 1);
+
+      // Two radii at the centre — the two sides of the central
+      // angle. Centre = (0, 0, 0): sphere origin on GE, disc
+      // origin (= N pole) on FE / DP. Each radius is a single
+      // line segment between the corresponding pin world
+      // position and the origin. LineSegments expects vertex
+      // pairs, so we lay (P1, O, P2, O) back-to-back.
+      const p1x = this._pinPos[0], p1y = this._pinPos[1], p1z = this._pinPos[2];
+      const p2x = this._pinPos[3], p2y = this._pinPos[4], p2z = this._pinPos[5];
+      this._radiiPos[0]  = p1x;  this._radiiPos[1]  = p1y;  this._radiiPos[2]  = p1z;
+      this._radiiPos[3]  = 0;    this._radiiPos[4]  = 0;    this._radiiPos[5]  = 0;
+      this._radiiPos[6]  = p2x;  this._radiiPos[7]  = p2y;  this._radiiPos[8]  = p2z;
+      this._radiiPos[9]  = 0;    this._radiiPos[10] = 0;    this._radiiPos[11] = 0;
+      this._radii.geometry.attributes.position.needsUpdate = true;
+      this._radii.geometry.setDrawRange(0, 4);
     } else {
       this._line.geometry.setDrawRange(0, 0);
+      this._radii.geometry.setDrawRange(0, 0);
     }
   }
 }

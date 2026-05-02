@@ -276,6 +276,14 @@ function defaultState() {
     // automatically as each event passes. Toggle off to silence
     // the overlay.
     LiveEclipseShadows: true,
+    // When ON, every visible latitude ring (Tropic of Cancer /
+    // Equator / Tropic of Capricorn / Polar Circles) gets a
+    // secondary label showing its dimensions in li — distance
+    // from the N-pole-centred AE disc origin, plus the ring
+    // circumference on the underlying Tang sphere. Off by
+    // default so the ring labels stay clean for users who don't
+    // care about Chinese-unit annotations.
+    ShowLatLineInfo: false,
     // Cursor for the "skip to next solar eclipse" button next to
     // the Cel-Theo PP shortcut. Each click advances DateTime to
     // the next eclipse anchor (minus a small lead-in) and bumps

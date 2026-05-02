@@ -14585,6 +14585,27 @@ Format:
   default when a user has previously persisted the off state.
 - **Revert path:** `git checkout v-s000766 -- .`
 
+## S786 — Display Info checkbox: li dimensions on lat-line rings
+
+- **Date:** 2026-04-30
+- **Files changed:** `js/core/app.js`, `js/render/worldObjects.js`,
+  `js/ui/controlPanel.js`, `js-min/**` (rebuilt)
+- **Change:** New `View → Show → Display Info` toggle backed by
+  `state.ShowLatLineInfo` (default off). When on, every visible
+  latitude ring (Tropic of Cancer / Equator / Tropic of
+  Capricorn / Polar Circles) gets a secondary character-sprite
+  label beneath the existing name showing
+  `<arc-from-N-pole> LI FROM POLE  ·  <ring-circumference> LI RING`
+  in Tang li:
+  - Equator → 32,075 LI from pole · 128,300 LI ring
+  - Tropic of Cancer/Capricorn (±23.44°) → 23,712 / 40,403 LI from
+    pole · 117,654 LI ring
+  - Polar Circles (±66.56°) → 8,353 / 55,797 LI from pole · 51,063
+    LI ring
+  Values derive from `R_LI` and `TANG_CIRCUMFERENCE_LI` in
+  `units.js` so they stay in sync with the calibration.
+- **Revert path:** `git checkout v-s000785 -- .`
+
 ## S785 — live eclipse: ±2 h window so the sweep is sim-time proportional
 
 - **Date:** 2026-04-30

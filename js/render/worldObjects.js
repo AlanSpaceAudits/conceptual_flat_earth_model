@@ -10,6 +10,7 @@ import {
   pointOnFE, celestLatLongToVaultCoord, feLatLongToGlobalFeCoord,
 } from '../core/feGeometry.js';
 import { canonicalLatLongToDisc } from '../core/canonical.js';
+import { R_LI, TANG_CIRCUMFERENCE_LI } from '../core/units.js';
 import { STELLARIUM_TRACES } from '../data/stellariumTraces.js';
 import {
   besselian2024Apr08Path, besselian2024Apr08Bands,
@@ -898,6 +899,14 @@ export class LatitudeLines {
     ];
     this._lines = [];
     this._labelGroups = [];
+    this._infoGroups = [];
+    // li dimensions of each ring (cached at constructor time
+    // since latitudes are fixed). The disc-radius value is the
+    // arc length from the N-pole-centred AE origin (= great-
+    // circle arc to the ring); the ring-circumference is the
+    // Tang sphere's parallel circle (= 2π · R_LI · cos lat).
+    const HALF_GC = TANG_CIRCUMFERENCE_LI / 2;     // 64,150.13 li
+    const fmtLi = (n) => Math.round(n).toLocaleString();
     for (const c of this._circles) {
       const geo = new THREE.BufferGeometry();
       const mat = new THREE.LineBasicMaterial({
@@ -934,6 +943,32 @@ export class LatitudeLines {
       }
       this._labelGroups.push(lg);
       this.group.add(lg);
+
+      // Secondary "info" label — shows the ring's li dimensions.
+      // Hidden until `state.ShowLatLineInfo` is on AND the ring
+      // itself is visible. Sits one row below the main label so
+      // the two stack cleanly.
+      const radiusLi = (90 - c.lat) / 180 * HALF_GC;
+      const ringCircLi = TANG_CIRCUMFERENCE_LI * Math.cos(c.lat * Math.PI / 180);
+      const infoText = `${fmtLi(radiusLi)} LI FROM POLE  ·  ${fmtLi(ringCircLi)} LI RING`;
+      const infoGroup = new THREE.Group();
+      infoGroup.name = `info-${c.label}`;
+      infoGroup.visible = false;
+      const infoCharSize = 0.020;
+      const infoCharSpacing = 3.0;
+      const infoSpan = infoText.length * infoCharSpacing;
+      const infoStartLon = -infoSpan / 2;
+      for (let i = 0; i < infoText.length; i++) {
+        const sp = makeCharSprite(infoText[i], '#ffe080');
+        sp.scale.set(infoCharSize, infoCharSize, 1);
+        sp.userData.charLon = infoStartLon + (i + 0.5) * infoCharSpacing;
+        // Offset 1.6° south of the ring so the info line sits just
+        // below the main label without crowding it.
+        sp.userData.charLat = c.lat - 1.6;
+        infoGroup.add(sp);
+      }
+      this._infoGroups.push(infoGroup);
+      this.group.add(infoGroup);
     }
     this._lastProj = null;
     this._rebuild();
@@ -972,10 +1007,11 @@ export class LatitudeLines {
       const m = line.material;
       const wantDT = ge;
       if (m.depthTest !== wantDT) { m.depthTest = wantDT; m.needsUpdate = true; }
-      // Reposition each label sprite along the arc.
-      const lg = this._labelGroups[i];
-      if (lg) {
-        for (const sp of lg.children) {
+      // Reposition each label sprite along the arc — applies to
+      // both the main name label and the secondary info label.
+      const placeSprites = (group) => {
+        if (!group) return;
+        for (const sp of group.children) {
           const cLat = sp.userData.charLat;
           const cLon = sp.userData.charLon;
           if (ge) {
@@ -997,11 +1033,14 @@ export class LatitudeLines {
             if (matSp.depthTest !== false) { matSp.depthTest = false; matSp.needsUpdate = true; }
           }
         }
-      }
+      };
+      placeSprites(this._labelGroups[i]);
+      placeSprites(this._infoGroups[i]);
     }
   }
   update(model) {
     const s = model.state;
+    const showInfo = !!s.ShowLatLineInfo;
     let anyOn = false;
     for (let i = 0; i < this._circles.length; i++) {
       const c = this._circles[i];
@@ -1009,6 +1048,8 @@ export class LatitudeLines {
       this._lines[i].visible = on;
       const lg = this._labelGroups[i];
       if (lg) lg.visible = on;
+      const ig = this._infoGroups[i];
+      if (ig) ig.visible = on && showInfo;
       if (on) anyOn = true;
     }
     this.group.visible = anyOn;

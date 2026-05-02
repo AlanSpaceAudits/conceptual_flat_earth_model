@@ -14585,6 +14585,23 @@ Format:
   default when a user has previously persisted the off state.
 - **Revert path:** `git checkout v-s000766 -- .`
 
+## S779 — eclipse path: denser central-line samples + lock AE projection
+
+- **Date:** 2026-04-30
+- **Files changed:** `js/core/besselianEclipse.js`,
+  `js/demos/definitions.js`, `js-min/**` (rebuilt)
+- **Change:** `APR_08_2024_CENTRAL_LINE` doubled in density —
+  17 → 33 rows at ~0.13 h (≈8 min) cadence, sampling Pacific
+  entry, the Mexico / Texas / US Midwest / NE / Newfoundland
+  arc, and the North Atlantic exit. The render polyline now
+  traces a smoother curve on the AE disc that lines up with the
+  reference flat-earth plot (Image #167) and the
+  HMNAO globe view (Image #166). The demo intro adds explicit
+  `WorldModel: 'fe'` + `MapProjection: 'ae'` so the AE math is
+  active when the demo opens, regardless of the previous demo's
+  projection.
+- **Revert path:** `git checkout v-s000778 -- .`
+
 ## S778 — eclipse path: NASA central-line samples (drop wrong polynomial latitudes)
 
 - **Date:** 2026-04-30

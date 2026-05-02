@@ -694,6 +694,10 @@ const BESSELIAN_2024_APR_08_DEMO = {
     BodySource: 'astropixels',
     DateTime: 2654.761,                  // UT 2024-04-08 18:16:07
     InsideVault: false,                  // orbit / heavenly view
+    WorldModel: 'fe',
+    MapProjection: 'ae',                 // explicit so AE math drives
+                                         // canonicalLatLongToDisc when
+                                         // the demo opens
     Zoom: 1.4,
     CameraDirection: 0, CameraHeight: 75,
     VaultSize: 1, VaultHeight: 0.45,

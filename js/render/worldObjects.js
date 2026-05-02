@@ -5913,8 +5913,9 @@ export class DistanceCompassPair {
     const radiiGeom = new THREE.BufferGeometry();
     radiiGeom.setAttribute('position', new THREE.BufferAttribute(this._radiiPos, 3));
     radiiGeom.setDrawRange(0, 0);
-    this._radii = new THREE.LineSegments(radiiGeom, new THREE.LineBasicMaterial({
-      color: 0xffe040, transparent: true, opacity: 0.55,
+    this._radii = new THREE.LineSegments(radiiGeom, new THREE.LineDashedMaterial({
+      color: 0xffe040, transparent: true, opacity: 0.65,
+      dashSize: 0.020, gapSize: 0.012,
       depthTest: false, depthWrite: false,
     }));
     this._radii.renderOrder = 250;
@@ -6046,6 +6047,10 @@ export class DistanceCompassPair {
       this._radiiPos[9]  = 0;    this._radiiPos[10] = 0;    this._radiiPos[11] = 0;
       this._radii.geometry.attributes.position.needsUpdate = true;
       this._radii.geometry.setDrawRange(0, 4);
+      // LineDashedMaterial needs `lineDistances` recomputed
+      // whenever the geometry changes so the dash pattern paces
+      // from the new endpoints.
+      this._radii.computeLineDistances();
     } else {
       this._line.geometry.setDrawRange(0, 0);
       this._radii.geometry.setDrawRange(0, 0);

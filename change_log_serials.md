@@ -14585,6 +14585,19 @@ Format:
   default when a user has previously persisted the off state.
 - **Revert path:** `git checkout v-s000766 -- .`
 
+## S797 — distance pair: dashed radii to centre (LineDashedMaterial)
+
+- **Date:** 2026-05-02
+- **Files changed:** `js/render/worldObjects.js`,
+  `js-min/**` (rebuilt)
+- **Change:** Swap the two centre radii (P1 → O, P2 → O) from
+  `LineBasicMaterial` to `LineDashedMaterial` (yellow,
+  dashSize 0.020, gapSize 0.012, opacity 0.65). `update()` calls
+  `computeLineDistances()` after every geometry refresh so the
+  dash pattern repaces from the new endpoints. The arc + pins
+  stay solid; only the supporting radii are dashed.
+- **Revert path:** `git checkout v-s000796 -- .`
+
 ## S796 — distance pair: draw central-angle radii from P1 / P2 to centre
 
 - **Date:** 2026-05-02

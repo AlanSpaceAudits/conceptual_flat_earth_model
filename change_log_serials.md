@@ -14585,6 +14585,22 @@ Format:
   default when a user has previously persisted the off state.
 - **Revert path:** `git checkout v-s000766 -- .`
 
+## S813 — Proportional AE map: tune rotation +90° → +75°
+
+- **Date:** 2026-05-02
+- **Files changed:** `js/core/projections.js`,
+  `js-min/**` (rebuilt)
+- **Change:** `projections.proportional.imageRotationDeg`
+  reduced from `90` to `75`. With +90°, the observer at
+  (41, −104) plotted at the artwork's CA / OR coastline
+  (lon ≈ −120) instead of Colorado (lon = −104). Working
+  back from the rendered position, the artwork's prime
+  meridian sat ~16° CCW past +x in the world frame after
+  the +90° rotation; the artwork's lon=0 is at ~−75° in the
+  raw image (not exactly at −y). +75° aligns the artwork's
+  prime meridian with the math projection's +x axis.
+- **Revert path:** `git checkout v-s000812 -- .`
+
 ## S812 — Proportional AE map: rotate texture +90° to align prime meridian
 
 - **Date:** 2026-05-02

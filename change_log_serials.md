@@ -14585,6 +14585,42 @@ Format:
   default when a user has previously persisted the off state.
 - **Revert path:** `git checkout v-s000766 -- .`
 
+## S821 — Live eclipse shadow: per-event contact window from ephemeris
+
+- **Date:** 2026-05-02
+- **Files changed:** `js/core/ephemerisCommon.js`,
+  `js/core/app.js`, `js-min/**` (rebuilt)
+- **Change:**
+  - New `findSolarEclipseContactWindow(approxDate, sunFn,
+    moonFn, { maxHalfWindowHours = 4 })` in
+    `ephemerisCommon.js`. Refines greatest eclipse via the
+    existing `refineEclipseByMinSeparation`, then walks the
+    active pipeline's ephemeris outward in 1-min steps until
+    the geocentric sun-moon angular separation exceeds 1.5°
+    (≈ sum of angular radii + max lunar parallax). Returns
+    `{ greatestMs, p1Ms, p4Ms, halfWindowMs,
+       minSeparationRad }`. 30-min floor on the half-window so
+    glancing partials still produce a visible sweep.
+  - `app.js` live-shadow detector now drives the path and
+    anchor off this per-event contact window instead of a
+    fixed ±2 h. Cache keyed on `anchorMs|bodySource` so each
+    eclipse computes its window once. Live-path computed only
+    when the simulator clock sits inside the per-event
+    window, so short / glancing eclipses no longer pad the
+    sweep with empty time outside their actual partial-phase
+    duration.
+  - `s.DateTime` model-day → ms anchor conversion via
+    `TIME_ORIGIN.msPerDay` + `ZeroDate` (existing constants).
+  - Ramifications: eclipse sweep duration now scales with
+    each event's real Earth-wide visibility window. Long
+    central-eclipse Saros peaks paint a longer path; brief
+    high-latitude grazes paint a shorter one. Wall-clock
+    sweep speed still scales with the user's autoplay rate
+    (the renderer's progress formula is unchanged — it
+    derives progress from `(t − anchor + halfW) / 2halfW`,
+    which now uses dynamic `halfW`).
+- **Revert path:** `git checkout v-s000820 -- .`
+
 ## S820 — Proportional AE map: rotation +80° → +79°
 
 - **Date:** 2026-05-02

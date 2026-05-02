@@ -328,6 +328,68 @@ export function findNextEclipses(startDate, windowDays = 400, sunFn = sunEquator
   return { nextSolar, nextLunar };
 }
 
+// Sun-moon geocentric angular separation in radians.
+function _sunMoonSep(date, sunFn, moonFn) {
+  const sun = sunFn(date);
+  const moon = moonFn(date);
+  const dot = Math.cos(sun.dec) * Math.cos(moon.dec) * Math.cos(sun.ra - moon.ra)
+            + Math.sin(sun.dec) * Math.sin(moon.dec);
+  return Math.acos(Math.max(-1, Math.min(1, dot)));
+}
+
+// Find the actual P1 / P4 contact window for a solar eclipse.
+// Threshold = 1.5° captures the union of (sun + moon angular radii)
+// plus max lunar parallax (~0.95°) so the returned window covers any
+// place on Earth where the partial phase is visible.
+//
+// Returns:
+//   {
+//     greatestMs, p1Ms, p4Ms,
+//     halfWindowMs,           // max(greatest−p1, p4−greatest)
+//     minSeparationRad,
+//   }
+//
+// `maxHalfWindowHours` caps the outward walk so a non-eclipse approx
+// date can't run away. 4 h is plenty — real solar eclipses globally
+// last 5 h tip-to-tip in extreme cases, and we walk from greatest, not
+// tip-to-tip.
+export function findSolarEclipseContactWindow(approxDate, sunFn, moonFn, { maxHalfWindowHours = 4 } = {}) {
+  const stepMs = 60 * 1000;
+  const greatest = refineEclipseByMinSeparation(approxDate, sunFn, moonFn, { kind: 'solar' });
+  const greatestMs = greatest.date.getTime();
+  const threshold = 1.5 * Math.PI / 180;
+  const maxSteps = maxHalfWindowHours * 60;
+
+  let p1Ms = greatestMs - maxSteps * stepMs;
+  for (let k = 1; k <= maxSteps; k++) {
+    const t = greatestMs - k * stepMs;
+    if (_sunMoonSep(new Date(t), sunFn, moonFn) > threshold) {
+      p1Ms = t + stepMs;
+      break;
+    }
+  }
+  let p4Ms = greatestMs + maxSteps * stepMs;
+  for (let k = 1; k <= maxSteps; k++) {
+    const t = greatestMs + k * stepMs;
+    if (_sunMoonSep(new Date(t), sunFn, moonFn) > threshold) {
+      p4Ms = t - stepMs;
+      break;
+    }
+  }
+  // 30-minute floor so a glancing near-miss still produces a visible
+  // sweep instead of collapsing the path to a single point.
+  const halfWindowMs = Math.max(
+    greatestMs - p1Ms,
+    p4Ms - greatestMs,
+    30 * 60 * 1000,
+  );
+  return {
+    greatestMs, p1Ms, p4Ms,
+    halfWindowMs,
+    minSeparationRad: greatest.minSeparationRad,
+  };
+}
+
 // refine a known approximate eclipse time by scanning ±2 h in
 // 1-minute steps and picking the instant of minimum sun-moon (or
 // sun-antimoon) angular separation per the supplied `sunFn` / `moonFn`

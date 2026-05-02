@@ -14585,6 +14585,27 @@ Format:
   default when a user has previously persisted the off state.
 - **Revert path:** `git checkout v-s000766 -- .`
 
+## S812 — Proportional AE map: rotate texture +90° to align prime meridian
+
+- **Date:** 2026-05-02
+- **Files changed:** `js/core/projections.js`,
+  `js/render/earthMap.js`, `js-min/**` (rebuilt)
+- **Change:**
+  - `projections.proportional` now declares
+    `imageRotationDeg: 90`. The artwork has lon=0 at the
+    bottom (`−y`); the math projection puts lon=0 at `+x`,
+    so a +90° rotation about z brings them into alignment.
+  - `earthMap.buildImageMap` reads
+    `projection.imageRotationDeg` (defaults to 0) and applies
+    it to the textured disc's `rotation.z`. Other image-asset
+    projections are unaffected because the field is optional.
+  - Verified rotation direction: at observer (32, −100), the
+    math direction `(cos −100°, sin −100°)` previously landed
+    at the artwork's `lon ≈ −10°` (Africa). After the +90°
+    texture rotation it lands on the artwork's lon=−100°
+    (Texas).
+- **Revert path:** `git checkout v-s000811 -- .`
+
 ## S811 — About panel: Tang sidereal mapping + distance calibration paragraphs
 
 - **Date:** 2026-05-02

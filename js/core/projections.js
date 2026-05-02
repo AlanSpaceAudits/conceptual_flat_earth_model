@@ -231,6 +231,11 @@ export const PROJECTIONS = {
     imageAsset: 'assets/map_proportional.png',
     imageNativeWidth: 1920, imageNativeHeight: 1080,
     imageInscribedRadius: 0.5,
+    // Artwork has lon=0 at the bottom (−y). The math projection
+    // puts lon=0 at +x, so the texture is rotated +90° about z
+    // (CCW) to bring the artwork's prime meridian onto the +x
+    // axis where the projection's dots land.
+    imageRotationDeg: 90,
     notes: 'Artwork-driven AE power-law tweak (exponent 0.75).',
     project(lat, lon, r = 1) { return polarFromRadial(lat, lon, r, RADIAL_PROPORTIONAL); },
   },

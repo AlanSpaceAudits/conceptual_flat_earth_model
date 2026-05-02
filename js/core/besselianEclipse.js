@@ -76,22 +76,29 @@ export function besselian2024Apr08(t) {
 }
 
 // Shadow-axis subpoint on the unit sphere. Inputs in degrees;
-// returns `{ lat, lon }` in degrees, or null when the axis misses
-// the sphere (`ξ² + η² > 1`).
-//
-// Formula source: NASA Solar Eclipse Predictions / Astronomical
-// Almanac chapter 11 (USNO). Spherical-Earth simplification —
-// Earth flattening adds ~10 arcmin which is below visible
-// resolution on the flat-map render at this project's scale.
+// returns `{ lat, lon }` in degrees. When `ξ² + η² > 1` the axis
+// passes outside the sphere — project the axis radially onto the
+// sphere edge (where ζ = 0) so the path covers the partial-only
+// horizon extensions NASA's published tables include. The
+// returned point is where an observer would see the moon at the
+// horizon (penumbra contact).
 export function besselianAxisToLatLon(x, y, dDeg, muDeg) {
   const d   = dDeg * Math.PI / 180;
   const cosD = Math.cos(d);
   const sinD = Math.sin(d);
-  const xi  = x;
-  const eta = y;
+  let xi  = x;
+  let eta = y;
   const r2  = xi * xi + eta * eta;
-  if (r2 > 1) return null;
-  const zeta = Math.sqrt(1 - r2);
+  let zeta;
+  if (r2 <= 1) {
+    zeta = Math.sqrt(1 - r2);
+  } else {
+    // Axis off-sphere: project radially to sphere edge (ζ = 0).
+    const r = Math.sqrt(r2);
+    xi /= r;
+    eta /= r;
+    zeta = 0;
+  }
   // Rotation from fundamental-plane coords (ξ, η, ζ) to
   // Earth-fixed Greenwich-equatorial (X, Y, Z):
   //   ξ-axis is east on the fundamental plane (perpendicular to

@@ -14585,6 +14585,21 @@ Format:
   default when a user has previously persisted the off state.
 - **Revert path:** `git checkout v-s000766 -- .`
 
+## S824 — Besselian path: extend horizon ends so partial-only edges paint
+
+- **Date:** 2026-05-02
+- **Files changed:** `js/core/besselianEclipse.js`,
+  `js-min/**` (rebuilt)
+- **Change:** `besselianAxisToLatLon` now projects the axis
+  radially onto the sphere edge (ζ = 0) when ξ² + η² > 1
+  instead of returning null. Path samples beyond the
+  axis-on-sphere window land at the moon-on-horizon point an
+  observer would see at penumbra contact. All 21/21 samples
+  now produce valid (lat, lon) for tested events; bands fan
+  out across the full P1-P4 sweep instead of clipping at the
+  axis-only window.
+- **Revert path:** `git checkout v-s000823 -- .`
+
 ## S823 — NASA Espenak Besselian elements: scrape + polynomial-driven shadow paths
 
 - **Date:** 2026-05-02

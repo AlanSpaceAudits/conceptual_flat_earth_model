@@ -14585,6 +14585,19 @@ Format:
   default when a user has previously persisted the off state.
 - **Revert path:** `git checkout v-s000766 -- .`
 
+## S788 — lat-line li info: opposite-side placement on antimeridian
+
+- **Date:** 2026-04-30
+- **Files changed:** `js/render/worldObjects.js`,
+  `js-min/**` (rebuilt)
+- **Change:** Display-Info character sprites for each latitude
+  ring move from `lat = ringLat − 1.6°` (south of the name
+  label) to `lat = ringLat, lon = 180° ± span/2` so the li
+  readout rides the same ring on the opposite side of the AE
+  disc from the name. Both labels now sit on the actual ring
+  itself, with no vertical crowding at the prime meridian.
+- **Revert path:** `git checkout v-s000787 -- .`
+
 ## S787 — Tang sphere dimensions overlay (height / radius / diameter labels)
 
 - **Date:** 2026-04-30

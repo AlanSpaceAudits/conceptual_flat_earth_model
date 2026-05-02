@@ -958,13 +958,16 @@ export class LatitudeLines {
       const infoCharSpacing = 3.0;
       const infoSpan = infoText.length * infoCharSpacing;
       const infoStartLon = -infoSpan / 2;
+      // Centre the info string on the antimeridian (lon = 180°)
+      // so it sits on the opposite side of the disc from the name
+      // label (centred on lon = 0°). The two ride the same ring
+      // at the same latitude — clean read either side, no
+      // crowding at the prime meridian.
       for (let i = 0; i < infoText.length; i++) {
         const sp = makeCharSprite(infoText[i], '#ffe080');
         sp.scale.set(infoCharSize, infoCharSize, 1);
-        sp.userData.charLon = infoStartLon + (i + 0.5) * infoCharSpacing;
-        // Offset 1.6° south of the ring so the info line sits just
-        // below the main label without crowding it.
-        sp.userData.charLat = c.lat - 1.6;
+        sp.userData.charLon = 180 + infoStartLon + (i + 0.5) * infoCharSpacing;
+        sp.userData.charLat = c.lat;
         infoGroup.add(sp);
       }
       this._infoGroups.push(infoGroup);

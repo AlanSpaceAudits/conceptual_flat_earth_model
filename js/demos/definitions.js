@@ -678,6 +678,51 @@ const ECLIPSE_MAP_DEMO = {
   ],
 };
 
+// Besselian-element shadow-axis path demo for the 2024-04-08 total
+// solar eclipse. The (lat, lon) curve is precomputed from the
+// polynomials in `js/core/besselianEclipse.js` and rendered through
+// `BesselianEclipsePath` (FE / DP via `canonicalLatLongToDisc`,
+// GE via unit-sphere mapping). The intro pins the clock at
+// greatest eclipse (UT 18:16:07 ≈ DateTime 2654.761) and shuts
+// off the dynamic day/night flags so the static map underneath
+// stays evenly lit while the red shadow path sits on top.
+const BESSELIAN_2024_APR_08_DEMO = {
+  name: '2024-04-08 Total Solar Eclipse — Besselian shadow-axis path',
+  group: 'eclipse-map',
+  intro: {
+    ObserverLat: 30, ObserverLong: -100, ObserverHeading: 0,
+    BodySource: 'astropixels',
+    DateTime: 2654.761,                  // UT 2024-04-08 18:16:07
+    InsideVault: false,                  // orbit / heavenly view
+    Zoom: 1.4,
+    CameraDirection: 0, CameraHeight: 75,
+    VaultSize: 1, VaultHeight: 0.45,
+    TrackerTargets: [], FollowTarget: null,
+    ShowSunAnalemma: false, ShowMoonAnalemma: false,
+    ShowSunTrack: false, ShowMoonTrack: false,
+    ShowOpticalVault: false, ShowStars: false,
+    ShowGroundPoints: false,
+    SpecifiedTrackerMode: false,
+    FreeCamActive: false, FreeCameraMode: false,
+    SunVaultArcOn: false, MoonVaultArcOn: false,
+    SunMonthMarkers: [], MoonMonthMarkers: [], SunMonthMarkersOpp: [],
+    EclipseMapSolar: [], EclipseMapLunar: [],
+    // Static lighting — every dynamic shading layer off so the
+    // eclipse path reads cleanly against an evenly-lit map.
+    ShowShadow: false,
+    ShowDayNightShadow: false,
+    ShowDayNightSky: false,
+    ShowEclipseShadow: false,
+    PermanentNight: false,
+    // The path overlay itself.
+    ShowBesselianEclipsePath: true,
+  },
+  tasks: () => [
+    Ttxt('2024-04-08 total solar eclipse · Besselian shadow-axis path drawn from the NASA bulletin polynomials. Toggle FE / GE / DP to compare projections.'),
+    Thold(),
+  ],
+};
+
 // 24-hour sun demos grouped under their own sub-menu. Order matches
 // the UI section: two 24h overhead-sun demos first, then the two
 // season-spanning midnight-sun demos.
@@ -864,6 +909,7 @@ export const DEMOS = [
   ...MOON_SYNODIC_DEMOS,
   ...SUN_PAIRED_DEMOS,
   ECLIPSE_MAP_DEMO,
+  BESSELIAN_2024_APR_08_DEMO,
   ...SOLAR_ECLIPSE_DEMOS,
   ...LUNAR_ECLIPSE_DEMOS,
   ...FE_ECLIPSE_PREDICTION_DEMOS,

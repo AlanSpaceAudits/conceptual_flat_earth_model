@@ -14585,6 +14585,27 @@ Format:
   default when a user has previously persisted the off state.
 - **Revert path:** `git checkout v-s000766 -- .`
 
+## S776 — 2024-04-08 Besselian eclipse demo entry
+
+- **Date:** 2026-04-30
+- **Files changed:** `js/demos/definitions.js`, `js-min/**` (rebuilt)
+- **Change:** New demo `2024-04-08 Total Solar Eclipse — Besselian
+  shadow-axis path` slotted into the `eclipse-map` group right
+  after the existing `ECLIPSE_MAP_DEMO`. The intro:
+  - Pins the clock at greatest eclipse (UT 2024-04-08 18:16:07,
+    `DateTime = 2654.761`) so the static map stays put.
+  - Drops every dynamic shading flag (`ShowShadow`,
+    `ShowDayNightShadow`, `ShowDayNightSky`, `ShowEclipseShadow`,
+    `PermanentNight`) so the underlying world map renders evenly
+    lit and the red shadow-axis polyline sits on top without
+    fighting the day / night terminator overlay.
+  - Sets `ShowBesselianEclipsePath: true` to drive the new
+    `BesselianEclipsePath` overlay.
+  - Heavenly-orbit camera (`InsideVault: false`, `CameraHeight: 75`,
+    `Zoom: 1.4`) framed over North America (lat 30°, lon −100°)
+    so FE / DP / GE all show the path clearly on toggle.
+- **Revert path:** `git checkout v-s000775 -- .`
+
 ## S775 — Besselian eclipse path render class
 
 - **Date:** 2026-04-30

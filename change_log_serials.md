@@ -14585,6 +14585,28 @@ Format:
   default when a user has previously persisted the off state.
 - **Revert path:** `git checkout v-s000766 -- .`
 
+## S807 — distance-calc auto-fill removed + GE Tang dome resized
+
+- **Date:** 2026-05-02
+- **Files changed:** `js/ui/controlPanel.js`,
+  `js/render/worldObjects.js`, `js-min/**` (rebuilt)
+- **Change:**
+  - `distanceCalcPanel` no longer auto-seeds `DistCalcLat1 /
+    DistCalcLon1` from the observer on first render. The
+    auto-fill left a stale yellow pin at the original observer
+    position when the user moved (the map renderer treats any
+    finite DistCalc coords as an active pair to draw).
+    Panel now starts blank; `Use Obs → P1` is the explicit way
+    to seed P1.
+  - In GE, the Tang Sphere Dimensions overlay scales to
+    `R = 0.70 · FE_RADIUS` (was `1/π ≈ 0.318` canonical). The
+    smaller value was buried near the +z pole inside the planet
+    shell and unreadable; 70 % of the planet radius keeps the
+    lines + labels comfortably inside the globe and visible
+    through the shader's `opacity 0.85` shell. FE / DP keep
+    live optical-vault tracking unchanged.
+- **Revert path:** `git checkout v-s000806 -- .`
+
 ## S806 — Tang dimensions: visible in GE, locked to canonical Tang sphere
 
 - **Date:** 2026-05-02

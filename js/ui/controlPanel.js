@@ -1724,19 +1724,12 @@ function distanceCalcPanel(model) {
       `${fmtDmsUnsigned(inscribed)}  ·  ${fmtDuFen(inscribed)}`;
   };
 
-  // Auto-fill P1 with the observer's position the first time the
-  // panel renders while all four inputs are still null. Subsequent
-  // edits stand on their own; the explicit "Use Obs → P1" button
-  // is the user-driven way to refresh.
-  const s0 = model.state;
-  const allNull = s0.DistCalcLat1 == null && s0.DistCalcLon1 == null
-               && s0.DistCalcLat2 == null && s0.DistCalcLon2 == null;
-  if (allNull) {
-    model.setState({
-      DistCalcLat1: s0.ObserverLat,
-      DistCalcLon1: s0.ObserverLong,
-    });
-  }
+  // (Auto-fill of P1 from the observer's position removed —
+  // it left a stale yellow pin at the original observer
+  // location when the user moved to a new spot, since the
+  // map-render path treats any non-null DistCalcLat1/Lon1 as
+  // an active pair to draw. The "Use Obs → P1" button is the
+  // explicit way to seed P1 now; the panel starts empty.)
 
   model.addEventListener('update', refresh);
   refresh();

@@ -1241,7 +1241,7 @@ export class TangSphereDimensions {
     const nameColor  = '#ffffff';
     const valueColor = '#ffe080';
     const arcColor   = '#a8e8ff';
-    const charSize = 0.018;
+    const charSize = 0.024;
     const charStep = charSize * 0.95;
     const fmtLi = (n) => `LI ${(Math.round(n * 100) / 100).toLocaleString()}`;
     const heightTxt   = fmtLi(R_LI);

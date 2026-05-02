@@ -14585,6 +14585,17 @@ Format:
   default when a user has previously persisted the off state.
 - **Revert path:** `git checkout v-s000766 -- .`
 
+## S805 — Tang dimensions: bump char size 0.018 → 0.024
+
+- **Date:** 2026-05-02
+- **Files changed:** `js/render/worldObjects.js`,
+  `js-min/**` (rebuilt)
+- **Change:** Single-line tweak: `charSize` for every Tang
+  dimension label (HEIGHT, RADIUS, DIAMETER, CIRCUMFERENCE,
+  CELESTIAL ARC) bumps from `0.018` → `0.024`. `charStep` and
+  `angStep` derive from it so spacing scales proportionally.
+- **Revert path:** `git checkout v-s000804 -- .`
+
 ## S804 — Tang dimensions: tighter offsets + reverse CIRCUMFERENCE name
 
 - **Date:** 2026-05-02

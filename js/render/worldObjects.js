@@ -6463,10 +6463,10 @@ export class BesselianEclipsePath {
     this.group.visible = false;
 
     // Cache the (lat, lon) samples — fixed for this eclipse.
-    // tStart / tEnd cover the full window where the axis hits
-    // Earth (greatest eclipse at t≈0.288, contacts at roughly
-    // ±2 h), 0.05 h step gives ~80 samples for a smooth curve.
-    this._samples = besselian2024Apr08Path(-2.5, 2.5, 0.05);
+    // Path data is the NASA-published central-line table baked
+    // into `besselian2024Apr08Path`, ~17 samples spanning first
+    // contact (Pacific) through last contact (North Atlantic).
+    this._samples = besselian2024Apr08Path();
 
     const SEG = this._samples.length;
     this._buf = new Float32Array(Math.max(2, SEG) * 3);

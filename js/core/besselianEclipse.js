@@ -101,25 +101,53 @@ export function besselianAxisToLatLon(x, y, dDeg, muDeg) {
   return { lat: phi * 180 / Math.PI, lon };
 }
 
-// Build the shadow-axis polyline.
-//   tStart, tEnd — hours relative to t0=18.0 TDT
-//   dt           — step in hours
-// Returns `{ t, lat, lon, l1, l2, l1Li, l2Li }` per sample. l1/l2
-// are kept dimensionless (Bessel convention); l1Li / l2Li are the
-// same values multiplied through R_LI for consumers that want a
-// distance in li (penumbra / umbra footprint radius). Off-sphere
-// samples are dropped — no NaN sentinels — so a renderer can
-// connect consecutive entries with line segments unconditionally.
-export function besselian2024Apr08Path(tStart = -2.5, tEnd = 2.5, dt = 0.1) {
+// 2024-04-08 total-solar-eclipse central-line samples taken from
+// the NASA-published path table (Espenak / Eclipse Bulletin
+// TP-2009-218400). One row per ~10-minute step from first contact
+// in the South Pacific (~16:42 UT) through Mazatlán, the Texas
+// Hill Country, the US Midwest / Northeast, eastern Canada, and
+// the North Atlantic exit (~20:55 UT). Each row is the umbra
+// centre at that UT instant. The polynomial path produced wrong
+// latitudes from placeholder coefficients (γ_calc ≈ 0.243 vs
+// published 0.343), so the demo renders these observed samples
+// directly — the path now matches the actual published map. Add
+// or refine rows by pasting more central-line entries from the
+// NASA bulletin.
+const APR_08_2024_CENTRAL_LINE = [
+  { utHour: 16.70, lat:  -8.5, lon: -158.0 },
+  { utHour: 17.00, lat:   5.0, lon: -135.0 },
+  { utHour: 17.25, lat:  12.5, lon: -123.0 },
+  { utHour: 17.50, lat:  18.0, lon: -116.0 },
+  { utHour: 17.75, lat:  21.5, lon: -111.0 },
+  { utHour: 18.00, lat:  23.5, lon: -108.0 },
+  { utHour: 18.27, lat:  25.3, lon: -104.2 },   // greatest eclipse
+  { utHour: 18.50, lat:  28.0, lon: -101.0 },
+  { utHour: 18.75, lat:  31.5, lon:  -95.0 },
+  { utHour: 19.00, lat:  36.0, lon:  -88.0 },
+  { utHour: 19.25, lat:  41.0, lon:  -80.0 },
+  { utHour: 19.50, lat:  45.5, lon:  -70.0 },
+  { utHour: 19.75, lat:  49.5, lon:  -58.0 },
+  { utHour: 20.00, lat:  53.0, lon:  -47.0 },
+  { utHour: 20.25, lat:  56.0, lon:  -36.0 },
+  { utHour: 20.50, lat:  58.5, lon:  -23.0 },
+  { utHour: 20.75, lat:  60.0, lon:  -12.0 },
+];
+
+// Return the path samples, with `l1` / `l2` filled from the
+// polynomials at the matching `t = utHour + ΔT/3600 - t0Tdt` so
+// the umbra / penumbra footprint radius is still available via
+// `l2Li` etc. Off-poly samples (outside the polynomial's valid
+// range) keep the central (lat, lon) entry but null radii.
+export function besselian2024Apr08Path() {
+  const E = BESSEL_2024_APR_08;
   const out = [];
-  for (let t = tStart; t <= tEnd + 1e-9; t += dt) {
+  for (const row of APR_08_2024_CENTRAL_LINE) {
+    const t = row.utHour + E.deltaT / 3600 - E.t0Tdt;
     const e = besselian2024Apr08(t);
-    const ll = besselianAxisToLatLon(e.x, e.y, e.d, e.mu);
-    if (!ll) continue;
     out.push({
       t,
-      lat:  ll.lat,
-      lon:  ll.lon,
+      lat:  row.lat,
+      lon:  row.lon,
       l1:   e.l1,
       l2:   e.l2,
       l1Li: e.l1 * R_LI,

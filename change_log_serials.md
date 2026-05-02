@@ -14585,6 +14585,26 @@ Format:
   default when a user has previously persisted the off state.
 - **Revert path:** `git checkout v-s000766 -- .`
 
+## S778 — eclipse path: NASA central-line samples (drop wrong polynomial latitudes)
+
+- **Date:** 2026-04-30
+- **Files changed:** `js/core/besselianEclipse.js`,
+  `js/render/worldObjects.js`, `js-min/**` (rebuilt)
+- **Change:** Replaced the polynomial-derived path in
+  `besselian2024Apr08Path()` with the NASA-published central-line
+  table (`APR_08_2024_CENTRAL_LINE`, 17 rows from first contact in
+  the South Pacific at ~16:42 UT through last contact in the North
+  Atlantic at ~20:55 UT). The placeholder coefficients gave
+  γ_calc ≈ 0.243 vs the published ≈ 0.343, so the polynomial path
+  ran ~50° too far north; baking the observed central line in
+  directly makes the rendered path match the published map. The
+  polynomial evaluator + axis-to-lat/lon projection stay in the
+  module for any future eclipse with verified coefficients;
+  `l1` / `l2` (and their li equivalents) are still pulled from
+  the polynomials at each row's `t` so the footprint-radius
+  fields keep working.
+- **Revert path:** `git checkout v-s000777 -- .`
+
 ## S777 — feature search indexes demos
 
 - **Date:** 2026-04-30

@@ -14585,6 +14585,34 @@ Format:
   default when a user has previously persisted the off state.
 - **Revert path:** `git checkout v-s000766 -- .`
 
+## S780 — eclipse umbra + 5-level penumbra magnitude bands
+
+- **Date:** 2026-04-30
+- **Files changed:** `js/core/units.js`,
+  `js/core/besselianEclipse.js`, `js/render/worldObjects.js`,
+  `js/render/index.js`, `js-min/**` (rebuilt)
+- **Change:**
+  - `units.js` gains `initialBearing(lat1, lon1, lat2, lon2)` and
+    `greatCircleDestination(lat, lon, bearingDeg, distLi)` — the
+    standard sphere-trig bearing + destination-point formulas
+    (radius = `R_LI`).
+  - `besselianEclipse.js` exports `APR_08_2024_MAGNITUDE_BANDS`
+    (totality / 75 / 50 / 25 / 0%, with NASA-style colours and
+    half-widths derived from `(1 − magnitude) · l1 · R_Earth`),
+    `eclipseBandEdges(centralLine, halfWidthKm)` to walk each
+    sample and offset perpendicular to the local bearing, and
+    `besselian2024Apr08Bands()` which returns every band ready
+    for the renderer.
+  - `BesselianEclipsePath` now builds a triangle-strip mesh per
+    band (N − 1 quads, 2 triangles each) plus the existing
+    central line + greatest-eclipse marker. Each frame the
+    cached (lat, lon) edges reproject through the active
+    projection (`canonicalLatLongToDisc` for FE / DP, sphere
+    mapping for GE) so the same data drives every world model.
+    renderOrder is layered outermost → innermost so the umbra
+    paints on top of the partial-eclipse penumbra bands.
+- **Revert path:** `git checkout v-s000779 -- .`
+
 ## S779 — eclipse path: denser central-line samples + lock AE projection
 
 - **Date:** 2026-04-30

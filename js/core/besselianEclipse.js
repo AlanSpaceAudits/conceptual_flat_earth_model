@@ -28,7 +28,7 @@
 //   relying on the rendered path; otherwise the central line will
 //   land in the wrong band of latitudes.
 
-import { R_LI } from './units.js';
+import { R_LI, KM_PER_LI, initialBearing, greatCircleDestination } from './units.js';
 
 // `polyEval(coeffs, t)` evaluates  c0 + c1·t + c2·t² + ...
 function polyEval(coeffs, t) {
@@ -177,3 +177,78 @@ export function besselian2024Apr08Path() {
 // Demo intros that want to centre the camera or freeze the clock
 // at greatest eclipse can read this directly.
 export const T0_2024_APR_08_TDT = 18.0;
+
+// Magnitude levels rendered as nested bands on the AE disc. Each
+// level lists the half-width on Earth's surface in km — derived
+// at greatest eclipse from `(1 − magnitude) · l1 · R_Earth`,
+// using `l1 ≈ 0.5358` and `R_Earth ≈ 6371 km`. Same conventions
+// as the published NASA / Time-and-Date eclipse maps:
+//   1.00 → totality (umbra) — `|l2|·R_Earth ≈ 66 km`
+//   0.75 → 75 % obscured    — `(1−0.75)·l1·R = 854 km`
+//   0.50 → half eclipse     — 1707 km
+//   0.25 → 25 % obscured    — 2560 km
+//   0.00 → penumbra outer edge — 3415 km (eclipse barely visible)
+// Colours follow Image #167's gradient (deep red at totality
+// fading to pale yellow at the outer edge); alpha steps so the
+// nested bands composite cleanly under the central line.
+export const APR_08_2024_MAGNITUDE_BANDS = [
+  { magnitude: 0.00, halfWidthKm: 3415, color: 0xb8d8ff, opacity: 0.18 },
+  { magnitude: 0.25, halfWidthKm: 2560, color: 0xffe080, opacity: 0.22 },
+  { magnitude: 0.50, halfWidthKm: 1707, color: 0xffb060, opacity: 0.30 },
+  { magnitude: 0.75, halfWidthKm:  854, color: 0xff7060, opacity: 0.38 },
+  { magnitude: 1.00, halfWidthKm:   66, color: 0xc02040, opacity: 0.85 },
+];
+
+// Convert a half-width in km to li using the project's geodetic
+// bridge (`KM_PER_LI ≈ 0.31183`).
+function kmToLi(km) { return km / KM_PER_LI; }
+
+// Build the perpendicular-offset polylines for one magnitude
+// band. At each central-line sample, take the local initial
+// bearing toward the next sample, then walk `halfWidthLi` along
+// (bearing − 90°) for the north-of-motion edge and (bearing + 90°)
+// for the south-of-motion edge. For the final sample, reuse the
+// bearing computed at the previous step so the band closes
+// cleanly without a kink.
+//
+// Returns `{ edgeNorth: [{lat, lon}], edgeSouth: [{lat, lon}] }`.
+export function eclipseBandEdges(centralLine, halfWidthKm) {
+  const halfWidthLi = kmToLi(halfWidthKm);
+  const edgeNorth = [];
+  const edgeSouth = [];
+  for (let i = 0; i < centralLine.length; i++) {
+    const cur = centralLine[i];
+    const nxt = centralLine[i + 1] || centralLine[i - 1];
+    let bearing = initialBearing(cur.lat, cur.lon, nxt.lat, nxt.lon);
+    if (i === centralLine.length - 1) {
+      // The "next" we used was actually i-1 — flip 180° so the
+      // perpendicular direction stays on the correct side of the
+      // motion.
+      bearing = ((bearing + 360) % 360) - 180;
+    }
+    const left  = greatCircleDestination(cur.lat, cur.lon, bearing - 90, halfWidthLi);
+    const right = greatCircleDestination(cur.lat, cur.lon, bearing + 90, halfWidthLi);
+    edgeNorth.push(left);
+    edgeSouth.push(right);
+  }
+  return { edgeNorth, edgeSouth };
+}
+
+// Build every magnitude band for the 2024-04-08 eclipse in one
+// pass — convenient for the renderer, which then walks the
+// returned array and triangle-strips each band.
+export function besselian2024Apr08Bands() {
+  const central = besselian2024Apr08Path();
+  return APR_08_2024_MAGNITUDE_BANDS.map((spec) => {
+    const { edgeNorth, edgeSouth } = eclipseBandEdges(central, spec.halfWidthKm);
+    return {
+      magnitude:  spec.magnitude,
+      halfWidthKm: spec.halfWidthKm,
+      halfWidthLi: kmToLi(spec.halfWidthKm),
+      color:      spec.color,
+      opacity:    spec.opacity,
+      edgeNorth,
+      edgeSouth,
+    };
+  });
+}

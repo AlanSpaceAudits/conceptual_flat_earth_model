@@ -11,7 +11,7 @@ import {
 } from '../core/feGeometry.js';
 import { canonicalLatLongToDisc } from '../core/canonical.js';
 import { STELLARIUM_TRACES } from '../data/stellariumTraces.js';
-import { besselian2024Apr08Path } from '../core/besselianEclipse.js';
+import { besselian2024Apr08Path, besselian2024Apr08Bands } from '../core/besselianEclipse.js';
 import { generateGeArtTexture } from './geArt.js';
 import { CONSTELLATIONS } from '../core/constellations.js';
 
@@ -6448,42 +6448,68 @@ export class StellariumTraceOverlay {
   }
 }
 
-// Besselian-element shadow-axis path overlay for the 2024-04-08
-// total solar eclipse. The (lat, lon) samples are computed once
-// at construction from `besselian2024Apr08Path`. Each frame we
-// reproject through `canonicalLatLongToDisc` (FE / DP) or the
-// unit-sphere mapping (GE), so the same data drives both world
-// models. Visibility is gated on `state.ShowBesselianEclipsePath`
-// and the InsideVault flag (only meaningful from heavenly /
-// orbit view, not first-person).
+// Besselian-element shadow path overlay for the 2024-04-08 total
+// solar eclipse. Renders the NASA-published central-line samples
+// plus five nested magnitude bands (totality / 75 / 50 / 25 / 0%)
+// — the same gradient the published flat-earth and globe maps
+// show. Each frame the cached (lat, lon) data reprojects through
+// `canonicalLatLongToDisc` (FE / DP) or the unit-sphere mapping
+// (GE), so the same data drives every world model. Visibility is
+// gated on `state.ShowBesselianEclipsePath` and `!InsideVault`
+// (overlay only makes sense from heavenly / orbit view).
 export class BesselianEclipsePath {
-  constructor(color = 0xff4040) {
+  constructor() {
     this.group = new THREE.Group();
     this.group.name = 'besselian-eclipse-path';
     this.group.visible = false;
 
-    // Cache the (lat, lon) samples — fixed for this eclipse.
-    // Path data is the NASA-published central-line table baked
-    // into `besselian2024Apr08Path`, ~17 samples spanning first
-    // contact (Pacific) through last contact (North Atlantic).
+    // Central line samples: { t, lat, lon, l1, l2, ... }
     this._samples = besselian2024Apr08Path();
 
-    const SEG = this._samples.length;
-    this._buf = new Float32Array(Math.max(2, SEG) * 3);
-    const geom = new THREE.BufferGeometry();
-    geom.setAttribute('position', new THREE.BufferAttribute(this._buf, 3));
-    geom.setDrawRange(0, 0);
+    // Magnitude bands: outermost (0% mag) first so renderOrder
+    // composites darker (totality) above lighter (penumbra
+    // periphery). Each band is a triangle strip between
+    // edgeNorth[i]–edgeSouth[i]–edgeNorth[i+1]–edgeSouth[i+1].
+    this._bands = besselian2024Apr08Bands();
+    this._bandMeshes = [];
+    let renderOrderBase = 40;
+    for (const band of this._bands) {
+      const N = band.edgeNorth.length;
+      // 2 triangles per quad × (N − 1) quads × 3 verts × 3 floats
+      const positions = new Float32Array(Math.max(1, (N - 1) * 6 * 3));
+      const geom = new THREE.BufferGeometry();
+      geom.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+      geom.setDrawRange(0, 0);
+      const mat = new THREE.MeshBasicMaterial({
+        color: band.color,
+        transparent: true,
+        opacity: band.opacity,
+        depthTest: false,
+        depthWrite: false,
+        side: THREE.DoubleSide,
+      });
+      const mesh = new THREE.Mesh(geom, mat);
+      mesh.renderOrder = renderOrderBase++;
+      mesh.frustumCulled = false;
+      this._bandMeshes.push({ mesh, band, positions });
+      this.group.add(mesh);
+    }
 
-    this._line = new THREE.Line(geom, new THREE.LineBasicMaterial({
-      color, transparent: true, opacity: 0.95,
+    // Central line on top of the bands.
+    const centralBuf = new Float32Array(Math.max(2, this._samples.length) * 3);
+    const lineGeom = new THREE.BufferGeometry();
+    lineGeom.setAttribute('position', new THREE.BufferAttribute(centralBuf, 3));
+    lineGeom.setDrawRange(0, 0);
+    this._lineBuf = centralBuf;
+    this._line = new THREE.Line(lineGeom, new THREE.LineBasicMaterial({
+      color: 0xff2030, transparent: true, opacity: 0.95,
       depthTest: false, depthWrite: false,
     }));
-    this._line.renderOrder = 45;
+    this._line.renderOrder = renderOrderBase++;
     this._line.frustumCulled = false;
     this.group.add(this._line);
 
-    // Filled marker for the greatest-eclipse subpoint (smallest
-    // |t| sample). Drawn as a single yellow point above the line.
+    // Greatest-eclipse marker (yellow point at smallest-|t|).
     this._markerBuf = new Float32Array(3);
     const mGeom = new THREE.BufferGeometry();
     mGeom.setAttribute('position', new THREE.BufferAttribute(this._markerBuf, 3));
@@ -6491,9 +6517,25 @@ export class BesselianEclipsePath {
       color: 0xffe040, size: 9, sizeAttenuation: false,
       depthTest: false, depthWrite: false,
     }));
-    this._marker.renderOrder = 46;
+    this._marker.renderOrder = renderOrderBase++;
     this._marker.frustumCulled = false;
     this.group.add(this._marker);
+  }
+
+  // Project a single (lat, lon) to scene coords for the active
+  // world model. GE uses the unit-sphere mapping; FE / DP use
+  // `canonicalLatLongToDisc` so AE / DP inherit the active
+  // projection.
+  _project(lat, lon, ge, z) {
+    if (ge) {
+      const phi = lat * Math.PI / 180;
+      const lam = lon * Math.PI / 180;
+      const cp = Math.cos(phi);
+      const Rg = FE_RADIUS * 1.001;
+      return [Rg * cp * Math.cos(lam), Rg * cp * Math.sin(lam), Rg * Math.sin(phi)];
+    }
+    const p = canonicalLatLongToDisc(lat, lon, FE_RADIUS);
+    return [p[0], p[1], z];
   }
 
   update(model) {
@@ -6503,31 +6545,50 @@ export class BesselianEclipsePath {
     if (!visible || !this._samples.length) return;
 
     const ge = s.WorldModel === 'ge';
-    const buf = this._buf;
+
+    // Magnitude bands — fill triangle strips by projecting each
+    // edge-pair sample through the active projection.
+    for (let b = 0; b < this._bandMeshes.length; b++) {
+      const { mesh, band, positions } = this._bandMeshes[b];
+      const N = band.edgeNorth.length;
+      let p = 0;
+      // Slight z-offset per band so the AE-disc render-order
+      // alone unambiguously decides which band paints on top
+      // even when the GPU drops depth comparisons.
+      const z = 0.0011 + b * 0.00005;
+      for (let i = 0; i < N - 1; i++) {
+        const nN0 = band.edgeNorth[i];
+        const nS0 = band.edgeSouth[i];
+        const nN1 = band.edgeNorth[i + 1];
+        const nS1 = band.edgeSouth[i + 1];
+        const aN0 = this._project(nN0.lat, nN0.lon, ge, z);
+        const aS0 = this._project(nS0.lat, nS0.lon, ge, z);
+        const aN1 = this._project(nN1.lat, nN1.lon, ge, z);
+        const aS1 = this._project(nS1.lat, nS1.lon, ge, z);
+        // Triangle 1: N0, S0, N1
+        positions[p++] = aN0[0]; positions[p++] = aN0[1]; positions[p++] = aN0[2];
+        positions[p++] = aS0[0]; positions[p++] = aS0[1]; positions[p++] = aS0[2];
+        positions[p++] = aN1[0]; positions[p++] = aN1[1]; positions[p++] = aN1[2];
+        // Triangle 2: S0, S1, N1
+        positions[p++] = aS0[0]; positions[p++] = aS0[1]; positions[p++] = aS0[2];
+        positions[p++] = aS1[0]; positions[p++] = aS1[1]; positions[p++] = aS1[2];
+        positions[p++] = aN1[0]; positions[p++] = aN1[1]; positions[p++] = aN1[2];
+      }
+      mesh.geometry.attributes.position.needsUpdate = true;
+      mesh.geometry.setDrawRange(0, p / 3);
+    }
+
+    // Central line.
+    const buf = this._lineBuf;
     let n = 0;
     let bestIdx = 0;
     let bestAbsT = Infinity;
     for (let i = 0; i < this._samples.length; i++) {
       const sample = this._samples[i];
-      let x, y, z;
-      if (ge) {
-        // Unit-sphere mapping — same convention as the GE
-        // sphere mesh elsewhere in this file (radius FE_RADIUS,
-        // X = longitude 0 / equator).
-        const phi = sample.lat * Math.PI / 180;
-        const lam = sample.lon * Math.PI / 180;
-        const cp = Math.cos(phi);
-        const Rg = FE_RADIUS * 1.001;
-        x = Rg * cp * Math.cos(lam);
-        y = Rg * cp * Math.sin(lam);
-        z = Rg * Math.sin(phi);
-      } else {
-        const p = canonicalLatLongToDisc(sample.lat, sample.lon, FE_RADIUS);
-        x = p[0]; y = p[1]; z = 0.005;
-      }
-      buf[n * 3]     = x;
-      buf[n * 3 + 1] = y;
-      buf[n * 3 + 2] = z;
+      const a = this._project(sample.lat, sample.lon, ge, 0.0025);
+      buf[n * 3]     = a[0];
+      buf[n * 3 + 1] = a[1];
+      buf[n * 3 + 2] = a[2];
       n++;
       if (Math.abs(sample.t) < bestAbsT) {
         bestAbsT = Math.abs(sample.t);
@@ -6537,7 +6598,7 @@ export class BesselianEclipsePath {
     this._line.geometry.attributes.position.needsUpdate = true;
     this._line.geometry.setDrawRange(0, n);
 
-    // Greatest-eclipse marker (sample with min |t|).
+    // Greatest-eclipse marker.
     this._markerBuf[0] = buf[bestIdx * 3];
     this._markerBuf[1] = buf[bestIdx * 3 + 1];
     this._markerBuf[2] = buf[bestIdx * 3 + 2];

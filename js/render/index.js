@@ -165,7 +165,7 @@ export class Renderer {
     this.stellariumTraces = new StellariumTraceOverlay();
     this.sm.world.add(this.stellariumTraces.group);
 
-    this.besselianEclipsePath = new BesselianEclipsePath(0xff4040);
+    this.besselianEclipsePath = new BesselianEclipsePath();
     this.sm.world.add(this.besselianEclipsePath.group);
 
     this.gpTracer = new GPTracer(clipPlanes);

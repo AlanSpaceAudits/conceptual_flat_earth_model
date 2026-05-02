@@ -131,3 +131,38 @@ export function chordLi(lat1Deg, lon1Deg, lat2Deg, lon2Deg) {
   const dx = b.x - a.x, dy = b.y - a.y, dz = b.z - a.z;
   return R_LI * Math.sqrt(dx * dx + dy * dy + dz * dz);
 }
+
+// Initial bearing (forward azimuth) from point 1 to point 2, in
+// degrees east of north on a sphere of radius `R_LI`. Returned in
+// the range (-180, +180].
+export function initialBearing(lat1Deg, lon1Deg, lat2Deg, lon2Deg) {
+  const φ1 = lat1Deg * Math.PI / 180;
+  const φ2 = lat2Deg * Math.PI / 180;
+  const dλ = (lon2Deg - lon1Deg) * Math.PI / 180;
+  const y = Math.sin(dλ) * Math.cos(φ2);
+  const x = Math.cos(φ1) * Math.sin(φ2)
+          - Math.sin(φ1) * Math.cos(φ2) * Math.cos(dλ);
+  const θ = Math.atan2(y, x) * 180 / Math.PI;
+  return ((θ + 540) % 360) - 180;
+}
+
+// Great-circle destination point: starting at (lat, lon), travel
+// `distLi` along the initial bearing `bearingDeg` (east of north)
+// over a sphere of radius `R_LI`. Returns `{ lat, lon }` in
+// degrees with longitude wrapped to (-180, +180].
+export function greatCircleDestination(latDeg, lonDeg, bearingDeg, distLi) {
+  const δ  = distLi / R_LI;
+  const φ1 = latDeg * Math.PI / 180;
+  const λ1 = lonDeg * Math.PI / 180;
+  const θ  = bearingDeg * Math.PI / 180;
+  const sinφ2 = Math.sin(φ1) * Math.cos(δ)
+              + Math.cos(φ1) * Math.sin(δ) * Math.cos(θ);
+  const φ2 = Math.asin(Math.max(-1, Math.min(1, sinφ2)));
+  const λ2 = λ1 + Math.atan2(
+    Math.sin(θ) * Math.sin(δ) * Math.cos(φ1),
+    Math.cos(δ) - Math.sin(φ1) * sinφ2,
+  );
+  let lon = λ2 * 180 / Math.PI;
+  lon = ((lon + 540) % 360) - 180;
+  return { lat: φ2 * 180 / Math.PI, lon };
+}

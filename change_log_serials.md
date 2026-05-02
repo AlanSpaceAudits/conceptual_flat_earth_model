@@ -14585,6 +14585,19 @@ Format:
   default when a user has previously persisted the off state.
 - **Revert path:** `git checkout v-s000766 -- .`
 
+## S800 — Tang dimensions: HEIGHT + DIAMETER read top-to-bottom
+
+- **Date:** 2026-05-02
+- **Files changed:** `js/render/worldObjects.js`,
+  `js-min/**` (rebuilt)
+- **Change:** `placeAlongAxis` gains a `reverse` flag that flips
+  the per-character iteration order so the first character of
+  the string lands at the high end of the axis. HEIGHT now
+  reads `H` at the top of the vertical line and `T` at the
+  bottom; DIAMETER reads `D` at the +y end and `R` at the −y
+  end. RADIUS still reads center-to-rim along +x.
+- **Revert path:** `git checkout v-s000799 -- .`
+
 ## S799 — Tang dimensions: per-character labels along lines + ring arc
 
 - **Date:** 2026-05-02

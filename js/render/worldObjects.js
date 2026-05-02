@@ -1230,13 +1230,18 @@ export class TangSphereDimensions {
     // anchor. `axis` ∈ {'x', 'y', 'z'} — characters step along
     // that axis. `perpOffset` is a small (Δx, Δy, Δz) push so
     // the NAME and VALUE rows sit on opposite sides of the line.
-    const placeAlongAxis = (text, axis, anchor, perpOffset, color) => {
+    // `reverse=true` flips placement order so the FIRST char of
+    // the string lands at the high end of the axis (e.g. H of
+    // "HEIGHT" at the top of the vertical line, T at the
+    // bottom).
+    const placeAlongAxis = (text, axis, anchor, perpOffset, color, reverse = false) => {
       const span = text.length * charSpacing;
       const start = -span / 2;
       for (let i = 0; i < text.length; i++) {
         const sp = makeCharSprite(text[i], color);
         sp.scale.set(charSize, charSize, 1);
-        const t = start + (i + 0.5) * charSpacing;
+        const idx = reverse ? text.length - 1 - i : i;
+        const t = start + (idx + 0.5) * charSpacing;
         const px = anchor[0] + (axis === 'x' ? t : 0) + perpOffset[0];
         const py = anchor[1] + (axis === 'y' ? t : 0) + perpOffset[1];
         const pz = anchor[2] + (axis === 'z' ? t : 0) + perpOffset[2];
@@ -1264,19 +1269,24 @@ export class TangSphereDimensions {
     };
 
     // HEIGHT: vertical line midpoint = (0, 0, H/2). Step along
-    // z. NAME on +x side, VALUE on -x.
-    placeAlongAxis('HEIGHT',  'z', [0, 0, H / 2], [ R * 0.06, 0, 0], nameColor);
-    placeAlongAxis(heightLi,  'z', [0, 0, H / 2], [-R * 0.06, 0, 0], valueColor);
+    // z. NAME on +x side, VALUE on -x. `reverse=true` puts the
+    // first character (H) at the TOP of the run (max z) and
+    // the last (T) at the bottom — natural top-down reading.
+    placeAlongAxis('HEIGHT',  'z', [0, 0, H / 2], [ R * 0.06, 0, 0], nameColor,  true);
+    placeAlongAxis(heightLi,  'z', [0, 0, H / 2], [-R * 0.06, 0, 0], valueColor, true);
 
     // RADIUS: along +x at y = 0, midpoint = (R/2, 0). Step
-    // along x. NAME on +y side, VALUE on -y.
+    // along x. NAME on +y side, VALUE on -y. Default forward
+    // placement reads center-to-rim (R near origin, S at rim).
     placeAlongAxis('RADIUS',  'x', [R / 2, 0, 1.5e-3], [0,  R * 0.06, 0], nameColor);
     placeAlongAxis(radiusLi,  'x', [R / 2, 0, 1.5e-3], [0, -R * 0.06, 0], valueColor);
 
     // DIAMETER: along y at x = 0 (perpendicular to the radius).
-    // Step along y, NAME on +x side, VALUE on -x.
-    placeAlongAxis('DIAMETER', 'y', [0, 0, 1.5e-3], [ R * 0.06, 0, 0], nameColor);
-    placeAlongAxis(diameterLi, 'y', [0, 0, 1.5e-3], [-R * 0.06, 0, 0], valueColor);
+    // Step along y. NAME on +x side, VALUE on -x. Reverse so
+    // D lands at the +y end and R at the -y end (top→bottom
+    // reading when the camera looks from +x or +z).
+    placeAlongAxis('DIAMETER', 'y', [0, 0, 1.5e-3], [ R * 0.06, 0, 0], nameColor,  true);
+    placeAlongAxis(diameterLi, 'y', [0, 0, 1.5e-3], [-R * 0.06, 0, 0], valueColor, true);
 
     // CIRCUMFERENCE: laid along the ring itself. NAME along the
     // +y arc (≈ 90° on the ring), VALUE along the −y arc

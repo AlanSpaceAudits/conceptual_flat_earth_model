@@ -22,7 +22,11 @@ import {
   refineEclipseByMinSeparation,
 } from '../core/ephemerisCommon.js';
 import { helio, geo, ptol, apix, vsop } from '../core/ephemeris.js';
-import { computeSolarEclipseShadowPath } from '../core/besselianEclipse.js';
+import {
+  computeSolarEclipseShadowPath,
+  besselianShadowPathFromElements,
+} from '../core/besselianEclipse.js';
+import { ECLIPSE_BESSELIAN } from '../data/eclipseBesselian.js';
 
 // Pick (sunFn, moonFn) pair for a given BodySource value. Both the
 // finder (`refineEclipseByMinSeparation`) and the sky render use the
@@ -89,10 +93,40 @@ function buildEclipseDemo(event, kind) {
       // (totality / 75 / 50 / 25 / 0 %) sweep along with the
       // demo's existing DateTime tween (state-driven progress
       // path in `BesselianEclipsePath.update`).
-      const shadowPath = (kind === 'solar')
-        ? computeSolarEclipseShadowPath(refined.date, moonFn, 1.0, 33)
-        : null;
-      const halfWindowDays = (kind === 'solar') ? (1 / 24) : null;
+      // Per-eclipse Espenak Besselian elements (NASA SE search
+      // engine, scraped via `scripts/scrape_besselian.mjs`). When
+      // present, evaluate the polynomial path directly — that
+      // gives the real umbra ground track plus per-event P1 / P4
+      // contact times and per-event l1 / l2 for magnitude bands.
+      // Sublunar approximation kept as a fallback for any eclipse
+      // not in the Besselian table.
+      const els = (kind === 'solar') ? ECLIPSE_BESSELIAN[event.date] : null;
+      let shadowPath = null;
+      let halfWindowDays = null;
+      let modelDtForPath = modelDT;
+      let l1Eclipse = null, l2Eclipse = null;
+      if (els) {
+        const result = besselianShadowPathFromElements(els, 49);
+        const greatestModelDT = dateToModelDT(new Date(result.greatest));
+        shadowPath = result.samples
+          .filter((s) => Number.isFinite(s.lat) && Number.isFinite(s.lon))
+          .map((s) => ({
+            // `s.t` is hours from t0Tdt; shift so anchor = greatest.
+            t: s.t - (result.greatest - new Date(els.jdT0 * 86400000 - 2440587.5 * 86400000).getTime() - els.deltaT * 1000) / 3600000,
+            lat: s.lat, lon: s.lon,
+          }));
+        const halfWindowMs = Math.max(
+          result.greatest - result.p1,
+          result.p4 - result.greatest,
+        );
+        halfWindowDays = halfWindowMs / 86400000;
+        modelDtForPath = greatestModelDT;
+        l1Eclipse = result.l1Greatest;
+        l2Eclipse = result.l2Greatest;
+      } else if (kind === 'solar') {
+        shadowPath = computeSolarEclipseShadowPath(refined.date, moonFn, 1.0, 33);
+        halfWindowDays = 1 / 24;
+      }
       return {
         DateTime:          modelDT - 1 / 24,
         ObserverLat:       Math.max(-85, Math.min(85, decDeg)),
@@ -120,8 +154,10 @@ function buildEclipseDemo(event, kind) {
         // Shadow-path overlay (solar eclipses only). Null on
         // lunar so the renderer skips this code path.
         EclipseShadowPath:           shadowPath,
-        EclipseShadowAnchorDt:       (kind === 'solar') ? modelDT : null,
+        EclipseShadowAnchorDt:       (kind === 'solar') ? modelDtForPath : null,
         EclipseShadowHalfWindowDays: halfWindowDays,
+        EclipseShadowL1:             l1Eclipse,
+        EclipseShadowL2:             l2Eclipse,
         ShowEclipseShadowPath:       (kind === 'solar'),
         // Apr-08-2024 standalone demo's progress key cleared so
         // the state-driven (DateTime-derived) path doesn't fight

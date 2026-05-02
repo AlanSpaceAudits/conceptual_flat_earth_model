@@ -14585,6 +14585,575 @@ Format:
   default when a user has previously persisted the off state.
 - **Revert path:** `git checkout v-s000766 -- .`
 
+## S825 — Revert S824: drop radial-projection extension at axis-off-sphere
+
+- **Date:** 2026-05-02
+- **Files changed:** `js/core/besselianEclipse.js`,
+  `js-min/**` (rebuilt)
+- **Change:** Restored `besselianAxisToLatLon` to return null
+  for `ξ² + η² > 1`. The S824 radial projection placed off-
+  sphere samples on the day-night terminator ring, which does
+  not connect smoothly to the on-sphere central line at r=1
+  and produced a sharp kink at the boundary. Path now stops
+  at the axis-on-Earth segment endpoints — matches what NASA's
+  "central line" tables actually publish.
+- **Revert path:** `git checkout v-s000824 -- .`
+
+## S824 — Besselian path: extend horizon ends so partial-only edges paint
+
+- **Date:** 2026-05-02
+- **Files changed:** `js/core/besselianEclipse.js`,
+  `js-min/**` (rebuilt)
+- **Change:** `besselianAxisToLatLon` now projects the axis
+  radially onto the sphere edge (ζ = 0) when ξ² + η² > 1
+  instead of returning null. Path samples beyond the
+  axis-on-sphere window land at the moon-on-horizon point an
+  observer would see at penumbra contact. All 21/21 samples
+  now produce valid (lat, lon) for tested events; bands fan
+  out across the full P1-P4 sweep instead of clipping at the
+  axis-only window.
+- **Revert path:** `git checkout v-s000823 -- .`
+
+## S823 — NASA Espenak Besselian elements: scrape + polynomial-driven shadow paths
+
+- **Date:** 2026-05-02
+- **Files changed:**
+  - new: `scripts/scrape_besselian.mjs`
+  - new: `js/data/eclipseBesselian.js` (44 eclipses, 2021-2040)
+  - `js/core/besselianEclipse.js` (axis-projection sign fix +
+    `besselianShadowPathFromElements`)
+  - `js/demos/eclipseRegistry.js` (use polynomial path when
+    Bessel data is available)
+  - `js/core/app.js` (live free-play uses polynomial path with
+    sublunar fallback)
+  - `js/render/worldObjects.js` (per-event l1 / l2 drive band
+    sizing)
+  - `js-min/**` (rebuilt)
+- **Change:**
+  - `scripts/scrape_besselian.mjs` walks the local Espenak
+    catalog (`astropixelsEclipses.solar`) and fetches each
+    eclipse's NASA SE-Search page
+    (`https://eclipse.gsfc.nasa.gov/SEsearch/SEdata.php?Ecl=YYYYMMDD`).
+    Two parsers: a JS-array path for total / annular / hybrid
+    (`var elements = new Array(...)`) and a `<pre>`-table
+    fallback for partial eclipses. 44/44 eclipses parsed.
+  - Fixed two sign bugs in the long-standing
+    `besselianAxisToLatLon` formulas. Rotation from
+    fundamental-plane (ξ, η, ζ) to Earth-fixed Greenwich-
+    equatorial coords:
+      sin φ = η cos d + ζ sin d
+      A     = −η sin d + ζ cos d
+      λ     = atan2(ξ, A) − μ
+    Verified against Apr 8 2024 greatest: lat 25.13° N,
+    lon −104.43° W (published 25.3° N / −104.2° W). Aug 12
+    2026 lands on Iceland; Aug 2 2027 lands on Egypt.
+  - New `besselianShadowPathFromElements(els, samples)`
+    evaluates the X / Y / D / μ / L1 / L2 polynomials in
+    1-min steps to find P1 (`√(x²+y²) ≤ 1 + l1`), P4, and
+    greatest, then returns evenly-spaced (lat, lon) samples
+    plus per-event `l1Greatest` / `l2Greatest`.
+  - Eclipse-demo `intro` now reads
+    `ECLIPSE_BESSELIAN[event.date]` first; on hit, drives
+    the path entirely from polynomials. Falls back to the
+    sublunar approximation for any eclipse not in the data
+    module.
+  - Live free-play in `app.js` now does the same — polynomial
+    path when available, sublunar + S821 contact-window
+    heuristic otherwise.
+  - `BesselianEclipsePath._rebuildFromPath(path, l1, l2)`
+    forwards per-event `l1` / `l2` into
+    `eclipseShadowBandsFromPath`, so each eclipse paints with
+    its own penumbra / umbra footprint.
+  - Added state defaults `EclipseShadowL1` / `EclipseShadowL2`
+    plus computed `LiveEclipseShadowL1` / `LiveEclipseShadowL2`.
+- **Caveat:** P1 / P4 use the cylindrical
+  `√(x²+y²) ≤ 1 + l1` approximation rather than NASA's full
+  cone-Earth-intersection iteration; sweep window is ~30-60
+  min wider than published P1-P4. Greatest time matches NASA
+  to within 1 min. Adequate for visualisation.
+- **Revert path:** `git checkout v-s000822 -- .`
+
+## S822 — Eclipse magnitude bands: R_LI-anchored fractions (drop R_Earth = 6371 km)
+
+- **Date:** 2026-05-02
+- **Files changed:** `js/core/besselianEclipse.js`,
+  `js-min/**` (rebuilt)
+- **Change:**
+  - Replaced fixed `halfWidthKm` constants
+    (`3415 / 2560 / 1707 / 854 / 66`) with dimensionless
+    `lFraction` values. The five band fractions are
+    `1.0·l1, 0.75·l1, 0.5·l1, 0.25·l1, |l2|` per the
+    `(1 − magnitude) · l · R_sphere` Besselian convention.
+  - New `magnitudeBandFractions(l1, l2)` exported with
+    defaults `L1_DEFAULT = 0.5358` and `L2_DEFAULT = 0.0103`
+    (Apr 8 2024 representative). Per-eclipse Besselian
+    polynomials (future work) plug in via the same call.
+  - `eclipseShadowBandsFromPath(path, l1, l2)` and
+    `eclipseBandEdges(path, halfWidthLi)` now operate in li
+    only — `halfWidthLi = lFraction × R_LI`. `halfWidthKm` is
+    a derived display-time courtesy via `KM_PER_LI`, not an
+    authoritative constant.
+  - Dropped the `R_Earth ≈ 6371 km` reference from the file's
+    doc block. The codebase's only SI-Earth-radius dependence
+    is now the `40,007.863 km` polar-circumference anchor in
+    `units.js → KM_PER_LI`.
+  - `besselian2024Apr08Bands()` retained as a thin wrapper
+    over `eclipseShadowBandsFromPath(besselian2024Apr08Path())`.
+  - Renderer consumers (`worldObjects.js` BesselianEclipsePath)
+    untouched — they read `halfWidthKm` off each band object
+    which still resolves correctly via the derived field.
+- **Revert path:** `git checkout v-s000821 -- .`
+
+## S821 — Live eclipse shadow: per-event contact window from ephemeris
+
+- **Date:** 2026-05-02
+- **Files changed:** `js/core/ephemerisCommon.js`,
+  `js/core/app.js`, `js-min/**` (rebuilt)
+- **Change:**
+  - New `findSolarEclipseContactWindow(approxDate, sunFn,
+    moonFn, { maxHalfWindowHours = 4 })` in
+    `ephemerisCommon.js`. Refines greatest eclipse via the
+    existing `refineEclipseByMinSeparation`, then walks the
+    active pipeline's ephemeris outward in 1-min steps until
+    the geocentric sun-moon angular separation exceeds 1.5°
+    (≈ sum of angular radii + max lunar parallax). Returns
+    `{ greatestMs, p1Ms, p4Ms, halfWindowMs,
+       minSeparationRad }`. 30-min floor on the half-window so
+    glancing partials still produce a visible sweep.
+  - `app.js` live-shadow detector now drives the path and
+    anchor off this per-event contact window instead of a
+    fixed ±2 h. Cache keyed on `anchorMs|bodySource` so each
+    eclipse computes its window once. Live-path computed only
+    when the simulator clock sits inside the per-event
+    window, so short / glancing eclipses no longer pad the
+    sweep with empty time outside their actual partial-phase
+    duration.
+  - `s.DateTime` model-day → ms anchor conversion via
+    `TIME_ORIGIN.msPerDay` + `ZeroDate` (existing constants).
+  - Ramifications: eclipse sweep duration now scales with
+    each event's real Earth-wide visibility window. Long
+    central-eclipse Saros peaks paint a longer path; brief
+    high-latitude grazes paint a shorter one. Wall-clock
+    sweep speed still scales with the user's autoplay rate
+    (the renderer's progress formula is unchanged — it
+    derives progress from `(t − anchor + halfW) / 2halfW`,
+    which now uses dynamic `halfW`).
+- **Revert path:** `git checkout v-s000820 -- .`
+
+## S820 — Proportional AE map: rotation +80° → +79°
+
+- **Date:** 2026-05-02
+- **Files changed:** `js/core/projections.js`,
+  `js-min/**` (rebuilt)
+- **Change:** `imageRotationDeg` from `80` to `79`.
+- **Revert path:** `git checkout v-s000819 -- .`
+
+## S819 — Proportional AE map: rotation +79.5° → +80°
+
+- **Date:** 2026-05-02
+- **Files changed:** `js/core/projections.js`,
+  `js-min/**` (rebuilt)
+- **Change:** Rounded to `80`.
+- **Revert path:** `git checkout v-s000818 -- .`
+
+## S818 — Proportional AE map: rotation +82.5° → +79.5° (3° east of S817)
+
+- **Date:** 2026-05-02
+- **Files changed:** `js/core/projections.js`,
+  `js-min/**` (rebuilt)
+- **Change:** `projections.proportional.imageRotationDeg`
+  from `82.5` to `79.5`. 3° east step (4.5° west of the
+  +75° S815 baseline).
+- **Revert path:** `git checkout v-s000817 -- .`
+
+## S817 — Proportional AE map: rotation +67.5° → +82.5° (flip 7.5° west of S815)
+
+- **Date:** 2026-05-02
+- **Files changed:** `js/core/projections.js`,
+  `js-min/**` (rebuilt)
+- **Change:** `projections.proportional.imageRotationDeg`
+  from `67.5` to `82.5`. S816's east direction was wrong;
+  flip to 7.5° west of the +75° (S815) baseline.
+- **Revert path:** `git checkout v-s000816 -- .`
+
+## S816 — Proportional AE map: rotation +75° → +67.5° (7.5° east)
+
+- **Date:** 2026-05-02
+- **Files changed:** `js/core/projections.js`,
+  `js-min/**` (rebuilt)
+- **Change:** `projections.proportional.imageRotationDeg`
+  from `75` to `67.5`. Fine-tune to align the heavenly-vault
+  0° marker with the artwork's 90° meridian label per user
+  observation. +75° remains the saved fallback if this
+  iteration overshoots.
+- **Revert path:** `git checkout v-s000815 -- .`
+
+## S815 — Proportional AE map: rotation +105° → +75° (flip direction)
+
+- **Date:** 2026-05-02
+- **Files changed:** `js/core/projections.js`,
+  `js-min/**` (rebuilt)
+- **Change:** `projections.proportional.imageRotationDeg`
+  flipped from `105` to `75` per user feedback that S814's
+  +15° direction was opposite of intended; +75° is +15° on
+  the other side of the +90° (S812) baseline.
+- **Revert path:** `git checkout v-s000814 -- .`
+
+## S814 — Proportional AE map: rotation +75° → +105° (15° westward from S812)
+
+- **Date:** 2026-05-02
+- **Files changed:** `js/core/projections.js`,
+  `js-min/**` (rebuilt)
+- **Change:** `projections.proportional.imageRotationDeg`
+  changed from `75` to `105`. S813 nudged the wrong way;
+  the user wants +15° westward from the S812 baseline, so
+  the rotation lands at `90 + 15 = 105°`.
+- **Revert path:** `git checkout v-s000813 -- .`
+
+## S813 — Proportional AE map: tune rotation +90° → +75°
+
+- **Date:** 2026-05-02
+- **Files changed:** `js/core/projections.js`,
+  `js-min/**` (rebuilt)
+- **Change:** `projections.proportional.imageRotationDeg`
+  reduced from `90` to `75`. With +90°, the observer at
+  (41, −104) plotted at the artwork's CA / OR coastline
+  (lon ≈ −120) instead of Colorado (lon = −104). Working
+  back from the rendered position, the artwork's prime
+  meridian sat ~16° CCW past +x in the world frame after
+  the +90° rotation; the artwork's lon=0 is at ~−75° in the
+  raw image (not exactly at −y). +75° aligns the artwork's
+  prime meridian with the math projection's +x axis.
+- **Revert path:** `git checkout v-s000812 -- .`
+
+## S812 — Proportional AE map: rotate texture +90° to align prime meridian
+
+- **Date:** 2026-05-02
+- **Files changed:** `js/core/projections.js`,
+  `js/render/earthMap.js`, `js-min/**` (rebuilt)
+- **Change:**
+  - `projections.proportional` now declares
+    `imageRotationDeg: 90`. The artwork has lon=0 at the
+    bottom (`−y`); the math projection puts lon=0 at `+x`,
+    so a +90° rotation about z brings them into alignment.
+  - `earthMap.buildImageMap` reads
+    `projection.imageRotationDeg` (defaults to 0) and applies
+    it to the textured disc's `rotation.z`. Other image-asset
+    projections are unaffected because the field is optional.
+  - Verified rotation direction: at observer (32, −100), the
+    math direction `(cos −100°, sin −100°)` previously landed
+    at the artwork's `lon ≈ −10°` (Africa). After the +90°
+    texture rotation it lands on the artwork's lon=−100°
+    (Texas).
+- **Revert path:** `git checkout v-s000811 -- .`
+
+## S811 — About panel: Tang sidereal mapping + distance calibration paragraphs
+
+- **Date:** 2026-05-02
+- **Files changed:** `index.html`, `js/ui/i18n.js`,
+  `js-min/**` (rebuilt)
+- **Change:** Two new About-popup paragraphs (`about_p4`,
+  `about_p5`) covering: (1) the Tang sidereal mapping —
+  365.25 du per full sky rotation, conversion factors
+  `1° = 365.25/360 ≈ 1.01458 du` and `1 du ≈ 0.98563°`,
+  fen as the decimal subdivision; (2) distances anchored to
+  Yi Xing's 351.267 li/du calibration, full meridian
+  365.25 × 351.267 ≈ 128,300 li ≈ 40,008 km, Tang sphere
+  radius R = 128,300/2π ≈ 20,419.45 li used by every haversine
+  / dot-product / arc-length readout in the model. Strings
+  added to the English `i18n.js` block and rendered through
+  `data-i18n` (textContent — no inline markup).
+- **Revert path:** `git checkout v-s000810 -- .`
+
+## S810 — Chinese readouts: decimal du form + popup split + info-bar second row
+
+- **Date:** 2026-05-02
+- **Files changed:** `js/core/units.js`,
+  `js/ui/trackingInfoPopup.js`, `js/ui/controlPanel.js`,
+  `css/styles.css`, `js-min/**` (rebuilt)
+- **Change:**
+  - New `fmtDuDecimal(deg, signed=false, digits=2)` in
+    `units.js` returning `"32.29 du"` (sign-prefixed when
+    `signed`). Replaces the readability-poor `"32 du 2.9 fen"`
+    pair from `fmtDuFen` at all UI call sites.
+  - Tracking popup now renders a single DMS section on top
+    (Azimuth / Elevation / RA / Dec / GP lat/lon / Central /
+    Inscribed / Mag) and, when `ShowChineseDu` is on, appends
+    a `Tang units` divider followed by the same metrics in
+    decimal du (Central / Inscribed also keep `li · bu`
+    distance). Drops the prior side-by-side `· N du M.M fen`
+    suffix per row.
+  - Tracker HUD `_withDu` and Distance Calc panel central /
+    inscribed slots now use `fmtDuDecimal` so all in-app du
+    readouts agree.
+  - Bottom info-bar gains a second row gated on
+    `ShowChineseDu` showing `Lat / Lon / El / Az` in decimal
+    du. Hidden when the toggle is off so the default look is
+    unchanged.
+  - `css/styles.css`: `.ti-section-head` divider for the
+    popup's Tang section and `.info-row-du` styling for the
+    info-bar's second row (slightly muted colour).
+- **Revert path:** `git checkout v-s000809 -- .`
+
+## S809 — Tang dimensions: GE dome locked to FE_RADIUS (planet shell)
+
+- **Date:** 2026-05-01
+- **Files changed:** `js/render/worldObjects.js`
+- **Change:** `TangSphereDimensions.update()` now sizes the GE
+  dome to `FE_RADIUS = 1` instead of reading
+  `state.OpticalVaultSize` (default 0.5). In GE the optical
+  vault is the planet shell itself, so the dome's canonical
+  radius must equal the planet's to read 1:1 on the surface
+  rather than shrinking to half-radius inside the globe shell.
+  FE / DP continue to track the slider-set hemisphere over the
+  disc.
+- **Revert path:** `git checkout v-s000808 -- .`
+
+## S808 — Tang dimensions: GE dome size matches FE/DP
+
+- **Date:** 2026-05-02
+- **Files changed:** `js/render/worldObjects.js`,
+  `js-min/**` (rebuilt)
+- **Change:** GE Tang dome now reads `state.OpticalVaultSize`
+  directly (same source FE / DP use) instead of the previous
+  `0.70 · FE_RADIUS` override. The `computed.OpticalVaultRadius`
+  in GE is forced to `FE_RADIUS = 1` (planet shell) so reading
+  it would make the overlay coincident with the globe — bypass
+  that and read the slider's underlying state value so the
+  dome's canonical size is identical across world-model
+  swaps. Visual scale stays consistent when toggling
+  FE → GE → DP.
+- **Revert path:** `git checkout v-s000807 -- .`
+
+## S807 — distance-calc auto-fill removed + GE Tang dome resized
+
+- **Date:** 2026-05-02
+- **Files changed:** `js/ui/controlPanel.js`,
+  `js/render/worldObjects.js`, `js-min/**` (rebuilt)
+- **Change:**
+  - `distanceCalcPanel` no longer auto-seeds `DistCalcLat1 /
+    DistCalcLon1` from the observer on first render. The
+    auto-fill left a stale yellow pin at the original observer
+    position when the user moved (the map renderer treats any
+    finite DistCalc coords as an active pair to draw).
+    Panel now starts blank; `Use Obs → P1` is the explicit way
+    to seed P1.
+  - In GE, the Tang Sphere Dimensions overlay scales to
+    `R = 0.70 · FE_RADIUS` (was `1/π ≈ 0.318` canonical). The
+    smaller value was buried near the +z pole inside the planet
+    shell and unreadable; 70 % of the planet radius keeps the
+    lines + labels comfortably inside the globe and visible
+    through the shader's `opacity 0.85` shell. FE / DP keep
+    live optical-vault tracking unchanged.
+- **Revert path:** `git checkout v-s000806 -- .`
+
+## S806 — Tang dimensions: visible in GE, locked to canonical Tang sphere
+
+- **Date:** 2026-05-02
+- **Files changed:** `js/render/worldObjects.js`,
+  `js-min/**` (rebuilt)
+- **Change:** Drop the `!ge` visibility gate so the overlay
+  paints in every world model. In GE the dome's geometry locks
+  to the canonical Tang sphere (`R = R_LI / (TANG_CIRC / 2) =
+  1/π`) so it sits clearly INSIDE the planet sphere
+  (`FE_RADIUS = 1`) instead of being coincident with the shell.
+  All overlay materials already use `depthTest: false` +
+  `renderOrder ≥ 50`, so the lines + character sprites paint
+  through the planet shell from any orbit angle. FE / DP keep
+  the live-optical-vault tracking from S803. Labels stay
+  R_LI-derived in both modes.
+- **Revert path:** `git checkout v-s000805 -- .`
+
+## S805 — Tang dimensions: bump char size 0.018 → 0.024
+
+- **Date:** 2026-05-02
+- **Files changed:** `js/render/worldObjects.js`,
+  `js-min/**` (rebuilt)
+- **Change:** Single-line tweak: `charSize` for every Tang
+  dimension label (HEIGHT, RADIUS, DIAMETER, CIRCUMFERENCE,
+  CELESTIAL ARC) bumps from `0.018` → `0.024`. `charStep` and
+  `angStep` derive from it so spacing scales proportionally.
+- **Revert path:** `git checkout v-s000804 -- .`
+
+## S804 — Tang dimensions: tighter offsets + reverse CIRCUMFERENCE name
+
+- **Date:** 2026-05-02
+- **Files changed:** `js/render/worldObjects.js`,
+  `js-min/**` (rebuilt)
+- **Change:**
+  - Perpendicular offsets trimmed: `NAME_OFF` `R · 0.06 → R · 0.035`,
+    `ARC_OFF` `R · 0.05 → R · 0.030`. Labels sit closer to their
+    geometry without crowding it.
+  - CIRCUMFERENCE name now uses `reverse=true` in `stackArc` so
+    'C' lands at the camera-left end of the +y arc and the
+    text reads forward instead of backwards
+    ("ECNEREFMUCRIC" → "CIRCUMFERENCE").
+- **Revert path:** `git checkout v-s000803 -- .`
+
+## S803 — Tang dimensions: uniform per-character labels along lines + arcs
+
+- **Date:** 2026-05-02
+- **Files changed:** `js/render/worldObjects.js`,
+  `js-min/**` (rebuilt)
+- **Change:**
+  - Every label switches to per-character `makeCharSprite`
+    runs at a uniform `charSize = 0.018` so HEIGHT, RADIUS,
+    DIAMETER, CIRCUMFERENCE, and CELESTIAL ARC text height
+    match. Each character is its own camera-facing Sprite;
+    positions stay locked to the geometry.
+  - Perpendicular offset trimmed to `R · 0.06`, half the
+    previous spacing, so labels sit closer to their lines.
+  - CELESTIAL ARC text now traces the actual quarter arc on
+    the dome (per-character `stackArc` in the xz plane), with
+    name pushed slightly outward and value slightly inward so
+    both follow the curve.
+  - CIRCUMFERENCE text similarly rides the ring arc in the xy
+    plane, on opposite halves of the circle.
+  - Geometry decouples from the hard-coded `1/π` lock and
+    tracks the live optical-vault dimensions again — overlay
+    sits 1:1 on the hemisphere the observer sees. Labels stay
+    `R_LI`-derived so the readout always names the Tang sphere
+    values regardless of OpticalVaultSize.
+- **Revert path:** `git checkout v-s000802 -- .`
+
+## S802 — Tang dimensions: HEIGHT + LI value stacked vertically
+
+- **Date:** 2026-05-02
+- **Files changed:** `js/render/worldObjects.js`,
+  `js-min/**` (rebuilt)
+- **Change:** HEIGHT name and its LI value now render as
+  per-character `makeCharSprite` runs stacked vertically along
+  the height line (charSize 0.018, ~half the previous label
+  size). Each character is its own camera-facing Sprite (stays
+  readable as the camera orbits) but the run's POSITION is
+  fixed to the line, top-to-bottom. RADIUS / DIAMETER /
+  CIRCUMFERENCE / CELESTIAL ARC keep their single-canvas
+  `makeTextSprite` labels.
+- **Revert path:** `git checkout v-s000801 -- .`
+
+## S801 — Tang dimensions: hard-code R_LI labels + celestial arc
+
+- **Date:** 2026-05-02
+- **Files changed:** `js/render/worldObjects.js`,
+  `js-min/**` (rebuilt)
+- **Change:**
+  - Geometry decouples from the live optical vault and locks to
+    the canonical Tang sphere (`R = R_LI / (TANG_CIRC / 2) =
+    1/π`). HEIGHT, RADIUS, DIAMETER, CIRCUMFERENCE labels are
+    derived directly from `R_LI` — `20,419.45 LI`,
+    `20,419.45 LI`, `40,838.9 LI`, `128,300 LI` — and stay
+    consistent with the Tang math regardless of canonical scale.
+  - Per-character sprite labels swap (again) for single-canvas
+    `makeTextSprite` images so each label paints as one camera-
+    facing image (no oblique-angle gibberish). Name + value sit
+    next to their dimension line, not stretched along it.
+  - Numeric labels reformatted as `"LI <value>"` so the unit
+    leads (matching the user's read-direction request).
+  - New CELESTIAL ARC: solid cyan quarter-arc on the dome
+    surface from zenith `(0, 0, R)` to the +x ground rim
+    `(R, 0, 0)`. Length = `π/2 · R_LI ≈ 32,075 li` — the radial
+    sweep observers measure from zenith down to the ground
+    equator along a meridian. Labelled `CELESTIAL ARC` /
+    `LI 32,075` at the arc midpoint.
+- **Revert path:** `git checkout v-s000800 -- .`
+
+## S800 — Tang dimensions: HEIGHT + DIAMETER read top-to-bottom
+
+- **Date:** 2026-05-02
+- **Files changed:** `js/render/worldObjects.js`,
+  `js-min/**` (rebuilt)
+- **Change:** `placeAlongAxis` gains a `reverse` flag that flips
+  the per-character iteration order so the first character of
+  the string lands at the high end of the axis. HEIGHT now
+  reads `H` at the top of the vertical line and `T` at the
+  bottom; DIAMETER reads `D` at the +y end and `R` at the −y
+  end. RADIUS still reads center-to-rim along +x.
+- **Revert path:** `git checkout v-s000799 -- .`
+
+## S799 — Tang dimensions: per-character labels along lines + ring arc
+
+- **Date:** 2026-05-02
+- **Files changed:** `js/render/worldObjects.js`,
+  `js-min/**` (rebuilt)
+- **Change:** Revert from camera-facing `makeTextSprite` images
+  back to per-character `makeCharSprite` runs that follow the
+  geometry — names + values lay along their dimension lines
+  (HEIGHT along z, RADIUS along x, DIAMETER along y) and around
+  the ring's curve (CIRCUMFERENCE around the +y arc, value
+  along the −y arc). Each row centres at the line's midpoint
+  and spans ~half the dimension's length so it doesn't stretch
+  end to end. Diameter still perpendicular to the radius.
+- **Revert path:** `git checkout v-s000798 -- .`
+
+## S798 — Tang dimensions: single-sprite labels + perpendicular diameter
+
+- **Date:** 2026-05-02
+- **Files changed:** `js/render/worldObjects.js`,
+  `js-min/**` (rebuilt)
+- **Change:**
+  - Per-character sprite labels swapped for single-canvas
+    `makeTextSprite` images so each label paints as one camera-
+    facing texture — fixes the "USIDAR / RETMAID" backwards
+    reads from oblique camera angles.
+  - Each measurement now has a NAME sprite + VALUE sprite
+    flanking the midpoint of its dimension line, not stretched
+    along the whole line. White name (`HEIGHT`, `RADIUS`,
+    `DIAMETER`, `CIRCUMFERENCE`) on one side, yellow li value
+    on the other.
+  - Diameter line moves from `(-R, 0) → (R, 0)` (overlapping
+    the radius along +x) to `(0, -R) → (0, R)` along the y-
+    axis, perpendicular to the radius. The two ground
+    measurements now lay on different axes and don't crowd.
+  - New CIRCUMFERENCE label hugs the ground ring's +x rim,
+    showing `2 π R · (TANG_CIRC / 2) LI`. So at the canonical
+    Tang sphere (`R = 1/π`) the readout is `128,300 LI`,
+    matching the original Tang great-circle definition.
+- **Revert path:** `git checkout v-s000797 -- .`
+
+## S797 — distance pair: dashed radii to centre (LineDashedMaterial)
+
+- **Date:** 2026-05-02
+- **Files changed:** `js/render/worldObjects.js`,
+  `js-min/**` (rebuilt)
+- **Change:** Swap the two centre radii (P1 → O, P2 → O) from
+  `LineBasicMaterial` to `LineDashedMaterial` (yellow,
+  dashSize 0.020, gapSize 0.012, opacity 0.65). `update()` calls
+  `computeLineDistances()` after every geometry refresh so the
+  dash pattern repaces from the new endpoints. The arc + pins
+  stay solid; only the supporting radii are dashed.
+- **Revert path:** `git checkout v-s000796 -- .`
+
+## S796 — distance pair: draw central-angle radii from P1 / P2 to centre
+
+- **Date:** 2026-05-02
+- **Files changed:** `js/render/worldObjects.js`,
+  `js-min/**` (rebuilt)
+- **Change:** `DistanceCompassPair` now also paints two radii —
+  P1 → centre and P2 → centre — alongside the great-circle /
+  disc-projection arc. Centre = `(0, 0, 0)` in scene space, which
+  is the sphere origin in GE and the disc origin (= N pole) in
+  FE / AE / DP. The two segments are the actual sides of the
+  central angle (≡ the inscribed-angle theorem's `2·θ_inscribed`
+  visualisation). Implemented as a single `LineSegments` with a
+  4-vertex buffer (`P1, O, P2, O`) so the two radii share one
+  draw call. Dimmer (`opacity 0.55`) than the arc so the eye
+  reads them as supporting geometry.
+- **Revert path:** `git checkout v-s000795 -- .`
+
+## S795 — distance-calc panel: central-angle arc renders on the map
+
+- **Date:** 2026-05-02
+- **Files changed:** `js/render/worldObjects.js`,
+  `js-min/**` (rebuilt)
+- **Change:** `DistanceCompassPair` now falls back to the
+  View → Distance Calc panel's `DistCalcLat1 / Lon1 / Lat2 /
+  Lon2` fields when the compass-mode pair (`DistancePair*`) is
+  empty. Same yellow pins + great-circle (GE) / canonical-disc
+  (FE / DP) connector arc; manual lat / lon entry from the
+  calculator now paints the exact same on-map central-angle
+  visualisation the compass-click flow produces.
+- **Revert path:** `git checkout v-s000794 -- .`
+
 ## S794 — lat-line info: just the ring circumference, single value
 
 - **Date:** 2026-04-30

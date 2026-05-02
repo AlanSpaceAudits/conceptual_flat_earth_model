@@ -308,6 +308,15 @@ header .info-popup.legend-popup a { color: var(--accent); }
 }
 #tracking-info-popup .ti-vis-ok { color: #7fe39a; }
 #tracking-info-popup .ti-vis-no { color: #ff7b6b; }
+#tracking-info-popup .ti-row.ti-section-head {
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid var(--border);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 11px;
+}
+#tracking-info-popup .ti-row.ti-section-head span { color: var(--accent); }
 #tracker-hud .line { white-space: pre; }
 #tracker-hud .tracker-title { color: #f4a640; font-weight: 600; margin-bottom: 2px; }
 #tracker-hud .tracker-foot { color: #9aa3b3; font-size: 11px; margin-top: 1px; }
@@ -416,6 +425,7 @@ header .info-popup.legend-popup a { color: var(--accent); }
   zoom: var(--ui-zoom);
 }
 #info-bar .info-row { display: flex; align-items: center; gap: 18px; }
+#info-bar .info-row-du { color: #b8c4dc; opacity: 0.85; }
 #info-bar .info-slot { white-space: nowrap; }
 #info-bar .info-sep { color: rgba(214, 222, 237, 0.35); }
 #info-bar .info-track { color: #f4a640; }

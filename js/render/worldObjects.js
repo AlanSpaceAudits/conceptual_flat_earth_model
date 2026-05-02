@@ -1159,11 +1159,13 @@ export class TangSphereDimensions {
       return line;
     };
 
-    // Dashed dimension lines: vertical height, ground radius,
-    // ground diameter.
+    // Dashed dimension lines: vertical height (along z), ground
+    // radius (along +x), ground diameter (perpendicular to the
+    // radius along the y-axis from -R to +R) so the two ground
+    // measurements don't overlap.
     this.group.add(mkDashed([0, 0, 1e-3,  0, 0, H]));
     this.group.add(mkDashed([0, 0, 1e-3,  R, 0, 1e-3]));
-    this.group.add(mkDashed([-R, 0, 8e-4, R, 0, 8e-4], 0.020, 0.010));
+    this.group.add(mkDashed([0, -R, 8e-4, 0, R, 8e-4], 0.020, 0.010));
 
     // Solid wireframe of the dome: ground circle + two great-
     // circle arcs in the y=0 and x=0 vertical planes (height
@@ -1207,50 +1209,167 @@ export class TangSphereDimensions {
     arcXLine.frustumCulled = false;
     this.group.add(arcXLine);
 
-    // Sprite labels — re-derived from the live (R, H) so when
-    // the OpticalVaultSize / Height sliders move, the labels
-    // track the new dome shape and the new li values.
-    const heightTxt   = `HEIGHT ${_tangFmtLi(H)} LI`;
-    const radiusTxt   = `RADIUS ${_tangFmtLi(R)} LI`;
-    const diameterTxt = `DIAMETER ${_tangFmtLi(2 * R)} LI`;
-    const mkLabel = (text, anchor, axis) => {
-      const grp = new THREE.Group();
-      grp.position.set(anchor[0], anchor[1], anchor[2]);
-      const charSize = 0.026;
-      const charSpacing = charSize * 0.85;
-      const span = text.length * charSpacing;
-      let cursor = -span / 2;
-      for (const ch of text) {
-        const sp = makeCharSprite(ch, '#ffe080');
+    // Celestial arc: solid quarter-arc on the dome surface from
+    // zenith (0, 0, R) sweeping to the +x ground rim (R, 0, 0).
+    // Length = π/2 × R_LI ≈ 32,075 li — the radial-sweep value
+    // observers measure from zenith down to the ground equator
+    // along a meridian. Solid cyan to set it apart from the
+    // dashed yellow Tang dimensions.
+    const ARC_SEGS = 48;
+    const celArcPts = [];
+    for (let k = 0; k <= ARC_SEGS; k++) {
+      const a = (k / ARC_SEGS) * (Math.PI / 2);
+      celArcPts.push(R * Math.sin(a), 0, R * Math.cos(a));
+    }
+    const celArcGeom = new THREE.BufferGeometry();
+    celArcGeom.setAttribute('position', new THREE.Float32BufferAttribute(celArcPts, 3));
+    const celArcLine = new THREE.Line(celArcGeom, new THREE.LineBasicMaterial({
+      color: 0x40c8ff, transparent: true, opacity: 0.95,
+      depthTest: false, depthWrite: false,
+    }));
+    celArcLine.renderOrder = 50;
+    celArcLine.frustumCulled = false;
+    this.group.add(celArcLine);
+
+    // Per-character labels — every character is its own
+    // camera-facing Sprite (always readable from any orbit
+    // angle), positioned along the dimension line / arc it
+    // labels. Same charSize for every label so text height is
+    // consistent across HEIGHT, RADIUS, DIAMETER,
+    // CIRCUMFERENCE, and CELESTIAL ARC. Values hard-coded from
+    // R_LI so the labels match the Tang-sphere math.
+    const nameColor  = '#ffffff';
+    const valueColor = '#ffe080';
+    const arcColor   = '#a8e8ff';
+    const charSize = 0.024;
+    const charStep = charSize * 0.95;
+    const fmtLi = (n) => `LI ${(Math.round(n * 100) / 100).toLocaleString()}`;
+    const heightTxt   = fmtLi(R_LI);
+    const radiusTxt   = fmtLi(R_LI);
+    const diameterTxt = fmtLi(2 * R_LI);
+    const circTxt     = fmtLi(2 * Math.PI * R_LI);
+    const celArcTxt   = fmtLi(Math.PI / 2 * R_LI);
+
+    const NAME_OFF = R * 0.035;
+    const ARC_OFF  = R * 0.030;
+
+    // Stack chars along an axis-aligned line, centred on
+    // `centreT` of `axis`. Positions step by charStep; reverse
+    // makes the first character land at the high end of the
+    // axis (used for vertical stacks where text reads top-down).
+    const stackAlong = (text, color, axis, centreT, perp, reverse = false) => {
+      const span = text.length * charStep;
+      const start = centreT - span / 2 + charStep / 2;
+      for (let i = 0; i < text.length; i++) {
+        const sp = makeCharSprite(text[i], color);
         sp.scale.set(charSize, charSize, 1);
-        if (axis === 'x') sp.position.set(cursor, 0, 0);
-        else if (axis === 'y') sp.position.set(0, cursor, 0);
-        else sp.position.set(0, 0, cursor);
-        sp.renderOrder = 51;
-        grp.add(sp);
-        cursor += charSpacing;
+        const idx = reverse ? text.length - 1 - i : i;
+        const t = start + idx * charStep;
+        const px = perp[0] + (axis === 'x' ? t : 0);
+        const py = perp[1] + (axis === 'y' ? t : 0);
+        const pz = perp[2] + (axis === 'z' ? t : 0);
+        sp.position.set(px, py, pz);
+        sp.renderOrder = 252;
+        this.group.add(sp);
       }
-      return grp;
     };
-    this.group.add(mkLabel(heightTxt,   [0.04, 0, H / 2], 'z'));
-    this.group.add(mkLabel(radiusTxt,   [R / 2, -0.04, 1.5e-3], 'x'));
-    this.group.add(mkLabel(diameterTxt, [0, 0.05, 1.5e-3], 'x'));
+
+    // Stack chars along an arc on a circle of radius `r`,
+    // centred on `centreAngleRad`. `axis` ∈ {'xy', 'xz'}
+    // controls the plane: 'xy' → ground ring, 'xz' → vertical
+    // arc through y=0. `radialOffset` pushes the text outward
+    // (positive) or inward (negative) from the curve so name
+    // and value rows can sit on opposite sides without
+    // overlapping the geometry.
+    const stackArc = (text, color, plane, r, centreAngleRad, radialOffset, reverse = false) => {
+      const angStep = charStep / r;
+      const span = text.length * angStep;
+      const startAng = centreAngleRad - span / 2 + angStep / 2;
+      for (let i = 0; i < text.length; i++) {
+        const sp = makeCharSprite(text[i], color);
+        sp.scale.set(charSize, charSize, 1);
+        const idx = reverse ? text.length - 1 - i : i;
+        const a = startAng + idx * angStep;
+        const rOff = r + radialOffset;
+        let x, y, z;
+        if (plane === 'xy') {
+          x = rOff * Math.cos(a);
+          y = rOff * Math.sin(a);
+          z = 1.5e-3;
+        } else {
+          // xz plane: arc parameterised so a=0 at zenith
+          // (0, 0, r), a=π/2 at +x ground rim (r, 0, 0).
+          x = rOff * Math.sin(a);
+          y = 0;
+          z = rOff * Math.cos(a);
+        }
+        sp.position.set(x, y, z);
+        sp.renderOrder = 252;
+        this.group.add(sp);
+      }
+    };
+
+    // HEIGHT — vertical line. Stack along z, reversed so first
+    // char sits at the top. Name on +x, value on -x.
+    stackAlong('HEIGHT',     nameColor,  'z', R / 2, [ NAME_OFF, 0, 0], true);
+    stackAlong(heightTxt,    valueColor, 'z', R / 2, [-NAME_OFF, 0, 0], true);
+
+    // RADIUS — along +x at y=0, midpoint (R/2, 0, 0). Name on
+    // +y, value on -y.
+    stackAlong('RADIUS',     nameColor,  'x', R / 2, [0,  NAME_OFF, 1.5e-3]);
+    stackAlong(radiusTxt,    valueColor, 'x', R / 2, [0, -NAME_OFF, 1.5e-3]);
+
+    // DIAMETER — along y at x=0 (perpendicular to radius).
+    // Reverse so D lands at +y end.
+    stackAlong('DIAMETER',   nameColor,  'y', 0, [ NAME_OFF, 0, 1.5e-3], true);
+    stackAlong(diameterTxt,  valueColor, 'y', 0, [-NAME_OFF, 0, 1.5e-3], true);
+
+    // CIRCUMFERENCE — along the ground ring. Name on +y arc
+    // (90°), value on -y arc (270°). The +y arc's chars run in
+    // increasing-angle / decreasing-x order, which from a +y-
+    // facing camera reads right-to-left and made the previous
+    // build show "ECNEREFMUCRIC". `reverse=true` flips the
+    // index so 'C' lands at the start of the run (camera-left)
+    // and the text reads forward.
+    stackArc('CIRCUMFERENCE', nameColor,  'xy', R,  Math.PI / 2, ARC_OFF, true);
+    stackArc(circTxt,         valueColor, 'xy', R, -Math.PI / 2, ARC_OFF);
+
+    // CELESTIAL ARC — along the dome's quarter arc from zenith
+    // to +x rim. Name run pushed outward (above the arc), value
+    // run pushed inward (under the arc) — both follow the same
+    // curve so the labels visibly trace the celestial sweep.
+    stackArc('CELESTIAL ARC', arcColor,    'xz', R, Math.PI / 4,  ARC_OFF);
+    stackArc(celArcTxt,       valueColor,  'xz', R, Math.PI / 4, -ARC_OFF);
   }
 
   update(model) {
     const s = model.state;
     const c = model.computed || {};
     const ge = s.WorldModel === 'ge';
-    this.group.visible = !!s.ShowTangSphereDims && !ge;
+    this.group.visible = !!s.ShowTangSphereDims;
     if (!this.group.visible) return;
-    // Pull live optical-vault dimensions; fall back to the Tang
-    // sphere's natural size (1/π canonical) if computed values
-    // aren't ready (first frame, GE→FE swap mid-update, etc.).
-    const fallback = R_LI / (TANG_CIRCUMFERENCE_LI / 2);
-    const R = Number.isFinite(c.OpticalVaultRadius)
-      ? c.OpticalVaultRadius : (s.OpticalVaultSize || fallback);
-    const H = Number.isFinite(c.OpticalVaultHeightEffective)
-      ? c.OpticalVaultHeightEffective : R;
+    // Geometry: in FE / DP track the live optical vault so the
+    // overlay sits 1:1 on the hemisphere the observer sees.
+    // In GE the optical-vault radius is forced to FE_RADIUS
+    // (planet surface), so the overlay would be coincident with
+    // the planet shell and unreadable; lock to the canonical
+    // Tang sphere (`R = R_LI / (TANG_CIRC/2) = 1/π`) instead so
+    // the dome sits clearly INSIDE the GE sphere with the
+    // dashed lines + labels visible. Labels stay R_LI-derived
+    // either way.
+    const tangR = R_LI / (TANG_CIRCUMFERENCE_LI / 2);
+    // FE/DP: track the live optical vault (slider-set hemisphere
+    // over the disc). GE: the optical vault is the planet shell
+    // itself, so size the dome to FE_RADIUS so it sits 1:1 on the
+    // sphere surface and reads at the same apparent scale as the
+    // disc-mode dome instead of shrinking to the slider fraction.
+    const R = ge
+      ? FE_RADIUS
+      : (s.OpticalVaultSize || tangR);
+    const H = ge
+      ? R
+      : (Number.isFinite(c.OpticalVaultHeightEffective)
+          ? c.OpticalVaultHeightEffective : R);
     if (R !== this._cachedR || H !== this._cachedH) {
       this._rebuild(R, H);
       this._cachedR = R;
@@ -5900,12 +6019,53 @@ export class DistanceCompassPair {
     this._line.frustumCulled = false;
     this.group.add(this._line);
     this._SEG = SEG;
+
+    // Radii P1 → centre and P2 → centre — the two sides of the
+    // central angle. Centre = sphere origin (0, 0, 0) on GE,
+    // N pole (also disc origin) on FE / DP. Drawn as a single
+    // 4-vertex line buffer (P1-O-P2-O so the two radii share a
+    // line strip without an extra geometry); the disconnected
+    // segment between O and P2 lays back on top of itself so it
+    // doesn't show as a stray line. Slightly dimmer than the
+    // arc so the eye treats them as supporting geometry.
+    this._radiiPos = new Float32Array(4 * 3);
+    const radiiGeom = new THREE.BufferGeometry();
+    radiiGeom.setAttribute('position', new THREE.BufferAttribute(this._radiiPos, 3));
+    radiiGeom.setDrawRange(0, 0);
+    this._radii = new THREE.LineSegments(radiiGeom, new THREE.LineDashedMaterial({
+      color: 0xffe040, transparent: true, opacity: 0.65,
+      dashSize: 0.020, gapSize: 0.012,
+      depthTest: false, depthWrite: false,
+    }));
+    this._radii.renderOrder = 250;
+    this._radii.frustumCulled = false;
+    this.group.add(this._radii);
   }
 
   update(model) {
     const s = model.state;
-    const haveFrom = Number.isFinite(s.DistancePairFromLat) && Number.isFinite(s.DistancePairFromLon);
-    const haveTo   = Number.isFinite(s.DistancePairToLat)   && Number.isFinite(s.DistancePairToLon);
+    // Pair source: compass-pin pair takes priority when its
+    // coords are set (live drawing during DistanceCompassMode).
+    // Fall back to the View → Distance Calc panel's manual
+    // (Lat 1 / Lon 1 / Lat 2 / Lon 2) entries so the central-
+    // angle arc + pins also render when the calculator is the
+    // input. Either pathway feeds the same renderer below.
+    const hasCompass =
+      Number.isFinite(s.DistancePairFromLat) || Number.isFinite(s.DistancePairToLat);
+    let fromLat, fromLon, toLat, toLon;
+    if (hasCompass) {
+      fromLat = s.DistancePairFromLat;
+      fromLon = s.DistancePairFromLon;
+      toLat   = s.DistancePairToLat;
+      toLon   = s.DistancePairToLon;
+    } else {
+      fromLat = s.DistCalcLat1;
+      fromLon = s.DistCalcLon1;
+      toLat   = s.DistCalcLat2;
+      toLon   = s.DistCalcLon2;
+    }
+    const haveFrom = Number.isFinite(fromLat) && Number.isFinite(fromLon);
+    const haveTo   = Number.isFinite(toLat)   && Number.isFinite(toLon);
     if (!haveFrom && !haveTo) {
       this._pins.geometry.setDrawRange(0, 0);
       this._line.geometry.setDrawRange(0, 0);
@@ -5913,8 +6073,8 @@ export class DistanceCompassPair {
     }
     const ge = s.WorldModel === 'ge';
     const pts = [];
-    if (haveFrom) pts.push([s.DistancePairFromLat, s.DistancePairFromLon]);
-    if (haveTo)   pts.push([s.DistancePairToLat,   s.DistancePairToLon]);
+    if (haveFrom) pts.push([fromLat, fromLon]);
+    if (haveTo)   pts.push([toLat,   toLon]);
 
     // Pin world positions.
     for (let i = 0; i < pts.length; i++) {
@@ -5941,10 +6101,10 @@ export class DistanceCompassPair {
 
     // Connector line.
     if (haveFrom && haveTo) {
-      const φ1 = s.DistancePairFromLat * Math.PI / 180;
-      const λ1 = s.DistancePairFromLon * Math.PI / 180;
-      const φ2 = s.DistancePairToLat   * Math.PI / 180;
-      const λ2 = s.DistancePairToLon   * Math.PI / 180;
+      const φ1 = fromLat * Math.PI / 180;
+      const λ1 = fromLon * Math.PI / 180;
+      const φ2 = toLat   * Math.PI / 180;
+      const λ2 = toLon   * Math.PI / 180;
       const N = this._SEG;
       if (ge) {
         // Great-circle arc via slerp on unit vectors.
@@ -5977,12 +6137,12 @@ export class DistanceCompassPair {
         // follows the projection's curvature in DP.
         for (let i = 0; i <= N; i++) {
           const t = i / N;
-          const lat = s.DistancePairFromLat + t * (s.DistancePairToLat - s.DistancePairFromLat);
+          const lat = fromLat + t * (toLat - fromLat);
           // Longitude lerp wraps via shortest path.
-          let dλ = s.DistancePairToLon - s.DistancePairFromLon;
+          let dλ = toLon - fromLon;
           if (dλ > 180) dλ -= 360;
           if (dλ < -180) dλ += 360;
-          const lon = s.DistancePairFromLon + t * dλ;
+          const lon = fromLon + t * dλ;
           const [dx, dy] = canonicalLatLongToDisc(lat, lon, FE_RADIUS);
           this._linePos[i * 3]     = dx;
           this._linePos[i * 3 + 1] = dy;
@@ -5991,8 +6151,28 @@ export class DistanceCompassPair {
       }
       this._line.geometry.attributes.position.needsUpdate = true;
       this._line.geometry.setDrawRange(0, N + 1);
+
+      // Two radii at the centre — the two sides of the central
+      // angle. Centre = (0, 0, 0): sphere origin on GE, disc
+      // origin (= N pole) on FE / DP. Each radius is a single
+      // line segment between the corresponding pin world
+      // position and the origin. LineSegments expects vertex
+      // pairs, so we lay (P1, O, P2, O) back-to-back.
+      const p1x = this._pinPos[0], p1y = this._pinPos[1], p1z = this._pinPos[2];
+      const p2x = this._pinPos[3], p2y = this._pinPos[4], p2z = this._pinPos[5];
+      this._radiiPos[0]  = p1x;  this._radiiPos[1]  = p1y;  this._radiiPos[2]  = p1z;
+      this._radiiPos[3]  = 0;    this._radiiPos[4]  = 0;    this._radiiPos[5]  = 0;
+      this._radiiPos[6]  = p2x;  this._radiiPos[7]  = p2y;  this._radiiPos[8]  = p2z;
+      this._radiiPos[9]  = 0;    this._radiiPos[10] = 0;    this._radiiPos[11] = 0;
+      this._radii.geometry.attributes.position.needsUpdate = true;
+      this._radii.geometry.setDrawRange(0, 4);
+      // LineDashedMaterial needs `lineDistances` recomputed
+      // whenever the geometry changes so the dash pattern paces
+      // from the new endpoints.
+      this._radii.computeLineDistances();
     } else {
       this._line.geometry.setDrawRange(0, 0);
+      this._radii.geometry.setDrawRange(0, 0);
     }
   }
 }
@@ -6780,11 +6960,15 @@ export class BesselianEclipsePath {
   }
 
   // Swap to a state-supplied (lat, lon, t) path, rebuild bands,
-  // grow line buffer if needed.
-  _rebuildFromPath(path) {
+  // grow line buffer if needed. Per-event `l1` / `l2` (when
+  // available from the polynomial evaluator) override the
+  // representative defaults so bands scale per eclipse.
+  _rebuildFromPath(path, l1 = null, l2 = null) {
     if (!Array.isArray(path) || path.length < 2) return;
     this._samples = path;
-    this._bands = eclipseShadowBandsFromPath(path);
+    this._bands = (l1 != null && l2 != null)
+      ? eclipseShadowBandsFromPath(path, l1, l2)
+      : eclipseShadowBandsFromPath(path);
     this._buildBandMeshes();
     const need = (path.length + 1) * 3;
     if (!this._lineBuf || this._lineBuf.length < need) {
@@ -6846,9 +7030,16 @@ export class BesselianEclipsePath {
     const activePath = Array.isArray(s.EclipseShadowPath) && s.EclipseShadowPath.length >= 2
       ? s.EclipseShadowPath
       : (Array.isArray(livePath) && livePath.length >= 2 ? livePath : null);
+    // Per-event l1 / l2 (from Bessel polynomial evaluator) drive
+    // the magnitude band footprint so each eclipse renders with
+    // its own penumbra / umbra width.
+    const activeL1 = Number.isFinite(s.EclipseShadowL1) ? s.EclipseShadowL1
+                    : (Number.isFinite(c?.LiveEclipseShadowL1) ? c.LiveEclipseShadowL1 : null);
+    const activeL2 = Number.isFinite(s.EclipseShadowL2) ? s.EclipseShadowL2
+                    : (Number.isFinite(c?.LiveEclipseShadowL2) ? c.LiveEclipseShadowL2 : null);
     if (activePath && activePath !== this._activePathRef) {
       this._activePathRef = activePath;
-      this._rebuildFromPath(activePath);
+      this._rebuildFromPath(activePath, activeL1, activeL2);
     }
     if (!this._samples.length) return;
 

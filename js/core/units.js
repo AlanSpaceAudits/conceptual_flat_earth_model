@@ -48,6 +48,16 @@ export function fmtDuFen(deg, signed = false) {
   return `${sign}${du} du ${fen.toFixed(1)} fen`;
 }
 
+// "32.29 du" — decimal-du form. Replaces the two-part `du / fen`
+// pair with a single tabular reading; same conversion factor
+// (DU_PER_DEG), just expressed as fractional du.
+export function fmtDuDecimal(deg, signed = false, digits = 2) {
+  if (!Number.isFinite(deg)) return '—';
+  const totalDu = deg * DU_PER_DEG;
+  const sign = totalDu < 0 ? '−' : (signed ? '+' : '');
+  return `${sign}${Math.abs(totalDu).toFixed(digits)} du`;
+}
+
 // "1861 li 214 bu" — DMS-style two-part split for a *distance*
 // derived from an angular separation along a meridian, using Yi
 // Xing's 351.267 li/du calibration. Always unsigned (distance is

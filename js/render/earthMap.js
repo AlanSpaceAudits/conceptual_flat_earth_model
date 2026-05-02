@@ -281,6 +281,12 @@ export function buildImageMap(projection, { feRadius = 1 } = {}) {
   mesh.position.z = EPS_LIFT;
   mesh.renderOrder = 5;
   mesh.name = 'map-image';
+  // Per-projection rotation about z to align the artwork's prime
+  // meridian with the math projection's lon=0 (= +x). Defaults to
+  // 0 when the artwork is already aligned with the math.
+  if (Number.isFinite(projection.imageRotationDeg)) {
+    mesh.rotation.z = projection.imageRotationDeg * Math.PI / 180;
+  }
   group.add(mesh);
 
   return group;

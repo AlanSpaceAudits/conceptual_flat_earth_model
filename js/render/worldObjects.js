@@ -1250,8 +1250,8 @@ export class TangSphereDimensions {
     const circTxt     = fmtLi(2 * Math.PI * R_LI);
     const celArcTxt   = fmtLi(Math.PI / 2 * R_LI);
 
-    const NAME_OFF = R * 0.06;
-    const ARC_OFF  = R * 0.05;
+    const NAME_OFF = R * 0.035;
+    const ARC_OFF  = R * 0.030;
 
     // Stack chars along an axis-aligned line, centred on
     // `centreT` of `axis`. Positions step by charStep; reverse
@@ -1325,10 +1325,14 @@ export class TangSphereDimensions {
     stackAlong(diameterTxt,  valueColor, 'y', 0, [-NAME_OFF, 0, 1.5e-3], true);
 
     // CIRCUMFERENCE — along the ground ring. Name on +y arc
-    // (90°), value on -y arc (270°). Push slightly outward so
-    // characters don't sit on top of the ring line itself.
-    stackArc('CIRCUMFERENCE', nameColor,  'xy', R,  Math.PI / 2, ARC_OFF * 1.5);
-    stackArc(circTxt,         valueColor, 'xy', R, -Math.PI / 2, ARC_OFF * 1.5);
+    // (90°), value on -y arc (270°). The +y arc's chars run in
+    // increasing-angle / decreasing-x order, which from a +y-
+    // facing camera reads right-to-left and made the previous
+    // build show "ECNEREFMUCRIC". `reverse=true` flips the
+    // index so 'C' lands at the start of the run (camera-left)
+    // and the text reads forward.
+    stackArc('CIRCUMFERENCE', nameColor,  'xy', R,  Math.PI / 2, ARC_OFF, true);
+    stackArc(circTxt,         valueColor, 'xy', R, -Math.PI / 2, ARC_OFF);
 
     // CELESTIAL ARC — along the dome's quarter arc from zenith
     // to +x rim. Name run pushed outward (above the arc), value

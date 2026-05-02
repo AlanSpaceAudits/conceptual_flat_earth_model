@@ -14585,6 +14585,21 @@ Format:
   default when a user has previously persisted the off state.
 - **Revert path:** `git checkout v-s000766 -- .`
 
+## S804 — Tang dimensions: tighter offsets + reverse CIRCUMFERENCE name
+
+- **Date:** 2026-05-02
+- **Files changed:** `js/render/worldObjects.js`,
+  `js-min/**` (rebuilt)
+- **Change:**
+  - Perpendicular offsets trimmed: `NAME_OFF` `R · 0.06 → R · 0.035`,
+    `ARC_OFF` `R · 0.05 → R · 0.030`. Labels sit closer to their
+    geometry without crowding it.
+  - CIRCUMFERENCE name now uses `reverse=true` in `stackArc` so
+    'C' lands at the camera-left end of the +y arc and the
+    text reads forward instead of backwards
+    ("ECNEREFMUCRIC" → "CIRCUMFERENCE").
+- **Revert path:** `git checkout v-s000803 -- .`
+
 ## S803 — Tang dimensions: uniform per-character labels along lines + arcs
 
 - **Date:** 2026-05-02

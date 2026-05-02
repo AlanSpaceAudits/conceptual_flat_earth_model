@@ -14585,6 +14585,36 @@ Format:
   default when a user has previously persisted the off state.
 - **Revert path:** `git checkout v-s000766 -- .`
 
+## S774 — Besselian eclipse math module (Tang li radius)
+
+- **Date:** 2026-04-30
+- **Files changed:** `js/core/besselianEclipse.js` (new)
+- **Change:** New module exposing the standard Bessel-element
+  shadow-axis projection in this project's Tang-li convention:
+  - `besselian2024Apr08(t)` evaluates the polynomial coefficients
+    at hour offset `t` from `t0 = 18.0 TDT` for the 2024-04-08
+    total solar eclipse.
+  - `besselianAxisToLatLon(x, y, dDeg, muDeg)` projects the
+    fundamental-plane (x, y) onto the unit sphere via
+    `sin φ = η·sin d + ζ·cos d` and
+    `λ = μ − atan2(ξ, ζ·cos d − η·sin d)`, returning
+    `{ lat, lon }` in degrees or `null` when the axis misses
+    Earth (`ξ² + η² > 1`).
+  - `besselian2024Apr08Path(tStart, tEnd, dt)` returns the
+    shadow-axis polyline as `{ t, lat, lon, l1, l2, l1Li, l2Li }`,
+    with `l1Li / l2Li` carrying the umbra / penumbra footprint
+    radius in Tang li (Bessel coords × `R_LI`).
+  - No Earth-radius km constant enters the file; every distance
+    routes through `R_LI` from `units.js`.
+  - Polynomial coefficients are PLACEHOLDERS modelled on the
+    standard NASA / Espenak bulletin format. A self-check against
+    γ at greatest eclipse (γ_calc ≈ 0.243 vs published ≈ 0.343)
+    flags `y₀` as suspect — drop in the verified coefficients
+    from NASA Technical Publication TP-2009-218400 before
+    wiring the renderer + demo, otherwise the central line will
+    plot in the wrong band of latitudes.
+- **Revert path:** `git rm js/core/besselianEclipse.js`
+
 ## S773 — equator analemma: heading=90 to fit figure in horizontal FOV
 
 - **Date:** 2026-04-30

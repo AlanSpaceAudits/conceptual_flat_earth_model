@@ -1249,10 +1249,27 @@ export class TangSphereDimensions {
       this.group.add(sp);
     };
 
-    // HEIGHT — vertical line midpoint = (0, 0, R/2). Name on +x
-    // of the line, value on -x.
-    place('HEIGHT',          nameColor,   R * 0.10, 0, R / 2);
-    place(fmtLi(R_LI),       valueColor, -R * 0.10, 0, R / 2);
+    // HEIGHT — per-character stacked vertically along the z
+    // line, smaller font, fixed to the dimension line. Each
+    // character is its own camera-facing Sprite (so it stays
+    // readable from any angle) but its POSITION is locked to a
+    // point on the vertical, so the text reads top-to-bottom
+    // along the line as the camera orbits. Reverse=true so
+    // first character (H, "L") sits at the top of the run.
+    const stackVertical = (text, color, xOff, charSize = 0.018) => {
+      const charStep = charSize * 0.95;
+      const span = text.length * charStep;
+      const start = R / 2 + span / 2 - charStep / 2;  // top to bottom
+      for (let i = 0; i < text.length; i++) {
+        const sp = makeCharSprite(text[i], color);
+        sp.scale.set(charSize, charSize, 1);
+        sp.position.set(xOff, 0, start - i * charStep);
+        sp.renderOrder = 252;
+        this.group.add(sp);
+      }
+    };
+    stackVertical('HEIGHT',     nameColor,   R * 0.10);
+    stackVertical(fmtLi(R_LI),  valueColor, -R * 0.10);
 
     // RADIUS — radial line midpoint = (R/2, 0). Name on +y,
     // value on -y.

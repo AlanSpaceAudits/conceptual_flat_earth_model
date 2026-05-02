@@ -14585,6 +14585,21 @@ Format:
   default when a user has previously persisted the off state.
 - **Revert path:** `git checkout v-s000766 -- .`
 
+## S802 — Tang dimensions: HEIGHT + LI value stacked vertically
+
+- **Date:** 2026-05-02
+- **Files changed:** `js/render/worldObjects.js`,
+  `js-min/**` (rebuilt)
+- **Change:** HEIGHT name and its LI value now render as
+  per-character `makeCharSprite` runs stacked vertically along
+  the height line (charSize 0.018, ~half the previous label
+  size). Each character is its own camera-facing Sprite (stays
+  readable as the camera orbits) but the run's POSITION is
+  fixed to the line, top-to-bottom. RADIUS / DIAMETER /
+  CIRCUMFERENCE / CELESTIAL ARC keep their single-canvas
+  `makeTextSprite` labels.
+- **Revert path:** `git checkout v-s000801 -- .`
+
 ## S801 — Tang dimensions: hard-code R_LI labels + celestial arc
 
 - **Date:** 2026-05-02

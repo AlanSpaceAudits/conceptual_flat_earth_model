@@ -14585,6 +14585,37 @@ Format:
   default when a user has previously persisted the off state.
 - **Revert path:** `git checkout v-s000766 -- .`
 
+## S822 — Eclipse magnitude bands: R_LI-anchored fractions (drop R_Earth = 6371 km)
+
+- **Date:** 2026-05-02
+- **Files changed:** `js/core/besselianEclipse.js`,
+  `js-min/**` (rebuilt)
+- **Change:**
+  - Replaced fixed `halfWidthKm` constants
+    (`3415 / 2560 / 1707 / 854 / 66`) with dimensionless
+    `lFraction` values. The five band fractions are
+    `1.0·l1, 0.75·l1, 0.5·l1, 0.25·l1, |l2|` per the
+    `(1 − magnitude) · l · R_sphere` Besselian convention.
+  - New `magnitudeBandFractions(l1, l2)` exported with
+    defaults `L1_DEFAULT = 0.5358` and `L2_DEFAULT = 0.0103`
+    (Apr 8 2024 representative). Per-eclipse Besselian
+    polynomials (future work) plug in via the same call.
+  - `eclipseShadowBandsFromPath(path, l1, l2)` and
+    `eclipseBandEdges(path, halfWidthLi)` now operate in li
+    only — `halfWidthLi = lFraction × R_LI`. `halfWidthKm` is
+    a derived display-time courtesy via `KM_PER_LI`, not an
+    authoritative constant.
+  - Dropped the `R_Earth ≈ 6371 km` reference from the file's
+    doc block. The codebase's only SI-Earth-radius dependence
+    is now the `40,007.863 km` polar-circumference anchor in
+    `units.js → KM_PER_LI`.
+  - `besselian2024Apr08Bands()` retained as a thin wrapper
+    over `eclipseShadowBandsFromPath(besselian2024Apr08Path())`.
+  - Renderer consumers (`worldObjects.js` BesselianEclipsePath)
+    untouched — they read `halfWidthKm` off each band object
+    which still resolves correctly via the derived field.
+- **Revert path:** `git checkout v-s000821 -- .`
+
 ## S821 — Live eclipse shadow: per-event contact window from ephemeris
 
 - **Date:** 2026-05-02

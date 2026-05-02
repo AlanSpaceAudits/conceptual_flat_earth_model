@@ -180,29 +180,41 @@ export function besselian2024Apr08Path() {
 export const T0_2024_APR_08_TDT = 18.0;
 
 // Magnitude levels rendered as nested bands on the AE disc. Each
-// level lists the half-width on Earth's surface in km — derived
-// at greatest eclipse from `(1 − magnitude) · l1 · R_Earth`,
-// using `l1 ≈ 0.5358` and `R_Earth ≈ 6371 km`. Same conventions
-// as the published NASA / Time-and-Date eclipse maps:
-//   1.00 → totality (umbra) — `|l2|·R_Earth ≈ 66 km`
-//   0.75 → 75 % obscured    — `(1−0.75)·l1·R = 854 km`
-//   0.50 → half eclipse     — 1707 km
-//   0.25 → 25 % obscured    — 2560 km
-//   0.00 → penumbra outer edge — 3415 km (eclipse barely visible)
-// Colours follow Image #167's gradient (deep red at totality
-// fading to pale yellow at the outer edge); alpha steps so the
-// nested bands composite cleanly under the central line.
-export const APR_08_2024_MAGNITUDE_BANDS = [
-  { magnitude: 0.00, halfWidthKm: 3415, color: 0xb8d8ff, opacity: 0.18 },
-  { magnitude: 0.25, halfWidthKm: 2560, color: 0xffe080, opacity: 0.22 },
-  { magnitude: 0.50, halfWidthKm: 1707, color: 0xffb060, opacity: 0.30 },
-  { magnitude: 0.75, halfWidthKm:  854, color: 0xff7060, opacity: 0.38 },
-  { magnitude: 1.00, halfWidthKm:   66, color: 0xc02040, opacity: 0.85 },
-];
+// level carries a **dimensionless** `lFraction` — the band's
+// surface half-width as a fraction of the sphere radius. Render
+// code multiplies by `R_LI` (Tang sphere radius) to get the
+// half-width in li, never going through any external Earth-radius
+// constant. Map of fractions:
+//   1.00 → totality (umbra) — `|l2|`
+//   0.75 → 75 % obscured    — `(1 − 0.75) · l1 = 0.25 · l1`
+//   0.50 → half eclipse     — `0.50 · l1`
+//   0.25 → 25 % obscured    — `0.75 · l1`
+//   0.00 → penumbra outer edge — `l1`
+// Defaults `L1_DEFAULT` / `L2_DEFAULT` are the Apr-08-2024
+// Besselian values (representative perigee total). When per-event
+// Besselian polynomials land, their `l1(t_greatest)` /
+// `l2(t_greatest)` should be substituted via
+// `magnitudeBandFractions(l1, l2)` so each eclipse paints with
+// its own footprint.
+export const L1_DEFAULT = 0.5358;
+export const L2_DEFAULT = 0.0103;
 
-// Convert a half-width in km to li using the project's geodetic
-// bridge (`KM_PER_LI ≈ 0.31183`).
-function kmToLi(km) { return km / KM_PER_LI; }
+// Build the 5-level band table for given Besselian `l1` / `l2`.
+// Pure function — no R-anchored conversion, just the fractions.
+export function magnitudeBandFractions(l1 = L1_DEFAULT, l2 = L2_DEFAULT) {
+  const absL2 = Math.abs(l2);
+  return [
+    { magnitude: 0.00, lFraction: 1.00 * l1, color: 0xb8d8ff, opacity: 0.18 },
+    { magnitude: 0.25, lFraction: 0.75 * l1, color: 0xffe080, opacity: 0.22 },
+    { magnitude: 0.50, lFraction: 0.50 * l1, color: 0xffb060, opacity: 0.30 },
+    { magnitude: 0.75, lFraction: 0.25 * l1, color: 0xff7060, opacity: 0.38 },
+    { magnitude: 1.00, lFraction: absL2,     color: 0xc02040, opacity: 0.85 },
+  ];
+}
+
+// Default band table — backwards-compatible alias for the previous
+// `APR_08_2024_MAGNITUDE_BANDS` export. Carries fractions, not km.
+export const APR_08_2024_MAGNITUDE_BANDS = magnitudeBandFractions();
 
 // Build the perpendicular-offset polylines for one magnitude
 // band. At each central-line sample, take the local initial
@@ -212,9 +224,9 @@ function kmToLi(km) { return km / KM_PER_LI; }
 // bearing computed at the previous step so the band closes
 // cleanly without a kink.
 //
-// Returns `{ edgeNorth: [{lat, lon}], edgeSouth: [{lat, lon}] }`.
-export function eclipseBandEdges(centralLine, halfWidthKm) {
-  const halfWidthLi = kmToLi(halfWidthKm);
+// Width input is in li (Tang sphere units). Returns
+// `{ edgeNorth: [{lat, lon}], edgeSouth: [{lat, lon}] }`.
+export function eclipseBandEdges(centralLine, halfWidthLi) {
   const edgeNorth = [];
   const edgeSouth = [];
   for (let i = 0; i < centralLine.length; i++) {
@@ -222,9 +234,6 @@ export function eclipseBandEdges(centralLine, halfWidthKm) {
     const nxt = centralLine[i + 1] || centralLine[i - 1];
     let bearing = initialBearing(cur.lat, cur.lon, nxt.lat, nxt.lon);
     if (i === centralLine.length - 1) {
-      // The "next" we used was actually i-1 — flip 180° so the
-      // perpendicular direction stays on the correct side of the
-      // motion.
       bearing = ((bearing + 360) % 360) - 180;
     }
     const left  = greatCircleDestination(cur.lat, cur.lon, bearing - 90, halfWidthLi);
@@ -235,46 +244,34 @@ export function eclipseBandEdges(centralLine, halfWidthKm) {
   return { edgeNorth, edgeSouth };
 }
 
-// Build every magnitude band for the 2024-04-08 eclipse in one
-// pass — convenient for the renderer, which then walks the
-// returned array and triangle-strips each band.
-export function besselian2024Apr08Bands() {
-  const central = besselian2024Apr08Path();
-  return APR_08_2024_MAGNITUDE_BANDS.map((spec) => {
-    const { edgeNorth, edgeSouth } = eclipseBandEdges(central, spec.halfWidthKm);
-    return {
-      magnitude:  spec.magnitude,
-      halfWidthKm: spec.halfWidthKm,
-      halfWidthLi: kmToLi(spec.halfWidthKm),
-      color:      spec.color,
-      opacity:    spec.opacity,
-      edgeNorth,
-      edgeSouth,
-    };
-  });
-}
-
-// Build the magnitude-band edge polylines for an arbitrary
-// central-line path. Same five magnitude levels and colours as
-// `APR_08_2024_MAGNITUDE_BANDS` — the half-widths are good to
-// within ~10 % across the moon's typical perigee / apogee range,
-// so reusing them for every solar eclipse is fine for a
-// visualisation-grade overlay. Returned shape matches
-// `besselian2024Apr08Bands()` so the renderer can swap in a
-// state-driven path without further code changes.
-export function eclipseShadowBandsFromPath(centralLine) {
-  return APR_08_2024_MAGNITUDE_BANDS.map((spec) => {
-    const { edgeNorth, edgeSouth } = eclipseBandEdges(centralLine, spec.halfWidthKm);
+// Build every magnitude band for an arbitrary central line, with
+// optional per-eclipse `l1` / `l2` from Besselian elements (when
+// available). Half-widths are R_LI-anchored throughout — `km` is
+// only computed at the end as a display-time SI courtesy via
+// `KM_PER_LI`. The Tang sphere radius is the only length scale
+// the math touches.
+export function eclipseShadowBandsFromPath(centralLine, l1 = L1_DEFAULT, l2 = L2_DEFAULT) {
+  const bands = magnitudeBandFractions(l1, l2);
+  return bands.map((spec) => {
+    const halfWidthLi = spec.lFraction * R_LI;
+    const { edgeNorth, edgeSouth } = eclipseBandEdges(centralLine, halfWidthLi);
     return {
       magnitude:   spec.magnitude,
-      halfWidthKm: spec.halfWidthKm,
-      halfWidthLi: kmToLi(spec.halfWidthKm),
+      lFraction:   spec.lFraction,
+      halfWidthLi,
+      halfWidthKm: halfWidthLi * KM_PER_LI,
       color:       spec.color,
       opacity:     spec.opacity,
       edgeNorth,
       edgeSouth,
     };
   });
+}
+
+// Convenience: same as `eclipseShadowBandsFromPath` against the
+// hardcoded Apr-08-2024 central line, with default l1 / l2.
+export function besselian2024Apr08Bands() {
+  return eclipseShadowBandsFromPath(besselian2024Apr08Path());
 }
 
 // Sample the moon's sublunar point around `anchorDate` to build

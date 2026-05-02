@@ -14585,6 +14585,20 @@ Format:
   default when a user has previously persisted the off state.
 - **Revert path:** `git checkout v-s000766 -- .`
 
+## S791 — lat-line info: strip "FROM POLE" descriptor, just the units
+
+- **Date:** 2026-04-30
+- **Files changed:** `js/render/worldObjects.js`,
+  `js-min/**` (rebuilt)
+- **Change:** Info string drops the descriptive "FROM POLE"
+  text — the ring's name label sits on the opposite side of the
+  AE disc already, so the readout only needs the unit values.
+  Format is now `"X LI  ·  Y LI"` (e.g.
+  `"23,712 LI  ·  51,063 LI"` for the Arctic Circle). Shrink-to-
+  fit logic from S790 still applies; the shorter string just
+  means less aggressive shrinking on the polar rings.
+- **Revert path:** `git checkout v-s000790 -- .`
+
 ## S790 — lat-line info: drop "RING" + shrink-to-fit on small rings
 
 - **Date:** 2026-04-30

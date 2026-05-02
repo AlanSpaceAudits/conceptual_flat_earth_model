@@ -486,6 +486,8 @@ function defaultState() {
     // target regardless of the master `ShowGroundPoints` toggle.
     TrackerGPOverride: false,
 
+    ActiveExperiment: null,
+
     Description: '',
     PointerFrom: [0, 0],
     PointerTo:   [0, 0],
@@ -589,7 +591,7 @@ export class FeModel extends EventTarget {
     s.CameraHeight = Clamp(s.CameraHeight, s.WorldModel === 'ge' ? -89.9 : -30, 89.9);
     s.CameraDirection = ((s.CameraDirection + 180) % 360 + 360) % 360 - 180;
     s.ObserverHeading = ((s.ObserverHeading % 360) + 360) % 360;
-    s.Zoom         = Clamp(s.Zoom, 0.1, 10);
+    s.Zoom         = Clamp(s.Zoom, 0.1, s.ActiveExperiment ? 250 : 10);
     s.OpticalZoom  = Clamp(s.OpticalZoom, 0.2, 75);
     s.VaultSize     = Clamp(s.VaultSize, GEOMETRY.VaultSizeMin, GEOMETRY.VaultSizeMax);
     // VaultHeight floor derives from StarfieldVaultHeight + body

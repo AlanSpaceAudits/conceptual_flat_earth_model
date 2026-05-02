@@ -93,6 +93,154 @@ function celTheoMenuColor(star) {
   return '#ff8c00';
 }
 
+const POLISHED_EXPERIMENT_SEARCH = {
+  parallax: [
+    'stellar parallax', 'parallax', 'snf', 's n f', 'catalog 2p',
+    'star parallax', 'annual parallax',
+  ],
+  aberration: [
+    'stellar aberration', 'aberration', 'bradley', 'kappa',
+    'annual aberration', 'aether wind',
+  ],
+  retrograde: [
+    'planetary retrograde', 'retrograde', 'mars loop', 'jupiter loop',
+    'saturn loop', 'venus mercury', 'fixed star loop',
+  ],
+  'airy-failure': [
+    'airy', 'airys', 'airy failure', 'airy water', 'water telescope',
+    'eltanin', 'aberration water',
+  ],
+  mmx: [
+    'mmx', 'michelson morley', 'michelson-morley', 'interferometer',
+    'fringe shift', 'null fringe',
+  ],
+  'newton-bucket': [
+    'newton', 'newtons bucket', 'newton bucket', 'bucket', 'ecef',
+    'rotating cosmos', 'concave water',
+  ],
+};
+
+const POLISHED_EXPERIMENT_IDS = new Set(Object.keys(POLISHED_EXPERIMENT_SEARCH));
+
+function normalizeSearchText(value) {
+  return String(value || '')
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/&/g, ' and ')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+}
+
+function compactSearchText(value) {
+  return normalizeSearchText(value).replace(/\s+/g, '');
+}
+
+function acronymFor(value) {
+  return normalizeSearchText(value)
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((part) => part[0])
+    .join('');
+}
+
+function subsequenceScore(query, target) {
+  if (!query || !target || query.length > target.length) return 0;
+  let qi = 0;
+  let gaps = 0;
+  let last = -1;
+  for (let ti = 0; ti < target.length && qi < query.length; ti++) {
+    if (target[ti] !== query[qi]) continue;
+    if (last >= 0) gaps += ti - last - 1;
+    last = ti;
+    qi++;
+  }
+  if (qi !== query.length) return 0;
+  return Math.max(8, 42 - gaps * 2 - Math.max(0, target.length - query.length) * 0.35);
+}
+
+function trackerMetaLabel(id) {
+  if (['sun', 'moon'].includes(id)) return 'Track body';
+  if (Object.prototype.hasOwnProperty.call(PLANET_NAMES, id)) return 'Track planet';
+  const raw = String(id || '').replace(/^star:/, '');
+  if (raw.startsWith('sat_')) return 'Track satellite';
+  if (raw.startsWith('bh_')) return 'Track black hole';
+  if (raw.startsWith('q') || raw.startsWith('qx')) return 'Track quasar';
+  if (raw.startsWith('gal_') || raw.startsWith('gx')) return 'Track galaxy';
+  return 'Track star';
+}
+
+function buildUnifiedSearchIndex(experiments) {
+  const trackerEntries = BODY_SEARCH_INDEX.map((entry) => ({
+    ...entry,
+    kind: 'track',
+    badge: 'TRACK',
+    meta: trackerMetaLabel(entry.id),
+    aliases: [entry.name, entry.id.replace(/^star:/, '')],
+    priority: entry.id.startsWith('star:sat_') ? 4 : 0,
+  }));
+
+  const experimentEntries = (experiments?.experiments || [])
+    .filter((entry) => POLISHED_EXPERIMENT_IDS.has(entry.id))
+    .map((entry) => ({
+      id: entry.id,
+      name: entry.name,
+      color: '#f4a640',
+      kind: 'experiment',
+      badge: 'EXP',
+      meta: 'Open polished experiment',
+      aliases: [
+        entry.name,
+        ...(POLISHED_EXPERIMENT_SEARCH[entry.id] || []),
+      ],
+      priority: 18,
+    }));
+
+  return [...experimentEntries, ...trackerEntries].map((entry, order) => ({
+    ...entry,
+    order,
+    _nameNorm: normalizeSearchText(entry.name),
+    _nameCompact: compactSearchText(entry.name),
+    _aliasNorms: (entry.aliases || []).map(normalizeSearchText).filter(Boolean),
+    _aliasCompacts: (entry.aliases || []).map(compactSearchText).filter(Boolean),
+  }));
+}
+
+function scoreSearchEntry(entry, queryRaw) {
+  const query = normalizeSearchText(queryRaw);
+  const compact = compactSearchText(queryRaw);
+  if (!query || !compact) return 0;
+
+  const values = [entry._nameNorm, ...entry._aliasNorms].filter(Boolean);
+  const compacts = [entry._nameCompact, ...entry._aliasCompacts].filter(Boolean);
+  let best = 0;
+
+  for (const value of values) {
+    if (value === query) best = Math.max(best, 140);
+    if (value.startsWith(query)) best = Math.max(best, 120 - Math.max(0, value.length - query.length) * 0.15);
+    const tokens = value.split(/\s+/).filter(Boolean);
+    if (tokens.some((token) => token === query)) best = Math.max(best, 112);
+    if (tokens.some((token) => token.startsWith(query))) best = Math.max(best, 102);
+    const at = value.indexOf(query);
+    if (at >= 0) best = Math.max(best, 78 - at * 1.4);
+    const acronym = acronymFor(value);
+    if (acronym && acronym.startsWith(compact)) best = Math.max(best, 88);
+  }
+
+  for (const value of compacts) {
+    if (value === compact) best = Math.max(best, 130);
+    if (value.startsWith(compact)) best = Math.max(best, 110);
+    const at = value.indexOf(compact);
+    if (at >= 0) best = Math.max(best, 72 - at);
+    if (compact.length >= 4 && value.startsWith(compact[0])) {
+      const fuzzy = subsequenceScore(compact, value);
+      if (fuzzy >= 34) best = Math.max(best, fuzzy);
+    }
+  }
+
+  return best ? best + (entry.priority || 0) : 0;
+}
+
 function resolveTargetAngles(targetId, c) {
   if (!targetId) return null;
   if (targetId === 'sun')  return c.SunAnglesGlobe  || null;
@@ -120,14 +268,16 @@ function positionSearchPanel(panel, input) {
   const r = input.getBoundingClientRect();
   const vw = window.innerWidth;
   const vh = window.innerHeight;
+  const opensDown = !!input.closest('#top-search-bar');
   // CSS owns min/max-width; JS only places the panel. Clamp `left`
   // so the panel never spills off the right edge of the viewport
   // when the input is right-aligned (e.g. narrow phone where the
   // input lives at the far end of a horizontally-scrolled bar).
   const minWidth = 220;
   const left = Math.max(4, Math.min(r.left, vw - minWidth - 4));
-  panel.style.left   = `${left}px`;
-  panel.style.bottom = `${vh - r.top + 4}px`;
+  panel.style.left = `${left}px`;
+  panel.style.top = opensDown ? `${r.bottom + 4}px` : 'auto';
+  panel.style.bottom = opensDown ? 'auto' : `${vh - r.top + 4}px`;
 }
 
 // Hide every other open popup (tab popup, About / Legend dialog,
@@ -149,19 +299,17 @@ function closeOtherPopups(exceptPanel) {
   });
 }
 
-// Search box + suggestion dropdown. Typing 3+ characters filters the
-// index by prefix match (case-insensitive); clicking a suggestion or
-// pressing Enter on the highlighted row engages the tracking protocol:
-// sets FollowTarget, and in Optical snaps heading/pitch; in Heavenly
-// flips FreeCamActive + the bird's-eye preset.
-function attachBodySearch(host, model) {
+// Search box + suggestion dropdown. It blends tracker targets with the
+// polished experiment demos, using punctuation-insensitive weighted
+// matching so "n.e.w" can surface Newton's Bucket beside XMM-NEWTON.
+function attachBodySearch(host, model, experiments = null) {
   const wrap = document.createElement('div');
   wrap.className = 'body-search';
 
   const input = document.createElement('input');
   input.type = 'search';
   input.className = 'body-search-input';
-  input.placeholder = 'Search body (3+ chars)';
+  input.placeholder = 'Search body / experiment';
   input.autocomplete = 'off';
   input.spellcheck = false;
   wrap.appendChild(input);
@@ -175,6 +323,7 @@ function attachBodySearch(host, model) {
 
   let activeIdx = -1;
   let matches = [];
+  let searchIndex = null;
 
   const hide = () => {
     panel.hidden = true;
@@ -185,6 +334,14 @@ function attachBodySearch(host, model) {
 
   const engage = (match) => {
     if (!match) return;
+    if (match.kind === 'experiment') {
+      experiments?.activate?.(match.id);
+      input.value = match.name;
+      input.blur();
+      hide();
+      return;
+    }
+
     const angles = resolveTargetAngles(match.id, model.computed);
     const patch = { FollowTarget: match.id };
     if (model.state.InsideVault) {
@@ -211,9 +368,24 @@ function attachBodySearch(host, model) {
       const row = document.createElement('button');
       row.type = 'button';
       row.className = 'body-search-row';
+      row.dataset.kind = m.kind || 'track';
       if (i === activeIdx) row.classList.add('active');
-      row.style.color = m.color;
-      row.textContent = m.name;
+      if (m.color) row.style.setProperty('--result-color', m.color);
+
+      const label = document.createElement('span');
+      label.className = 'search-row-label';
+      label.textContent = m.name;
+      label.style.color = m.color || '';
+
+      const meta = document.createElement('span');
+      meta.className = 'search-row-meta';
+      meta.textContent = m.meta || '';
+
+      const badge = document.createElement('span');
+      badge.className = 'search-row-badge';
+      badge.textContent = m.badge || '';
+
+      row.append(label, meta, badge);
       row.addEventListener('pointerdown', (e) => {
         e.preventDefault();
         engage(m);
@@ -232,17 +404,15 @@ function attachBodySearch(host, model) {
   input.addEventListener('focus', () => closeOtherPopups(panel));
   input.addEventListener('input', () => {
     closeOtherPopups(panel);
-    const q = input.value.trim().toLowerCase();
-    if (q.length < 3) { hide(); return; }
-    matches = BODY_SEARCH_INDEX
-      .filter((m) => m.name.toLowerCase().startsWith(q))
-      .slice(0, 12);
-    if (!matches.length) {
-      const loose = BODY_SEARCH_INDEX
-        .filter((m) => m.name.toLowerCase().includes(q))
-        .slice(0, 12);
-      matches = loose;
-    }
+    const q = input.value;
+    if (compactSearchText(q).length < 2) { hide(); return; }
+    if (!searchIndex) searchIndex = buildUnifiedSearchIndex(experiments);
+    matches = searchIndex
+      .map((entry) => ({ entry, score: scoreSearchEntry(entry, q) }))
+      .filter((item) => item.score > 0)
+      .sort((a, b) => (b.score - a.score) || (a.entry.order - b.entry.order))
+      .slice(0, 12)
+      .map((item) => item.entry);
     activeIdx = matches.length ? 0 : -1;
     renderSuggestions();
   });
@@ -1832,7 +2002,7 @@ function buildGroup(model, title, rows, popupGroups) {
 // Bottom-bar + per-tab popup layout. `host` is the element the bar
 // and popups attach to (expected to be #view so they overlay the
 // canvas).
-export function buildControlPanel(host, model, demos) {
+export function buildControlPanel(host, model, demos, experiments = null) {
   const autoplay = new Autoplay(model);
   model._autoplay = autoplay;
 
@@ -2739,7 +2909,7 @@ export function buildControlPanel(host, model, demos) {
 
   const searchHost = document.createElement('div');
   searchHost.className = 'search-host';
-  attachBodySearch(searchHost, model);
+  attachBodySearch(searchHost, model, experiments);
 
   const featureHost = document.createElement('div');
   featureHost.className = 'search-host';
@@ -2747,27 +2917,21 @@ export function buildControlPanel(host, model, demos) {
   const featureOpen = { fn: () => {} };
   attachFeatureSearch(featureHost, (tab, group) => featureOpen.fn(tab, group), demos);
 
-  // Two-layer wrapper:
-  //   `tabsBar` (no ARIA role) — visual flex container that also
-  //              carries the search inputs. ARIA forbids non-tab
-  //              children inside a tablist, so this can't itself
-  //              be `role="tablist"`.
-  //   `tabsList` (`role="tablist"`) — narrow inner container that
-  //              ONLY holds the role="tab" buttons.
+  const topSearchBar = document.createElement('div');
+  topSearchBar.id = 'top-search-bar';
+  topSearchBar.append(searchHost, featureHost);
+  const headerHost = document.querySelector('#app > header');
+  if (headerHost) headerHost.appendChild(topSearchBar);
+
+  // Keep ARIA tab semantics on a child container so only actual tab
+  // buttons are inside the role="tablist" element.
   const tabsBar = document.createElement('div');
   tabsBar.className = 'tabs';
-  const searchStack = document.createElement('div');
-  searchStack.className = 'search-stack';
-  searchStack.appendChild(searchHost);
-  searchStack.appendChild(featureHost);
-  tabsBar.appendChild(searchStack);
-
   const tabsList = document.createElement('div');
   tabsList.className = 'tabs-list';
   tabsList.setAttribute('role', 'tablist');
   tabsList.setAttribute('aria-orientation', 'horizontal');
   tabsBar.appendChild(tabsList);
-
   bar.append(barLeft, timeControls, compassControls, tabsBar);
 
   const refreshVaultBtn = () => {
@@ -2819,8 +2983,9 @@ export function buildControlPanel(host, model, demos) {
     const entry = tabEntries[tabIdx];
     const btn = entry.btn;
     const popup = entry.popup;
-    const tabLabel = btn.textContent.trim();
-    const wide = tabLabel === 'Tracker' || tabLabel === 'Demos';
+    const wide = entry.label === 'Tracker'
+      || entry.label === 'Demos'
+      || entry.label === 'Experiments';
     const targetWidth = Math.min(window.innerWidth - 24, wide ? 560 : 380);
     const hostRect = host.getBoundingClientRect();
     const btnRect  = btn.getBoundingClientRect();
@@ -2871,7 +3036,7 @@ export function buildControlPanel(host, model, demos) {
   let _lastFeatureTab = null, _lastFeatureGroup = null;
   featureOpen.fn = (tabName, groupTitle) => {
     const idx = tabEntries.findIndex(
-      (t) => t.btn.textContent.trim() === tabName,
+      (entry) => entry.label === tabName || entry.btn.textContent.trim() === tabName,
     );
     if (idx < 0) return;
     // Toggle close: if the same tab + group was the last thing the
@@ -2921,7 +3086,8 @@ export function buildControlPanel(host, model, demos) {
 
   const TAB_KEY = {
     View: 'tab_view', Time: 'tab_time', Show: 'tab_show',
-    Tracker: 'tab_tracker', Demos: 'tab_demos', Info: 'tab_info',
+    Tracker: 'tab_tracker', Demos: 'tab_demos',
+    Experiments: 'tab_experiments', Info: 'tab_info',
   };
   const registerTab = (label, buildInto, { lazy = false } = {}) => {
     const btn = document.createElement('button');
@@ -2951,7 +3117,7 @@ export function buildControlPanel(host, model, demos) {
     if (!lazy) ensureBuilt();
 
     const idx = tabEntries.length;
-    tabEntries.push({ btn, popup, ensureBuilt });
+    tabEntries.push({ label, btn, popup, ensureBuilt });
     btn.addEventListener('click', () => {
       ensureBuilt();
       openTab(idx);
@@ -2990,6 +3156,16 @@ export function buildControlPanel(host, model, demos) {
       popup.appendChild(host);
       demos.renderInto(host);
     }, { lazy: true });
+  }
+
+  if (experiments) {
+    registerTab('Experiments', (popup) => {
+      popup.classList.add('experiments-panel');
+      const host = document.createElement('div');
+      host.className = 'experiments-host';
+      popup.appendChild(host);
+      experiments.renderInto(host);
+    });
   }
 
   registerTab('Info', (popup) => {

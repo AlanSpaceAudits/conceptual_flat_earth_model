@@ -4791,7 +4791,7 @@ export class Stars {
     // same way planet markers project. Sub-horizon stars are parked far
     // below the disc so the clip plane hides them — without that, they'd
     // bunch onto the lower hemisphere and read as a downward vortex.
-    this.spherePoints.visible = showStars && s.ShowOpticalVault;
+    this.spherePoints.visible = showStars && s.ShowOpticalVault && !s.SuppressOpticalStarPoints;
     this.spherePoints.material.opacity = nightAlpha;
     if (!showStars) return;
 
@@ -5598,10 +5598,10 @@ export class ToroidalVortex {
     this._rotate = 0;
   }
 
-  // Slow rotation around the z-axis so the circulation reads as motion.
+  // Slow rotation around the z-axis; negative matches the dome sweep direction.
   tick(dt) {
     if (!this.group.visible) return;
-    this._rotate += dt * 0.15;
+    this._rotate -= dt * 0.15;
     this.group.rotation.z = this._rotate;
   }
 
@@ -6464,7 +6464,7 @@ export class CelNavStars {
     // star classes were missing that gate.
     this.domePoints.visible   = showStars && (s.ShowTruePositions !== false) && !s.InsideVault;
     this.domePoints.material.opacity   = nightAlpha;
-    this.spherePoints.visible = showStars && s.ShowOpticalVault;
+    this.spherePoints.visible = showStars && s.ShowOpticalVault && !s.SuppressOpticalStarPoints;
     this.spherePoints.material.opacity = nightAlpha;
 
     if (!showStars) {
@@ -6641,7 +6641,7 @@ export class CatalogPointStars {
 
     this.domePoints.visible   = showStars && (s.ShowTruePositions !== false) && !s.InsideVault;
     this.domePoints.material.opacity   = nightAlpha;
-    this.spherePoints.visible = showStars && s.ShowOpticalVault;
+    this.spherePoints.visible = showStars && s.ShowOpticalVault && !s.SuppressOpticalStarPoints;
     this.spherePoints.material.opacity = nightAlpha;
 
     if (!showStars) {

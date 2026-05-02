@@ -11,7 +11,10 @@ import {
 } from '../core/feGeometry.js';
 import { canonicalLatLongToDisc } from '../core/canonical.js';
 import { STELLARIUM_TRACES } from '../data/stellariumTraces.js';
-import { besselian2024Apr08Path, besselian2024Apr08Bands } from '../core/besselianEclipse.js';
+import {
+  besselian2024Apr08Path, besselian2024Apr08Bands,
+  eclipseShadowBandsFromPath,
+} from '../core/besselianEclipse.js';
 import { generateGeArtTexture } from './geArt.js';
 import { CONSTELLATIONS } from '../core/constellations.js';
 
@@ -6464,22 +6467,63 @@ export class BesselianEclipsePath {
     this.group.visible = false;
 
     // Central line samples: { t, lat, lon, l1, l2, ... }
+    // Default samples = the hand-baked Apr 8 2024 path (high
+    // accuracy, NASA central-line table). State-driven demos
+    // override this by setting `state.EclipseShadowPath` —
+    // `_rebuildFromPath` then swaps in the new samples + bands
+    // and regrows the mesh buffers as needed.
     this._samples = besselian2024Apr08Path();
-
-    // Magnitude bands: outermost (0% mag) first so renderOrder
-    // composites darker (totality) above lighter (penumbra
-    // periphery). Each band is a triangle strip between
-    // edgeNorth[i]–edgeSouth[i]–edgeNorth[i+1]–edgeSouth[i+1].
-    // renderOrder starts at 220 — well above the WorldGlobe
-    // sphere (renderOrder 0) and the eclipse-shadow disc
-    // (renderOrder 5) — so the bands always paint on top.
     this._bands = besselian2024Apr08Bands();
+    this._activePathRef = null;     // identity check: detect path swaps
     this._bandMeshes = [];
-    let renderOrderBase = 220;
+    this._renderOrderBase = 220;
+    this._buildBandMeshes();
+
+    // Central line on top of the bands. Buffer grows on demand
+    // when a state-driven path with more samples comes through.
+    const centralBuf = new Float32Array(Math.max(2, this._samples.length + 1) * 3);
+    const lineGeom = new THREE.BufferGeometry();
+    lineGeom.setAttribute('position', new THREE.BufferAttribute(centralBuf, 3));
+    lineGeom.setDrawRange(0, 0);
+    this._lineBuf = centralBuf;
+    this._line = new THREE.Line(lineGeom, new THREE.LineBasicMaterial({
+      color: 0xff2030, transparent: true, opacity: 0.95,
+      depthTest: false, depthWrite: false,
+    }));
+    this._line.renderOrder = this._renderOrderBase + this._bands.length;
+    this._line.frustumCulled = false;
+    this.group.add(this._line);
+
+    // Greatest-eclipse marker (yellow point at smallest-|t|).
+    this._markerBuf = new Float32Array(3);
+    const mGeom = new THREE.BufferGeometry();
+    mGeom.setAttribute('position', new THREE.BufferAttribute(this._markerBuf, 3));
+    this._marker = new THREE.Points(mGeom, new THREE.PointsMaterial({
+      color: 0xffe040, size: 9, sizeAttenuation: false,
+      depthTest: false, depthWrite: false,
+    }));
+    this._marker.renderOrder = this._renderOrderBase + this._bands.length + 1;
+    this._marker.frustumCulled = false;
+    this.group.add(this._marker);
+  }
+
+  // (Re)build the triangle-strip meshes for the current set of
+  // bands. Called from the constructor and again whenever a
+  // state-driven path swap arrives so each band's geometry matches
+  // its new (N − 1) quad count.
+  _buildBandMeshes() {
+    // Drop any existing meshes from the group + dispose buffers
+    // before allocating new ones.
+    for (const entry of this._bandMeshes) {
+      this.group.remove(entry.mesh);
+      entry.mesh.geometry.dispose();
+      entry.mesh.material.dispose();
+    }
+    this._bandMeshes = [];
+    let r = this._renderOrderBase;
     for (const band of this._bands) {
       const N = band.edgeNorth.length;
-      // 2 triangles per quad × (N − 1) quads × 3 verts × 3 floats
-      const positions = new Float32Array(Math.max(1, (N - 1) * 6 * 3));
+      const positions = new Float32Array(Math.max(6, (N - 1) * 6 * 3));
       const geom = new THREE.BufferGeometry();
       geom.setAttribute('position', new THREE.BufferAttribute(positions, 3));
       geom.setDrawRange(0, 0);
@@ -6492,37 +6536,32 @@ export class BesselianEclipsePath {
         side: THREE.DoubleSide,
       });
       const mesh = new THREE.Mesh(geom, mat);
-      mesh.renderOrder = renderOrderBase++;
+      mesh.renderOrder = r++;
       mesh.frustumCulled = false;
       this._bandMeshes.push({ mesh, band, positions });
       this.group.add(mesh);
     }
+  }
 
-    // Central line on top of the bands.
-    const centralBuf = new Float32Array(Math.max(2, this._samples.length) * 3);
-    const lineGeom = new THREE.BufferGeometry();
-    lineGeom.setAttribute('position', new THREE.BufferAttribute(centralBuf, 3));
-    lineGeom.setDrawRange(0, 0);
-    this._lineBuf = centralBuf;
-    this._line = new THREE.Line(lineGeom, new THREE.LineBasicMaterial({
-      color: 0xff2030, transparent: true, opacity: 0.95,
-      depthTest: false, depthWrite: false,
-    }));
-    this._line.renderOrder = renderOrderBase++;
-    this._line.frustumCulled = false;
-    this.group.add(this._line);
-
-    // Greatest-eclipse marker (yellow point at smallest-|t|).
-    this._markerBuf = new Float32Array(3);
-    const mGeom = new THREE.BufferGeometry();
-    mGeom.setAttribute('position', new THREE.BufferAttribute(this._markerBuf, 3));
-    this._marker = new THREE.Points(mGeom, new THREE.PointsMaterial({
-      color: 0xffe040, size: 9, sizeAttenuation: false,
-      depthTest: false, depthWrite: false,
-    }));
-    this._marker.renderOrder = renderOrderBase++;
-    this._marker.frustumCulled = false;
-    this.group.add(this._marker);
+  // Swap to a state-supplied (lat, lon, t) path, rebuild bands,
+  // grow line buffer if needed.
+  _rebuildFromPath(path) {
+    if (!Array.isArray(path) || path.length < 2) return;
+    this._samples = path;
+    this._bands = eclipseShadowBandsFromPath(path);
+    this._buildBandMeshes();
+    const need = (path.length + 1) * 3;
+    if (!this._lineBuf || this._lineBuf.length < need) {
+      this._lineBuf = new Float32Array(need);
+      const g = new THREE.BufferGeometry();
+      g.setAttribute('position', new THREE.BufferAttribute(this._lineBuf, 3));
+      g.setDrawRange(0, 0);
+      this._line.geometry.dispose();
+      this._line.geometry = g;
+    }
+    // Restack renderOrder so line + marker stay above bands.
+    this._line.renderOrder = this._renderOrderBase + this._bands.length;
+    this._marker.renderOrder = this._renderOrderBase + this._bands.length + 1;
   }
 
   // Project a single (lat, lon) to scene coords for the active
@@ -6547,16 +6586,51 @@ export class BesselianEclipsePath {
 
   update(model) {
     const s = model.state;
-    const visible = !!s.ShowBesselianEclipsePath && !s.InsideVault;
+    const visible =
+      (!!s.ShowBesselianEclipsePath || !!s.ShowEclipseShadowPath)
+      && !s.InsideVault;
     this.group.visible = visible;
-    if (!visible || !this._samples.length) return;
+    if (!visible) return;
+
+    // State-driven path swap: solar-eclipse demos compute their
+    // own (lat, lon, t) sublunar samples on intro and stash them
+    // on `state.EclipseShadowPath`. The reference identity check
+    // detects swaps; bands are rebuilt only when the array
+    // actually changes, not every frame.
+    if (Array.isArray(s.EclipseShadowPath)
+        && s.EclipseShadowPath !== this._activePathRef
+        && s.EclipseShadowPath.length >= 2) {
+      this._activePathRef = s.EclipseShadowPath;
+      this._rebuildFromPath(s.EclipseShadowPath);
+    }
+    if (!this._samples.length) return;
 
     const ge = s.WorldModel === 'ge';
-    // Sweep progress: 0 = no shadow yet (first contact),
-    // 1 = full path drawn (last contact). Defaults to 1 in
-    // defaultState so the static (non-demo) view shows the full
-    // path; the demo's Trepeat loop drives it 0 → 1 over 5 s.
-    const progress = Math.max(0, Math.min(1, Number.isFinite(s.BesselianEclipseProgress) ? s.BesselianEclipseProgress : 1));
+    // Sweep progress source: explicit `BesselianEclipseProgress`
+    // wins (used by the standalone Apr-08-2024 demo and any
+    // future hand-driven sweep). Otherwise, when the
+    // state-driven demos are active and they expose an anchor
+    // DateTime + half-window, derive progress from the current
+    // simulator clock so the path sweeps in lockstep with the
+    // existing eclipse timeline. Falls back to 1 (full path) for
+    // the static view.
+    let progress;
+    if (Number.isFinite(s.EclipseShadowAnchorDt)
+        && Number.isFinite(s.EclipseShadowHalfWindowDays)
+        && s.EclipseShadowHalfWindowDays > 0
+        && Number.isFinite(s.DateTime)) {
+      // State-driven solar-eclipse demo: derive sweep progress
+      // from the simulator clock so the shadow path fills in
+      // lockstep with the existing observer-side animation.
+      const tFromAnchor = s.DateTime - s.EclipseShadowAnchorDt;
+      progress = (tFromAnchor + s.EclipseShadowHalfWindowDays)
+               / (2 * s.EclipseShadowHalfWindowDays);
+    } else if (Number.isFinite(s.BesselianEclipseProgress)) {
+      progress = s.BesselianEclipseProgress;
+    } else {
+      progress = 1;
+    }
+    progress = Math.max(0, Math.min(1, progress));
 
     // Per-band quad count active at this progress — at least
     // one quad while progress > 0 so the very first sliver of

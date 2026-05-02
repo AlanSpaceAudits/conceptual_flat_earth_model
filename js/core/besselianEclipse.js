@@ -29,6 +29,7 @@
 //   land in the wrong band of latitudes.
 
 import { R_LI, KM_PER_LI, initialBearing, greatCircleDestination } from './units.js';
+import { greenwichSiderealDeg } from './ephemerisCommon.js';
 
 // `polyEval(coeffs, t)` evaluates  c0 + c1·t + c2·t² + ...
 function polyEval(coeffs, t) {
@@ -251,4 +252,57 @@ export function besselian2024Apr08Bands() {
       edgeSouth,
     };
   });
+}
+
+// Build the magnitude-band edge polylines for an arbitrary
+// central-line path. Same five magnitude levels and colours as
+// `APR_08_2024_MAGNITUDE_BANDS` — the half-widths are good to
+// within ~10 % across the moon's typical perigee / apogee range,
+// so reusing them for every solar eclipse is fine for a
+// visualisation-grade overlay. Returned shape matches
+// `besselian2024Apr08Bands()` so the renderer can swap in a
+// state-driven path without further code changes.
+export function eclipseShadowBandsFromPath(centralLine) {
+  return APR_08_2024_MAGNITUDE_BANDS.map((spec) => {
+    const { edgeNorth, edgeSouth } = eclipseBandEdges(centralLine, spec.halfWidthKm);
+    return {
+      magnitude:   spec.magnitude,
+      halfWidthKm: spec.halfWidthKm,
+      halfWidthLi: kmToLi(spec.halfWidthKm),
+      color:       spec.color,
+      opacity:     spec.opacity,
+      edgeNorth,
+      edgeSouth,
+    };
+  });
+}
+
+// Sample the moon's sublunar point around `anchorDate` to build
+// a solar-eclipse shadow path. Approximation: at the moments
+// near greatest eclipse, the sun-moon-Earth axis is nearly
+// aligned with the geocentric moon direction, so the umbra
+// subpoint sits within a few hundred km of the sublunar point —
+// fine for an overlay on a flat-earth / globe map at this
+// project's scale. `moonFn(date)` follows the project's
+// `{ ra, dec }` convention (radians) — pick the ephemeris pair
+// from `eclipseRegistry.ephemerisPair(BodySource).moonFn`.
+//
+// Returns an array of `{ t, lat, lon }` where `t` is the offset
+// from `anchorDate` in hours. Caller is free to pick the window
+// (`halfWindowHours`) and sample density.
+export function computeSolarEclipseShadowPath(anchorDate, moonFn, halfWindowHours = 2.0, samples = 33) {
+  const out = [];
+  const step = (halfWindowHours * 2) / Math.max(1, samples - 1);
+  for (let i = 0; i < samples; i++) {
+    const offsetH = -halfWindowHours + i * step;
+    const date = new Date(anchorDate.getTime() + offsetH * 3_600_000);
+    const moonEq = moonFn(date);
+    if (!moonEq || !Number.isFinite(moonEq.ra) || !Number.isFinite(moonEq.dec)) continue;
+    const gmstDeg = greenwichSiderealDeg(date);
+    const lat = moonEq.dec * 180 / Math.PI;
+    let lon = moonEq.ra * 180 / Math.PI - gmstDeg;
+    lon = ((lon + 540) % 360) - 180;
+    out.push({ t: offsetH, lat, lon });
+  }
+  return out;
 }

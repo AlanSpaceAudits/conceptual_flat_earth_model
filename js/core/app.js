@@ -256,6 +256,16 @@ function defaultState() {
     // loop so the magnitude bands and central line build up the
     // way the real shadow sweeps across Earth.
     BesselianEclipseProgress: 1,
+    // State-driven solar-eclipse path overlay. Each solar-eclipse
+    // demo's intro fills these in (sublunar samples + anchor +
+    // half-window) so the renderer can sweep the shadow in
+    // lockstep with the demo's DateTime tween. Null defaults
+    // mean "no eclipse path active" and the renderer skips this
+    // pathway entirely.
+    EclipseShadowPath: null,
+    EclipseShadowAnchorDt: null,
+    EclipseShadowHalfWindowDays: null,
+    ShowEclipseShadowPath: false,
     ShowSunMoonNine:         false,
     ShowGPTracer:            false,
     ShowOpticalVaultTrace:   false,

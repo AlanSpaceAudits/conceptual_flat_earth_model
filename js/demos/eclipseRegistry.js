@@ -22,6 +22,7 @@ import {
   refineEclipseByMinSeparation,
 } from '../core/ephemerisCommon.js';
 import { helio, geo, ptol, apix, vsop } from '../core/ephemeris.js';
+import { computeSolarEclipseShadowPath } from '../core/besselianEclipse.js';
 
 // Pick (sunFn, moonFn) pair for a given BodySource value. Both the
 // finder (`refineEclipseByMinSeparation`) and the sky render use the
@@ -81,6 +82,17 @@ function buildEclipseDemo(event, kind) {
       const raDeg    = bodyEq.ra  * 180 / Math.PI;
       const decDeg   = bodyEq.dec * 180 / Math.PI;
       const subLong  = ((raDeg - gmstDeg + 540) % 360) - 180;
+      // Solar eclipses get a swept-shadow path overlay computed
+      // from the active pipeline's moon ephemeris — sublunar
+      // samples through ±1 h around greatest eclipse drive the
+      // central line, magnitude bands at fixed half-widths
+      // (totality / 75 / 50 / 25 / 0 %) sweep along with the
+      // demo's existing DateTime tween (state-driven progress
+      // path in `BesselianEclipsePath.update`).
+      const shadowPath = (kind === 'solar')
+        ? computeSolarEclipseShadowPath(refined.date, moonFn, 1.0, 33)
+        : null;
+      const halfWindowDays = (kind === 'solar') ? (1 / 24) : null;
       return {
         DateTime:          modelDT - 1 / 24,
         ObserverLat:       Math.max(-85, Math.min(85, decDeg)),
@@ -105,6 +117,16 @@ function buildEclipseDemo(event, kind) {
         EclipseMinSepDeg:  refined.minSeparationRad * 180 / Math.PI,
         EclipseMagnitude:  event.magnitude ?? 1,
         EclipseEventType:  event.type,
+        // Shadow-path overlay (solar eclipses only). Null on
+        // lunar so the renderer skips this code path.
+        EclipseShadowPath:           shadowPath,
+        EclipseShadowAnchorDt:       (kind === 'solar') ? modelDT : null,
+        EclipseShadowHalfWindowDays: halfWindowDays,
+        ShowEclipseShadowPath:       (kind === 'solar'),
+        // Apr-08-2024 standalone demo's progress key cleared so
+        // the state-driven (DateTime-derived) path doesn't fight
+        // a stale explicit progress.
+        BesselianEclipseProgress:    null,
       };
     },
     tasks: (model) => {

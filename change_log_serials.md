@@ -14585,6 +14585,42 @@ Format:
   default when a user has previously persisted the off state.
 - **Revert path:** `git checkout v-s000766 -- .`
 
+## S783 — shadow-path overlay for every solar-eclipse demo
+
+- **Date:** 2026-04-30
+- **Files changed:** `js/core/besselianEclipse.js`,
+  `js/render/worldObjects.js`, `js/demos/eclipseRegistry.js`,
+  `js/core/app.js`, `js-min/**` (rebuilt)
+- **Change:** Generalised the swept-shadow overlay so all 44
+  solar eclipses in `ASTROPIXELS_ECLIPSES.solar` get the same
+  umbra + 5-band penumbra rendering, using the active
+  pipeline's moon ephemeris (DE405 / VSOP87 / Geo / Helio /
+  Ptolemy):
+  - `besselianEclipse.js` adds
+    `computeSolarEclipseShadowPath(anchorDate, moonFn,
+    halfWindowHours, samples)` — sublunar samples around
+    greatest eclipse — and `eclipseShadowBandsFromPath(central)`
+    so the same magnitude levels fit any path.
+  - `BesselianEclipsePath` now reads `state.EclipseShadowPath`,
+    rebuilding bands + line buffer on identity-checked path
+    swaps. Sweep progress derives from
+    `state.DateTime` relative to
+    `state.EclipseShadowAnchorDt ± state.EclipseShadowHalfWindowDays`
+    when the anchor exists, falling back to
+    `BesselianEclipseProgress` for the standalone Apr-08-2024
+    demo and full-path display otherwise. Visibility gates on
+    `ShowEclipseShadowPath || ShowBesselianEclipsePath`.
+  - `eclipseRegistry.buildEclipseDemo` for solar eclipses now
+    computes the shadow path on intro and stuffs
+    `EclipseShadowPath / EclipseShadowAnchorDt /
+    EclipseShadowHalfWindowDays / ShowEclipseShadowPath = true /
+    BesselianEclipseProgress = null` into the intro state. The
+    existing 10 s `DateTime` tween (5 s in + 5 s out around
+    greatest eclipse) drives the band sweep with no extra task
+    edits.
+  - State defaults added in `app.js`.
+- **Revert path:** `git checkout v-s000782 -- .`
+
 ## S782 — eclipse demo: 5 s sweep of the umbra + penumbra bands
 
 - **Date:** 2026-04-30

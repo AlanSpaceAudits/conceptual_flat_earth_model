@@ -14585,6 +14585,16 @@ Format:
   default when a user has previously persisted the off state.
 - **Revert path:** `git checkout v-s000766 -- .`
 
+## S818 — Proportional AE map: rotation +82.5° → +79.5° (3° east of S817)
+
+- **Date:** 2026-05-02
+- **Files changed:** `js/core/projections.js`,
+  `js-min/**` (rebuilt)
+- **Change:** `projections.proportional.imageRotationDeg`
+  from `82.5` to `79.5`. 3° east step (4.5° west of the
+  +75° S815 baseline).
+- **Revert path:** `git checkout v-s000817 -- .`
+
 ## S817 — Proportional AE map: rotation +67.5° → +82.5° (flip 7.5° west of S815)
 
 - **Date:** 2026-05-02

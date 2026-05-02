@@ -14585,6 +14585,32 @@ Format:
   default when a user has previously persisted the off state.
 - **Revert path:** `git checkout v-s000766 -- .`
 
+## S803 — Tang dimensions: uniform per-character labels along lines + arcs
+
+- **Date:** 2026-05-02
+- **Files changed:** `js/render/worldObjects.js`,
+  `js-min/**` (rebuilt)
+- **Change:**
+  - Every label switches to per-character `makeCharSprite`
+    runs at a uniform `charSize = 0.018` so HEIGHT, RADIUS,
+    DIAMETER, CIRCUMFERENCE, and CELESTIAL ARC text height
+    match. Each character is its own camera-facing Sprite;
+    positions stay locked to the geometry.
+  - Perpendicular offset trimmed to `R · 0.06`, half the
+    previous spacing, so labels sit closer to their lines.
+  - CELESTIAL ARC text now traces the actual quarter arc on
+    the dome (per-character `stackArc` in the xz plane), with
+    name pushed slightly outward and value slightly inward so
+    both follow the curve.
+  - CIRCUMFERENCE text similarly rides the ring arc in the xy
+    plane, on opposite halves of the circle.
+  - Geometry decouples from the hard-coded `1/π` lock and
+    tracks the live optical-vault dimensions again — overlay
+    sits 1:1 on the hemisphere the observer sees. Labels stay
+    `R_LI`-derived so the readout always names the Tang sphere
+    values regardless of OpticalVaultSize.
+- **Revert path:** `git checkout v-s000802 -- .`
+
 ## S802 — Tang dimensions: HEIGHT + LI value stacked vertically
 
 - **Date:** 2026-05-02

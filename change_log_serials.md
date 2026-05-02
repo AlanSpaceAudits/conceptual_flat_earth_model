@@ -14585,6 +14585,23 @@ Format:
   default when a user has previously persisted the off state.
 - **Revert path:** `git checkout v-s000766 -- .`
 
+## S785 — live eclipse: ±2 h window so the sweep is sim-time proportional
+
+- **Date:** 2026-04-30
+- **Files changed:** `js/core/app.js`, `js-min/**` (rebuilt)
+- **Change:** Live-eclipse detector previously triggered within
+  ±2 h of greatest eclipse but computed the shadow path with a
+  ±1 h sample window — the renderer's progress formula then
+  spent the first / last hour of the trigger window pinned at
+  0 / 1 instead of advancing. Both window halves now match
+  (`ECLIPSE_HALF_WINDOW_DAYS = 2 / 24`), the path samples bump
+  from 33 → 49 to keep ~5 min cadence over the wider span, and
+  the renderer's `progress = (DateTime − anchor + halfW) /
+  (2·halfW)` runs end-to-end across the full ~4 h global
+  eclipse duration. Wall-clock playback now scales cleanly with
+  the user's autoplay speed (Day ≈ 4 s, Hour ≈ 4 min, etc.).
+- **Revert path:** `git checkout v-s000784 -- .`
+
 ## S784 — live eclipse shadows in free play + skip-eclipse shortcut
 
 - **Date:** 2026-04-30

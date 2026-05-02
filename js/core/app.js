@@ -1173,20 +1173,30 @@ export class FeModel extends EventTarget {
     // each eclipse moment passes by. Path is cached by anchor
     // time + body source so day-by-day autoplay doesn't recompute
     // the 33-sample sublunar trace every frame.
+    // Window: a typical solar eclipse runs ~4 h global from
+    // first contact to last contact, so detect within ±2 h of
+    // greatest eclipse and compute the path with a matching
+    // ±2 h sample range. The renderer's progress formula uses
+    // this same half-window, so as `DateTime` advances at
+    // whatever autoplay speed is active, the shadow sweeps in
+    // proportional sim-time — wall-clock duration scales with
+    // the user's speed control (Day = ~4 s real, etc.).
+    const ECLIPSE_HALF_WINDOW_DAYS = 2 / 24;
     const _liveEclipse = s.LiveEclipseShadows !== false
       ? findNearestSolarEclipse(s.DateTime) : null;
-    if (_liveEclipse && _liveEclipse.distDays < 2 / 24) {
+    if (_liveEclipse && _liveEclipse.distDays < ECLIPSE_HALF_WINDOW_DAYS) {
       const cacheKey = `${_liveEclipse.anchorMs}|${bodySource}`;
       if (!this._liveEclipsePathCache
           || this._liveEclipsePathCache.key !== cacheKey) {
         const moonFn = (d) => bodyRADec('moon', d, bodySource);
         const path = computeSolarEclipseShadowPath(
-          new Date(_liveEclipse.anchorMs), moonFn, 1.0, 33);
+          new Date(_liveEclipse.anchorMs), moonFn,
+          ECLIPSE_HALF_WINDOW_DAYS * 24, 49);
         this._liveEclipsePathCache = {
-          key:      cacheKey,
+          key:        cacheKey,
           path,
-          anchorDt: _liveEclipse.anchorDt,
-          halfWindow: 1 / 24,
+          anchorDt:   _liveEclipse.anchorDt,
+          halfWindow: ECLIPSE_HALF_WINDOW_DAYS,
         };
       }
       c.LiveEclipseShadowPath           = this._liveEclipsePathCache.path;

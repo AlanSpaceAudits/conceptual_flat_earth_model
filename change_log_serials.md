@@ -14585,6 +14585,24 @@ Format:
   default when a user has previously persisted the off state.
 - **Revert path:** `git checkout v-s000766 -- .`
 
+## S811 — About panel: Tang sidereal mapping + distance calibration paragraphs
+
+- **Date:** 2026-05-02
+- **Files changed:** `index.html`, `js/ui/i18n.js`,
+  `js-min/**` (rebuilt)
+- **Change:** Two new About-popup paragraphs (`about_p4`,
+  `about_p5`) covering: (1) the Tang sidereal mapping —
+  365.25 du per full sky rotation, conversion factors
+  `1° = 365.25/360 ≈ 1.01458 du` and `1 du ≈ 0.98563°`,
+  fen as the decimal subdivision; (2) distances anchored to
+  Yi Xing's 351.267 li/du calibration, full meridian
+  365.25 × 351.267 ≈ 128,300 li ≈ 40,008 km, Tang sphere
+  radius R = 128,300/2π ≈ 20,419.45 li used by every haversine
+  / dot-product / arc-length readout in the model. Strings
+  added to the English `i18n.js` block and rendered through
+  `data-i18n` (textContent — no inline markup).
+- **Revert path:** `git checkout v-s000810 -- .`
+
 ## S810 — Chinese readouts: decimal du form + popup split + info-bar second row
 
 - **Date:** 2026-05-02

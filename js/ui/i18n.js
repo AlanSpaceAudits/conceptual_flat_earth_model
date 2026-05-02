@@ -107,6 +107,8 @@ const STRINGS = {
     about_p1: "This is a conceptual model. The positions of the stars are based purely on kinematics; the observer's optical vault defines the limit of vision onto which the starfield is projected.",
     about_p2: 'Any conceptual model that uses the lat/long graticule is no better or worse than any other projection. The graticule is internally consistent and self-referential to a fictitious observer at the center of the earth — it is that fictitious observer that binds the 60 NMi / 1° relationship to the ground positions of the stars.',
     about_p3: '"Fictitious observer" is not mutually exclusive with the conceptual model: every such model is ultimately grounded in what a single real observer sees in their own hemisphere of vision, and the graticule is simply one bookkeeping convention on top of that.',
+    about_p4: 'Tang sidereal mapping. The Chinese-units readouts use the Tang convention that a full sky rotation is 365.25 du, one du per day of the sun\'s drift along the ecliptic. So 1° = 365.25 / 360 ≈ 1.01458 du and 1 du ≈ 0.98563°. Each du divides into 10 fen; the popup shows decimal du for readability.',
+    about_p5: 'Distances. Ground lengths are anchored to Yi Xing\'s 8th-century field measurement of 351.267 li per du along a meridian. Multiplied through, the full meridian is 365.25 × 351.267 ≈ 128,300 li ≈ 40,008 km, giving a Tang sphere radius R = 128,300 / 2π ≈ 20,419.45 li. Every li / bu readout (haversine, dot-product, or arc-length R · θ) uses that same R, so degrees, du, fen, li, bu, and km all trace back to a single calibration.',
   },
   cs: {
     tab_view: 'Pohled', tab_time: 'Čas', tab_show: 'Zobrazit',

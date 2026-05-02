@@ -369,6 +369,14 @@ function defaultState() {
     DistCalcLon1: null,
     DistCalcLat2: null,
     DistCalcLon2: null,
+    // Trace toggles for the Distance Calc panel. Central angle
+    // draws the minor great-circle arc P1↔P2 in cyan; inscribed
+    // angle draws the same great circle's other half (Q → P1
+    // and Q → P2 where Q is the antipode of the minor-arc
+    // midpoint) plus a pin at Q so the inscribed-angle theorem
+    // (= central/2) is geometrically visible.
+    DistCalcTraceCentralAngle:   false,
+    DistCalcTraceInscribedAngle: false,
     // Active Cel-Theo preset code (e.g. 'PP') or null. Drives the
     // toggle behaviour of the preset buttons — clicking an active
     // preset deactivates it and reverts the atmosphere knobs.

@@ -6470,9 +6470,12 @@ export class BesselianEclipsePath {
     // composites darker (totality) above lighter (penumbra
     // periphery). Each band is a triangle strip between
     // edgeNorth[i]–edgeSouth[i]–edgeNorth[i+1]–edgeSouth[i+1].
+    // renderOrder starts at 220 — well above the WorldGlobe
+    // sphere (renderOrder 0) and the eclipse-shadow disc
+    // (renderOrder 5) — so the bands always paint on top.
     this._bands = besselian2024Apr08Bands();
     this._bandMeshes = [];
-    let renderOrderBase = 40;
+    let renderOrderBase = 220;
     for (const band of this._bands) {
       const N = band.edgeNorth.length;
       // 2 triangles per quad × (N − 1) quads × 3 verts × 3 floats
@@ -6525,13 +6528,17 @@ export class BesselianEclipsePath {
   // Project a single (lat, lon) to scene coords for the active
   // world model. GE uses the unit-sphere mapping; FE / DP use
   // `canonicalLatLongToDisc` so AE / DP inherit the active
-  // projection.
-  _project(lat, lon, ge, z) {
+  // projection. Caller passes `radiusBoost`: the GE sphere lives
+  // at FE_RADIUS, so the band mesh sits at FE_RADIUS · (1 + boost)
+  // — boost ≈ 0.02 keeps the chord-plane midpoints outside the
+  // globe even between widely-spaced samples (10° apart sags by
+  // ~0.4 % of the radius).
+  _project(lat, lon, ge, z, radiusBoost = 0.02) {
     if (ge) {
       const phi = lat * Math.PI / 180;
       const lam = lon * Math.PI / 180;
       const cp = Math.cos(phi);
-      const Rg = FE_RADIUS * 1.001;
+      const Rg = FE_RADIUS * (1 + radiusBoost);
       return [Rg * cp * Math.cos(lam), Rg * cp * Math.sin(lam), Rg * Math.sin(phi)];
     }
     const p = canonicalLatLongToDisc(lat, lon, FE_RADIUS);

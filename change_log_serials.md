@@ -14585,6 +14585,25 @@ Format:
   default when a user has previously persisted the off state.
 - **Revert path:** `git checkout v-s000766 -- .`
 
+## S781 — eclipse bands occluded by GE globe (lift + renderOrder)
+
+- **Date:** 2026-04-30
+- **Files changed:** `js/render/worldObjects.js`,
+  `js/core/app.js`, `js-min/**` (rebuilt)
+- **Change:** S780's magnitude-band triangle strip was sitting at
+  `Rg = FE_RADIUS · 1.001` on the GE sphere — the chord plane
+  between two widely-spaced samples sags ~0.4 % of the radius and
+  was paint-clipped behind the radius-1 globe in three.js's
+  transparent pass. Boost the band sphere radius to
+  `FE_RADIUS · 1.02` so the chord-plane midpoints stay outside
+  the globe, and bump the band `renderOrder` from 40 → 220 (above
+  the world globe / shadow disc) so the bands cannot be occluded
+  even when transparent sorting picks an unfavourable order.
+  Also adds the `DistCalcTraceCentralAngle` /
+  `DistCalcTraceInscribedAngle` state defaults so the upcoming
+  distance-calc trace overlay has stable keys.
+- **Revert path:** `git checkout v-s000780 -- .`
+
 ## S780 — eclipse umbra + 5-level penumbra magnitude bands
 
 - **Date:** 2026-04-30

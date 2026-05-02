@@ -1159,11 +1159,13 @@ export class TangSphereDimensions {
       return line;
     };
 
-    // Dashed dimension lines: vertical height, ground radius,
-    // ground diameter.
+    // Dashed dimension lines: vertical height (along z), ground
+    // radius (along +x), ground diameter (perpendicular to the
+    // radius along the y-axis from -R to +R) so the two ground
+    // measurements don't overlap.
     this.group.add(mkDashed([0, 0, 1e-3,  0, 0, H]));
     this.group.add(mkDashed([0, 0, 1e-3,  R, 0, 1e-3]));
-    this.group.add(mkDashed([-R, 0, 8e-4, R, 0, 8e-4], 0.020, 0.010));
+    this.group.add(mkDashed([0, -R, 8e-4, 0, R, 8e-4], 0.020, 0.010));
 
     // Solid wireframe of the dome: ground circle + two great-
     // circle arcs in the y=0 and x=0 vertical planes (height
@@ -1207,34 +1209,42 @@ export class TangSphereDimensions {
     arcXLine.frustumCulled = false;
     this.group.add(arcXLine);
 
-    // Sprite labels — re-derived from the live (R, H) so when
-    // the OpticalVaultSize / Height sliders move, the labels
-    // track the new dome shape and the new li values.
-    const heightTxt   = `HEIGHT ${_tangFmtLi(H)} LI`;
-    const radiusTxt   = `RADIUS ${_tangFmtLi(R)} LI`;
-    const diameterTxt = `DIAMETER ${_tangFmtLi(2 * R)} LI`;
-    const mkLabel = (text, anchor, axis) => {
-      const grp = new THREE.Group();
-      grp.position.set(anchor[0], anchor[1], anchor[2]);
-      const charSize = 0.026;
-      const charSpacing = charSize * 0.85;
-      const span = text.length * charSpacing;
-      let cursor = -span / 2;
-      for (const ch of text) {
-        const sp = makeCharSprite(ch, '#ffe080');
-        sp.scale.set(charSize, charSize, 1);
-        if (axis === 'x') sp.position.set(cursor, 0, 0);
-        else if (axis === 'y') sp.position.set(0, cursor, 0);
-        else sp.position.set(0, 0, cursor);
-        sp.renderOrder = 51;
-        grp.add(sp);
-        cursor += charSpacing;
-      }
-      return grp;
+    // Single-canvas text sprites — each label paints as one
+    // image so reading direction is camera-aligned and never
+    // gets shuffled by the per-character placement that
+    // produced "USIDAR" / "RETMAID" reads from oblique angles.
+    // Each measurement gets a NAME sprite on one side of its
+    // dimension line and a VALUE sprite on the other, both
+    // anchored to the line's midpoint.
+    const nameColor  = '#ffffff';
+    const valueColor = '#ffe080';
+    const labelHeight = 0.040;
+    const place = (text, color, x, y, z) => {
+      const sp = makeTextSprite(text, color);
+      setSpriteScale(sp, labelHeight);
+      sp.position.set(x, y, z);
+      sp.renderOrder = 252;
+      this.group.add(sp);
+      return sp;
     };
-    this.group.add(mkLabel(heightTxt,   [0.04, 0, H / 2], 'z'));
-    this.group.add(mkLabel(radiusTxt,   [R / 2, -0.04, 1.5e-3], 'x'));
-    this.group.add(mkLabel(diameterTxt, [0, 0.05, 1.5e-3], 'x'));
+    // Vertical line midpoint = (0, 0, H/2). HEIGHT name on +x,
+    // value on -x.
+    place('HEIGHT',          nameColor,  R * 0.10, 0, H / 2);
+    place(`${_tangFmtLi(H)} LI`, valueColor, -R * 0.10, 0, H / 2);
+    // Radius line midpoint = (R/2, 0, ~0). RADIUS above (+y),
+    // value below (-y).
+    place('RADIUS',          nameColor,  R / 2,  R * 0.08, 1.5e-3);
+    place(`${_tangFmtLi(R)} LI`, valueColor, R / 2, -R * 0.08, 1.5e-3);
+    // Diameter line lays along the y-axis (perpendicular to
+    // RADIUS) — midpoint = (0, 0, ~0). DIAMETER on +x side,
+    // value on -x side.
+    place('DIAMETER',        nameColor,  R * 0.08, 0, 1.5e-3);
+    place(`${_tangFmtLi(2 * R)} LI`, valueColor, -R * 0.08, 0, 1.5e-3);
+    // Circumference rides on the ground ring at +x rim.
+    const circLi = 2 * Math.PI * R * (TANG_CIRCUMFERENCE_LI / 2);
+    const circLiTxt = (Math.round(circLi * 100) / 100).toLocaleString();
+    place('CIRCUMFERENCE',   nameColor,  R * 1.10, R * 0.06, 1.5e-3);
+    place(`${circLiTxt} LI`, valueColor, R * 1.10, -R * 0.06, 1.5e-3);
   }
 
   update(model) {

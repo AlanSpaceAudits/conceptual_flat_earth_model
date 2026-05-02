@@ -14585,6 +14585,31 @@ Format:
   default when a user has previously persisted the off state.
 - **Revert path:** `git checkout v-s000766 -- .`
 
+## S798 — Tang dimensions: single-sprite labels + perpendicular diameter
+
+- **Date:** 2026-05-02
+- **Files changed:** `js/render/worldObjects.js`,
+  `js-min/**` (rebuilt)
+- **Change:**
+  - Per-character sprite labels swapped for single-canvas
+    `makeTextSprite` images so each label paints as one camera-
+    facing texture — fixes the "USIDAR / RETMAID" backwards
+    reads from oblique camera angles.
+  - Each measurement now has a NAME sprite + VALUE sprite
+    flanking the midpoint of its dimension line, not stretched
+    along the whole line. White name (`HEIGHT`, `RADIUS`,
+    `DIAMETER`, `CIRCUMFERENCE`) on one side, yellow li value
+    on the other.
+  - Diameter line moves from `(-R, 0) → (R, 0)` (overlapping
+    the radius along +x) to `(0, -R) → (0, R)` along the y-
+    axis, perpendicular to the radius. The two ground
+    measurements now lay on different axes and don't crowd.
+  - New CIRCUMFERENCE label hugs the ground ring's +x rim,
+    showing `2 π R · (TANG_CIRC / 2) LI`. So at the canonical
+    Tang sphere (`R = 1/π`) the readout is `128,300 LI`,
+    matching the original Tang great-circle definition.
+- **Revert path:** `git checkout v-s000797 -- .`
+
 ## S797 — distance pair: dashed radii to centre (LineDashedMaterial)
 
 - **Date:** 2026-05-02

@@ -1358,14 +1358,14 @@ export class TangSphereDimensions {
     // dashed lines + labels visible. Labels stay R_LI-derived
     // either way.
     const tangR = R_LI / (TANG_CIRCUMFERENCE_LI / 2);
-    // Use the user-set `OpticalVaultSize` slider value directly
-    // in both modes so the dome stays the same canonical size
-    // across world-model swaps. In GE the computed
-    // `OpticalVaultRadius` is forced to FE_RADIUS = 1 (planet
-    // shell), which would make the overlay coincident with the
-    // globe — bypass that and read the underlying state value
-    // so GE matches FE's dome footprint.
-    const R = s.OpticalVaultSize || tangR;
+    // FE/DP: track the live optical vault (slider-set hemisphere
+    // over the disc). GE: the optical vault is the planet shell
+    // itself, so size the dome to FE_RADIUS so it sits 1:1 on the
+    // sphere surface and reads at the same apparent scale as the
+    // disc-mode dome instead of shrinking to the slider fraction.
+    const R = ge
+      ? FE_RADIUS
+      : (s.OpticalVaultSize || tangR);
     const H = ge
       ? R
       : (Number.isFinite(c.OpticalVaultHeightEffective)

@@ -14585,6 +14585,20 @@ Format:
   default when a user has previously persisted the off state.
 - **Revert path:** `git checkout v-s000766 -- .`
 
+## S809 — Tang dimensions: GE dome locked to FE_RADIUS (planet shell)
+
+- **Date:** 2026-05-01
+- **Files changed:** `js/render/worldObjects.js`
+- **Change:** `TangSphereDimensions.update()` now sizes the GE
+  dome to `FE_RADIUS = 1` instead of reading
+  `state.OpticalVaultSize` (default 0.5). In GE the optical
+  vault is the planet shell itself, so the dome's canonical
+  radius must equal the planet's to read 1:1 on the surface
+  rather than shrinking to half-radius inside the globe shell.
+  FE / DP continue to track the slider-set hemisphere over the
+  disc.
+- **Revert path:** `git checkout v-s000808 -- .`
+
 ## S808 — Tang dimensions: GE dome size matches FE/DP
 
 - **Date:** 2026-05-02

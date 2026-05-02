@@ -14585,6 +14585,65 @@ Format:
   default when a user has previously persisted the off state.
 - **Revert path:** `git checkout v-s000766 -- .`
 
+## S823 — NASA Espenak Besselian elements: scrape + polynomial-driven shadow paths
+
+- **Date:** 2026-05-02
+- **Files changed:**
+  - new: `scripts/scrape_besselian.mjs`
+  - new: `js/data/eclipseBesselian.js` (44 eclipses, 2021-2040)
+  - `js/core/besselianEclipse.js` (axis-projection sign fix +
+    `besselianShadowPathFromElements`)
+  - `js/demos/eclipseRegistry.js` (use polynomial path when
+    Bessel data is available)
+  - `js/core/app.js` (live free-play uses polynomial path with
+    sublunar fallback)
+  - `js/render/worldObjects.js` (per-event l1 / l2 drive band
+    sizing)
+  - `js-min/**` (rebuilt)
+- **Change:**
+  - `scripts/scrape_besselian.mjs` walks the local Espenak
+    catalog (`astropixelsEclipses.solar`) and fetches each
+    eclipse's NASA SE-Search page
+    (`https://eclipse.gsfc.nasa.gov/SEsearch/SEdata.php?Ecl=YYYYMMDD`).
+    Two parsers: a JS-array path for total / annular / hybrid
+    (`var elements = new Array(...)`) and a `<pre>`-table
+    fallback for partial eclipses. 44/44 eclipses parsed.
+  - Fixed two sign bugs in the long-standing
+    `besselianAxisToLatLon` formulas. Rotation from
+    fundamental-plane (ξ, η, ζ) to Earth-fixed Greenwich-
+    equatorial coords:
+      sin φ = η cos d + ζ sin d
+      A     = −η sin d + ζ cos d
+      λ     = atan2(ξ, A) − μ
+    Verified against Apr 8 2024 greatest: lat 25.13° N,
+    lon −104.43° W (published 25.3° N / −104.2° W). Aug 12
+    2026 lands on Iceland; Aug 2 2027 lands on Egypt.
+  - New `besselianShadowPathFromElements(els, samples)`
+    evaluates the X / Y / D / μ / L1 / L2 polynomials in
+    1-min steps to find P1 (`√(x²+y²) ≤ 1 + l1`), P4, and
+    greatest, then returns evenly-spaced (lat, lon) samples
+    plus per-event `l1Greatest` / `l2Greatest`.
+  - Eclipse-demo `intro` now reads
+    `ECLIPSE_BESSELIAN[event.date]` first; on hit, drives
+    the path entirely from polynomials. Falls back to the
+    sublunar approximation for any eclipse not in the data
+    module.
+  - Live free-play in `app.js` now does the same — polynomial
+    path when available, sublunar + S821 contact-window
+    heuristic otherwise.
+  - `BesselianEclipsePath._rebuildFromPath(path, l1, l2)`
+    forwards per-event `l1` / `l2` into
+    `eclipseShadowBandsFromPath`, so each eclipse paints with
+    its own penumbra / umbra footprint.
+  - Added state defaults `EclipseShadowL1` / `EclipseShadowL2`
+    plus computed `LiveEclipseShadowL1` / `LiveEclipseShadowL2`.
+- **Caveat:** P1 / P4 use the cylindrical
+  `√(x²+y²) ≤ 1 + l1` approximation rather than NASA's full
+  cone-Earth-intersection iteration; sweep window is ~30-60
+  min wider than published P1-P4. Greatest time matches NASA
+  to within 1 min. Adequate for visualisation.
+- **Revert path:** `git checkout v-s000822 -- .`
+
 ## S822 — Eclipse magnitude bands: R_LI-anchored fractions (drop R_Earth = 6371 km)
 
 - **Date:** 2026-05-02

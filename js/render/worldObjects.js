@@ -6960,11 +6960,15 @@ export class BesselianEclipsePath {
   }
 
   // Swap to a state-supplied (lat, lon, t) path, rebuild bands,
-  // grow line buffer if needed.
-  _rebuildFromPath(path) {
+  // grow line buffer if needed. Per-event `l1` / `l2` (when
+  // available from the polynomial evaluator) override the
+  // representative defaults so bands scale per eclipse.
+  _rebuildFromPath(path, l1 = null, l2 = null) {
     if (!Array.isArray(path) || path.length < 2) return;
     this._samples = path;
-    this._bands = eclipseShadowBandsFromPath(path);
+    this._bands = (l1 != null && l2 != null)
+      ? eclipseShadowBandsFromPath(path, l1, l2)
+      : eclipseShadowBandsFromPath(path);
     this._buildBandMeshes();
     const need = (path.length + 1) * 3;
     if (!this._lineBuf || this._lineBuf.length < need) {
@@ -7026,9 +7030,16 @@ export class BesselianEclipsePath {
     const activePath = Array.isArray(s.EclipseShadowPath) && s.EclipseShadowPath.length >= 2
       ? s.EclipseShadowPath
       : (Array.isArray(livePath) && livePath.length >= 2 ? livePath : null);
+    // Per-event l1 / l2 (from Bessel polynomial evaluator) drive
+    // the magnitude band footprint so each eclipse renders with
+    // its own penumbra / umbra width.
+    const activeL1 = Number.isFinite(s.EclipseShadowL1) ? s.EclipseShadowL1
+                    : (Number.isFinite(c?.LiveEclipseShadowL1) ? c.LiveEclipseShadowL1 : null);
+    const activeL2 = Number.isFinite(s.EclipseShadowL2) ? s.EclipseShadowL2
+                    : (Number.isFinite(c?.LiveEclipseShadowL2) ? c.LiveEclipseShadowL2 : null);
     if (activePath && activePath !== this._activePathRef) {
       this._activePathRef = activePath;
-      this._rebuildFromPath(activePath);
+      this._rebuildFromPath(activePath, activeL1, activeL2);
     }
     if (!this._samples.length) return;
 

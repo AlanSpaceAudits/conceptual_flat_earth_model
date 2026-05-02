@@ -92,11 +92,20 @@ export function besselianAxisToLatLon(x, y, dDeg, muDeg) {
   const r2  = xi * xi + eta * eta;
   if (r2 > 1) return null;
   const zeta = Math.sqrt(1 - r2);
-  const sinPhi = eta * sinD + zeta * cosD;
+  // Rotation from fundamental-plane coords (ξ, η, ζ) to
+  // Earth-fixed Greenwich-equatorial (X, Y, Z):
+  //   ξ-axis is east on the fundamental plane (perpendicular to
+  //   the meridian containing the moon-sun axis).
+  //   ζ-axis points along the moon-sun direction (declination d,
+  //   Greenwich hour angle μ).
+  //   sin φ_geocentric = Z = η cos d + ζ sin d
+  //   λ = atan2(ξ, A) − μ   where A = −η sin d + ζ cos d
+  // (Verified against Apr 8 2024 greatest: lat 25.3 °N, lon −104.2 °W.)
+  const sinPhi = eta * cosD + zeta * sinD;
+  const A      = -eta * sinD + zeta * cosD;
   const phi    = Math.asin(Math.max(-1, Math.min(1, sinPhi)));
-  const denom  = zeta * cosD - eta * sinD;
-  const theta  = Math.atan2(xi, denom) * 180 / Math.PI;
-  let lon = muDeg - theta;
+  const theta  = Math.atan2(xi, A) * 180 / Math.PI;
+  let lon = theta - muDeg;
   // Wrap to (-180, +180].
   lon = ((lon + 180) % 360 + 360) % 360 - 180;
   return { lat: phi * 180 / Math.PI, lon };
@@ -272,6 +281,110 @@ export function eclipseShadowBandsFromPath(centralLine, l1 = L1_DEFAULT, l2 = L2
 // hardcoded Apr-08-2024 central line, with default l1 / l2.
 export function besselian2024Apr08Bands() {
   return eclipseShadowBandsFromPath(besselian2024Apr08Path());
+}
+
+// Build a per-eclipse polynomial-driven shadow path directly from
+// the NASA Espenak Besselian element block (one entry of
+// `js/data/eclipseBesselian.js`). Walks `t` from P1 (first contact
+// — `√(x²+y²) ≤ 1 + l1`) through P4 in `samples` even steps, and
+// at each step projects the shadow axis to lat/lon via
+// `besselianAxisToLatLon`. The returned array includes per-sample
+// `l1` / `l2` so a renderer can scale magnitude bands per event.
+//
+// This replaces the sublunar approximation
+// (`computeSolarEclipseShadowPath`) with a real Espenak path. The
+// coordinate convention matches NASA's: `(x, y)` in 1-radius
+// fundamental-plane units; `d` (axis declination) and `μ`
+// (Greenwich axis hour angle) in degrees; `l1` / `l2` unitless
+// (multiply by `R_LI` for li).
+//
+// Search bounds: the polynomial element block ships `tMin` /
+// `tMax` (typically ±3 h around `t0`). For partial eclipses the
+// shadow axis never lands on the sphere (`√(x²+y²) > 1` always),
+// so the cone first touches Earth when `√(x²+y²) ≤ 1 + l1`. P1 /
+// P4 are the first / last `t` satisfying that. For total /
+// annular, the central line lies on the sphere over a sub-window
+// of P1..P4 — we still return the full P1..P4 path so the
+// magnitude-band penumbral edge sweeps from first to last contact.
+//
+// Returns: { samples: [{ t, lat, lon, l1, l2 }], p1, p4, greatest, l1Greatest, l2Greatest }
+//   t       — UT decimal hours from `t0Tdt`
+//   lat, lon — sublunar shadow-axis projection (degrees) — null
+//             when axis misses sphere at this t
+//   l1, l2  — per-sample penumbra / umbra cone radii (unitless)
+//   p1 / p4 — UT ms of first / last sphere contact
+//   greatest — UT ms of minimum √(x²+y²) (closest approach)
+//   l1Greatest / l2Greatest — element values at greatest, used to
+//                             size per-event magnitude bands
+export function besselianShadowPathFromElements(els, samples = 65) {
+  const evalAt = (t) => ({
+    x:  polyEval(els.x,  t),
+    y:  polyEval(els.y,  t),
+    d:  polyEval(els.d,  t),
+    mu: polyEval(els.mu, t),
+    l1: polyEval(els.l1, t),
+    l2: polyEval(els.l2, t),
+  });
+  // Step in 1-min increments to find P1 / P4 / greatest.
+  const stepHours = 1 / 60;
+  let p1H = null, p4H = null, greatestH = els.tMin;
+  let minR = Infinity;
+  for (let t = els.tMin; t <= els.tMax + 1e-9; t += stepHours) {
+    const e = evalAt(t);
+    const r = Math.sqrt(e.x * e.x + e.y * e.y);
+    const reach = 1 + e.l1;
+    if (r <= reach) {
+      if (p1H === null) p1H = t;
+      p4H = t;
+    }
+    if (r < minR) { minR = r; greatestH = t; }
+  }
+  if (p1H === null) {
+    // Shadow axis never touches Earth at `1 + l1` — fallback to
+    // the full polynomial window so the renderer still has
+    // something. Should be rare; happens only for misclassified
+    // events where the partial phase grazes barely outside the
+    // tabulated tMin..tMax window.
+    p1H = els.tMin;
+    p4H = els.tMax;
+  }
+  // Sample N points evenly across [p1, p4].
+  const out = [];
+  const span = p4H - p1H;
+  for (let i = 0; i < samples; i++) {
+    const t = p1H + (span * i) / Math.max(1, samples - 1);
+    const e = evalAt(t);
+    const ll = besselianAxisToLatLon(e.x, e.y, e.d, e.mu);
+    out.push({
+      t, // UT hours from t0
+      lat: ll ? ll.lat : null,
+      lon: ll ? ll.lon : null,
+      l1: e.l1,
+      l2: e.l2,
+    });
+  }
+  // Anchor t0 in UT-ms. NASA ships `jdT0` alongside `t0Tdt`, but
+  // their JD field uses a non-standard alignment — round it to
+  // the eclipse calendar date and then add `t0Tdt` (TDT hours)
+  // minus ΔT (s) for a clean t0_UT.
+  const jdMs = (els.jdT0 - 2440587.5) * 86400000;
+  const dEclipse = new Date(jdMs);
+  const dateMidnightMs = Date.UTC(
+    dEclipse.getUTCFullYear(),
+    dEclipse.getUTCMonth(),
+    dEclipse.getUTCDate(),
+  );
+  const t0Ms = dateMidnightMs + (els.t0Tdt * 3600 - els.deltaT) * 1000;
+  const hToMs = (h) => t0Ms + h * 3600000;
+  const greatest = evalAt(greatestH);
+  return {
+    samples: out,
+    p1: hToMs(p1H),
+    p4: hToMs(p4H),
+    greatest: hToMs(greatestH),
+    l1Greatest: greatest.l1,
+    l2Greatest: greatest.l2,
+  };
 }
 
 // Sample the moon's sublunar point around `anchorDate` to build

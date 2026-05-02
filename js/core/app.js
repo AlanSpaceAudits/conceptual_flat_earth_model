@@ -17,6 +17,8 @@ import {
   apix as ephApix, vsop as ephVsop,
 } from './ephemeris.js';
 import { apparentStarPosition, findSolarEclipseContactWindow } from './ephemerisCommon.js';
+import { besselianShadowPathFromElements } from './besselianEclipse.js';
+import { ECLIPSE_BESSELIAN } from '../data/eclipseBesselian.js';
 import { CEL_NAV_STARS, celNavStarById } from './celnavStars.js';
 import { CATALOGUED_STARS, cataloguedStarById } from './constellations.js';
 import { BLACK_HOLES, blackHoleById } from './blackHoles.js';
@@ -267,6 +269,8 @@ function defaultState() {
     EclipseShadowPath: null,
     EclipseShadowAnchorDt: null,
     EclipseShadowHalfWindowDays: null,
+    EclipseShadowL1: null,
+    EclipseShadowL2: null,
     ShowEclipseShadowPath: false,
     // Free-play live-eclipse detector. When ON (default), the
     // simulator's `update()` watches `DateTime` for a ±2 h window
@@ -1176,21 +1180,11 @@ export class FeModel extends EventTarget {
       c.NightFactor = Limit01((-sunElev) / 12.0);
     }
 
-    // Live solar-eclipse path detector. Whenever the simulator
-    // clock sits within the per-eclipse contact window of a
-    // catalogued event, build the sublunar shadow path on
-    // demand and stash it in `computed`. Path + window are
-    // cached by anchor time + body source so day-by-day
-    // autoplay doesn't recompute the trace every frame.
-    //
-    // Window: derived per eclipse via
-    // `findSolarEclipseContactWindow` — walks the active
-    // pipeline's sun + moon ephemeris outward from greatest
-    // until the angular separation exceeds 1.5°
-    // (≈ sum of angular radii + max lunar parallax), so the
-    // sweep duration matches the eclipse's real Earth-wide
-    // partial-phase length. Short / glancing events get a
-    // narrow window, long Saros peaks get a wide one.
+    // Live solar-eclipse path detector. When the simulator clock
+    // sits inside the per-event window of a catalogued eclipse,
+    // build the polynomial-driven shadow path from NASA's
+    // published Besselian elements. Falls back to a per-pipeline
+    // sublunar approximation for eclipses not in the Bessel table.
     const HUNT_HALF_WINDOW_DAYS = 4 / 24;
     const _liveEclipse = s.LiveEclipseShadows !== false
       ? findNearestSolarEclipse(s.DateTime) : null;
@@ -1198,41 +1192,71 @@ export class FeModel extends EventTarget {
       const cacheKey = `${_liveEclipse.anchorMs}|${bodySource}`;
       if (!this._liveEclipsePathCache
           || this._liveEclipsePathCache.key !== cacheKey) {
-        const sunFn  = (d) => bodyRADec('sun',  d, bodySource);
-        const moonFn = (d) => bodyRADec('moon', d, bodySource);
-        const contact = findSolarEclipseContactWindow(
-          new Date(_liveEclipse.anchorMs), sunFn, moonFn);
-        const halfWindowDays = contact.halfWindowMs / TIME_ORIGIN.msPerDay;
-        const greatestDt = contact.greatestMs / TIME_ORIGIN.msPerDay - TIME_ORIGIN.ZeroDate;
-        const path = computeSolarEclipseShadowPath(
-          new Date(contact.greatestMs), moonFn,
-          halfWindowDays * 24, 49);
-        this._liveEclipsePathCache = {
-          key:        cacheKey,
-          path,
-          anchorDt:   greatestDt,
-          halfWindow: halfWindowDays,
-        };
+        const els = ECLIPSE_BESSELIAN[_liveEclipse.date];
+        if (els) {
+          const result = besselianShadowPathFromElements(els, 49);
+          const greatestDt = result.greatest / TIME_ORIGIN.msPerDay - TIME_ORIGIN.ZeroDate;
+          const halfWindowMs = Math.max(
+            result.greatest - result.p1,
+            result.p4 - result.greatest,
+          );
+          // Convert sample t (hours from t0Tdt) so renderer
+          // sweeps relative to greatest. Path samples carry
+          // (lat, lon); progress comes from anchor + halfWindow.
+          const path = result.samples
+            .filter((p) => Number.isFinite(p.lat) && Number.isFinite(p.lon))
+            .map((p) => ({ t: p.t, lat: p.lat, lon: p.lon }));
+          this._liveEclipsePathCache = {
+            key:        cacheKey,
+            path,
+            anchorDt:   greatestDt,
+            halfWindow: halfWindowMs / TIME_ORIGIN.msPerDay,
+            l1:         result.l1Greatest,
+            l2:         result.l2Greatest,
+          };
+        } else {
+          // Fallback: ephemeris-derived sublunar trace +
+          // separation-threshold contact window.
+          const sunFn  = (d) => bodyRADec('sun',  d, bodySource);
+          const moonFn = (d) => bodyRADec('moon', d, bodySource);
+          const contact = findSolarEclipseContactWindow(
+            new Date(_liveEclipse.anchorMs), sunFn, moonFn);
+          const halfWindowDays = contact.halfWindowMs / TIME_ORIGIN.msPerDay;
+          const greatestDt = contact.greatestMs / TIME_ORIGIN.msPerDay - TIME_ORIGIN.ZeroDate;
+          const path = computeSolarEclipseShadowPath(
+            new Date(contact.greatestMs), moonFn,
+            halfWindowDays * 24, 49);
+          this._liveEclipsePathCache = {
+            key:        cacheKey,
+            path,
+            anchorDt:   greatestDt,
+            halfWindow: halfWindowDays,
+            l1:         null,
+            l2:         null,
+          };
+        }
       }
       const cached = this._liveEclipsePathCache;
-      // Only mark the path active when the simulator clock sits
-      // inside this eclipse's actual contact window — outside
-      // the window there's no eclipse to render even if the
-      // catalog event is the "nearest".
       const dtFromGreatest = s.DateTime - cached.anchorDt;
       if (Math.abs(dtFromGreatest) <= cached.halfWindow) {
         c.LiveEclipseShadowPath           = cached.path;
         c.LiveEclipseShadowAnchorDt       = cached.anchorDt;
         c.LiveEclipseShadowHalfWindowDays = cached.halfWindow;
+        c.LiveEclipseShadowL1             = cached.l1;
+        c.LiveEclipseShadowL2             = cached.l2;
       } else {
         c.LiveEclipseShadowPath           = null;
         c.LiveEclipseShadowAnchorDt       = null;
         c.LiveEclipseShadowHalfWindowDays = null;
+        c.LiveEclipseShadowL1             = null;
+        c.LiveEclipseShadowL2             = null;
       }
     } else {
       c.LiveEclipseShadowPath           = null;
       c.LiveEclipseShadowAnchorDt       = null;
       c.LiveEclipseShadowHalfWindowDays = null;
+      c.LiveEclipseShadowL1             = null;
+      c.LiveEclipseShadowL2             = null;
       this._liveEclipsePathCache        = null;
     }
 

@@ -7,7 +7,7 @@
 // Panel is fixed in the upper-left of the viewport; classed
 // `info-popup` for shared styling.
 
-import { fmtDuFen, fmtLiBu } from '../core/units.js';
+import { fmtDuDecimal, fmtLiBu } from '../core/units.js';
 
 const ART_SIZE = 96;        // canvas pixel grid
 const SCALE    = 4;         // chunky pixel-art zoom
@@ -445,28 +445,21 @@ export function buildTrackingInfoPopup(panelEl, model) {
     elHeaderName.textContent = `Tracking · ${info.name || info.target}`;
     paint(info, c);
 
-    // When the user has Chinese display units toggled on, every
-    // angular readout gets a `· N du M.M fen` suffix appended so the
-    // DMS and du / fen sit side by side. `withDu` is a no-op when
-    // the toggle is off, keeping the default look unchanged.
+    // Chinese-units block sits as a second section beneath the DMS
+    // section instead of being appended in-line. Top half = DMS;
+    // bottom half = same metrics in decimal du (`fmtDuDecimal`)
+    // plus li/bu distance for Central / Inscribed.
     const chineseOn = !!s.ShowChineseDu;
-    const withDu = (deg, dmsStr, signed = false) =>
-      chineseOn && Number.isFinite(deg)
-        ? `${dmsStr}  ·  ${fmtDuFen(deg, signed)}`
-        : dmsStr;
 
-    const az = withDu(info.azimuth, fmtDms(info.azimuth));
-    const el = withDu(info.elevation, fmtSignedDms(info.elevation), true);
-    const gpLat = withDu(info.gpLat, fmtSignedDms(info.gpLat), true);
-    const gpLon = withDu(info.gpLon, fmtSignedDms(info.gpLon), true);
-    // True (unrefracted) vs apparent (refracted) elevation. Shown as
-    // a pair when a refraction formula is active; collapse to a
-    // single Elevation row when refraction is off.
+    const az = fmtDms(info.azimuth);
+    const el = fmtSignedDms(info.elevation);
+    const gpLat = fmtSignedDms(info.gpLat);
+    const gpLon = fmtSignedDms(info.gpLon);
     const refrDeg = Number.isFinite(info.refractionDeg) ? info.refractionDeg : 0;
     const refrOn = !!s.Refraction && s.Refraction !== 'off';
-    const elTrue = withDu(info.elevation, fmtSignedDms(info.elevation), true);
+    const elTrue = fmtSignedDms(info.elevation);
     const elApparent = refrOn && refrDeg !== 0
-      ? withDu(info.elevation + refrDeg, fmtSignedDms(info.elevation + refrDeg), true)
+      ? fmtSignedDms(info.elevation + refrDeg)
       : elTrue;
     // Tracking-popup RA / Dec come from the **active** ephemeris
     // pipeline (carried directly on `info` as `ra`/`dec`). The
@@ -479,13 +472,10 @@ export function buildTrackingInfoPopup(panelEl, model) {
       ? { ra: info.ra, dec: info.dec }
       : (info.astropixelsReading || info.geoReading || info.helioReading
          || info.vsop87Reading || info.ptolemyReading || null);
-    // RA stays in HMS as the primary string; the du suffix uses the
-    // RA expressed as degrees so the conversion is consistent with
-    // every other angle in the popup.
     const raDeg  = r ? r.ra  * 180 / Math.PI : NaN;
     const decDeg = r ? r.dec * 180 / Math.PI : NaN;
-    const ra  = r ? withDu(raDeg,  fmtH(r.ra)) : '—';
-    const dec = r ? withDu(decDeg, fmtSignedDms(decDeg), true) : '—';
+    const ra  = r ? fmtH(r.ra) : '—';
+    const dec = r ? fmtSignedDms(decDeg) : '—';
     const mag = (info.mag != null && Number.isFinite(info.mag))
       ? info.mag.toFixed(2)
       : '—';
@@ -494,6 +484,7 @@ export function buildTrackingInfoPopup(panelEl, model) {
     // (observer lat/lon, body GP lat/lon). Inscribed = central / 2
     // (inscribed-angle theorem).
     let centralStr = '—', inscribedStr = '—';
+    let centralDeg = NaN, inscribedDeg = NaN;
     if (Number.isFinite(info.gpLat) && Number.isFinite(info.gpLon)
         && Number.isFinite(s.ObserverLat) && Number.isFinite(s.ObserverLong)) {
       const oLat = s.ObserverLat * Math.PI / 180;
@@ -502,18 +493,10 @@ export function buildTrackingInfoPopup(panelEl, model) {
       const gLon = info.gpLon * Math.PI / 180;
       const cosC = Math.sin(oLat) * Math.sin(gLat)
                  + Math.cos(oLat) * Math.cos(gLat) * Math.cos(oLon - gLon);
-      const centralDeg = Math.acos(Math.max(-1, Math.min(1, cosC))) * 180 / Math.PI;
-      // Central row optionally appends both the du / fen angle and
-      // the Yi Xing 351.267 li/du ground-distance equivalent. The
-      // li / bu term is meaningful only along a meridian, but we
-      // surface it here as the closest analog to "how far apart
-      // are the observer and the body's GP" in Tang-era units.
-      centralStr = chineseOn
-        ? `${fmtDms(centralDeg)}  ·  ${fmtDuFen(centralDeg)}  ·  ${fmtLiBu(centralDeg)}`
-        : fmtDms(centralDeg);
-      inscribedStr = chineseOn
-        ? `${fmtDms(centralDeg / 2)}  ·  ${fmtDuFen(centralDeg / 2)}  ·  ${fmtLiBu(centralDeg / 2)}`
-        : fmtDms(centralDeg / 2);
+      centralDeg = Math.acos(Math.max(-1, Math.min(1, cosC))) * 180 / Math.PI;
+      inscribedDeg = centralDeg / 2;
+      centralStr = fmtDms(centralDeg);
+      inscribedStr = fmtDms(inscribedDeg);
     }
 
     const formulaName = s.Refraction === 'bennett' ? 'Bennett'
@@ -523,7 +506,7 @@ export function buildTrackingInfoPopup(panelEl, model) {
       ? `<div class="ti-row ti-refr-info"><span>↳ ${formulaName}</span><span>+${refrArcmin.toFixed(2)}′</span></div>`
       : '';
     const refrCaRow = refrOn
-      ? `<div class="ti-row"><span>CA (Apparent ↔ True)</span><span>${withDu(refrDeg, fmtSignedDms(refrDeg), true)}</span></div>`
+      ? `<div class="ti-row"><span>CA (Apparent ↔ True)</span><span>${fmtSignedDms(refrDeg)}</span></div>`
       : '';
     const elevationRows = refrOn
       ? `<div class="ti-row"><span>Apparent Elevation</span><span>${elApparent}</span></div>
@@ -531,6 +514,42 @@ export function buildTrackingInfoPopup(panelEl, model) {
          <div class="ti-row"><span>True Elevation</span><span>${elTrue}</span></div>
          ${refrCaRow}`
       : `<div class="ti-row"><span>Elevation</span><span>${el}</span></div>`;
+
+    let chineseSection = '';
+    if (chineseOn) {
+      const azDu      = fmtDuDecimal(info.azimuth);
+      const elDuTrue  = fmtDuDecimal(info.elevation, true);
+      const elDuApp   = (refrOn && refrDeg !== 0)
+        ? fmtDuDecimal(info.elevation + refrDeg, true) : elDuTrue;
+      const raDu      = fmtDuDecimal(raDeg);
+      const decDu     = fmtDuDecimal(decDeg, true);
+      const gpLatDu   = fmtDuDecimal(info.gpLat, true);
+      const gpLonDu   = fmtDuDecimal(info.gpLon, true);
+      const centralDu = Number.isFinite(centralDeg)
+        ? `${fmtDuDecimal(centralDeg)}  ·  ${fmtLiBu(centralDeg)}` : '—';
+      const inscDu    = Number.isFinite(inscribedDeg)
+        ? `${fmtDuDecimal(inscribedDeg)}  ·  ${fmtLiBu(inscribedDeg)}` : '—';
+      const refrDuRow = refrOn
+        ? `<div class="ti-row"><span>CA (Apparent ↔ True)</span><span>${fmtDuDecimal(refrDeg, true, 4)}</span></div>`
+        : '';
+      const elDuRows = refrOn
+        ? `<div class="ti-row"><span>Apparent Elevation</span><span>${elDuApp}</span></div>
+           <div class="ti-row"><span>True Elevation</span><span>${elDuTrue}</span></div>
+           ${refrDuRow}`
+        : `<div class="ti-row"><span>Elevation</span><span>${elDuTrue}</span></div>`;
+      chineseSection = `
+        <div class="ti-row ti-section-head"><span>Tang units</span><span>du / li · bu</span></div>
+        <div class="ti-row"><span>Azimuth</span><span>${azDu}</span></div>
+        ${elDuRows}
+        <div class="ti-row"><span>RA</span><span>${raDu}</span></div>
+        <div class="ti-row"><span>Dec</span><span>${decDu}</span></div>
+        <div class="ti-row"><span>GP lat</span><span>${gpLatDu}</span></div>
+        <div class="ti-row"><span>GP lon</span><span>${gpLonDu}</span></div>
+        <div class="ti-row"><span>Central</span><span>${centralDu}</span></div>
+        <div class="ti-row"><span>Inscribed</span><span>${inscDu}</span></div>
+      `;
+    }
+
     elBody.innerHTML = `
       <div class="ti-row"><span>Azimuth</span><span>${az}</span></div>
       ${elevationRows}
@@ -541,6 +560,7 @@ export function buildTrackingInfoPopup(panelEl, model) {
       <div class="ti-row"><span>Central</span><span>${centralStr}</span></div>
       <div class="ti-row"><span>Inscribed</span><span>${inscribedStr}</span></div>
       <div class="ti-row"><span>Mag</span><span>${mag}</span></div>
+      ${chineseSection}
     `;
   }
 

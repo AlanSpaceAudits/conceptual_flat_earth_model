@@ -14585,6 +14585,36 @@ Format:
   default when a user has previously persisted the off state.
 - **Revert path:** `git checkout v-s000766 -- .`
 
+## S810 — Chinese readouts: decimal du form + popup split + info-bar second row
+
+- **Date:** 2026-05-02
+- **Files changed:** `js/core/units.js`,
+  `js/ui/trackingInfoPopup.js`, `js/ui/controlPanel.js`,
+  `css/styles.css`, `js-min/**` (rebuilt)
+- **Change:**
+  - New `fmtDuDecimal(deg, signed=false, digits=2)` in
+    `units.js` returning `"32.29 du"` (sign-prefixed when
+    `signed`). Replaces the readability-poor `"32 du 2.9 fen"`
+    pair from `fmtDuFen` at all UI call sites.
+  - Tracking popup now renders a single DMS section on top
+    (Azimuth / Elevation / RA / Dec / GP lat/lon / Central /
+    Inscribed / Mag) and, when `ShowChineseDu` is on, appends
+    a `Tang units` divider followed by the same metrics in
+    decimal du (Central / Inscribed also keep `li · bu`
+    distance). Drops the prior side-by-side `· N du M.M fen`
+    suffix per row.
+  - Tracker HUD `_withDu` and Distance Calc panel central /
+    inscribed slots now use `fmtDuDecimal` so all in-app du
+    readouts agree.
+  - Bottom info-bar gains a second row gated on
+    `ShowChineseDu` showing `Lat / Lon / El / Az` in decimal
+    du. Hidden when the toggle is off so the default look is
+    unchanged.
+  - `css/styles.css`: `.ti-section-head` divider for the
+    popup's Tang section and `.info-row-du` styling for the
+    info-bar's second row (slightly muted colour).
+- **Revert path:** `git checkout v-s000809 -- .`
+
 ## S809 — Tang dimensions: GE dome locked to FE_RADIUS (planet shell)
 
 - **Date:** 2026-05-01

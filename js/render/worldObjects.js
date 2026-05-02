@@ -1209,107 +1209,88 @@ export class TangSphereDimensions {
     arcXLine.frustumCulled = false;
     this.group.add(arcXLine);
 
-    // Per-character labels laid along the dimension lines and
-    // around the ring, NOT camera-facing flat sprites — the
-    // text follows the geometry. Each measurement gets a NAME
-    // run on one side of its line and a VALUE run on the
-    // other, both centred at the line's midpoint and spanning
-    // ~half the line length so the labels read clearly without
-    // stretching across the whole dimension.
+    // Celestial arc: solid quarter-arc on the dome surface from
+    // zenith (0, 0, R) sweeping to the +x ground rim (R, 0, 0).
+    // Length = π/2 × R_LI ≈ 32,075 li — the radial-sweep value
+    // observers measure from zenith down to the ground equator
+    // along a meridian. Solid cyan to set it apart from the
+    // dashed yellow Tang dimensions.
+    const ARC_SEGS = 48;
+    const celArcPts = [];
+    for (let k = 0; k <= ARC_SEGS; k++) {
+      const a = (k / ARC_SEGS) * (Math.PI / 2);
+      celArcPts.push(R * Math.sin(a), 0, R * Math.cos(a));
+    }
+    const celArcGeom = new THREE.BufferGeometry();
+    celArcGeom.setAttribute('position', new THREE.Float32BufferAttribute(celArcPts, 3));
+    const celArcLine = new THREE.Line(celArcGeom, new THREE.LineBasicMaterial({
+      color: 0x40c8ff, transparent: true, opacity: 0.95,
+      depthTest: false, depthWrite: false,
+    }));
+    celArcLine.renderOrder = 50;
+    celArcLine.frustumCulled = false;
+    this.group.add(celArcLine);
+
+    // Single-canvas labels — one image per name / value, always
+    // facing the camera, never gibberish from oblique angles.
+    // All values hard-coded from R_LI so HEIGHT, RADIUS,
+    // DIAMETER, CIRCUMFERENCE, CELESTIAL ARC stay consistent
+    // with the Tang sphere math regardless of canonical scale.
     const nameColor  = '#ffffff';
     const valueColor = '#ffe080';
-    const charSize = 0.022;
-    const charSpacing = charSize * 0.95;
-    const heightLi   = `${_tangFmtLi(H)} LI`;
-    const radiusLi   = `${_tangFmtLi(R)} LI`;
-    const diameterLi = `${_tangFmtLi(2 * R)} LI`;
-    const circLiVal  = 2 * Math.PI * R * (TANG_CIRCUMFERENCE_LI / 2);
-    const circLi     = `${(Math.round(circLiVal * 100) / 100).toLocaleString()} LI`;
-
-    // Place a string along an axis-aligned line, centred at the
-    // anchor. `axis` ∈ {'x', 'y', 'z'} — characters step along
-    // that axis. `perpOffset` is a small (Δx, Δy, Δz) push so
-    // the NAME and VALUE rows sit on opposite sides of the line.
-    // `reverse=true` flips placement order so the FIRST char of
-    // the string lands at the high end of the axis (e.g. H of
-    // "HEIGHT" at the top of the vertical line, T at the
-    // bottom).
-    const placeAlongAxis = (text, axis, anchor, perpOffset, color, reverse = false) => {
-      const span = text.length * charSpacing;
-      const start = -span / 2;
-      for (let i = 0; i < text.length; i++) {
-        const sp = makeCharSprite(text[i], color);
-        sp.scale.set(charSize, charSize, 1);
-        const idx = reverse ? text.length - 1 - i : i;
-        const t = start + (idx + 0.5) * charSpacing;
-        const px = anchor[0] + (axis === 'x' ? t : 0) + perpOffset[0];
-        const py = anchor[1] + (axis === 'y' ? t : 0) + perpOffset[1];
-        const pz = anchor[2] + (axis === 'z' ? t : 0) + perpOffset[2];
-        sp.position.set(px, py, pz);
-        sp.renderOrder = 252;
-        this.group.add(sp);
-      }
+    const arcColor   = '#a8e8ff';
+    const labelHeight = 0.040;
+    const fmtLi = (n) => `LI ${(Math.round(n * 100) / 100).toLocaleString()}`;
+    const place = (text, color, x, y, z) => {
+      const sp = makeTextSprite(text, color);
+      setSpriteScale(sp, labelHeight);
+      sp.position.set(x, y, z);
+      sp.renderOrder = 252;
+      this.group.add(sp);
     };
 
-    // Place a string along the ground ring's arc — characters
-    // at equal angular spacing centred on `centreAngleRad`.
-    // Text reads outward (radially) when the camera is overhead.
-    const placeAlongArc = (text, ringR, centreAngleRad, color) => {
-      const arcStep = charSpacing / Math.max(ringR, 1e-3); // radians per char
-      const span = text.length * arcStep;
-      const start = centreAngleRad - span / 2;
-      for (let i = 0; i < text.length; i++) {
-        const sp = makeCharSprite(text[i], color);
-        sp.scale.set(charSize, charSize, 1);
-        const a = start + (i + 0.5) * arcStep;
-        sp.position.set(ringR * Math.cos(a), ringR * Math.sin(a), 1.5e-3);
-        sp.renderOrder = 252;
-        this.group.add(sp);
-      }
-    };
+    // HEIGHT — vertical line midpoint = (0, 0, R/2). Name on +x
+    // of the line, value on -x.
+    place('HEIGHT',          nameColor,   R * 0.10, 0, R / 2);
+    place(fmtLi(R_LI),       valueColor, -R * 0.10, 0, R / 2);
 
-    // HEIGHT: vertical line midpoint = (0, 0, H/2). Step along
-    // z. NAME on +x side, VALUE on -x. `reverse=true` puts the
-    // first character (H) at the TOP of the run (max z) and
-    // the last (T) at the bottom — natural top-down reading.
-    placeAlongAxis('HEIGHT',  'z', [0, 0, H / 2], [ R * 0.06, 0, 0], nameColor,  true);
-    placeAlongAxis(heightLi,  'z', [0, 0, H / 2], [-R * 0.06, 0, 0], valueColor, true);
+    // RADIUS — radial line midpoint = (R/2, 0). Name on +y,
+    // value on -y.
+    place('RADIUS',          nameColor,  R / 2,  R * 0.08, 1.5e-3);
+    place(fmtLi(R_LI),       valueColor, R / 2, -R * 0.08, 1.5e-3);
 
-    // RADIUS: along +x at y = 0, midpoint = (R/2, 0). Step
-    // along x. NAME on +y side, VALUE on -y. Default forward
-    // placement reads center-to-rim (R near origin, S at rim).
-    placeAlongAxis('RADIUS',  'x', [R / 2, 0, 1.5e-3], [0,  R * 0.06, 0], nameColor);
-    placeAlongAxis(radiusLi,  'x', [R / 2, 0, 1.5e-3], [0, -R * 0.06, 0], valueColor);
+    // DIAMETER — along y axis (perpendicular to the radius),
+    // midpoint at origin. Name on +x, value on -x.
+    place('DIAMETER',        nameColor,   R * 0.10, 0, 1.5e-3);
+    place(fmtLi(2 * R_LI),   valueColor, -R * 0.10, 0, 1.5e-3);
 
-    // DIAMETER: along y at x = 0 (perpendicular to the radius).
-    // Step along y. NAME on +x side, VALUE on -x. Reverse so
-    // D lands at the +y end and R at the -y end (top→bottom
-    // reading when the camera looks from +x or +z).
-    placeAlongAxis('DIAMETER', 'y', [0, 0, 1.5e-3], [ R * 0.06, 0, 0], nameColor,  true);
-    placeAlongAxis(diameterLi, 'y', [0, 0, 1.5e-3], [-R * 0.06, 0, 0], valueColor, true);
+    // CIRCUMFERENCE — anchored just past the ground ring at +y
+    // (clear of the diameter / radius labels). Same camera-
+    // facing sprite style.
+    place('CIRCUMFERENCE',   nameColor,   0,  R * 1.18, 1.5e-3);
+    place(fmtLi(2 * Math.PI * R_LI), valueColor, 0,  R * 1.10, 1.5e-3);
 
-    // CIRCUMFERENCE: laid along the ring itself. NAME along the
-    // +y arc (≈ 90° on the ring), VALUE along the −y arc
-    // (≈ 270°) so the two runs sit on opposite sides of the
-    // ring at the same radius.
-    placeAlongArc('CIRCUMFERENCE', R,  Math.PI / 2,  nameColor);
-    placeAlongArc(circLi,          R, -Math.PI / 2,  valueColor);
+    // CELESTIAL ARC — anchored at the arc's midpoint
+    // (45° up the dome, +x side).
+    const arcMidA = Math.PI / 4;
+    const arcMid  = [R * Math.sin(arcMidA), 0, R * Math.cos(arcMidA)];
+    place('CELESTIAL ARC',   arcColor,   arcMid[0] + 0.06, arcMid[1], arcMid[2] + 0.04);
+    place(fmtLi(Math.PI / 2 * R_LI), valueColor, arcMid[0] + 0.06, arcMid[1], arcMid[2] - 0.02);
   }
 
   update(model) {
     const s = model.state;
-    const c = model.computed || {};
     const ge = s.WorldModel === 'ge';
     this.group.visible = !!s.ShowTangSphereDims && !ge;
     if (!this.group.visible) return;
-    // Pull live optical-vault dimensions; fall back to the Tang
-    // sphere's natural size (1/π canonical) if computed values
-    // aren't ready (first frame, GE→FE swap mid-update, etc.).
-    const fallback = R_LI / (TANG_CIRCUMFERENCE_LI / 2);
-    const R = Number.isFinite(c.OpticalVaultRadius)
-      ? c.OpticalVaultRadius : (s.OpticalVaultSize || fallback);
-    const H = Number.isFinite(c.OpticalVaultHeightEffective)
-      ? c.OpticalVaultHeightEffective : R;
+    // Geometry locked to the canonical Tang sphere
+    // (R = R_LI / (TANG_CIRC / 2) = 1/π) so HEIGHT, RADIUS,
+    // DIAMETER, CIRCUMFERENCE all read the same canonical Tang
+    // values regardless of the live OpticalVaultSize slider —
+    // the overlay represents the Tang sphere itself, not the
+    // movable observer dome.
+    const R = R_LI / (TANG_CIRCUMFERENCE_LI / 2);
+    const H = R;
     if (R !== this._cachedR || H !== this._cachedH) {
       this._rebuild(R, H);
       this._cachedR = R;

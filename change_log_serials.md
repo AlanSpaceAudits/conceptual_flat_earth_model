@@ -14585,6 +14585,32 @@ Format:
   default when a user has previously persisted the off state.
 - **Revert path:** `git checkout v-s000766 -- .`
 
+## S801 — Tang dimensions: hard-code R_LI labels + celestial arc
+
+- **Date:** 2026-05-02
+- **Files changed:** `js/render/worldObjects.js`,
+  `js-min/**` (rebuilt)
+- **Change:**
+  - Geometry decouples from the live optical vault and locks to
+    the canonical Tang sphere (`R = R_LI / (TANG_CIRC / 2) =
+    1/π`). HEIGHT, RADIUS, DIAMETER, CIRCUMFERENCE labels are
+    derived directly from `R_LI` — `20,419.45 LI`,
+    `20,419.45 LI`, `40,838.9 LI`, `128,300 LI` — and stay
+    consistent with the Tang math regardless of canonical scale.
+  - Per-character sprite labels swap (again) for single-canvas
+    `makeTextSprite` images so each label paints as one camera-
+    facing image (no oblique-angle gibberish). Name + value sit
+    next to their dimension line, not stretched along it.
+  - Numeric labels reformatted as `"LI <value>"` so the unit
+    leads (matching the user's read-direction request).
+  - New CELESTIAL ARC: solid cyan quarter-arc on the dome
+    surface from zenith `(0, 0, R)` to the +x ground rim
+    `(R, 0, 0)`. Length = `π/2 · R_LI ≈ 32,075 li` — the radial
+    sweep observers measure from zenith down to the ground
+    equator along a meridian. Labelled `CELESTIAL ARC` /
+    `LI 32,075` at the arc midpoint.
+- **Revert path:** `git checkout v-s000800 -- .`
+
 ## S800 — Tang dimensions: HEIGHT + DIAMETER read top-to-bottom
 
 - **Date:** 2026-05-02

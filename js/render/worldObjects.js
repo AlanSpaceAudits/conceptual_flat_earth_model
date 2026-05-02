@@ -1064,6 +1064,158 @@ export class LatitudeLines {
   }
 }
 
+// --- Tang-sphere dimensions overlay -------------------------------------
+//
+// Shows the Tang heavenly-vault hemisphere (radius = R_LI ≈
+// 20,419.45 li) on the AE disc with dimension annotations:
+//   • Dashed vertical line from the N-pole-centred origin up to
+//     the dome apex, labeled "20,419.45 LI" (height).
+//   • Dashed radial line on the ground from origin to the dome's
+//     rim at +x, labeled "20,419.45 LI" (radius).
+//   • Dashed diameter line spanning the dome's footprint, labeled
+//     "40,838.9 LI" (= 2 R_LI).
+//   • Wireframe of the dome itself: ground circle + meridian arcs
+//     in the y=0 and x=0 planes so the hemisphere reads in 3D
+//     when the camera tilts above the disc plane.
+//
+// Canonical-disc scale: `FE_RADIUS = 1` represents the meridian
+// arc from N pole to S pole, i.e. half the great circle =
+// `TANG_CIRCUMFERENCE_LI / 2` li. The Tang-sphere radius
+// `R_LI = TANG_CIRCUMFERENCE_LI / (2π)` therefore lands at
+// `1 / π ≈ 0.31831` in canonical disc units. Hidden in GE — the
+// dome here is an FE-disc construct.
+export class TangSphereDimensions {
+  constructor() {
+    this.group = new THREE.Group();
+    this.group.name = 'tang-sphere-dimensions';
+    this.group.visible = false;
+
+    // Canonical radius in disc units: r = R_LI / (TANG_CIRC / 2)
+    // = 2 R_LI / TANG_CIRC = 1 / π. Hard-code via the constants so
+    // a future calibration change propagates here automatically.
+    const R = R_LI / (TANG_CIRCUMFERENCE_LI / 2);
+
+    // Helper: dashed line segments along a polyline.
+    const mkDashed = (pts, color, dashSize = 0.015, gapSize = 0.008) => {
+      const geom = new THREE.BufferGeometry();
+      geom.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
+      const mat = new THREE.LineDashedMaterial({
+        color,
+        dashSize, gapSize,
+        transparent: true, opacity: 0.95,
+        depthTest: false, depthWrite: false,
+      });
+      const line = new THREE.Line(geom, mat);
+      line.computeLineDistances();
+      line.renderOrder = 50;
+      line.frustumCulled = false;
+      return line;
+    };
+
+    const COLOR = 0xffd060;
+
+    // Vertical height: (0, 0, 0) → (0, 0, R).
+    this._vertical = mkDashed([0, 0, 1e-3, 0, 0, R], COLOR);
+    this.group.add(this._vertical);
+
+    // Ground radius: (0, 0, 0) → (R, 0, 0).
+    this._radius = mkDashed([0, 0, 1e-3, R, 0, 1e-3], COLOR);
+    this.group.add(this._radius);
+
+    // Ground diameter: (-R, 0, 0) → (R, 0, 0). Drawn separately
+    // so the radius half stays distinguishable when both labels
+    // share the +x side.
+    this._diameter = mkDashed([-R, 0, 8e-4, R, 0, 8e-4], COLOR, 0.020, 0.010);
+    this.group.add(this._diameter);
+
+    // Dome wireframe: ground circle + two great-circle meridian
+    // arcs through the apex. Solid lines so the hemisphere reads
+    // as a solid construct beneath the dashed annotations.
+    const SEGS = 64;
+    const ground = [];
+    for (let k = 0; k <= SEGS; k++) {
+      const a = (k / SEGS) * Math.PI * 2;
+      ground.push(R * Math.cos(a), R * Math.sin(a), 5e-4);
+    }
+    const groundGeom = new THREE.BufferGeometry();
+    groundGeom.setAttribute('position', new THREE.Float32BufferAttribute(ground, 3));
+    this._groundCircle = new THREE.Line(groundGeom, new THREE.LineBasicMaterial({
+      color: COLOR, transparent: true, opacity: 0.55,
+      depthTest: false, depthWrite: false,
+    }));
+    this._groundCircle.renderOrder = 49;
+    this._groundCircle.frustumCulled = false;
+    this.group.add(this._groundCircle);
+
+    // Two vertical great-circle arcs (y=0 plane and x=0 plane).
+    const arcY = []; const arcX = [];
+    for (let k = 0; k <= SEGS / 2; k++) {
+      const a = (k / (SEGS / 2)) * Math.PI;
+      arcY.push(R * Math.cos(a), 0, R * Math.sin(a));
+      arcX.push(0, R * Math.cos(a), R * Math.sin(a));
+    }
+    const arcYGeom = new THREE.BufferGeometry();
+    arcYGeom.setAttribute('position', new THREE.Float32BufferAttribute(arcY, 3));
+    this._arcY = new THREE.Line(arcYGeom, new THREE.LineBasicMaterial({
+      color: COLOR, transparent: true, opacity: 0.45,
+      depthTest: false, depthWrite: false,
+    }));
+    this._arcY.renderOrder = 49;
+    this._arcY.frustumCulled = false;
+    this.group.add(this._arcY);
+
+    const arcXGeom = new THREE.BufferGeometry();
+    arcXGeom.setAttribute('position', new THREE.Float32BufferAttribute(arcX, 3));
+    this._arcX = new THREE.Line(arcXGeom, new THREE.LineBasicMaterial({
+      color: COLOR, transparent: true, opacity: 0.45,
+      depthTest: false, depthWrite: false,
+    }));
+    this._arcX.renderOrder = 49;
+    this._arcX.frustumCulled = false;
+    this.group.add(this._arcX);
+
+    // Sprite labels: height (along the vertical), radius (along
+    // +x), and diameter (centred on the ground line). Text uses
+    // the same per-character sprite system as the lat-line labels
+    // so the look stays consistent.
+    const fmt = (n) => Math.round(n * 100) / 100;
+    const heightTxt = `HEIGHT  ${fmt(R_LI).toLocaleString()}  LI`;
+    const radiusTxt = `RADIUS  ${fmt(R_LI).toLocaleString()}  LI`;
+    const diameterTxt = `DIAMETER  ${fmt(2 * R_LI).toLocaleString()}  LI`;
+    const mkLabel = (text, anchor, axis) => {
+      const grp = new THREE.Group();
+      grp.position.set(anchor[0], anchor[1], anchor[2]);
+      const charSize = 0.026;
+      const charSpacing = charSize * 0.85;
+      const span = text.length * charSpacing;
+      let cursor = -span / 2;
+      for (const ch of text) {
+        const sp = makeCharSprite(ch, '#ffe080');
+        sp.scale.set(charSize, charSize, 1);
+        if (axis === 'x') sp.position.set(cursor, 0, 0);
+        else if (axis === 'y') sp.position.set(0, cursor, 0);
+        else sp.position.set(0, 0, cursor);
+        sp.renderOrder = 51;
+        grp.add(sp);
+        cursor += charSpacing;
+      }
+      return grp;
+    };
+    this._heightLabel = mkLabel(heightTxt, [0.04, 0, R / 2], 'z');
+    this._radiusLabel = mkLabel(radiusTxt, [R / 2, -0.04, 1.5e-3], 'x');
+    this._diameterLabel = mkLabel(diameterTxt, [0, 0.05, 1.5e-3], 'x');
+    this.group.add(this._heightLabel);
+    this.group.add(this._radiusLabel);
+    this.group.add(this._diameterLabel);
+  }
+
+  update(model) {
+    const s = model.state;
+    const ge = s.WorldModel === 'ge';
+    this.group.visible = !!s.ShowTangSphereDims && !ge;
+  }
+}
+
 // --- Sub-solar / sub-lunar ground points ---------------------------------
 //
 // Small disc-surface markers at the current lat/lon where the sun / moon are

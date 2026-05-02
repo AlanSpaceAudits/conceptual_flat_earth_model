@@ -728,6 +728,7 @@ const FIELD_GROUPS = [
         { key: 'ShowTropicCapricorn',  label: 'Tropic of Capricorn',     bool: true },
         { key: 'ShowPolarCircles',     label: 'Polar Circles',           bool: true },
         { key: 'ShowLatLineInfo',      label: 'Display Info',            bool: true },
+        { key: 'ShowTangSphereDims',   label: 'Tang Sphere Dimensions',  bool: true },
         { key: 'ShowGroundPoints',     label: 'Sun / Moon GP',           bool: true },
         { key: 'ShowShadow',           label: 'Shadow',                  bool: true },
         { key: 'ShowLongitudeRing',    label: 'Heavenly Vault Azi',      bool: true },

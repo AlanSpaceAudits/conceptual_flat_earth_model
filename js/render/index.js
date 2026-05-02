@@ -5,7 +5,7 @@ import * as THREE from 'three';
 import { SceneManager } from './scene.js';
 import {
   DiscBase, DiscGrid, Shadow, EclipseShadow, VaultOfHeavens, ObserversOpticalVault,
-  CelestialMarker, Observer, Stars, LatitudeLines, GroundPoint,
+  CelestialMarker, Observer, Stars, LatitudeLines, TangSphereDimensions, GroundPoint,
   CelestialPoles, DeclinationCircles, Yggdrasil, MtMeru, ToroidalVortex,
   LongitudeRing, CelNavStars, TrackedGroundPoints, GeocentricMarkers, DistanceCompassPair, CatalogPointStars,
   GPPathOverlay, GPTracer, StellariumTraceOverlay, BesselianEclipsePath,
@@ -66,6 +66,9 @@ export class Renderer {
 
     this.latLines = new LatitudeLines(FE_RADIUS);
     this.sm.world.add(this.latLines.group);
+
+    this.tangDims = new TangSphereDimensions();
+    this.sm.world.add(this.tangDims.group);
 
     this.sunGP  = new GroundPoint(0xffc844);
     this.moonGP = new GroundPoint(0xf4f4f4);
@@ -638,6 +641,7 @@ export class Renderer {
       this.sm.setEclipseDarkFactor?.(0);
     }
     this.latLines.update(m);
+    this.tangDims.update(m);
     this.longitudeRing.update(m);
 
     // Sub-solar and sub-lunar ground points land on the canonical

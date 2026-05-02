@@ -284,6 +284,11 @@ function defaultState() {
     // default so the ring labels stay clean for users who don't
     // care about Chinese-unit annotations.
     ShowLatLineInfo: false,
+    // Tang-sphere dimension overlay: dashed vertical from N
+    // pole to dome apex (height = R_LI), dashed radial to the
+    // ground rim (radius = R_LI), and the dome diameter (= 2 R_LI)
+    // labeled in li. Off by default; toggled from View → Show.
+    ShowTangSphereDims: false,
     // Cursor for the "skip to next solar eclipse" button next to
     // the Cel-Theo PP shortcut. Each click advances DateTime to
     // the next eclipse anchor (minus a small lead-in) and bumps

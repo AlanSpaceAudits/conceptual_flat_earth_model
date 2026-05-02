@@ -14585,6 +14585,31 @@ Format:
   default when a user has previously persisted the off state.
 - **Revert path:** `git checkout v-s000766 -- .`
 
+## S787 — Tang sphere dimensions overlay (height / radius / diameter labels)
+
+- **Date:** 2026-04-30
+- **Files changed:** `js/render/worldObjects.js`,
+  `js/render/index.js`, `js/core/app.js`,
+  `js/ui/controlPanel.js`, `js-min/**` (rebuilt)
+- **Change:** New `TangSphereDimensions` render class wired into
+  the FE-disc world group. Toggled by
+  `View → Show → Tang Sphere Dimensions` (state field
+  `ShowTangSphereDims`, default off). Renders, in li-derived
+  canonical-disc units (radius `R = R_LI / (TANG_CIRCUMFERENCE_LI
+  / 2) = 1 / π`):
+  - Dashed gold vertical line from N-pole-centred origin up to
+    the dome apex, label "HEIGHT 20,419.45 LI".
+  - Dashed gold radial line from origin to the dome rim at +x,
+    label "RADIUS 20,419.45 LI".
+  - Dashed gold diameter spanning the dome's footprint, label
+    "DIAMETER 40,838.9 LI" (= 2 R_LI).
+  - Solid wireframe of the hemisphere (ground circle + two
+    great-circle meridian arcs in the y=0 and x=0 planes) so the
+    dome reads in 3D when the orbit camera tilts above the disc.
+  Hidden in GE (the dome is an FE-disc construct). All values
+  derive from `R_LI` and `TANG_CIRCUMFERENCE_LI` in `units.js`.
+- **Revert path:** `git checkout v-s000786 -- .`
+
 ## S786 — Display Info checkbox: li dimensions on lat-line rings
 
 - **Date:** 2026-04-30

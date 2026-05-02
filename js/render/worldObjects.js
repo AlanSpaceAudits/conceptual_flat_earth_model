@@ -970,9 +970,8 @@ export class LatitudeLines {
       // would push the string past `MAX_ARC_DEG` of the ring,
       // tighten the spacing and shrink the per-character size
       // to match so letters don't overlap each other.
-      const radiusLi = (90 - c.lat) / 180 * HALF_GC;
       const ringCircLi = TANG_CIRCUMFERENCE_LI * Math.cos(c.lat * Math.PI / 180);
-      const infoText = `${fmtLi(radiusLi)}  ·  ${fmtLi(ringCircLi)} LI`;
+      const infoText = `${fmtLi(ringCircLi)} LI`;
       const infoGroup = new THREE.Group();
       infoGroup.name = `info-${c.label}`;
       infoGroup.visible = false;

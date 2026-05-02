@@ -14585,6 +14585,20 @@ Format:
   default when a user has previously persisted the off state.
 - **Revert path:** `git checkout v-s000766 -- .`
 
+## S794 — lat-line info: just the ring circumference, single value
+
+- **Date:** 2026-04-30
+- **Files changed:** `js/render/worldObjects.js`,
+  `js-min/**` (rebuilt)
+- **Change:** Drop the disc-radius-from-pole half of the
+  readout. Each ring now shows only its sphere ring
+  circumference, e.g. `128,300 LI` for the equator,
+  `117,654 LI` for the tropics, `51,063 LI` for the polar
+  circles. The shrink-to-fit logic kept around for short
+  rings is unchanged but won't trigger for these short
+  strings.
+- **Revert path:** `git checkout v-s000793 -- .`
+
 ## S793 — Tang dimensions overlay tracks the live optical vault size
 
 - **Date:** 2026-04-30

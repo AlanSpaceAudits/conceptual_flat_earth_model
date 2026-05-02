@@ -14585,6 +14585,21 @@ Format:
   default when a user has previously persisted the off state.
 - **Revert path:** `git checkout v-s000766 -- .`
 
+## S799 — Tang dimensions: per-character labels along lines + ring arc
+
+- **Date:** 2026-05-02
+- **Files changed:** `js/render/worldObjects.js`,
+  `js-min/**` (rebuilt)
+- **Change:** Revert from camera-facing `makeTextSprite` images
+  back to per-character `makeCharSprite` runs that follow the
+  geometry — names + values lay along their dimension lines
+  (HEIGHT along z, RADIUS along x, DIAMETER along y) and around
+  the ring's curve (CIRCUMFERENCE around the +y arc, value
+  along the −y arc). Each row centres at the line's midpoint
+  and spans ~half the dimension's length so it doesn't stretch
+  end to end. Diameter still perpendicular to the radius.
+- **Revert path:** `git checkout v-s000798 -- .`
+
 ## S798 — Tang dimensions: single-sprite labels + perpendicular diameter
 
 - **Date:** 2026-05-02

@@ -1209,42 +1209,81 @@ export class TangSphereDimensions {
     arcXLine.frustumCulled = false;
     this.group.add(arcXLine);
 
-    // Single-canvas text sprites — each label paints as one
-    // image so reading direction is camera-aligned and never
-    // gets shuffled by the per-character placement that
-    // produced "USIDAR" / "RETMAID" reads from oblique angles.
-    // Each measurement gets a NAME sprite on one side of its
-    // dimension line and a VALUE sprite on the other, both
-    // anchored to the line's midpoint.
+    // Per-character labels laid along the dimension lines and
+    // around the ring, NOT camera-facing flat sprites — the
+    // text follows the geometry. Each measurement gets a NAME
+    // run on one side of its line and a VALUE run on the
+    // other, both centred at the line's midpoint and spanning
+    // ~half the line length so the labels read clearly without
+    // stretching across the whole dimension.
     const nameColor  = '#ffffff';
     const valueColor = '#ffe080';
-    const labelHeight = 0.040;
-    const place = (text, color, x, y, z) => {
-      const sp = makeTextSprite(text, color);
-      setSpriteScale(sp, labelHeight);
-      sp.position.set(x, y, z);
-      sp.renderOrder = 252;
-      this.group.add(sp);
-      return sp;
+    const charSize = 0.022;
+    const charSpacing = charSize * 0.95;
+    const heightLi   = `${_tangFmtLi(H)} LI`;
+    const radiusLi   = `${_tangFmtLi(R)} LI`;
+    const diameterLi = `${_tangFmtLi(2 * R)} LI`;
+    const circLiVal  = 2 * Math.PI * R * (TANG_CIRCUMFERENCE_LI / 2);
+    const circLi     = `${(Math.round(circLiVal * 100) / 100).toLocaleString()} LI`;
+
+    // Place a string along an axis-aligned line, centred at the
+    // anchor. `axis` ∈ {'x', 'y', 'z'} — characters step along
+    // that axis. `perpOffset` is a small (Δx, Δy, Δz) push so
+    // the NAME and VALUE rows sit on opposite sides of the line.
+    const placeAlongAxis = (text, axis, anchor, perpOffset, color) => {
+      const span = text.length * charSpacing;
+      const start = -span / 2;
+      for (let i = 0; i < text.length; i++) {
+        const sp = makeCharSprite(text[i], color);
+        sp.scale.set(charSize, charSize, 1);
+        const t = start + (i + 0.5) * charSpacing;
+        const px = anchor[0] + (axis === 'x' ? t : 0) + perpOffset[0];
+        const py = anchor[1] + (axis === 'y' ? t : 0) + perpOffset[1];
+        const pz = anchor[2] + (axis === 'z' ? t : 0) + perpOffset[2];
+        sp.position.set(px, py, pz);
+        sp.renderOrder = 252;
+        this.group.add(sp);
+      }
     };
-    // Vertical line midpoint = (0, 0, H/2). HEIGHT name on +x,
-    // value on -x.
-    place('HEIGHT',          nameColor,  R * 0.10, 0, H / 2);
-    place(`${_tangFmtLi(H)} LI`, valueColor, -R * 0.10, 0, H / 2);
-    // Radius line midpoint = (R/2, 0, ~0). RADIUS above (+y),
-    // value below (-y).
-    place('RADIUS',          nameColor,  R / 2,  R * 0.08, 1.5e-3);
-    place(`${_tangFmtLi(R)} LI`, valueColor, R / 2, -R * 0.08, 1.5e-3);
-    // Diameter line lays along the y-axis (perpendicular to
-    // RADIUS) — midpoint = (0, 0, ~0). DIAMETER on +x side,
-    // value on -x side.
-    place('DIAMETER',        nameColor,  R * 0.08, 0, 1.5e-3);
-    place(`${_tangFmtLi(2 * R)} LI`, valueColor, -R * 0.08, 0, 1.5e-3);
-    // Circumference rides on the ground ring at +x rim.
-    const circLi = 2 * Math.PI * R * (TANG_CIRCUMFERENCE_LI / 2);
-    const circLiTxt = (Math.round(circLi * 100) / 100).toLocaleString();
-    place('CIRCUMFERENCE',   nameColor,  R * 1.10, R * 0.06, 1.5e-3);
-    place(`${circLiTxt} LI`, valueColor, R * 1.10, -R * 0.06, 1.5e-3);
+
+    // Place a string along the ground ring's arc — characters
+    // at equal angular spacing centred on `centreAngleRad`.
+    // Text reads outward (radially) when the camera is overhead.
+    const placeAlongArc = (text, ringR, centreAngleRad, color) => {
+      const arcStep = charSpacing / Math.max(ringR, 1e-3); // radians per char
+      const span = text.length * arcStep;
+      const start = centreAngleRad - span / 2;
+      for (let i = 0; i < text.length; i++) {
+        const sp = makeCharSprite(text[i], color);
+        sp.scale.set(charSize, charSize, 1);
+        const a = start + (i + 0.5) * arcStep;
+        sp.position.set(ringR * Math.cos(a), ringR * Math.sin(a), 1.5e-3);
+        sp.renderOrder = 252;
+        this.group.add(sp);
+      }
+    };
+
+    // HEIGHT: vertical line midpoint = (0, 0, H/2). Step along
+    // z. NAME on +x side, VALUE on -x.
+    placeAlongAxis('HEIGHT',  'z', [0, 0, H / 2], [ R * 0.06, 0, 0], nameColor);
+    placeAlongAxis(heightLi,  'z', [0, 0, H / 2], [-R * 0.06, 0, 0], valueColor);
+
+    // RADIUS: along +x at y = 0, midpoint = (R/2, 0). Step
+    // along x. NAME on +y side, VALUE on -y.
+    placeAlongAxis('RADIUS',  'x', [R / 2, 0, 1.5e-3], [0,  R * 0.06, 0], nameColor);
+    placeAlongAxis(radiusLi,  'x', [R / 2, 0, 1.5e-3], [0, -R * 0.06, 0], valueColor);
+
+    // DIAMETER: along y at x = 0 (perpendicular to the radius).
+    // Step along y, NAME on +x side, VALUE on -x.
+    placeAlongAxis('DIAMETER', 'y', [0, 0, 1.5e-3], [ R * 0.06, 0, 0], nameColor);
+    placeAlongAxis(diameterLi, 'y', [0, 0, 1.5e-3], [-R * 0.06, 0, 0], valueColor);
+
+    // CIRCUMFERENCE: laid along the ring itself. NAME along the
+    // +y arc (≈ 90° on the ring), VALUE along the −y arc
+    // (≈ 270°) so the two runs sit on opposite sides of the
+    // ring at the same radius.
+    placeAlongArc('CIRCUMFERENCE', R,  Math.PI / 2,  nameColor);
+    placeAlongArc(circLi,          R, -Math.PI / 2,  valueColor);
   }
 
   update(model) {

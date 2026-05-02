@@ -14585,6 +14585,20 @@ Format:
   default when a user has previously persisted the off state.
 - **Revert path:** `git checkout v-s000766 -- .`
 
+## S825 — Revert S824: drop radial-projection extension at axis-off-sphere
+
+- **Date:** 2026-05-02
+- **Files changed:** `js/core/besselianEclipse.js`,
+  `js-min/**` (rebuilt)
+- **Change:** Restored `besselianAxisToLatLon` to return null
+  for `ξ² + η² > 1`. The S824 radial projection placed off-
+  sphere samples on the day-night terminator ring, which does
+  not connect smoothly to the on-sphere central line at r=1
+  and produced a sharp kink at the boundary. Path now stops
+  at the axis-on-Earth segment endpoints — matches what NASA's
+  "central line" tables actually publish.
+- **Revert path:** `git checkout v-s000824 -- .`
+
 ## S824 — Besselian path: extend horizon ends so partial-only edges paint
 
 - **Date:** 2026-05-02

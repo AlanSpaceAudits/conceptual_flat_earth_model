@@ -76,29 +76,17 @@ export function besselian2024Apr08(t) {
 }
 
 // Shadow-axis subpoint on the unit sphere. Inputs in degrees;
-// returns `{ lat, lon }` in degrees. When `ξ² + η² > 1` the axis
-// passes outside the sphere — project the axis radially onto the
-// sphere edge (where ζ = 0) so the path covers the partial-only
-// horizon extensions NASA's published tables include. The
-// returned point is where an observer would see the moon at the
-// horizon (penumbra contact).
+// returns `{ lat, lon }` in degrees, or null when the axis passes
+// outside the sphere (`ξ² + η² > 1` — partial-only phase).
 export function besselianAxisToLatLon(x, y, dDeg, muDeg) {
   const d   = dDeg * Math.PI / 180;
   const cosD = Math.cos(d);
   const sinD = Math.sin(d);
-  let xi  = x;
-  let eta = y;
+  const xi  = x;
+  const eta = y;
   const r2  = xi * xi + eta * eta;
-  let zeta;
-  if (r2 <= 1) {
-    zeta = Math.sqrt(1 - r2);
-  } else {
-    // Axis off-sphere: project radially to sphere edge (ζ = 0).
-    const r = Math.sqrt(r2);
-    xi /= r;
-    eta /= r;
-    zeta = 0;
-  }
+  if (r2 > 1) return null;
+  const zeta = Math.sqrt(1 - r2);
   // Rotation from fundamental-plane coords (ξ, η, ζ) to
   // Earth-fixed Greenwich-equatorial (X, Y, Z):
   //   ξ-axis is east on the fundamental plane (perpendicular to

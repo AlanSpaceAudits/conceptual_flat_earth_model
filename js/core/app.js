@@ -250,6 +250,12 @@ function defaultState() {
     // (red polyline + greatest-eclipse marker). Driven by the demo
     // intro; stays off by default.
     ShowBesselianEclipsePath: false,
+    // 0..1 sweep along the eclipse path. 0 = no shadow yet (first
+    // contact in the Pacific). 1 = full path drawn (last contact in
+    // the North Atlantic). Animated by the demo's Trepeat / Tval
+    // loop so the magnitude bands and central line build up the
+    // way the real shadow sweeps across Earth.
+    BesselianEclipseProgress: 1,
     ShowSunMoonNine:         false,
     ShowGPTracer:            false,
     ShowOpticalVaultTrace:   false,

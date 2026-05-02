@@ -6552,18 +6552,35 @@ export class BesselianEclipsePath {
     if (!visible || !this._samples.length) return;
 
     const ge = s.WorldModel === 'ge';
+    // Sweep progress: 0 = no shadow yet (first contact),
+    // 1 = full path drawn (last contact). Defaults to 1 in
+    // defaultState so the static (non-demo) view shows the full
+    // path; the demo's Trepeat loop drives it 0 → 1 over 5 s.
+    const progress = Math.max(0, Math.min(1, Number.isFinite(s.BesselianEclipseProgress) ? s.BesselianEclipseProgress : 1));
+
+    // Per-band quad count active at this progress — at least
+    // one quad while progress > 0 so the very first sliver of
+    // shadow paints something rather than nothing.
+    const N = this._samples.length;
+    const quadProgress = Math.max(0, Math.min(N - 1, progress * (N - 1)));
+    const fullQuads    = Math.floor(quadProgress);
+    const partialFrac  = quadProgress - fullQuads;
+    const lineSamples  = Math.max(progress > 0 ? 2 : 0, Math.ceil(quadProgress) + 1);
 
     // Magnitude bands — fill triangle strips by projecting each
-    // edge-pair sample through the active projection.
+    // edge-pair sample through the active projection. The last
+    // partial quad is interpolated so the leading edge of the
+    // shadow advances smoothly between samples.
+    const lerp = (a, b, t) => a + (b - a) * t;
+    const lerpEdge = (e0, e1, t) => ({
+      lat: lerp(e0.lat, e1.lat, t),
+      lon: lerp(e0.lon, e1.lon, t),
+    });
     for (let b = 0; b < this._bandMeshes.length; b++) {
       const { mesh, band, positions } = this._bandMeshes[b];
-      const N = band.edgeNorth.length;
       let p = 0;
-      // Slight z-offset per band so the AE-disc render-order
-      // alone unambiguously decides which band paints on top
-      // even when the GPU drops depth comparisons.
       const z = 0.0011 + b * 0.00005;
-      for (let i = 0; i < N - 1; i++) {
+      for (let i = 0; i < fullQuads; i++) {
         const nN0 = band.edgeNorth[i];
         const nS0 = band.edgeSouth[i];
         const nN1 = band.edgeNorth[i + 1];
@@ -6572,11 +6589,28 @@ export class BesselianEclipsePath {
         const aS0 = this._project(nS0.lat, nS0.lon, ge, z);
         const aN1 = this._project(nN1.lat, nN1.lon, ge, z);
         const aS1 = this._project(nS1.lat, nS1.lon, ge, z);
-        // Triangle 1: N0, S0, N1
         positions[p++] = aN0[0]; positions[p++] = aN0[1]; positions[p++] = aN0[2];
         positions[p++] = aS0[0]; positions[p++] = aS0[1]; positions[p++] = aS0[2];
         positions[p++] = aN1[0]; positions[p++] = aN1[1]; positions[p++] = aN1[2];
-        // Triangle 2: S0, S1, N1
+        positions[p++] = aS0[0]; positions[p++] = aS0[1]; positions[p++] = aS0[2];
+        positions[p++] = aS1[0]; positions[p++] = aS1[1]; positions[p++] = aS1[2];
+        positions[p++] = aN1[0]; positions[p++] = aN1[1]; positions[p++] = aN1[2];
+      }
+      // Partial trailing quad — only when progress isn't on a
+      // sample boundary.
+      if (partialFrac > 0 && fullQuads < band.edgeNorth.length - 1) {
+        const i = fullQuads;
+        const nN0 = band.edgeNorth[i];
+        const nS0 = band.edgeSouth[i];
+        const nN1 = lerpEdge(band.edgeNorth[i], band.edgeNorth[i + 1], partialFrac);
+        const nS1 = lerpEdge(band.edgeSouth[i], band.edgeSouth[i + 1], partialFrac);
+        const aN0 = this._project(nN0.lat, nN0.lon, ge, z);
+        const aS0 = this._project(nS0.lat, nS0.lon, ge, z);
+        const aN1 = this._project(nN1.lat, nN1.lon, ge, z);
+        const aS1 = this._project(nS1.lat, nS1.lon, ge, z);
+        positions[p++] = aN0[0]; positions[p++] = aN0[1]; positions[p++] = aN0[2];
+        positions[p++] = aS0[0]; positions[p++] = aS0[1]; positions[p++] = aS0[2];
+        positions[p++] = aN1[0]; positions[p++] = aN1[1]; positions[p++] = aN1[2];
         positions[p++] = aS0[0]; positions[p++] = aS0[1]; positions[p++] = aS0[2];
         positions[p++] = aS1[0]; positions[p++] = aS1[1]; positions[p++] = aS1[2];
         positions[p++] = aN1[0]; positions[p++] = aN1[1]; positions[p++] = aN1[2];
@@ -6585,30 +6619,46 @@ export class BesselianEclipsePath {
       mesh.geometry.setDrawRange(0, p / 3);
     }
 
-    // Central line.
+    // Central line (drawn up to progress, with the trailing
+    // partial sample interpolated so the head advances smoothly).
     const buf = this._lineBuf;
     let n = 0;
-    let bestIdx = 0;
-    let bestAbsT = Infinity;
-    for (let i = 0; i < this._samples.length; i++) {
+    const wholeSamples = Math.min(N, fullQuads + 1);
+    for (let i = 0; i < wholeSamples; i++) {
       const sample = this._samples[i];
       const a = this._project(sample.lat, sample.lon, ge, 0.0025);
       buf[n * 3]     = a[0];
       buf[n * 3 + 1] = a[1];
       buf[n * 3 + 2] = a[2];
       n++;
-      if (Math.abs(sample.t) < bestAbsT) {
-        bestAbsT = Math.abs(sample.t);
-        bestIdx = i;
-      }
+    }
+    if (partialFrac > 0 && fullQuads < N - 1) {
+      const s0 = this._samples[fullQuads];
+      const s1 = this._samples[fullQuads + 1];
+      const lat = lerp(s0.lat, s1.lat, partialFrac);
+      const lon = lerp(s0.lon, s1.lon, partialFrac);
+      const a = this._project(lat, lon, ge, 0.0025);
+      buf[n * 3]     = a[0];
+      buf[n * 3 + 1] = a[1];
+      buf[n * 3 + 2] = a[2];
+      n++;
     }
     this._line.geometry.attributes.position.needsUpdate = true;
     this._line.geometry.setDrawRange(0, n);
 
-    // Greatest-eclipse marker.
-    this._markerBuf[0] = buf[bestIdx * 3];
-    this._markerBuf[1] = buf[bestIdx * 3 + 1];
-    this._markerBuf[2] = buf[bestIdx * 3 + 2];
+    // Marker rides the leading edge of the shadow during the
+    // sweep, then snaps to greatest eclipse once progress
+    // reaches the matching sample.
+    const headIdx = Math.min(N - 1, Math.floor(quadProgress));
+    const headFrac = quadProgress - headIdx;
+    const m0 = this._samples[headIdx];
+    const m1 = this._samples[Math.min(N - 1, headIdx + 1)];
+    const mLat = lerp(m0.lat, m1.lat, headFrac);
+    const mLon = lerp(m0.lon, m1.lon, headFrac);
+    const ma = this._project(mLat, mLon, ge, 0.003);
+    this._markerBuf[0] = ma[0];
+    this._markerBuf[1] = ma[1];
+    this._markerBuf[2] = ma[2];
     this._marker.geometry.attributes.position.needsUpdate = true;
   }
 }

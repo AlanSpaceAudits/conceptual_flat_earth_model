@@ -10,7 +10,7 @@
 //     general demos by the `group` field on each entry. The control
 //     panel can render them as grouped sections.
 
-import { Ttxt, Tval, Thold, Tcall } from './animation.js';
+import { Ttxt, Tval, Thold, Tcall, Trepeat, Tpse } from './animation.js';
 import { SOLAR_ECLIPSE_DEMOS, LUNAR_ECLIPSE_DEMOS } from './eclipseRegistry.js';
 import { FE_ECLIPSE_PREDICTION_DEMOS } from './feEclipseTrack.js';
 import { FLIGHT_ROUTES_DEMOS } from './flightRoutes.js';
@@ -720,10 +720,15 @@ const BESSELIAN_2024_APR_08_DEMO = {
     PermanentNight: false,
     // The path overlay itself.
     ShowBesselianEclipsePath: true,
+    BesselianEclipseProgress: 0,
   },
   tasks: () => [
-    Ttxt('2024-04-08 total solar eclipse · Besselian shadow-axis path drawn from the NASA bulletin polynomials. Toggle FE / GE / DP to compare projections.'),
-    Thold(),
+    Ttxt('2024-04-08 total solar eclipse · 5 s sweep of the umbra + penumbra magnitude bands across the path; toggles FE / GE / DP for projection comparisons.'),
+    Trepeat([
+      Tcall((m) => m.setState({ BesselianEclipseProgress: 0 })),
+      Tval('BesselianEclipseProgress', 1, 5000, 0, 'linear'),
+      Tpse(2000),
+    ]),
   ],
 };
 

@@ -14585,6 +14585,29 @@ Format:
   default when a user has previously persisted the off state.
 - **Revert path:** `git checkout v-s000766 -- .`
 
+## S782 — eclipse demo: 5 s sweep of the umbra + penumbra bands
+
+- **Date:** 2026-04-30
+- **Files changed:** `js/core/app.js`,
+  `js/render/worldObjects.js`, `js/demos/definitions.js`,
+  `js-min/**` (rebuilt)
+- **Change:**
+  - New state `BesselianEclipseProgress` (default `1` so the
+    static, non-demo view still shows the full path).
+  - `BesselianEclipsePath.update` now reads progress and clips
+    each magnitude-band triangle strip + central-line polyline
+    to the swept fraction. The trailing quad / line segment is
+    interpolated between the two adjacent samples so the
+    leading edge advances smoothly between the 33 NASA
+    central-line samples instead of stepping discretely. The
+    yellow marker rides the leading edge during the sweep.
+  - Demo intro sets progress to 0 and the tasks list runs a
+    `Trepeat` of `Tcall reset → Tval('BesselianEclipseProgress',
+    1, 5000, 0, 'linear') → Tpse(2000)` so the eclipse plays
+    out across the path in 5 s, holds for 2 s at full coverage,
+    then loops.
+- **Revert path:** `git checkout v-s000781 -- .`
+
 ## S781 — eclipse bands occluded by GE globe (lift + renderOrder)
 
 - **Date:** 2026-04-30

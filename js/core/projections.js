@@ -231,11 +231,11 @@ export const PROJECTIONS = {
     imageAsset: 'assets/map_proportional.png',
     imageNativeWidth: 1920, imageNativeHeight: 1080,
     imageInscribedRadius: 0.5,
-    // +105° about z aligns the artwork's prime meridian with
-    // the math projection's +x axis. Iterated from +90° (S812)
-    // by +15° westward after observer at (41, −104) plotted at
-    // CA / OR instead of CO.
-    imageRotationDeg: 105,
+    // +75° about z aligns the artwork's prime meridian with
+    // the math projection's +x axis. Iterated: +90° (S812) →
+    // +75° (S813) → +105° (S814, wrong way) → +75° (S815, 15°
+    // opposite of S814 from the +90° baseline).
+    imageRotationDeg: 75,
     notes: 'Artwork-driven AE power-law tweak (exponent 0.75).',
     project(lat, lon, r = 1) { return polarFromRadial(lat, lon, r, RADIAL_PROPORTIONAL); },
   },

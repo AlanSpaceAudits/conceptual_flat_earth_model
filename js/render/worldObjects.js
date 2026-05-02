@@ -1358,21 +1358,18 @@ export class TangSphereDimensions {
     // dashed lines + labels visible. Labels stay R_LI-derived
     // either way.
     const tangR = R_LI / (TANG_CIRCUMFERENCE_LI / 2);
-    let R, H;
-    if (ge) {
-      // GE planet shell sits at FE_RADIUS = 1. The canonical
-      // Tang dome (1/π ≈ 0.318) is too small inside it to read,
-      // so scale to 70 % of the planet radius — sits clearly
-      // inside the shell with the lines + labels legible
-      // through the partially-transparent globe shader.
-      R = FE_RADIUS * 0.70;
-      H = R;
-    } else {
-      R = Number.isFinite(c.OpticalVaultRadius)
-        ? c.OpticalVaultRadius : (s.OpticalVaultSize || tangR);
-      H = Number.isFinite(c.OpticalVaultHeightEffective)
-        ? c.OpticalVaultHeightEffective : R;
-    }
+    // Use the user-set `OpticalVaultSize` slider value directly
+    // in both modes so the dome stays the same canonical size
+    // across world-model swaps. In GE the computed
+    // `OpticalVaultRadius` is forced to FE_RADIUS = 1 (planet
+    // shell), which would make the overlay coincident with the
+    // globe — bypass that and read the underlying state value
+    // so GE matches FE's dome footprint.
+    const R = s.OpticalVaultSize || tangR;
+    const H = ge
+      ? R
+      : (Number.isFinite(c.OpticalVaultHeightEffective)
+          ? c.OpticalVaultHeightEffective : R);
     if (R !== this._cachedR || H !== this._cachedH) {
       this._rebuild(R, H);
       this._cachedR = R;

@@ -14585,6 +14585,22 @@ Format:
   default when a user has previously persisted the off state.
 - **Revert path:** `git checkout v-s000766 -- .`
 
+## S808 — Tang dimensions: GE dome size matches FE/DP
+
+- **Date:** 2026-05-02
+- **Files changed:** `js/render/worldObjects.js`,
+  `js-min/**` (rebuilt)
+- **Change:** GE Tang dome now reads `state.OpticalVaultSize`
+  directly (same source FE / DP use) instead of the previous
+  `0.70 · FE_RADIUS` override. The `computed.OpticalVaultRadius`
+  in GE is forced to `FE_RADIUS = 1` (planet shell) so reading
+  it would make the overlay coincident with the globe — bypass
+  that and read the slider's underlying state value so the
+  dome's canonical size is identical across world-model
+  swaps. Visual scale stays consistent when toggling
+  FE → GE → DP.
+- **Revert path:** `git checkout v-s000807 -- .`
+
 ## S807 — distance-calc auto-fill removed + GE Tang dome resized
 
 - **Date:** 2026-05-02

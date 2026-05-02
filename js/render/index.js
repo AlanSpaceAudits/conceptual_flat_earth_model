@@ -8,7 +8,8 @@ import {
   CelestialMarker, Observer, Stars, LatitudeLines, GroundPoint,
   CelestialPoles, DeclinationCircles, Yggdrasil, MtMeru, ToroidalVortex,
   LongitudeRing, CelNavStars, TrackedGroundPoints, GeocentricMarkers, DistanceCompassPair, CatalogPointStars,
-  GPPathOverlay, GPTracer, StellariumTraceOverlay, Discworld, AnalemmaLine, SunMoonGlyph,
+  GPPathOverlay, GPTracer, StellariumTraceOverlay, BesselianEclipsePath,
+  Discworld, AnalemmaLine, SunMoonGlyph,
   CentralAngleArcs, MoonOpticalBody, SunOpticalBody,
   MonthMarkers, WorldGlobe, GlobeHeavenlyVault, DomeCausticOverlay,
 } from './worldObjects.js';
@@ -163,6 +164,9 @@ export class Renderer {
 
     this.stellariumTraces = new StellariumTraceOverlay();
     this.sm.world.add(this.stellariumTraces.group);
+
+    this.besselianEclipsePath = new BesselianEclipsePath(0xff4040);
+    this.sm.world.add(this.besselianEclipsePath.group);
 
     this.gpTracer = new GPTracer(clipPlanes);
     this.sm.world.add(this.gpTracer.group);
@@ -700,6 +704,7 @@ export class Renderer {
     this.gpPathOverlay.update(m);
     this.centralAngleArcs.update(m);
     this.stellariumTraces.update(m);
+    this.besselianEclipsePath.update(m);
     this.gpTracer.update(m);
     this.sunMonthMarkers.update(m);
     this.sunMonthMarkersOpp.update(m);

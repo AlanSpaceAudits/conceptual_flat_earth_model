@@ -14585,6 +14585,23 @@ Format:
   default when a user has previously persisted the off state.
 - **Revert path:** `git checkout v-s000766 -- .`
 
+## S775 — Besselian eclipse path render class
+
+- **Date:** 2026-04-30
+- **Files changed:** `js/render/worldObjects.js`,
+  `js/render/index.js`, `js/core/app.js`, `js-min/**` (rebuilt)
+- **Change:** New `BesselianEclipsePath` class in
+  `worldObjects.js`. Caches the (lat, lon) samples from
+  `besselian2024Apr08Path` once at construction (~80 points for a
+  smooth curve), then reprojects every frame: `canonicalLatLongToDisc`
+  in FE / DP modes (so AE / DP inherit the projection), unit-sphere
+  mapping in GE. Renders a red polyline plus a yellow point marker
+  at the smallest-|t| sample (greatest eclipse). Visibility gates
+  on `state.ShowBesselianEclipsePath` and `!InsideVault`. Wired
+  through `index.js` (import + scene add + per-frame update). State
+  default added in `app.js` so `defaultState()` carries the key.
+- **Revert path:** `git checkout v-s000774 -- .`
+
 ## S774 — Besselian eclipse math module (Tang li radius)
 
 - **Date:** 2026-04-30

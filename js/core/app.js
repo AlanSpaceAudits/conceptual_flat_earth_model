@@ -246,6 +246,10 @@ function defaultState() {
     ShowCentralAngle:        false,
     ShowInscribedAngle:      false,
     ShowStellariumOverlay:   false,
+    // 2024-04-08 total solar eclipse Besselian-axis path overlay
+    // (red polyline + greatest-eclipse marker). Driven by the demo
+    // intro; stays off by default.
+    ShowBesselianEclipsePath: false,
     ShowSunMoonNine:         false,
     ShowGPTracer:            false,
     ShowOpticalVaultTrace:   false,

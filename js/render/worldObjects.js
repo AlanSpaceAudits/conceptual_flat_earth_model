@@ -11,6 +11,7 @@ import {
 } from '../core/feGeometry.js';
 import { canonicalLatLongToDisc } from '../core/canonical.js';
 import { STELLARIUM_TRACES } from '../data/stellariumTraces.js';
+import { besselian2024Apr08Path } from '../core/besselianEclipse.js';
 import { generateGeArtTexture } from './geArt.js';
 import { CONSTELLATIONS } from '../core/constellations.js';
 
@@ -6444,6 +6445,103 @@ export class StellariumTraceOverlay {
 
   update(model) {
     this.group.visible = !!model.state.ShowStellariumOverlay && !model.state.InsideVault;
+  }
+}
+
+// Besselian-element shadow-axis path overlay for the 2024-04-08
+// total solar eclipse. The (lat, lon) samples are computed once
+// at construction from `besselian2024Apr08Path`. Each frame we
+// reproject through `canonicalLatLongToDisc` (FE / DP) or the
+// unit-sphere mapping (GE), so the same data drives both world
+// models. Visibility is gated on `state.ShowBesselianEclipsePath`
+// and the InsideVault flag (only meaningful from heavenly /
+// orbit view, not first-person).
+export class BesselianEclipsePath {
+  constructor(color = 0xff4040) {
+    this.group = new THREE.Group();
+    this.group.name = 'besselian-eclipse-path';
+    this.group.visible = false;
+
+    // Cache the (lat, lon) samples — fixed for this eclipse.
+    // tStart / tEnd cover the full window where the axis hits
+    // Earth (greatest eclipse at t≈0.288, contacts at roughly
+    // ±2 h), 0.05 h step gives ~80 samples for a smooth curve.
+    this._samples = besselian2024Apr08Path(-2.5, 2.5, 0.05);
+
+    const SEG = this._samples.length;
+    this._buf = new Float32Array(Math.max(2, SEG) * 3);
+    const geom = new THREE.BufferGeometry();
+    geom.setAttribute('position', new THREE.BufferAttribute(this._buf, 3));
+    geom.setDrawRange(0, 0);
+
+    this._line = new THREE.Line(geom, new THREE.LineBasicMaterial({
+      color, transparent: true, opacity: 0.95,
+      depthTest: false, depthWrite: false,
+    }));
+    this._line.renderOrder = 45;
+    this._line.frustumCulled = false;
+    this.group.add(this._line);
+
+    // Filled marker for the greatest-eclipse subpoint (smallest
+    // |t| sample). Drawn as a single yellow point above the line.
+    this._markerBuf = new Float32Array(3);
+    const mGeom = new THREE.BufferGeometry();
+    mGeom.setAttribute('position', new THREE.BufferAttribute(this._markerBuf, 3));
+    this._marker = new THREE.Points(mGeom, new THREE.PointsMaterial({
+      color: 0xffe040, size: 9, sizeAttenuation: false,
+      depthTest: false, depthWrite: false,
+    }));
+    this._marker.renderOrder = 46;
+    this._marker.frustumCulled = false;
+    this.group.add(this._marker);
+  }
+
+  update(model) {
+    const s = model.state;
+    const visible = !!s.ShowBesselianEclipsePath && !s.InsideVault;
+    this.group.visible = visible;
+    if (!visible || !this._samples.length) return;
+
+    const ge = s.WorldModel === 'ge';
+    const buf = this._buf;
+    let n = 0;
+    let bestIdx = 0;
+    let bestAbsT = Infinity;
+    for (let i = 0; i < this._samples.length; i++) {
+      const sample = this._samples[i];
+      let x, y, z;
+      if (ge) {
+        // Unit-sphere mapping — same convention as the GE
+        // sphere mesh elsewhere in this file (radius FE_RADIUS,
+        // X = longitude 0 / equator).
+        const phi = sample.lat * Math.PI / 180;
+        const lam = sample.lon * Math.PI / 180;
+        const cp = Math.cos(phi);
+        const Rg = FE_RADIUS * 1.001;
+        x = Rg * cp * Math.cos(lam);
+        y = Rg * cp * Math.sin(lam);
+        z = Rg * Math.sin(phi);
+      } else {
+        const p = canonicalLatLongToDisc(sample.lat, sample.lon, FE_RADIUS);
+        x = p[0]; y = p[1]; z = 0.005;
+      }
+      buf[n * 3]     = x;
+      buf[n * 3 + 1] = y;
+      buf[n * 3 + 2] = z;
+      n++;
+      if (Math.abs(sample.t) < bestAbsT) {
+        bestAbsT = Math.abs(sample.t);
+        bestIdx = i;
+      }
+    }
+    this._line.geometry.attributes.position.needsUpdate = true;
+    this._line.geometry.setDrawRange(0, n);
+
+    // Greatest-eclipse marker (sample with min |t|).
+    this._markerBuf[0] = buf[bestIdx * 3];
+    this._markerBuf[1] = buf[bestIdx * 3 + 1];
+    this._markerBuf[2] = buf[bestIdx * 3 + 2];
+    this._marker.geometry.attributes.position.needsUpdate = true;
   }
 }
 

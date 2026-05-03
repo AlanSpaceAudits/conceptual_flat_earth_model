@@ -33,6 +33,67 @@ function projectAEDual(lat, lon, r = 1) {
           0];
 }
 
+// Canters Polyconic W20 — Frank Canters' 7-parameter pseudoconic
+// projection from his 2002 book, as implemented by NASA GISS's
+// G.Projector tool (`gov.nasa.giss.map.proj.CantersPolyconicW20`).
+// Coefficients lifted from G.Projector bytecode:
+//
+//   x(λ, φ) = λ·cos(φ)·(0.9457 + (0.2962 + 0.042·λ²)·φ²
+//                        − 0.1875·φ⁴)
+//   y(λ, φ) = 0.9836·φ + (0.0472 − 0.0106·λ² + 0.0929·φ²)
+//                       · λ²·φ·cos(φ)
+//
+// where λ, φ are in radians. Centring is applied as a spherical
+// rotation: rotate input (lon, lat) so (centerLon, centerLat)
+// lands at the projection origin (0, 0), then evaluate.
+//
+// Bounds in the unrotated frame: max |x| at (λ=π, φ=0); max |y|
+// at the poles (λ=0, φ=±π/2). Computed once at module load so
+// the output scales into [−r, +r].
+function _canters20XRaw(lam, phi) {
+  const l2 = lam * lam, p2 = phi * phi, p4 = p2 * p2;
+  return lam * Math.cos(phi) *
+    (0.9457 + (0.2962 + 0.042 * l2) * p2 - 0.1875 * p4);
+}
+function _canters20YRaw(lam, phi) {
+  const l2 = lam * lam, p2 = phi * phi;
+  return 0.9836 * phi + (0.0472 - 0.0106 * l2 + 0.0929 * p2) * l2 * phi * Math.cos(phi);
+}
+const CANTERS_W20_MAX_X = Math.abs(_canters20XRaw(Math.PI, 0));      // 0.9457 · π ≈ 2.971
+const CANTERS_W20_MAX_Y = Math.abs(_canters20YRaw(0, Math.PI / 2));  // 0.9836 · π/2 ≈ 1.545
+
+// Spherical rotation: rotate (lon, lat) so (lonC, latC) lands at
+// (0, 0). Z then Y rotation. Inputs in degrees; output [lamRad, phiRad].
+function _rotateLonLatTo(lonDeg, latDeg, lonCDeg, latCDeg) {
+  const phi = latDeg * DEG, lam = lonDeg * DEG;
+  const x = Math.cos(phi) * Math.cos(lam);
+  const y = Math.cos(phi) * Math.sin(lam);
+  const z = Math.sin(phi);
+  const lc = lonCDeg * DEG;
+  const cl = Math.cos(lc), sl = Math.sin(lc);
+  const x1 =  x * cl + y * sl;
+  const y1 = -x * sl + y * cl;
+  const z1 =  z;
+  const pc = latCDeg * DEG;
+  const cp = Math.cos(pc), sp = Math.sin(pc);
+  const x2 =  x1 * cp + z1 * sp;
+  const y2 =  y1;
+  const z2 = -x1 * sp + z1 * cp;
+  const phiP = Math.asin(Math.max(-1, Math.min(1, z2)));
+  const lamP = Math.atan2(y2, x2);
+  return [lamP, phiP];
+}
+
+// Project (lat, lon) → [x, y, 0] on disc of radius r, with the
+// projection centred on (centerLat, centerLon). Output scaled so
+// the wider axis (x) hits r.
+function projectCantersPolyconicW20(lat, lon, r = 1, centerLat = 40.71, centerLon = -104.01) {
+  const [lam, phi] = _rotateLonLatTo(lon, lat, centerLon, centerLat);
+  const x = _canters20XRaw(lam, phi);
+  const y = _canters20YRaw(lam, phi);
+  return [r * x / CANTERS_W20_MAX_X, r * y / CANTERS_W20_MAX_X, 0];
+}
+
 // Equirectangular / plate carrée. x = lon/180, y = lat/90, scaled so the
 // wider axis hits r.
 function projectEquirect(lat, lon, r = 1) {
@@ -244,6 +305,20 @@ export const PROJECTIONS = {
     imageAsset: null, imageInscribedRadius: 0.5,
     notes: 'Azimuthal-equidistant centred at (0°, 0°), edge angle 180°. Both geographic poles fall on the vertical centre-line as distinct points.',
     project: projectAEDual,
+  },
+
+  canters_w20: {
+    id: 'canters_w20', name: 'Canters Polyconic W20',
+    category: 'generated',
+    imageAsset: 'assets/map_canters_polyconic_w20.png',
+    imageNativeWidth: 1944, imageNativeHeight: 974,
+    imageInscribedRadius: 0.5,
+    // Center pre-baked into the texture (Boulder, CO area).
+    centerLatDeg: 40.71, centerLonDeg: -104.01,
+    notes: 'Frank Canters\' 2002 polyconic W20 — pseudoconic, near-equal-area. Centred on (40.71° N, 104.01° W) per generated artwork.',
+    project(lat, lon, r = 1) {
+      return projectCantersPolyconicW20(lat, lon, r, this.centerLatDeg, this.centerLonDeg);
+    },
   },
 
   equirect: {

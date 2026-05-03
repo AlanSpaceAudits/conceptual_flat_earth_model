@@ -14585,6 +14585,37 @@ Format:
   default when a user has previously persisted the off state.
 - **Revert path:** `git checkout v-s000766 -- .`
 
+## S826 — Canters Polyconic W20 projection + texture asset
+
+- **Date:** 2026-05-02
+- **Files changed:** `js/core/projections.js`,
+  new asset `assets/map_canters_polyconic_w20.png`,
+  `js-min/**` (rebuilt)
+- **Change:**
+  - New `projectCantersPolyconicW20(lat, lon, r, centerLat,
+    centerLon)` in `projections.js`. Forward formulas lifted
+    directly from G.Projector's
+    `gov.nasa.giss.map.proj.CantersPolyconicW20` bytecode:
+      x(λ, φ) = λ·cos(φ)·(0.9457 + (0.2962 + 0.042·λ²)·φ²
+                          − 0.1875·φ⁴)
+      y(λ, φ) = 0.9836·φ + (0.0472 − 0.0106·λ² + 0.0929·φ²)
+                          · λ²·φ·cos(φ)
+    Centring applied as a spherical rotation: rotate input
+    (lon, lat) so (centerLon, centerLat) lands at the
+    projection origin (0, 0), then evaluate. Output scaled by
+    `MAX_X = 0.9457·π ≈ 2.971` so the wider axis hits ±r.
+  - New projection registry entry `canters_w20` with
+    `imageAsset: 'assets/map_canters_polyconic_w20.png'` and
+    default `centerLatDeg = 40.71`, `centerLonDeg = −104.01`
+    (matching the generated artwork).
+  - Texture asset copied from
+    `~/Pictures/maps/canter_polyconic.png` (2.3 MB PNG,
+    1944×974). Sourced from G.Projector at the listed centre.
+- **Verification:** Center → (0, 0); Mexico (25.3, −104.2) →
+  (−0.001, −0.089) just south of centre; antipode → (1.000,
+  0.000) at disc edge; both poles inside [−1, +1].
+- **Revert path:** `git checkout v-s000825 -- .`
+
 ## S825 — Revert S824: drop radial-projection extension at axis-off-sphere
 
 - **Date:** 2026-05-02

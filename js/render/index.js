@@ -590,13 +590,20 @@ export class Renderer {
     // anchored markers stay live since they share the observer's
     // local frame regardless of world model.
     const ge = s.WorldModel === 'ge';
-    this.discBase.group.visible      = !ge;
+    const cp = s.WorldModel === 'cp';
+    // CP world model hides the FE blue-ocean disc, the FE
+    // azimuth ring of compass numbers, and the heavenly-vault
+    // outer rim — only the Canters W20 textured plane should
+    // read as the "ground". The lat/lon graticule + latitude
+    // rings stay live (they re-project through Canters via
+    // the canonical disc framework).
+    this.discBase.group.visible      = !ge && !cp;
     this.discGrid.group.visible      = !ge;
     this.latLines.group.visible      = !ge;
-    this.longitudeRing.group.visible = !ge;
+    this.longitudeRing.group.visible = !ge && !cp;
     this.shadow.group.visible        = !ge;
     this.eclipseShadow.group.visible = !ge;
-    this.vaultOfHeavens.group.visible = !ge;
+    this.vaultOfHeavens.group.visible = !ge && !cp;
     this.starfieldChart.group.visible = !ge;
     this.gpPathOverlay.group.visible = !ge;
     this.yggdrasil.group.visible     = !ge && this.yggdrasil.group.visible;

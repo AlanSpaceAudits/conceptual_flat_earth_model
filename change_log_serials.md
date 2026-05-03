@@ -14585,6 +14585,27 @@ Format:
   default when a user has previously persisted the off state.
 - **Revert path:** `git checkout v-s000766 -- .`
 
+## S829 — CP world model cleanup: hide FE disc / vault rim, alpha-key the texture
+
+- **Date:** 2026-05-02
+- **Files changed:** `js/render/index.js`,
+  `assets/map_canters_polyconic_w20.png` (chroma-keyed),
+  `js-min/**` (rebuilt)
+- **Change:**
+  - In CP world model, `discBase` (blue ocean disc),
+    `longitudeRing` (azimuth compass numbers), and
+    `vaultOfHeavens` (heavenly-vault outer rim) all hide so
+    only the Canters W20 textured plane reads as the ground.
+    `discGrid` and `latLines` stay live — they re-project
+    through Canters via the canonical disc framework.
+  - Pre-processed `map_canters_polyconic_w20.png` with
+    ImageMagick: `-fuzz 5% -transparent rgb(223,223,223)`.
+    The light-grey background outside the lobed boundary is
+    now `srgba(0,0,0,0)`. Combined with `transparent: true`
+    on the plane material (S828), the grey rectangle around
+    the projection no longer reads.
+- **Revert path:** `git checkout v-s000828 -- .`
+
 ## S828 — Image-map fit modes: render Canters W20 on a 2:1 plane (full lobed shape)
 
 - **Date:** 2026-05-02

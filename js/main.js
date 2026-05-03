@@ -49,9 +49,17 @@ if (!_hashHasLang) {
 // FE/GE keep the default. Registered before the Renderer so its
 // 'update' listener runs first and rebuilds DiscGrid /
 // LatitudeLines using the new projection.
+let _prevWorldModel = null;
 const refreshActiveProjection = () => {
   const wm = model.state.WorldModel;
   setActiveProjection(wm === 'dp' ? 'dp' : wm === 'cp' ? 'canters_w20' : null);
+  // Entering CP: snap the observer to the Canters texture's
+  // baked centre so they're guaranteed on the visible projection
+  // and don't have to scroll back from a previous FE / DP spot.
+  if (wm === 'cp' && _prevWorldModel !== 'cp') {
+    model.setState({ ObserverLat: 40.71, ObserverLong: -104.01 });
+  }
+  _prevWorldModel = wm;
 };
 model.addEventListener('update', refreshActiveProjection);
 refreshActiveProjection();

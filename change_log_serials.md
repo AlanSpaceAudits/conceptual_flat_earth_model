@@ -14585,6 +14585,21 @@ Format:
   default when a user has previously persisted the off state.
 - **Revert path:** `git checkout v-s000766 -- .`
 
+## S830 — CP world model: snap observer to projection centre on entry
+
+- **Date:** 2026-05-02
+- **Files changed:** `js/main.js`, `js-min/**` (rebuilt)
+- **Change:** When `WorldModel` transitions into `'cp'`,
+  `refreshActiveProjection` now also writes
+  `ObserverLat = 40.71` and `ObserverLong = -104.01` (the
+  Canters W20 texture's baked centre). The observer lands
+  dead-centre on the visible projection on first entry; the
+  user can still move freely afterwards. Won't re-snap if the
+  user toggles GE → CP later in the same session unless they
+  cycle back through FE / DP first (transition guard via
+  `_prevWorldModel`).
+- **Revert path:** `git checkout v-s000829 -- .`
+
 ## S829 — CP world model cleanup: hide FE disc / vault rim, alpha-key the texture
 
 - **Date:** 2026-05-02

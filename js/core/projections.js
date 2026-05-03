@@ -313,6 +313,10 @@ export const PROJECTIONS = {
     imageAsset: 'assets/map_canters_polyconic_w20.png',
     imageNativeWidth: 1944, imageNativeHeight: 974,
     imageInscribedRadius: 0.5,
+    // Drives the canonical disc framework when CP world model is
+    // active — observer position, GPs, eclipse paths, lat/lon
+    // graticule all flow through this projection.
+    useProjectionGrid: true,
     // Center pre-baked into the texture (Boulder, CO area).
     centerLatDeg: 40.71, centerLonDeg: -104.01,
     notes: 'Frank Canters\' 2002 polyconic W20 — pseudoconic, near-equal-area. Centred on (40.71° N, 104.01° W) per generated artwork.',

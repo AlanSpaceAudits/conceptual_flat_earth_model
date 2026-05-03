@@ -444,6 +444,8 @@ export class Renderer {
       ? (s.MapProjectionGe || 'hq_equirect_night')
       : (s.WorldModel === 'dp')
       ? 'dp'
+      : (s.WorldModel === 'cp')
+      ? 'canters_w20'
       : (s.MapProjection || 'ae');
     this._rebuildLand(projId);
     this.frame();
@@ -569,13 +571,15 @@ export class Renderer {
     const m = this.model;
     const c = m.computed, s = m.state;
     // Per-world-model map projection: FE uses `MapProjection`, GE
-    // uses `MapProjectionGe`, DP forces `dp`. Each preserves its own
-    // dropdown selection so toggling between modes doesn't clobber
-    // the FE/GE map picker state.
+    // uses `MapProjectionGe`, DP forces `dp`, CP forces
+    // `canters_w20`. Each preserves its own dropdown selection so
+    // toggling between modes doesn't clobber the picker state.
     const projId = (s.WorldModel === 'ge')
       ? (s.MapProjectionGe || 'hq_equirect_night')
       : (s.WorldModel === 'dp')
       ? 'dp'
+      : (s.WorldModel === 'cp')
+      ? 'canters_w20'
       : (s.MapProjection || 'ae');
     if (projId !== this._landProjection) {
       this._rebuildLand(projId);

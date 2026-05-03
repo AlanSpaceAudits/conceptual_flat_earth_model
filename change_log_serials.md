@@ -14585,6 +14585,30 @@ Format:
   default when a user has previously persisted the off state.
 - **Revert path:** `git checkout v-s000766 -- .`
 
+## S827 — CP world model: cycle button + canonical-disc routing
+
+- **Date:** 2026-05-02
+- **Files changed:** `js/ui/controlPanel.js`, `js/main.js`,
+  `js/core/projections.js` (added `useProjectionGrid: true` to
+  `canters_w20`), `js/render/index.js`, `js-min/**` (rebuilt)
+- **Change:**
+  - World-model cycle button now reads
+    `FE → GE → DP → CP → FE`. Button face shows the active
+    model.
+  - `js/main.js → refreshActiveProjection`: when
+    `WorldModel === 'cp'`, `setActiveProjection('canters_w20')`
+    routes the canonical disc framework through the Canters
+    Polyconic W20 projection (same mechanism DP uses).
+  - `canters_w20` projection entry gains
+    `useProjectionGrid: true` so `setActiveProjection` accepts
+    it. Observer position, GP markers, lat/lon graticule,
+    optical-vault rays, and eclipse paths all flow through CP
+    when the model is active.
+  - `js/render/index.js` disc-texture routing: in CP mode,
+    forces the `canters_w20` projection (texture +
+    projection) regardless of the FE / GE map dropdowns.
+- **Revert path:** `git checkout v-s000826 -- .`
+
 ## S826 — Canters Polyconic W20 projection + texture asset
 
 - **Date:** 2026-05-02

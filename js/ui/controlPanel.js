@@ -2580,20 +2580,27 @@ export function buildControlPanel(host, model, demos) {
   refreshLangBtn();
 
   // World-model cycle: FE (flat disc, AE) → GE (globe sphere) → DP
-  // (flat disc, dual-pole AE) → FE. State key `WorldModel`
-  // ('fe' / 'ge' / 'dp'). Button face displays the *current* model.
-  // Stacked directly under the grids toggle (▦).
+  // (flat disc, dual-pole AE) → CP (flat disc, Canters Polyconic
+  // W20 centred on observer's lat/lon defaults) → FE. State key
+  // `WorldModel` ('fe' / 'ge' / 'dp' / 'cp'). Button face shows
+  // the current model. Stacked under the grids toggle (▦).
   const btnWorld = document.createElement('button');
   btnWorld.className = 'time-btn world-btn';
   btnWorld.type = 'button';
   btnWorld.setAttribute('aria-pressed', 'true');
   const refreshWorldBtn = () => {
     const wm = model.state.WorldModel;
-    btnWorld.textContent = wm === 'ge' ? 'GE' : wm === 'dp' ? 'DP' : 'FE';
+    btnWorld.textContent = wm === 'ge' ? 'GE'
+                         : wm === 'dp' ? 'DP'
+                         : wm === 'cp' ? 'CP'
+                         : 'FE';
   };
   btnWorld.addEventListener('click', () => {
     const cur = model.state.WorldModel;
-    const next = cur === 'fe' ? 'ge' : cur === 'ge' ? 'dp' : 'fe';
+    const next = cur === 'fe' ? 'ge'
+               : cur === 'ge' ? 'dp'
+               : cur === 'dp' ? 'cp'
+               : 'fe';
     model.setState({ WorldModel: next });
   });
   model.addEventListener('update', refreshWorldBtn);

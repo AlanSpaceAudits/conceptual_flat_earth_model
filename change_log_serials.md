@@ -14585,6 +14585,23 @@ Format:
   default when a user has previously persisted the off state.
 - **Revert path:** `git checkout v-s000766 -- .`
 
+## S831 — CP texture: swap to 1920×1080 centred artwork (already alpha-keyed)
+
+- **Date:** 2026-05-03
+- **Files changed:**
+  `assets/map_canters_polyconic_w20.png`,
+  `js/core/projections.js`, `js-min/**` (rebuilt)
+- **Change:** Replaced the texture asset with the user-supplied
+  1920×1080 PNG (`canter-polyconical.png` from `~/Downloads/`).
+  New artwork is already alpha-keyed (transparent corners) and
+  has its lobed boundary centred in the frame, so the plane
+  geometry's mid-point now lines up with the projection's
+  centre (40.71°N, 104.01°W). Updated
+  `imageNativeWidth/Height` to 1920×1080. No code-side
+  geometry changes; the plane-fit logic picks the new
+  16:9 aspect automatically.
+- **Revert path:** `git checkout v-s000830 -- .`
+
 ## S830 — CP world model: snap observer to projection centre on entry
 
 - **Date:** 2026-05-02

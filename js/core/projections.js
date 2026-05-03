@@ -313,6 +313,9 @@ export const PROJECTIONS = {
     imageAsset: 'assets/map_canters_polyconic_w20.png',
     imageNativeWidth: 1944, imageNativeHeight: 974,
     imageInscribedRadius: 0.5,
+    // Render the full texture on a 2:1 plane (not a cropped
+    // circle) so the lobed three-way boundary stays visible.
+    imageFitMode: 'plane',
     // Drives the canonical disc framework when CP world model is
     // active — observer position, GPs, eclipse paths, lat/lon
     // graticule all flow through this projection.

@@ -14585,6 +14585,26 @@ Format:
   default when a user has previously persisted the off state.
 - **Revert path:** `git checkout v-s000766 -- .`
 
+## S828 — Image-map fit modes: render Canters W20 on a 2:1 plane (full lobed shape)
+
+- **Date:** 2026-05-02
+- **Files changed:** `js/render/earthMap.js`,
+  `js/core/projections.js`, `js-min/**` (rebuilt)
+- **Change:**
+  - `buildImageMap` reads `projection.imageFitMode`. Default
+    `'inscribed-circle'` keeps the existing CircleGeometry +
+    UV-crop behaviour for square / near-square textures.
+    `'plane'` renders the full texture on a PlaneGeometry
+    sized to the texture's aspect ratio so the artwork's
+    natural boundary stays visible.
+  - Material flipped to `transparent: true` for plane mode so
+    the texture's outer alpha doesn't bleed grey rectangle
+    around the lobed boundary.
+  - `canters_w20` projection entry now declares
+    `imageFitMode: 'plane'`. The 2:1 W20 texture renders edge
+    to edge in CP world model, three-lobed boundary intact.
+- **Revert path:** `git checkout v-s000827 -- .`
+
 ## S827 — CP world model: cycle button + canonical-disc routing
 
 - **Date:** 2026-05-02

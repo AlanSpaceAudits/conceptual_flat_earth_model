@@ -14585,6 +14585,134 @@ Format:
   default when a user has previously persisted the off state.
 - **Revert path:** `git checkout v-s000766 -- .`
 
+## S831 — CP texture: swap to 1920×1080 centred artwork (already alpha-keyed)
+
+- **Date:** 2026-05-03
+- **Files changed:**
+  `assets/map_canters_polyconic_w20.png`,
+  `js/core/projections.js`, `js-min/**` (rebuilt)
+- **Change:** Replaced the texture asset with the user-supplied
+  1920×1080 PNG (`canter-polyconical.png` from `~/Downloads/`).
+  New artwork is already alpha-keyed (transparent corners) and
+  has its lobed boundary centred in the frame, so the plane
+  geometry's mid-point now lines up with the projection's
+  centre (40.71°N, 104.01°W). Updated
+  `imageNativeWidth/Height` to 1920×1080. No code-side
+  geometry changes; the plane-fit logic picks the new
+  16:9 aspect automatically.
+- **Revert path:** `git checkout v-s000830 -- .`
+
+## S830 — CP world model: snap observer to projection centre on entry
+
+- **Date:** 2026-05-02
+- **Files changed:** `js/main.js`, `js-min/**` (rebuilt)
+- **Change:** When `WorldModel` transitions into `'cp'`,
+  `refreshActiveProjection` now also writes
+  `ObserverLat = 40.71` and `ObserverLong = -104.01` (the
+  Canters W20 texture's baked centre). The observer lands
+  dead-centre on the visible projection on first entry; the
+  user can still move freely afterwards. Won't re-snap if the
+  user toggles GE → CP later in the same session unless they
+  cycle back through FE / DP first (transition guard via
+  `_prevWorldModel`).
+- **Revert path:** `git checkout v-s000829 -- .`
+
+## S829 — CP world model cleanup: hide FE disc / vault rim, alpha-key the texture
+
+- **Date:** 2026-05-02
+- **Files changed:** `js/render/index.js`,
+  `assets/map_canters_polyconic_w20.png` (chroma-keyed),
+  `js-min/**` (rebuilt)
+- **Change:**
+  - In CP world model, `discBase` (blue ocean disc),
+    `longitudeRing` (azimuth compass numbers), and
+    `vaultOfHeavens` (heavenly-vault outer rim) all hide so
+    only the Canters W20 textured plane reads as the ground.
+    `discGrid` and `latLines` stay live — they re-project
+    through Canters via the canonical disc framework.
+  - Pre-processed `map_canters_polyconic_w20.png` with
+    ImageMagick: `-fuzz 5% -transparent rgb(223,223,223)`.
+    The light-grey background outside the lobed boundary is
+    now `srgba(0,0,0,0)`. Combined with `transparent: true`
+    on the plane material (S828), the grey rectangle around
+    the projection no longer reads.
+- **Revert path:** `git checkout v-s000828 -- .`
+
+## S828 — Image-map fit modes: render Canters W20 on a 2:1 plane (full lobed shape)
+
+- **Date:** 2026-05-02
+- **Files changed:** `js/render/earthMap.js`,
+  `js/core/projections.js`, `js-min/**` (rebuilt)
+- **Change:**
+  - `buildImageMap` reads `projection.imageFitMode`. Default
+    `'inscribed-circle'` keeps the existing CircleGeometry +
+    UV-crop behaviour for square / near-square textures.
+    `'plane'` renders the full texture on a PlaneGeometry
+    sized to the texture's aspect ratio so the artwork's
+    natural boundary stays visible.
+  - Material flipped to `transparent: true` for plane mode so
+    the texture's outer alpha doesn't bleed grey rectangle
+    around the lobed boundary.
+  - `canters_w20` projection entry now declares
+    `imageFitMode: 'plane'`. The 2:1 W20 texture renders edge
+    to edge in CP world model, three-lobed boundary intact.
+- **Revert path:** `git checkout v-s000827 -- .`
+
+## S827 — CP world model: cycle button + canonical-disc routing
+
+- **Date:** 2026-05-02
+- **Files changed:** `js/ui/controlPanel.js`, `js/main.js`,
+  `js/core/projections.js` (added `useProjectionGrid: true` to
+  `canters_w20`), `js/render/index.js`, `js-min/**` (rebuilt)
+- **Change:**
+  - World-model cycle button now reads
+    `FE → GE → DP → CP → FE`. Button face shows the active
+    model.
+  - `js/main.js → refreshActiveProjection`: when
+    `WorldModel === 'cp'`, `setActiveProjection('canters_w20')`
+    routes the canonical disc framework through the Canters
+    Polyconic W20 projection (same mechanism DP uses).
+  - `canters_w20` projection entry gains
+    `useProjectionGrid: true` so `setActiveProjection` accepts
+    it. Observer position, GP markers, lat/lon graticule,
+    optical-vault rays, and eclipse paths all flow through CP
+    when the model is active.
+  - `js/render/index.js` disc-texture routing: in CP mode,
+    forces the `canters_w20` projection (texture +
+    projection) regardless of the FE / GE map dropdowns.
+- **Revert path:** `git checkout v-s000826 -- .`
+
+## S826 — Canters Polyconic W20 projection + texture asset
+
+- **Date:** 2026-05-02
+- **Files changed:** `js/core/projections.js`,
+  new asset `assets/map_canters_polyconic_w20.png`,
+  `js-min/**` (rebuilt)
+- **Change:**
+  - New `projectCantersPolyconicW20(lat, lon, r, centerLat,
+    centerLon)` in `projections.js`. Forward formulas lifted
+    directly from G.Projector's
+    `gov.nasa.giss.map.proj.CantersPolyconicW20` bytecode:
+      x(λ, φ) = λ·cos(φ)·(0.9457 + (0.2962 + 0.042·λ²)·φ²
+                          − 0.1875·φ⁴)
+      y(λ, φ) = 0.9836·φ + (0.0472 − 0.0106·λ² + 0.0929·φ²)
+                          · λ²·φ·cos(φ)
+    Centring applied as a spherical rotation: rotate input
+    (lon, lat) so (centerLon, centerLat) lands at the
+    projection origin (0, 0), then evaluate. Output scaled by
+    `MAX_X = 0.9457·π ≈ 2.971` so the wider axis hits ±r.
+  - New projection registry entry `canters_w20` with
+    `imageAsset: 'assets/map_canters_polyconic_w20.png'` and
+    default `centerLatDeg = 40.71`, `centerLonDeg = −104.01`
+    (matching the generated artwork).
+  - Texture asset copied from
+    `~/Pictures/maps/canter_polyconic.png` (2.3 MB PNG,
+    1944×974). Sourced from G.Projector at the listed centre.
+- **Verification:** Center → (0, 0); Mexico (25.3, −104.2) →
+  (−0.001, −0.089) just south of centre; antipode → (1.000,
+  0.000) at disc edge; both poles inside [−1, +1].
+- **Revert path:** `git checkout v-s000825 -- .`
+
 ## S825 — Revert S824: drop radial-projection extension at axis-off-sphere
 
 - **Date:** 2026-05-02

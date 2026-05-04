@@ -246,12 +246,17 @@ export function buildImageMap(projection, { feRadius = 1 } = {}) {
   tex.wrapS = THREE.ClampToEdgeWrapping;
   tex.wrapT = THREE.ClampToEdgeWrapping;
 
-  // Crop the texture UVs to the inscribed map circle. For a canvas with
-  // a non-square aspect (e.g. 1920×1080), the shorter axis sets the
-  // circle diameter and the longer axis has padding on both sides.
   const W = projection.imageNativeWidth  || 1;
   const H = projection.imageNativeHeight || 1;
-  if (W !== H && W > 0 && H > 0) {
+  // `imageFitMode`:
+  //   - 'inscribed-circle' (default): crop the texture UVs to the
+  //     inscribed map circle so the artwork fills a CircleGeometry.
+  //   - 'plane': render the full texture on a PlaneGeometry sized
+  //     to the texture's aspect ratio. Used for projections like
+  //     Canters W20 whose lobed boundary extends beyond the
+  //     inscribed circle.
+  const fitMode = projection.imageFitMode || 'inscribed-circle';
+  if (fitMode === 'inscribed-circle' && W !== H && W > 0 && H > 0) {
     if (W > H) {
       const cropX = H / W;
       tex.repeat.set(cropX, 1);
@@ -265,18 +270,25 @@ export function buildImageMap(projection, { feRadius = 1 } = {}) {
 
   // `depthTest: false` + `renderOrder = 5` keeps the textured disc
   // painted on top of `DiscBase`'s ocean / rim at any camera
-  // distance. Without this, zooming way out in heavenly-vault FE
-  // flickers the image map against the ocean disc because both sit
-  // within ~1e-4 of z=0 and the depth buffer can't resolve them at
-  // far focal distances. Same fix the lineart map uses (S674).
+  // distance. Same fix the lineart map uses (S674).
   const mat = new THREE.MeshBasicMaterial({
     map: tex,
-    transparent: false,
+    transparent: true,
     side: THREE.DoubleSide,
     depthTest: false,
     depthWrite: false,
   });
-  const geom = new THREE.CircleGeometry(feRadius, 128);
+  let geom;
+  if (fitMode === 'plane' && W > 0 && H > 0) {
+    // Plane sized so the wider axis equals 2·feRadius and the
+    // other axis preserves the texture's native aspect.
+    const aspect = W / H;
+    const w = aspect >= 1 ? 2 * feRadius : 2 * feRadius * aspect;
+    const h = aspect >= 1 ? 2 * feRadius / aspect : 2 * feRadius;
+    geom = new THREE.PlaneGeometry(w, h);
+  } else {
+    geom = new THREE.CircleGeometry(feRadius, 128);
+  }
   const mesh = new THREE.Mesh(geom, mat);
   mesh.position.z = EPS_LIFT;
   mesh.renderOrder = 5;

@@ -444,6 +444,8 @@ export class Renderer {
       ? (s.MapProjectionGe || 'hq_equirect_night')
       : (s.WorldModel === 'dp')
       ? 'dp'
+      : (s.WorldModel === 'cp')
+      ? 'canters_w20'
       : (s.MapProjection || 'ae');
     this._rebuildLand(projId);
     this.frame();
@@ -569,13 +571,15 @@ export class Renderer {
     const m = this.model;
     const c = m.computed, s = m.state;
     // Per-world-model map projection: FE uses `MapProjection`, GE
-    // uses `MapProjectionGe`, DP forces `dp`. Each preserves its own
-    // dropdown selection so toggling between modes doesn't clobber
-    // the FE/GE map picker state.
+    // uses `MapProjectionGe`, DP forces `dp`, CP forces
+    // `canters_w20`. Each preserves its own dropdown selection so
+    // toggling between modes doesn't clobber the picker state.
     const projId = (s.WorldModel === 'ge')
       ? (s.MapProjectionGe || 'hq_equirect_night')
       : (s.WorldModel === 'dp')
       ? 'dp'
+      : (s.WorldModel === 'cp')
+      ? 'canters_w20'
       : (s.MapProjection || 'ae');
     if (projId !== this._landProjection) {
       this._rebuildLand(projId);
@@ -586,13 +590,20 @@ export class Renderer {
     // anchored markers stay live since they share the observer's
     // local frame regardless of world model.
     const ge = s.WorldModel === 'ge';
-    this.discBase.group.visible      = !ge;
+    const cp = s.WorldModel === 'cp';
+    // CP world model hides the FE blue-ocean disc, the FE
+    // azimuth ring of compass numbers, and the heavenly-vault
+    // outer rim — only the Canters W20 textured plane should
+    // read as the "ground". The lat/lon graticule + latitude
+    // rings stay live (they re-project through Canters via
+    // the canonical disc framework).
+    this.discBase.group.visible      = !ge && !cp;
     this.discGrid.group.visible      = !ge;
     this.latLines.group.visible      = !ge;
-    this.longitudeRing.group.visible = !ge;
+    this.longitudeRing.group.visible = !ge && !cp;
     this.shadow.group.visible        = !ge;
     this.eclipseShadow.group.visible = !ge;
-    this.vaultOfHeavens.group.visible = !ge;
+    this.vaultOfHeavens.group.visible = !ge && !cp;
     this.starfieldChart.group.visible = !ge;
     this.gpPathOverlay.group.visible = !ge;
     this.yggdrasil.group.visible     = !ge && this.yggdrasil.group.visible;

@@ -148,7 +148,7 @@ export class ExperimentManager {
     overview.innerHTML = `
       <div class="experiment-overview-kicker">Kinematics vs dynamics</div>
       <h3>Same sky map. Different physical cause.</h3>
-      <p>Heliocentric, globe-geocentric, and topographical coordinates can all map the same observed angles. That is kinematic equivalence.</p>
+      <p>Heliocentric, globe-geocentric, and topographical plane coordinates can all map the same observed angles. That is kinematic equivalence.</p>
       <p class="experiment-overview-punch">Dynamics asks the stronger question: which frame makes the experiments work directly? These demos keep observation first and favor the observer-first explanation where measurement and law meet with fewer added assumptions.</p>
     `;
     this._listContainer.appendChild(overview);

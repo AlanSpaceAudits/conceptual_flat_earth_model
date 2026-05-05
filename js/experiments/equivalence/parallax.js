@@ -58,6 +58,26 @@ const STAR_PRESETS = [
   { id: 'schedar', name: 'Schedar (α Cas)', shortName: 'Schedar', parallaxArcsec: 0.01429, demoAltA: 36, demoAltB: 26, demoSunA: -75, demoSunB: -29 },
 ];
 
+const STAR_DISPLAY_STATE_KEYS = [
+  'StarfieldType',
+  'ShowStars',
+  'ShowCelNav',
+  'ShowConstellations',
+  'ShowConstellationLines',
+  'ShowBlackHoles',
+  'ShowQuasars',
+  'ShowGalaxies',
+  'ShowSatellites',
+  'ShowTruePositions',
+  'ShowOpticalVault',
+  'SuppressOpticalStarPoints',
+  'DynamicStars',
+  'PermanentNight',
+  'SpecifiedTrackerMode',
+  'TrackerTargets',
+  'FollowTarget',
+];
+
 function clamp(v, lo, hi) {
   return Math.max(lo, Math.min(hi, v));
 }
@@ -267,57 +287,82 @@ export class ParallaxExperiment extends BaseExperiment {
     this.starSelect = null;
     this.liveReadoutEl = null;
     this.angleOverlay = null;
+    this.demoStarsOnlyInput = null;
+    this.skyVaultStarsInput = null;
+    this.personalDomeStarsInput = null;
+    this.dynamicStarsInput = null;
+    this._nativeStarState = null;
+    this._boundRefreshControls = () => {
+      this._captureNativeStarStateIfReleased();
+      this._refreshButtons();
+    };
 
     this._buildVisualization();
   }
 
+  _trackedStarId(id = this.starId) {
+    return `star:${id}`;
+  }
+
+  _demoStarsOnlyPatch(id = this.starId) {
+    const target = this._trackedStarId(id);
+    return {
+      StarfieldType: 'celnav',
+      ShowStars: true,
+      ShowCelNav: true,
+      ShowConstellations: false,
+      ShowConstellationLines: false,
+      ShowBlackHoles: false,
+      ShowQuasars: false,
+      ShowGalaxies: false,
+      ShowSatellites: false,
+      SpecifiedTrackerMode: true,
+      TrackerTargets: [target],
+      FollowTarget: target,
+    };
+  }
+
+  _activationStatePatch(id = this.starId) {
+    return {
+      WorldModel: 'fe',
+      ShowVault: false,
+      ShowOpticalVault: true,
+      ShowFeGrid: true,
+      ShowStars: true,
+      ShowShadow: true,
+      ShowDayNightShadow: true,
+      PermanentNight: false,
+      DynamicStars: true,
+      ShowCelestialBodies: true,
+      ShowPlanets: false,
+      ShowTruePositions: true,
+      ShowGroundPoints: false,
+      ShowGPPath: false,
+      ShowVaultRays: false,
+      ShowOpticalVaultRays: false,
+      ShowProjectionRays: false,
+      SuppressOpticalStarPoints: false,
+      ShowLiveEphemeris: false,
+      ShowEphemerisReadings: false,
+      DateTime: this.getDemoStartDateTime(),
+      ObserverLat: this.getObserverLat(),
+      ObserverLong: this.getObserverLon(),
+      TrackerGPOverride: false,
+      FreeCameraMode: false,
+      FreeCamActive: false,
+      InsideVault: false,
+      CameraDirection: 0,
+      CameraHeight: 28,
+      CameraDistance: 9.2,
+      Zoom: 4.8,
+      Description: `STELLAR PARALLAX: ${this.selectedPreset.name}; measured A/B sightlines from catalog parallax.`,
+      ...this._demoStarsOnlyPatch(id),
+    };
+  }
+
   getHistoricalSetup() {
     return {
-      state: {
-        WorldModel: 'fe',
-        StarfieldType: 'celnav',
-        ShowVault: false,
-        ShowOpticalVault: true,
-        ShowFeGrid: true,
-        ShowStars: true,
-        ShowShadow: true,
-        ShowDayNightShadow: true,
-        PermanentNight: false,
-        DynamicStars: false,
-        ShowCelestialBodies: true,
-        ShowPlanets: false,
-        ShowCelNav: true,
-        ShowConstellations: false,
-        ShowConstellationLines: false,
-        ShowBlackHoles: false,
-        ShowQuasars: false,
-        ShowGalaxies: false,
-        ShowSatellites: false,
-        ShowTruePositions: false,
-        ShowGroundPoints: false,
-        ShowGPPath: false,
-        ShowVaultRays: false,
-        ShowOpticalVaultRays: false,
-        ShowProjectionRays: false,
-        SuppressOpticalStarPoints: false,
-        ShowLiveEphemeris: false,
-        ShowEphemerisReadings: false,
-        DateTime: this.getDemoStartDateTime(),
-        ObserverLat: this.getObserverLat(),
-        ObserverLong: this.getObserverLon(),
-        SpecifiedTrackerMode: true,
-        TrackerGPOverride: false,
-        TrackerTargets: [`star:${DEFAULT_STAR_ID}`],
-        FollowTarget: `star:${DEFAULT_STAR_ID}`,
-        FreeCameraMode: false,
-        FreeCamActive: false,
-        InsideVault: false,
-        CameraDirection: 0,
-        CameraHeight: 28,
-        CameraDistance: 9.2,
-        Zoom: 4.8,
-        Description: 'STELLAR PARALLAX: one measured star sightline; mark A, advance six months, mark B.',
-      },
+      state: this._activationStatePatch(),
     };
   }
 
@@ -1015,47 +1060,13 @@ export class ParallaxExperiment extends BaseExperiment {
   activate() {
     this._autoplayWasPlaying = !!this.model?._autoplay?.playing;
     this.model?._autoplay?.pause?.();
+    this._nativeStarState = this.snapshotState(STAR_DISPLAY_STATE_KEYS);
     super.activate();
     if (typeof document !== 'undefined') {
       document.body?.classList?.add('parallax-experiment-active');
     }
-    this.model.setState({
-      WorldModel: 'fe',
-      ShowVault: false,
-      ShowOpticalVault: true,
-      ShowFeGrid: true,
-      ShowStars: true,
-      ShowShadow: true,
-      ShowDayNightShadow: true,
-      PermanentNight: false,
-      DynamicStars: false,
-      ShowCelestialBodies: true,
-      ShowPlanets: false,
-      ShowCelNav: true,
-      ShowConstellations: false,
-      ShowConstellationLines: false,
-      ShowBlackHoles: false,
-      ShowQuasars: false,
-      ShowGalaxies: false,
-      ShowSatellites: false,
-      ShowTruePositions: false,
-      ShowGroundPoints: false,
-      ShowGPPath: false,
-      ShowVaultRays: false,
-      ShowOpticalVaultRays: false,
-      ShowProjectionRays: false,
-      SuppressOpticalStarPoints: false,
-      ShowLiveEphemeris: false,
-      ShowEphemerisReadings: false,
-      DateTime: this.getDemoStartDateTime(),
-      ObserverLat: this.getObserverLat(),
-      ObserverLong: this.getObserverLon(),
-      SpecifiedTrackerMode: true,
-      TrackerGPOverride: false,
-      TrackerTargets: [`star:${this.starId}`],
-      FollowTarget: `star:${this.starId}`,
-      Description: `STELLAR PARALLAX: ${this.selectedPreset.name}; measured A/B sightlines from catalog parallax.`,
-    });
+    this.model?.addEventListener?.('update', this._boundRefreshControls);
+    this.model.setState(this._activationStatePatch());
     this.geometryClock = 0;
     this._setSeasonEpochs();
     this.openAngleOverlay();
@@ -1066,6 +1077,7 @@ export class ParallaxExperiment extends BaseExperiment {
     if (typeof document !== 'undefined') {
       document.body?.classList?.remove('parallax-experiment-active');
     }
+    this.model?.removeEventListener?.('update', this._boundRefreshControls);
     this.closeAngleOverlay();
     super.deactivate();
     if (this._autoplayWasPlaying && this.model?._autoplay && !this.model._autoplay.playing) {
@@ -1086,17 +1098,131 @@ export class ParallaxExperiment extends BaseExperiment {
 
   setStar(id) {
     if (!STAR_PRESETS.some((s) => s.id === id)) return;
+    const wasDemoStarsOnly = this._isDemoStarsOnlyActive();
     this.starId = id;
-    this.model?.setState?.({
+    const target = this._trackedStarId(id);
+    const patch = {
       DateTime: this.getDemoStartDateTime(),
-      TrackerTargets: [`star:${id}`],
-      FollowTarget: `star:${id}`,
       Description: `STELLAR PARALLAX: ${this.selectedPreset.name}; measured A/B sightlines from catalog parallax.`,
-    });
+    };
+    if (wasDemoStarsOnly) {
+      Object.assign(patch, this._demoStarsOnlyPatch(id));
+    } else {
+      const targets = new Set(Array.isArray(this.model?.state?.TrackerTargets)
+        ? this.model.state.TrackerTargets
+        : []);
+      targets.add(target);
+      patch.TrackerTargets = [...targets];
+      patch.FollowTarget = target;
+    }
+    this.model?.setState?.(patch);
     this.geometryClock = 0;
     this._setSeasonEpochs();
     this.isPlaying = true;
     this._refreshLayout();
+  }
+
+  _isDemoStarsOnlyState(s, id = this.starId) {
+    if (!s) return true;
+    const target = this._trackedStarId(id);
+    const targets = Array.isArray(s.TrackerTargets) ? s.TrackerTargets : [];
+    return !!s.SpecifiedTrackerMode
+      && s.FollowTarget === target
+      && targets.length === 1
+      && targets[0] === target
+      && s.StarfieldType === 'celnav'
+      && s.ShowStars !== false
+      && s.ShowCelNav !== false
+      && s.ShowConstellations === false
+      && s.ShowConstellationLines === false
+      && s.ShowBlackHoles === false
+      && s.ShowQuasars === false
+      && s.ShowGalaxies === false
+      && s.ShowSatellites === false;
+  }
+
+  _isDemoStarsOnlyActive() {
+    return this._isDemoStarsOnlyState(this.model?.state);
+  }
+
+  _isSingleStarFocusState(s, id = this.starId) {
+    if (!s) return true;
+    const target = this._trackedStarId(id);
+    const targets = Array.isArray(s.TrackerTargets) ? s.TrackerTargets : [];
+    const onlyTarget = targets.length === 1 && targets[0] === target;
+    const noTargetsButFollow = targets.length === 0 && s.FollowTarget === target;
+    return !!s.SpecifiedTrackerMode && (onlyTarget || noTargetsButFollow);
+  }
+
+  _nativeStarTargetList() {
+    const targets = new Set([this._trackedStarId()]);
+    const addStars = (list) => {
+      for (const star of list || []) {
+        if (star?.id) targets.add(`star:${star.id}`);
+      }
+    };
+    addStars(this.model?.computed?.CelNavStars);
+    addStars(this.model?.computed?.CataloguedStars);
+    addStars(this.model?.computed?.BlackHoles);
+    addStars(this.model?.computed?.Quasars);
+    addStars(this.model?.computed?.Galaxies);
+    for (const preset of STAR_PRESETS) targets.add(this._trackedStarId(preset.id));
+    return [...targets];
+  }
+
+  _nativeStarReleasePatch() {
+    return {
+      StarfieldType: 'celnav',
+      ShowStars: true,
+      ShowCelNav: true,
+      ShowConstellations: true,
+      ShowConstellationLines: true,
+      ShowBlackHoles: false,
+      ShowQuasars: false,
+      ShowGalaxies: false,
+      ShowSatellites: false,
+      SpecifiedTrackerMode: false,
+      TrackerTargets: this._nativeStarTargetList(),
+      FollowTarget: this._trackedStarId(),
+    };
+  }
+
+  _captureNativeStarStateIfReleased() {
+    if (!this.active || this._isDemoStarsOnlyActive()) return;
+    this._nativeStarState = this.snapshotState(STAR_DISPLAY_STATE_KEYS);
+  }
+
+  setDemoStarsOnly(enabled) {
+    if (enabled) {
+      this._nativeStarState = this.snapshotState(STAR_DISPLAY_STATE_KEYS);
+      this.model?.setState?.(this._demoStarsOnlyPatch());
+    } else {
+      const restore = this._nativeStarState || {};
+      const release = this._isDemoStarsOnlyState(restore) || this._isSingleStarFocusState(restore)
+        ? this._nativeStarReleasePatch()
+        : restore;
+      this.model?.setState?.({
+        ...release,
+        ShowStars: release.ShowStars !== false,
+        ShowOpticalVault: release.ShowOpticalVault !== false,
+        SuppressOpticalStarPoints: release.SuppressOpticalStarPoints === true,
+      });
+    }
+    this._refreshButtons();
+  }
+
+  setSkyVaultStars(enabled) {
+    this.model?.setState?.({ ShowTruePositions: !!enabled });
+  }
+
+  setPersonalDomeStars(enabled) {
+    this.model?.setState?.(enabled
+      ? { ShowOpticalVault: true, SuppressOpticalStarPoints: false }
+      : { SuppressOpticalStarPoints: true });
+  }
+
+  setDynamicDayNightStars(enabled) {
+    this.model?.setState?.({ DynamicStars: !!enabled });
   }
 
   setVisualBoost(value) {
@@ -1115,6 +1241,15 @@ export class ParallaxExperiment extends BaseExperiment {
 
   _refreshButtons() {
     if (this.starSelect) this.starSelect.value = this.starId;
+    if (this.demoStarsOnlyInput) this.demoStarsOnlyInput.checked = this._isDemoStarsOnlyActive();
+    if (this.skyVaultStarsInput) {
+      this.skyVaultStarsInput.checked = this.model?.state?.ShowTruePositions !== false;
+    }
+    if (this.personalDomeStarsInput) {
+      const s = this.model?.state || {};
+      this.personalDomeStarsInput.checked = s.ShowOpticalVault !== false && !s.SuppressOpticalStarPoints;
+    }
+    if (this.dynamicStarsInput) this.dynamicStarsInput.checked = !!this.model?.state?.DynamicStars;
     this.updateAngleOverlay();
   }
 
@@ -1138,7 +1273,7 @@ export class ParallaxExperiment extends BaseExperiment {
       ${epochLine}
       <div><b>Catalog 2p</b><span>${formatArcsec(preset.parallaxArcsec * 2)} = the final A-to-B split</span></div>
       <div><b>Measured</b><span>A = -p, B = +p, both read against the same S-N-F reference</span></div>
-      <div><b>Day/night</b><span>Native shadow tracks the six-month wait; A and B are both deep-night observations</span></div>
+      <div><b>Day/night</b><span>Native shadow and star fade track the six-month wait; A and B are both deep-night observations</span></div>
       <div><b>Visibility</b><span>Star alt ${formatAltPair(preset)}; Sun below horizon at A and B</span></div>
     `;
   }
@@ -1323,6 +1458,35 @@ export class ParallaxExperiment extends BaseExperiment {
     starWrap.append(starLabel, this.starSelect);
     container.appendChild(starWrap);
 
+    const toggles = document.createElement('div');
+    toggles.className = 'parallax-native-toggles';
+    this.demoStarsOnlyInput = this._createNativeToggle(
+      toggles,
+      'Demo stars only',
+      this._isDemoStarsOnlyActive(),
+      (checked) => this.setDemoStarsOnly(checked),
+    );
+    this.skyVaultStarsInput = this._createNativeToggle(
+      toggles,
+      'Sky vault star positions',
+      this.model?.state?.ShowTruePositions !== false,
+      (checked) => this.setSkyVaultStars(checked),
+    );
+    const state = this.model?.state || {};
+    this.personalDomeStarsInput = this._createNativeToggle(
+      toggles,
+      'Personal dome star dots',
+      state.ShowOpticalVault !== false && !state.SuppressOpticalStarPoints,
+      (checked) => this.setPersonalDomeStars(checked),
+    );
+    this.dynamicStarsInput = this._createNativeToggle(
+      toggles,
+      'Day/night star fade',
+      !!this.model?.state?.DynamicStars,
+      (checked) => this.setDynamicDayNightStars(checked),
+    );
+    container.appendChild(toggles);
+
     const replayBtn = document.createElement('button');
     replayBtn.type = 'button';
     replayBtn.className = 'parallax-action-btn';
@@ -1350,7 +1514,7 @@ export class ParallaxExperiment extends BaseExperiment {
         <div>
           <b>The timing</b>
           <p>Both marks are deep-night observations. The native day/night
-          shadow stays on while the clock advances
+          shadow and personal-dome star fade stay on while the clock advances
           ${(this._spanDays() || 182.62).toFixed(2)} days.</p>
         </div>
         <div>
@@ -1361,8 +1525,8 @@ export class ParallaxExperiment extends BaseExperiment {
         <div>
           <b>The reference</b>
           <p>The scene keeps the fixed S-N-F reference, the A/B sightline
-          marks, and the final 2p readout. The native tracked star dot remains
-          on, while broader GP and constellation clutter stays suppressed.</p>
+          marks, and the final 2p readout. The native sky-vault and personal
+          dome star dots stay controlled by the model's normal star switches.</p>
         </div>
         <div>
           <b>Why these stars</b>
@@ -1376,6 +1540,20 @@ export class ParallaxExperiment extends BaseExperiment {
       that same frame, so the full split is catalog 2p. The scene enlarges the
       tiny angle only so it remains visible.</p>
     `;
+  }
+
+  _createNativeToggle(container, label, checked, onChange) {
+    const wrap = document.createElement('label');
+    wrap.className = 'parallax-native-toggle';
+    const input = document.createElement('input');
+    input.type = 'checkbox';
+    input.checked = !!checked;
+    input.addEventListener('change', () => onChange(input.checked));
+    const text = document.createElement('span');
+    text.textContent = label;
+    wrap.append(input, text);
+    container.appendChild(wrap);
+    return input;
   }
 
   _makeTextSprite(text, options = {}) {

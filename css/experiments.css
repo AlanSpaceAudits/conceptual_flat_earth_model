@@ -1638,6 +1638,37 @@ body.parallax-experiment-active .experiments-panel .experiment-controls {
   font-size: 12px;
 }
 
+.parallax-native-toggles {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.parallax-native-toggle {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 34px;
+  padding: 7px 8px;
+  border: 1px solid rgba(127, 184, 255, 0.22);
+  border-radius: 6px;
+  background: rgba(10, 14, 22, 0.68);
+  color: #d9dde6;
+  font: 600 11px/1.2 system-ui, -apple-system, Segoe UI, sans-serif;
+}
+
+.parallax-native-toggle input {
+  flex: 0 0 auto;
+  width: 15px;
+  height: 15px;
+  margin: 0;
+  accent-color: #42ffd0;
+}
+
+.parallax-native-toggle span {
+  min-width: 0;
+}
+
 .parallax-slider {
   display: grid;
   grid-template-columns: 1fr auto;
@@ -1968,6 +1999,7 @@ body.parallax-experiment-active .experiments-panel .experiment-controls {
 
 @media (max-width: 700px) {
   .parallax-mode-buttons,
+  .parallax-native-toggles,
   .parallax-reading div,
   .parallax-reveal-flow div {
     grid-template-columns: 1fr;

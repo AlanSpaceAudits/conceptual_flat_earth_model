@@ -347,6 +347,13 @@ export class SceneManager {
     const x = dist * Math.cos(hgt) * Math.cos(dir);
     const y = dist * Math.cos(hgt) * Math.sin(dir);
     const z = dist * Math.sin(hgt);
+
+    if (s.ActiveExperiment) {
+      this.camera.position.set(obs[0] + x, obs[1] + y, obs[2] + z);
+      this.camera.lookAt(obs[0], obs[1], obs[2]);
+      return;
+    }
+
     this.camera.position.set(x, y, z);
 
     if (s.FreeCameraMode) {

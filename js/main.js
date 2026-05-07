@@ -7,6 +7,7 @@ import { attachKeyboardHandler } from './ui/keyboardHandler.js';
 import { buildControlPanel, buildHud, buildTrackerHud } from './ui/controlPanel.js';
 import { buildTrackingInfoPopup } from './ui/trackingInfoPopup.js';
 import { Demos } from './demos/index.js';
+import { ExperimentManager } from './experiments/index.js';
 import { attachUrlState } from './ui/urlState.js';
 import { setActiveProjection } from './core/canonical.js';
 import { t, onLangChange, isRtl } from './ui/i18n.js';
@@ -16,8 +17,9 @@ const canvas = document.getElementById('feCanvas');
 
 // Build UI first so it renders even if WebGL fails.
 const demos = new Demos(model);
+const experiments = new ExperimentManager(model);
 const viewEl_panel = document.getElementById('view');
-buildControlPanel(viewEl_panel, model, demos);
+buildControlPanel(viewEl_panel, model, demos, experiments);
 const hudEl = document.getElementById('hud');
 buildHud(hudEl, model);
 const trackerHudEl = document.getElementById('tracker-hud');
@@ -83,6 +85,7 @@ let renderer = null;
 if (_hasWebGL) {
   try {
     renderer = new Renderer(canvas, model);
+    experiments.attachRenderer(renderer);
     renderer.loadLand().catch((err) => {
       console.warn('Failed to load land data:', err);
     });
@@ -389,6 +392,15 @@ refreshTitle();
 window.model = model;
 window.renderer = renderer;
 window.demos = demos;
+window.experiments = experiments;
+
+// Local verification hook for capture/smoke scripts.
+window.__feCapture = {
+  model,
+  demos,
+  experiments,
+  get renderer() { return renderer; },
+};
 
 // Service-worker registration. CACHE_VERSION inside `sw.js`
 // controls eviction; on `controllerchange` (an existing SW was

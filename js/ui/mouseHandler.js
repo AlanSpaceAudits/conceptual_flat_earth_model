@@ -30,6 +30,7 @@ const CLICK_DRAG_PX   = 8;    // pointer movement below this counts as click
 const CLICK_EPS_DEG   = 0.01; // heading/pitch diff for follow setState skip
 const HEAVENLY_HIT_PX = 40;   // screen-space hover radius in Heavenly / free-cam
 const PINCH_MIN_DIST_PX = 10; // ignore pinch deltas under this — fingertip jitter
+const WHEEL_CLICK_SUPPRESS_MS = 320;
 
 function opticalCadenceStepDeg(fovDeg) {
   if (fovDeg >= 8) return 5;
@@ -321,6 +322,8 @@ export function attachMouseHandler(canvas, model, renderer = null) {
   let lastX = 0, lastY = 0;
   let downX = 0, downY = 0;
   let dragDist = 0;
+  let lastWheelAt = -Infinity;
+  let wheelDuringPointerDown = false;
   const hoverTip = ensureHoverTooltip();
 
   // Multi-pointer state for pinch-to-zoom. activePointers holds every
@@ -472,6 +475,7 @@ export function attachMouseHandler(canvas, model, renderer = null) {
     lastX = e.offsetX; lastY = e.offsetY;
     downX = e.offsetX; downY = e.offsetY;
     dragDist = 0;
+    wheelDuringPointerDown = false;
     // Arm the orange-dot gesture. Drag promotes to dotDragging on
     // first move past CLICK_DRAG_PX; a release without crossing the
     // threshold counts as a click and toggles ObserverAtCenter.
@@ -490,7 +494,12 @@ export function attachMouseHandler(canvas, model, renderer = null) {
       try { canvas.releasePointerCapture(e.pointerId); } catch {}
       return;
     }
-    const wasClick = dragging && dragDist < CLICK_DRAG_PX;
+    const now = performance.now();
+    const wheelRecently = now - lastWheelAt < WHEEL_CLICK_SUPPRESS_MS;
+    const wasClick = dragging
+      && dragDist < CLICK_DRAG_PX
+      && !wheelDuringPointerDown
+      && !wheelRecently;
     const wasDotDrag = dotDragging;
     const wasDotClick = pressedOnDot && wasClick;
     dragging = false;
@@ -759,6 +768,9 @@ export function attachMouseHandler(canvas, model, renderer = null) {
 
   canvas.addEventListener('wheel', (e) => {
     e.preventDefault();
+    lastWheelAt = performance.now();
+    if (dragging) wheelDuringPointerDown = true;
+    hideHover();
     const inVault = !!model.state.InsideVault;
     if (inVault && !model.state.FreeCameraMode) {
       const cur = model.state.OpticalZoom || 5.09;

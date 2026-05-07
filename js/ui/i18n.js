@@ -6,7 +6,8 @@
 const STRINGS = {
   en: {
     tab_view: 'View', tab_time: 'Time', tab_show: 'Show',
-    tab_tracker: 'Tracker', tab_demos: 'Demos', tab_info: 'Info',
+    tab_tracker: 'Tracker', tab_demos: 'Demos',
+    tab_experiments: 'Experiments', tab_info: 'Info',
     btn_show: 'Show', btn_gp_override: 'GP Override',
     btn_enable_all: 'Enable All', btn_disable_all: 'Disable All',
     btn_disable_satellites: 'Disable Satellites',

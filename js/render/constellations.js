@@ -145,7 +145,7 @@ export class Constellations {
     // the transparent cap) and on the cap surface projection.
     const showTrueVault = showStars && canShow && (s.ShowTruePositions !== false)
                         && !s.InsideVault;
-    const showOptical   = showStars && canShow && s.ShowOpticalVault;
+    const showOptical   = showStars && canShow && s.ShowOpticalVault && !s.SuppressOpticalStarPoints;
 
     // Specified Tracker Mode kills the constellation stick-
     // figure lines entirely (keeping them would connect tracked
@@ -157,7 +157,7 @@ export class Constellations {
     this.domeStars.visible   = showTrueVault;
     this.sphereStars.visible = showOptical;
     this.domeLines.visible   = effShowLines && (s.ShowTruePositions !== false);
-    this.sphereLines.visible = effShowLines && s.ShowOpticalVault;
+    this.sphereLines.visible = effShowLines && s.ShowOpticalVault && !s.SuppressOpticalStarPoints;
 
     this.domeStars.material.opacity   = nightAlpha;
     this.sphereStars.material.opacity = nightAlpha;

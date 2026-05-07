@@ -52,10 +52,10 @@ async function buildJs() {
   await fs.rm(JS_OUT, { recursive: true, force: true });
   let totalIn = 0, totalOut = 0, files = 0;
   for await (const src of walkJs(JS_SRC)) {
-    const rel = path.relative(JS_SRC, src);
+    const rel = path.relative(JS_SRC, src).split(path.sep).join('/');
     const dst = path.join(JS_OUT, rel);
     await fs.mkdir(path.dirname(dst), { recursive: true });
-    const code = await fs.readFile(src, 'utf8');
+    const code = (await fs.readFile(src, 'utf8')).replace(/\r\n/g, '\n');
     const baseName = path.basename(dst);
     // External sourcemap: write `<name>.js.map` next to the minified
     // file and append `//# sourceMappingURL=<name>.js.map` so browsers

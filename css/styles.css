@@ -698,12 +698,19 @@ header .info-popup.legend-popup a { color: var(--accent); }
   align-items: stretch;
 }
 #bottom-bar .grids-stack .time-btn {
+  /* Fixed box so a wide glyph (e.g. ⌫) can't stretch its cell and shove the
+     rest of the row; every button in the 2×3 stack stays identical. */
+  width: 36px;
   min-width: 36px;
+  height: 26px;
   min-height: 26px;
-  padding: 3px 8px;
+  padding: 3px 4px;
   font-size: 14px;
   line-height: 20px;
   margin: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 #bottom-bar .grids-stack .world-row {
   display: flex;

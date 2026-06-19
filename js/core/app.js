@@ -1186,7 +1186,17 @@ export class FeModel extends EventTarget {
       const cacheKey = `${_liveEclipse.anchorMs}|${bodySource}`;
       if (!this._liveEclipsePathCache
           || this._liveEclipsePathCache.key !== cacheKey) {
-        const els = ECLIPSE_BESSELIAN[_liveEclipse.date];
+        let els = ECLIPSE_BESSELIAN[_liveEclipse.date];
+        if (!els && /^\d{4}-\d{2}-\d{2}$/.test(_liveEclipse.date)) {
+          // The catalogue's greatest-eclipse date can sit ±1 day from the
+          // Besselian table's published date; try the neighbours so the
+          // precise shadow still resolves before the sublunar fallback.
+          const base = Date.parse(_liveEclipse.date + 'T00:00:00Z');
+          for (const off of [86400000, -86400000]) {
+            const k = new Date(base + off).toISOString().slice(0, 10);
+            if (ECLIPSE_BESSELIAN[k]) { els = ECLIPSE_BESSELIAN[k]; break; }
+          }
+        }
         if (els) {
           const result = besselianShadowPathFromElements(els, 49);
           const greatestDt = result.greatest / TIME_ORIGIN.msPerDay - TIME_ORIGIN.ZeroDate;

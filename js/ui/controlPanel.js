@@ -5,8 +5,7 @@ import { dateTimeToString, dateTimeToDate } from '../core/time.js';
 import { fmtDuDecimal, fmtLiBuFromLi, haversineLi, KM_PER_LI, R_LI, DU_PER_DEG, DEG_PER_DU } from '../tang/units.js';
 import { raDecRadToTang, fmtTang } from '../tang/frame.js';
 import { TIME_ORIGIN } from '../core/constants.js';
-import { findNextEclipses } from '../core/ephemeris.js';
-import { findNextSolarEclipseAfter } from '../core/solarEclipseSchedule.js';
+import { findNextSolarEclipseAfter, findNextLunarEclipseAfter } from '../core/solarEclipseSchedule.js';
 import { raDecToAzEl } from '../core/transforms.js';
 import { CEL_NAV_SELECT_OPTIONS, CEL_NAV_STARS } from '../core/celnavStars.js';
 import { CATALOGUED_STARS, CONSTELLATIONS } from '../core/constellations.js';
@@ -458,8 +457,8 @@ function resolveTrackName(targetId) {
   return targetId;
 }
 
-// Eclipse cache: the search costs ~10ms worst case, so we memoise until the
-// current DateTime passes the cached event (or jumps backward).
+// Next-eclipse readout, sourced from the catalogue schedule (shaneEclipses).
+// Memoised until the current DateTime passes the cached event (or jumps back).
 let _eclipseCache = null;
 function nextEclipses(dateTime) {
   if (_eclipseCache
@@ -467,19 +466,19 @@ function nextEclipses(dateTime) {
       && dateTime < _eclipseCache.horizon) {
     return _eclipseCache.result;
   }
-  const fromDate = dateTimeToDate(dateTime);
-  const result = findNextEclipses(fromDate);
+  const ns = findNextSolarEclipseAfter(dateTime);
+  const nl = findNextLunarEclipseAfter(dateTime);
+  const result = {
+    nextSolar: ns ? new Date(ns.anchorMs) : null,
+    nextLunar: nl ? new Date(nl.anchorMs) : null,
+    nextSolarType: ns ? ns.type : null,
+    nextLunarType: nl ? nl.type : null,
+  };
   // Refresh when current date passes either eclipse, or after 30 days.
   const eventDTs = [];
-  if (result.nextSolar) {
-    eventDTs.push(result.nextSolar.getTime() / TIME_ORIGIN.msPerDay - TIME_ORIGIN.ZeroDate);
-  }
-  if (result.nextLunar) {
-    eventDTs.push(result.nextLunar.getTime() / TIME_ORIGIN.msPerDay - TIME_ORIGIN.ZeroDate);
-  }
-  const horizon = eventDTs.length
-    ? Math.min(...eventDTs)
-    : dateTime + 30;
+  if (ns) eventDTs.push(ns.anchorDt);
+  if (nl) eventDTs.push(nl.anchorDt);
+  const horizon = eventDTs.length ? Math.min(...eventDTs) : dateTime + 30;
   _eclipseCache = { from: dateTime - 0.01, horizon, result };
   return result;
 }
@@ -2449,6 +2448,32 @@ export function buildControlPanel(host, model, demos) {
   model.addEventListener('update', refreshSkipEclipse);
   refreshSkipEclipse();
   celTheoHops.appendChild(btnSkipEclipse);
+
+  // Skip-to-next-lunar-eclipse, mirroring the solar button. A lunar eclipse is
+  // visible from the whole night hemisphere, so there is no shadow path to
+  // sweep in; jump straight to ~30 min before greatest eclipse.
+  const btnSkipLunar = document.createElement('button');
+  btnSkipLunar.className = 'time-btn geo-hop cel-theo-hop skip-eclipse-btn skip-lunar-btn';
+  btnSkipLunar.type = 'button';
+  btnSkipLunar.textContent = '🌕◓';
+  btnSkipLunar.addEventListener('click', () => {
+    const cur = model.state.DateTime || 0;
+    const next = findNextLunarEclipseAfter(cur);
+    if (!next) return;
+    const leadIn = 0.5 / 24;
+    model.setState({ DateTime: next.anchorDt - leadIn });
+  });
+  const refreshSkipLunar = () => {
+    const cur = model.state.DateTime || 0;
+    const next = findNextLunarEclipseAfter(cur);
+    btnSkipLunar.title = next
+      ? `Jump to next lunar eclipse · ${next.date} ${next.type}`
+        + (next.magnitude != null ? ` · mag ${next.magnitude.toFixed(2)}` : '')
+      : 'Jump to next lunar eclipse';
+  };
+  model.addEventListener('update', refreshSkipLunar);
+  refreshSkipLunar();
+  celTheoHops.appendChild(btnSkipLunar);
 
   const compassControls = document.createElement('div');
   compassControls.className = 'compass-controls';

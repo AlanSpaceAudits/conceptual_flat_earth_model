@@ -10,7 +10,7 @@ import {
   pointOnFE, celestLatLongToVaultCoord, feLatLongToGlobalFeCoord,
 } from '../core/feGeometry.js';
 import { canonicalLatLongToDisc } from '../core/canonical.js';
-import { R_LI, TANG_CIRCUMFERENCE_LI } from '../core/units.js';
+import { R_LI, TANG_CIRCUMFERENCE_LI } from '../tang/units.js';
 import { STELLARIUM_TRACES } from '../data/stellariumTraces.js';
 import {
   besselian2024Apr08Path, besselian2024Apr08Bands,
@@ -3262,10 +3262,12 @@ export class CelestialMarker {
 
     // --- Observer's optical vault (what the observer sees) -----------
     // Both dot and halo are in the transparent pass so we can force render
-    // order: halo first (renderOrder 50), solid dot after (renderOrder 51).
+    // order: halo first (renderOrder 68), solid dot after (renderOrder 69).
     // Otherwise the halo sphere's near face passes the dot's depth test and
     // occludes the dot's centre — the sun/moon would appear off-centre
-    // within their glow.
+    // within their glow. Both sit ABOVE every star layer (starfield +
+    // constellations, renderOrder ≤ 67) so the body occludes the starfield;
+    // the planets/Moon are never painted behind the stars.
     this.sphereDot = new THREE.Mesh(
       new THREE.SphereGeometry(opticalSize, 16, 12),
       new THREE.MeshBasicMaterial({
@@ -3275,7 +3277,7 @@ export class CelestialMarker {
         clippingPlanes,
       }),
     );
-    this.sphereDot.renderOrder = 51;
+    this.sphereDot.renderOrder = 69;
 
     this.sphereHalo = new THREE.Mesh(
       new THREE.SphereGeometry(opticalSize * haloScale, 16, 12),
@@ -3286,7 +3288,7 @@ export class CelestialMarker {
         clippingPlanes,
       }),
     );
-    this.sphereHalo.renderOrder = 50;
+    this.sphereHalo.renderOrder = 68;
 
     if (showHalo) this.group.add(this.domeHalo);
     this.group.add(this.domeDot);
@@ -4832,14 +4834,14 @@ export class Stars {
       }
 
       // --- Inner-sphere projection -----------------------------------
-      // celest unit dir -> observer's local-globe -> fe-local (axis swap)
+      // celest unit dir -> observer's local-sky -> fe-local (axis swap)
       // -> global-fe (rotate by observer long, translate to observer).
-      const localGlobe = M.Trans(c.TransMatCelestToGlobe, celestV);
+      const localSky = M.Trans(c.TransMatCelestToSky, celestV);
       if (ge && c.GlobeObserverFrame && c.GlobeObserverCoord) {
         // GE optical-vault projection: hemisphere of FE_RADIUS tangent
         // at the observer. Sub-horizon stars (zenith ≤ 0) park below
         // the sphere so they disappear as elevation crosses 0°.
-        if (localGlobe[0] <= 0) {
+        if (localSky[0] <= 0) {
           sphPos[i * 3]     = 0;
           sphPos[i * 3 + 1] = 0;
           sphPos[i * 3 + 2] = -1000;
@@ -4847,11 +4849,11 @@ export class Stars {
         }
         const f = c.GlobeObserverFrame;
         const obsG = c.GlobeObserverCoord;
-        const ax = localGlobe[2], ay = localGlobe[1], az = localGlobe[0];
+        const ax = localSky[2], ay = localSky[1], az = localSky[0];
         sphPos[i * 3]     = obsG[0] + opticalR * (ax * f.northX + ay * f.eastX + az * f.upX);
         sphPos[i * 3 + 1] = obsG[1] + opticalR * (ax * f.northY + ay * f.eastY + az * f.upY);
         sphPos[i * 3 + 2] = obsG[2] + opticalR * (ax * f.northZ + ay * f.eastZ + az * f.upZ);
-      } else if (localGlobe[0] <= 0) {
+      } else if (localSky[0] <= 0) {
         // FE: below-horizon stars get parked far below the disc; the
         // disc clip plane then hides them.
         sphPos[i * 3]     = 0;
@@ -4863,7 +4865,7 @@ export class Stars {
         // radius (opticalR), z by vertical height (opticalH). Same
         // flattened cap the sun / moon / planet markers project onto.
         // swap (x-zenith, y-east, z-north) -> (x-out, y-east, z-up): [-z, y, x]
-        const feLocal = [-localGlobe[2] * opticalR, localGlobe[1] * opticalR, localGlobe[0] * opticalH];
+        const feLocal = [-localSky[2] * opticalR, localSky[1] * opticalR, localSky[0] * opticalH];
         const gs = M.Trans(c.TransMatLocalFeToGlobalFe, feLocal);
         sphPos[i * 3]     = gs[0];
         sphPos[i * 3 + 1] = gs[1];
@@ -4882,7 +4884,7 @@ export class Stars {
 // --- Declination guide circles --------------------------------------------
 //
 // Constant-Dec circles on the celestial sphere projected onto the optical
-// vault via the same celest→local-globe transform the stars use. They make
+// vault via the same celest→local-sky transform the stars use. They make
 // the lat-dependent convergence pattern visually unmistakable:
 //
 //   lat = +90°N → all circles centred on zenith; +Dec circles are concentric
@@ -4962,8 +4964,8 @@ export class DeclinationCircles {
       const cv = ring.celestVects;
       let segIdx = 0;
       for (let k = 0; k < cv.length - 1; k++) {
-        const a = M.Trans(c.TransMatCelestToGlobe, cv[k]);
-        const b = M.Trans(c.TransMatCelestToGlobe, cv[k + 1]);
+        const a = M.Trans(c.TransMatCelestToSky, cv[k]);
+        const b = M.Trans(c.TransMatCelestToSky, cv[k + 1]);
         // Skip segment if either endpoint is below horizon — the segment
         // must stay on the visible cap. This crops circles that dip below
         // the horizon (e.g. equator from a polar observer).
@@ -4993,7 +4995,7 @@ export class DeclinationCircles {
 // --- Celestial pole markers ------------------------------------------------
 //
 // Two markers pinned at celestial Dec = ±90°. They're transformed through
-// the same `TransMatCelestToGlobe` the stars use, so their position on the
+// the same `TransMatCelestToSky` the stars use, so their position on the
 // observer's optical vault shifts with latitude automatically:
 //
 //   lat = +45°N → NCP at 45° elevation in the north (above horizon),
@@ -5045,7 +5047,7 @@ export class CelestialPoles {
 
     const place = (groupObj, celestV) => {
       // Optical-vault position from observer's local frame.
-      const lg = M.Trans(c.TransMatCelestToGlobe, celestV);
+      const lg = M.Trans(c.TransMatCelestToSky, celestV);
       if (lg[0] <= 0) {
         // Pole is below the observer's horizon — hide the optical-vault
         // marker entirely.
@@ -6515,8 +6517,8 @@ export class CelNavStars {
         sp[i * 3 + 1] = star.globeOpticalVaultCoord[1];
         sp[i * 3 + 2] = star.globeOpticalVaultCoord[2];
       } else {
-        const localGlobe = M.Trans(c.TransMatCelestToGlobe, star.celestCoord);
-        if (localGlobe[0] <= 0) {
+        const localSky = M.Trans(c.TransMatCelestToSky, star.celestCoord);
+        if (localSky[0] <= 0) {
           sp[i * 3    ] = 0;
           sp[i * 3 + 1] = 0;
           sp[i * 3 + 2] = -1000;
@@ -6689,8 +6691,8 @@ export class CatalogPointStars {
         sp[i * 3 + 1] = star.globeOpticalVaultCoord[1];
         sp[i * 3 + 2] = star.globeOpticalVaultCoord[2];
       } else {
-        const localGlobe = M.Trans(c.TransMatCelestToGlobe, star.celestCoord);
-        if (localGlobe[0] <= 0) {
+        const localSky = M.Trans(c.TransMatCelestToSky, star.celestCoord);
+        if (localSky[0] <= 0) {
           sp[i * 3    ] = 0;
           sp[i * 3 + 1] = 0;
           sp[i * 3 + 2] = -1000;

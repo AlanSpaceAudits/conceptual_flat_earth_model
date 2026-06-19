@@ -1052,7 +1052,7 @@ export class Renderer {
     const obs = ge ? c.GlobeObserverCoord : c.ObserverFeCoord;
     if (!obs) return;
     // Below-horizon parking sentinel from worldObjects.js / app.js
-    // (`localGlobe[0] <= 0` → coord = [0, 0, -1000]). Only apply
+    // (`localSky[0] <= 0` → coord = [0, 0, -1000]). Only apply
     // to the optical-vault layer; the heavenly-vault coord is
     // valid in every direction.
     const isParked = (v) => !v || (v[0] === 0 && v[1] === 0 && v[2] === -1000);

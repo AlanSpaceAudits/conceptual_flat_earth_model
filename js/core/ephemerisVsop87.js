@@ -51,7 +51,7 @@ import VSOP87_EARTH   from '../data/vsop87/earth.js';
 import VSOP87_MARS    from '../data/vsop87/mars.js';
 import VSOP87_JUPITER from '../data/vsop87/jupiter.js';
 import VSOP87_SATURN  from '../data/vsop87/saturn.js';
-import { DEG, meanObliquityDeg, moonEquatorial as meeusMoon } from './ephemerisCommon.js';
+import { DEG, meanObliquityDeg, moonEquatorial as meeusMoon } from '../ephem/common.js';
 
 const VSOP = {
   mercury: VSOP87_MERCURY,

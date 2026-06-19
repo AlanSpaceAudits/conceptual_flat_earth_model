@@ -258,21 +258,21 @@ export class Constellations {
       // sprite below the disc but still record a world-space chord
       // endpoint so partial-visibility constellation lines can be
       // clipped at the horizon by the line builder below.
-      const localGlobe = M.Trans(c.TransMatCelestToGlobe, vect);
-      localUp[i] = localGlobe[0];
-      aboveHorizon[i] = localGlobe[0] > 0;
+      const localSky = M.Trans(c.TransMatCelestToSky, vect);
+      localUp[i] = localSky[0];
+      aboveHorizon[i] = localSky[0] > 0;
       let gs;
       if (ge && c.GlobeObserverFrame && c.GlobeObserverCoord) {
         const f = c.GlobeObserverFrame;
         const obsG = c.GlobeObserverCoord;
-        const ax = localGlobe[2], ay = localGlobe[1], az = localGlobe[0];
+        const ax = localSky[2], ay = localSky[1], az = localSky[0];
         gs = [
           obsG[0] + opticalR * (ax * f.northX + ay * f.eastX + az * f.upX),
           obsG[1] + opticalR * (ax * f.northY + ay * f.eastY + az * f.upY),
           obsG[2] + opticalR * (ax * f.northZ + ay * f.eastZ + az * f.upZ),
         ];
       } else {
-        const feLocal = [-localGlobe[2] * opticalR, localGlobe[1] * opticalR, localGlobe[0] * opticalH];
+        const feLocal = [-localSky[2] * opticalR, localSky[1] * opticalR, localSky[0] * opticalH];
         gs = M.Trans(c.TransMatLocalFeToGlobalFe, feLocal);
       }
       sphPos[i] = gs;

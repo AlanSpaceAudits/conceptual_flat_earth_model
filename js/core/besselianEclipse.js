@@ -28,8 +28,8 @@
 //   relying on the rendered path; otherwise the central line will
 //   land in the wrong band of latitudes.
 
-import { R_LI, KM_PER_LI, initialBearing, greatCircleDestination } from './units.js';
-import { greenwichSiderealDeg } from './ephemerisCommon.js';
+import { R_LI, KM_PER_LI, initialBearing, greatCircleDestination } from '../tang/units.js';
+import { greenwichSiderealDeg } from '../ephem/common.js';
 
 // `polyEval(coeffs, t)` evaluates  c0 + c1·t + c2·t² + ...
 function polyEval(coeffs, t) {

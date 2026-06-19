@@ -2,7 +2,8 @@
 // FeModel state. No external framework — plain DOM.
 
 import { dateTimeToString, dateTimeToDate } from '../core/time.js';
-import { fmtDuDecimal, fmtLiBuFromLi, haversineLi, KM_PER_LI, R_LI } from '../core/units.js';
+import { fmtDuDecimal, fmtLiBuFromLi, haversineLi, KM_PER_LI, R_LI, DU_PER_DEG, DEG_PER_DU } from '../tang/units.js';
+import { raDecRadToTang, fmtTang } from '../tang/frame.js';
 import { TIME_ORIGIN } from '../core/constants.js';
 import { findNextEclipses } from '../core/ephemeris.js';
 import { findNextSolarEclipseAfter } from '../core/solarEclipseSchedule.js';
@@ -634,8 +635,12 @@ const FIELD_GROUPS = [
         // step 0.0001° ≈ 0.36" so the number field gives
         // sub-arcsecond granularity (needed for Stellarium-parity
         // tests at a specific observatory / nav-fix coordinate).
-        { key: 'ObserverLat',  label: 'ObserverLat',  unit: '°', min: -90,  max:  90,  step: 0.0001 },
-        { key: 'ObserverLong', label: 'ObserverLong', unit: '°', min: -180, max: 180,  step: 0.0001 },
+        // Unit toggle for the observer's angular rows. Unchecked = modern
+        // degrees (familiar lat/long), checked = Chinese du. Affects the
+        // ObserverLat / ObserverLong / Elevation / Azi rows below.
+        { key: 'ObserverUnitsChinese', label: 'Chinese du units', bool: true },
+        { key: 'ObserverLat',  label: 'ObserverLat',  unit: '°', min: -90,  max:  90,  step: 0.0001, chineseDu: true },
+        { key: 'ObserverLong', label: 'ObserverLong', unit: '°', min: -180, max: 180,  step: 0.0001, chineseDu: true },
         // Observer.Elevation now represents the observer's
         // gaze pitch (elevation angle above the horizon), 0°–90°.
         // Bound to `CameraHeight`, which drives the first-person
@@ -649,12 +654,12 @@ const FIELD_GROUPS = [
         // height above the disc) still exists and is still URL-
         // persisted and clamped in `app.update()`; it just isn't
         // bound to this row anymore.
-        { key: 'CameraHeight', label: 'Elevation', unit: '°', min: 0, max: 90, step: 0.1 },
+        { key: 'CameraHeight', label: 'Elevation', unit: '°', min: 0, max: 90, step: 0.1, chineseDu: true },
         // "Facing" row renamed to "Azi" and moved up directly
         // under Elevation so the observer's own angular pair reads
         // together (Elevation + Azi) before the cursor-tracking pair
         // (Mouse El + Mouse Az) below it.
-        { key: 'ObserverHeading', label: 'Azi',       unit: '°', min: 0,    max: 360,  step: 0.0001, cardinal: true },
+        { key: 'ObserverHeading', label: 'Azi',       unit: '°', min: 0,    max: 360,  step: 0.0001, cardinal: true, chineseDu: true },
         // live cursor elevation readout. Tracks the elevation
         // of the ray from the observer through the mouse pointer
         // while the pointer is over the canvas in Optical mode. Shows
@@ -774,10 +779,13 @@ const FIELD_GROUPS = [
     tab: 'Tracker', groups: [
       { title: 'Ephemeris', rows: [
         { key: 'BodySource', label: 'Source', select: [
-          { value: 'geocentric',   label: 'GeoC     (Earth-focus Kepler)' },
-          { value: 'ptolemy',      label: 'Ptolemy  (deferent + epicycle)' },
+          { value: 'tangMaster',   label: 'Tang Master (full sky, geocentric)' },
+          { value: 'tangPtolz',    label: 'Tang Ptolz  (geocentric epicycles → modern)' },
+          { value: 'ptolemy',      label: 'Ptolemy  (original Almagest)' },
           { value: 'astropixels',  label: 'DE405    (Espenak AstroPixels)' },
+          { value: 'geocentric',   label: 'GeoC     (Earth-focus Kepler)' },
           { value: 'vsop87',       label: 'VSOP87   (Bretagnon & Francou)' },
+          { value: 'heliocentric', label: 'HelioC   (Schlyter heliocentric)' },
         ]},
         { key: 'ShowEphemerisReadings', label: 'Ephemeris comparison', bool: true },
         { key: 'StarApplyPrecession', label: 'Precession',  bool: true },
@@ -1165,14 +1173,31 @@ function numericRow(model, row) {
     <span class="unit">${row.unit}</span>
     <input type="range" class="slider" min="${row.min}" max="${row.max}" step="${row.step}">`;
   const numEl   = el.querySelector('input.num');
+  const unitEl  = el.querySelector('span.unit');
   const rangeEl = el.querySelector('input.slider');
   const digits  = Math.max(0, Math.ceil(-Math.log10(row.step)));
   let editing = false;
+
+  // Rows flagged `chineseDu` can display/accept their angle in du (the
+  // Chinese angular unit, 365.25 per circle) instead of modern degrees,
+  // toggled by the Observer "Chinese du units" checkbox. The stored state
+  // stays in degrees; only the readout and the editable field convert, so
+  // the slider and the whole geometry pipeline are untouched.
+  const duMode = () => row.chineseDu && model.state.ObserverUnitsChinese;
+
   function refresh() {
     const v = model.state[row.key];
-    rangeEl.value = v;
+    rangeEl.value = v;   // slider always operates in degrees
+    const du = duMode();
+    unitEl.textContent = du ? 'du' : row.unit;
+    // Number field bounds track the active unit so typing a valid du
+    // value isn't clamped against the degree min/max.
+    numEl.min  = du ? row.min * DU_PER_DEG : row.min;
+    numEl.max  = du ? row.max * DU_PER_DEG : row.max;
+    numEl.step = du ? row.step * DU_PER_DEG : row.step;
     if (!editing) {
-      numEl.value = Number.isFinite(v) ? (+v).toFixed(digits) : v;
+      if (!Number.isFinite(v)) { numEl.value = v; return; }
+      numEl.value = (du ? v * DU_PER_DEG : v).toFixed(digits);
     }
   }
   // Slider drives setState live; number field commits on Enter or blur so
@@ -1183,9 +1208,12 @@ function numericRow(model, row) {
   numEl.addEventListener('focus', () => { editing = true; });
   const commit = () => {
     editing = false;
-    const v = parseFloat(numEl.value);
-    if (!Number.isNaN(v)) model.setState({ [row.key]: v });
-    else refresh();
+    const typed = parseFloat(numEl.value);
+    if (!Number.isNaN(typed)) {
+      // In du mode the typed value is du; convert back to degrees before store.
+      const deg = duMode() ? typed * DEG_PER_DU : typed;
+      model.setState({ [row.key]: deg });
+    } else refresh();
   };
   numEl.addEventListener('blur', commit);
   numEl.addEventListener('keydown', (e) => {
@@ -1896,10 +1924,13 @@ export function buildControlPanel(host, model, demos) {
   const fmtLon = (v) => `Lon ${v >= 0 ? '+' : ''}${v.toFixed(4)}°`;
   const fmtSignedDeg = (v) => `${v >= 0 ? '+' : ''}${v.toFixed(2)}°`;
   const EPHEM_NAMES = {
-    geocentric:   'GeoC',
-    ptolemy:      'Ptolemy',
+    tangMaster:   'Tang Master',
+    tangPtolz:    'Tang Ptolz (corrected)',
     astropixels:  'DE405',
+    geocentric:   'GeoC',
     vsop87:       'VSOP87',
+    heliocentric: 'HelioC',
+    ptolemy:      'Ptolemy',
   };
   const refreshInfoBar = () => {
     const s = model.state;
@@ -2079,7 +2110,7 @@ export function buildControlPanel(host, model, demos) {
       MapProjection: 'ae', MapProjectionGe: 'hq_equirect_night',
       GeneratedMap: 'default', MapArt: 'none',
       ShowPlanets: true, DarkBackground: true, ShowLogo: true,
-      BodySource: 'astropixels',
+      BodySource: 'tangMaster',
       StarApplyPrecession: false, StarApplyNutation: false,
       StarApplyAberration: false, StarTrepidation: true,
       StarfieldType: 'celnav', DynamicStars: true, PermanentNight: false,
@@ -3528,6 +3559,11 @@ export function buildTrackerHud(trackerEl, model) {
     const azel = document.createElement('div');
     azel.className = 'line';
     block.appendChild(azel);
+    // Tang canonical coordinate (mansion + RXD / QJD du). Only filled
+    // when ShowChineseDu is on; hidden otherwise.
+    const tang = document.createElement('div');
+    tang.className = 'line tracker-tang';
+    block.appendChild(tang);
     const refr = document.createElement('div');
     refr.className = 'line tracker-refr';
     block.appendChild(refr);
@@ -3546,7 +3582,7 @@ export function buildTrackerHud(trackerEl, model) {
     const foot = document.createElement('div');
     foot.className = 'line tracker-foot';
     block.appendChild(foot);
-    return { block, title, azel, refr, geo, ptolemy, astropixels, vsop87, foot };
+    return { block, title, azel, tang, refr, geo, ptolemy, astropixels, vsop87, foot };
   }
 
   const refresh = () => {
@@ -3614,6 +3650,14 @@ export function buildTrackerHud(trackerEl, model) {
           ? `${dmsStr}  ·  ${fmtDuDecimal(deg, signed)}`
           : dmsStr;
       rec.azel.textContent  = `az ${_withDu(info.azimuth, fmtDmsDegAz(info.azimuth))}   el ${_withDu(info.elevation, fmtDmsDegEl(info.elevation), true)}`;
+      // Tang canonical coordinate from the body's RA/Dec (radians).
+      if (_chineseOn && Number.isFinite(info.ra) && Number.isFinite(info.dec)) {
+        rec.tang.textContent = fmtTang(raDecRadToTang(info.ra, info.dec));
+        rec.tang.hidden = false;
+      } else {
+        rec.tang.textContent = '';
+        rec.tang.hidden = true;
+      }
       // Refraction lift in arcminutes when a formula is active and
       // the body is above the horizon. Hidden otherwise so the row
       // doesn't take up space when refraction is off.

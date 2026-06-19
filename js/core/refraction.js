@@ -65,13 +65,13 @@ export function refractionDeg(mode, trueAltDeg, pressureMbar = 1013.25, tempC = 
   return R;
 }
 
-// Lift a local-globe direction (x = zenith, y = east, z = north) by
+// Lift a local-sky direction (x = zenith, y = east, z = north) by
 // the chosen refraction model. Input is a TRUE direction (sphere-
 // model geocentric coordinate); the returned vector has elevation
 // increased by R, where R is the apparent-altitude refraction at the
 // resulting apparent altitude — `refractionDeg` does the iteration.
 // Azimuth and vector magnitude are preserved.
-export function applyRefractionLocalGlobe(coord, mode, pressureMbar = 1013.25, tempC = 15) {
+export function applyRefractionLocalSky(coord, mode, pressureMbar = 1013.25, tempC = 15) {
   if (!mode || mode === 'off') return coord;
   const len = Math.hypot(coord[0], coord[1], coord[2]);
   if (len === 0) return coord;

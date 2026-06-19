@@ -7,7 +7,8 @@
 // Panel is fixed in the upper-left of the viewport; classed
 // `info-popup` for shared styling.
 
-import { fmtDuDecimal, fmtLiBu } from '../core/units.js';
+import { fmtDuDecimal, fmtLiBu } from '../tang/units.js';
+import { raDecRadToTang, fmtTang } from '../tang/frame.js';
 
 const ART_SIZE = 96;        // canvas pixel grid
 const SCALE    = 4;         // chunky pixel-art zoom
@@ -537,8 +538,13 @@ export function buildTrackingInfoPopup(panelEl, model) {
            <div class="ti-row"><span>True Elevation</span><span>${elDuTrue}</span></div>
            ${refrDuRow}`
         : `<div class="ti-row"><span>Elevation</span><span>${elDuTrue}</span></div>`;
+      // Tang canonical coordinate (mansion + RXD / QJD du) from the
+      // active pipeline's RA/Dec (radians).
+      const tangLabel = (r && Number.isFinite(r.ra) && Number.isFinite(r.dec))
+        ? fmtTang(raDecRadToTang(r.ra, r.dec)) : '—';
       chineseSection = `
         <div class="ti-row ti-section-head"><span>Tang units</span><span>du / li · bu</span></div>
+        <div class="ti-row"><span>Tang</span><span>${tangLabel}</span></div>
         <div class="ti-row"><span>Azimuth</span><span>${azDu}</span></div>
         ${elDuRows}
         <div class="ti-row"><span>RA</span><span>${raDu}</span></div>

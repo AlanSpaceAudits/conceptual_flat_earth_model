@@ -7,8 +7,8 @@
 // 2. Observer-local dome: a unit hemisphere scaled to the observer's
 //    optical-vault dimensions (OpticalVaultRadius × OpticalVaultRadius ×
 //    OpticalVaultHeight). A ShaderMaterial samples the chart by
-//    back-projecting each fragment's local-globe direction through the
-//    inverse of TransMatCelestToGlobe, so the chart is astronomically
+//    back-projecting each fragment's local-sky direction through the
+//    inverse of TransMatCelestToSky, so the chart is astronomically
 //    correct: NCP stays near the zenith at high latitudes and rotates
 //    toward the horizon as the observer moves south.
 
@@ -73,18 +73,18 @@ function makeAlphabetaCanvas() {
 }
 
 const VERT_SHADER = `
-  varying vec3 vLocalGlobe;
+  varying vec3 vLocalSky;
 
   void main() {
     // Vertex is a point on a unit hemisphere in local-FE frame:
     //   x = radial outward (away from disc centre)
     //   y = east
     //   z = up
-    // Convert to local-globe (x = zenith, y = east, z = north).
+    // Convert to local-sky (x = zenith, y = east, z = north).
     //   zenith = up       = z
     //   east   = east     = y
     //   north  = -radial  = -x   (north is TOWARD the pole on an FE disc)
-    vLocalGlobe = normalize(vec3(position.z, position.y, -position.x));
+    vLocalSky = normalize(vec3(position.z, position.y, -position.x));
     gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
   }
 `;
@@ -93,17 +93,17 @@ const FRAG_SHADER = `
   precision highp float;
 
   uniform sampler2D uChart;
-  uniform mat3      uGlobeToCelest;   // inverse of TransMatCelestToGlobe
+  uniform mat3      uGlobeToCelest;   // inverse of TransMatCelestToSky
   uniform vec2      uTexRepeat;       // chart crop, horizontal
   uniform vec2      uTexOffset;
   uniform float     uOpacity;
 
-  varying vec3 vLocalGlobe;
+  varying vec3 vLocalSky;
 
   const float RAD2DEG = 57.2957795;
 
   void main() {
-    vec3 celest = normalize(uGlobeToCelest * vLocalGlobe);
+    vec3 celest = normalize(uGlobeToCelest * vLocalSky);
     float dec = asin(clamp(celest.z, -1.0, 1.0));   // radians, +π/2 = NCP
     float ra  = atan(celest.y, celest.x);            // radians
 
@@ -278,10 +278,10 @@ export class StarfieldChart {
     );
     this.localGroup.visible = s.ShowOpticalVault !== false;
 
-    // Upload the inverse (= transpose) of TransMatCelestToGlobe. The stored
+    // Upload the inverse (= transpose) of TransMatCelestToSky. The stored
     // matrix is a row-indexed [3][3] array; Matrix3.set takes row-major
     // args, so the transpose rows are the original's columns.
-    const mr = c.TransMatCelestToGlobe.r;
+    const mr = c.TransMatCelestToSky.r;
     this.localMat.uniforms.uGlobeToCelest.value.set(
       mr[0][0], mr[1][0], mr[2][0],
       mr[0][1], mr[1][1], mr[2][1],

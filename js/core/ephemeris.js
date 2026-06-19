@@ -75,9 +75,26 @@
 
 import * as helio from './ephemerisHelio.js';
 import * as geo   from './ephemerisGeo.js';
-import * as ptol  from './ephemerisPtolemy.js';
+import * as ptol  from '../ephem/ptolemy.js';
 import * as apix  from './ephemerisAstropixels.js';
 import * as vsop  from './ephemerisVsop87.js';
+
+// Tang canonical frame + modular ephemeris registry.
+//
+// Every body position the simulator renders is funnelled through the
+// Tang (Chinese du/xiu) canonical store: the position is held in du/xiu and the
+// modern RA/Dec consumers receive is produced FROM it. The two systems are a
+// single scaling factor apart (Tang/modern), so they convert exactly both ways
+// and give identical results; neither is observably primary, and here the
+// du/xiu record is the canonical one. New sources plug into the registry with
+// no change to consumers of this dispatcher.
+import { bodyTang } from '../tang/sphere.js';
+import { raDecRadToTang } from '../tang/frame.js';
+
+// sin(horizontal parallax) = R⊕/d for a body (dimensionless ratio, no distance).
+// Used by the observer-view topocentric correction; the shared Tang sphere
+// itself stays geocentric.
+export { bodyParallaxSine } from '../ephem/registry.js';
 
 export {
   sunEquatorial as meeusSunEquatorial,
@@ -88,14 +105,18 @@ export {
   julianDay,
   meanObliquityDeg,
   norm360,
-} from './ephemerisCommon.js';
+} from '../ephem/common.js';
 
 // The pipeline namespaces, exported so modules that want to compute
 // several readings simultaneously can do so without reimporting the
 // individual files.
 export { helio, geo, ptol, apix, vsop };
 
-export const EPHEMERIS_SOURCES = ['geocentric', 'heliocentric', 'ptolemy', 'astropixels', 'vsop87'];
+// Only the Ptolemy ("ptolz") source is wired into the active registry for
+// now. The other pipeline files remain on disk as dormant modular
+// providers; register them in `js/ephem/registry.js` to bring them back
+// into the source list.
+export const EPHEMERIS_SOURCES = ['tangMaster', 'tangPtolz', 'astropixels', 'geocentric', 'vsop87', 'heliocentric', 'ptolemy'];
 // Uranus + Neptune added. DE405 / AstroPixels carries
 // coverage 2019–2030; the other four pipelines (HelioC / GeoC /
 // Ptolemy / VSOP87) don't have the outer-planet elements or
@@ -137,75 +158,68 @@ function _tryPipeline(id, name, date) {
   return _readingValid(r) ? r : null;
 }
 
-// Primary router. Returns `{ ra, dec }` in radians, geocentric-apparent.
-// Tries the requested source first; if it can't deliver (body not
-// supported or date out of range), walks the fallback chain so the
-// caller always gets a usable reading. The exact pipeline that
-// produced the value can be retrieved via `bodyRADecRoute(...)`.
-export function bodyRADec(name, date, source = 'astropixels') {
+// Primary router. Returns `{ ra, dec }` in radians, geocentric-apparent,
+// reconstructed from the canonical Tang (du/xiu) record.
+//
+// All sources now funnel through the Tang frame on the active registry
+// ephemeris (ptolz). The `source` argument is retained for call-site
+// compatibility but the registry owns source selection; with only the
+// Ptolemy provider wired, every request resolves there. `_tryPipeline`
+// and the legacy fallback chain stay defined below for the dormant
+// pipeline files but are not on the active path.
+export function bodyRADec(name, date, source) {
   if (name === 'earth') return { ra: 0, dec: 0 };
-  const tried = new Set();
-  if (source) {
-    const r = _tryPipeline(source, name, date);
-    if (r) return r;
-    tried.add(source);
+  // Tang registry sources run through the canonical du frame.
+  if (source === undefined || source === 'tangMaster' || source === 'tangPtolz') {
+    const src = (source === 'tangMaster' || source === 'tangPtolz') ? source : undefined;
+    const { ra, dec } = bodyTang(name, date, src);
+    return { ra, dec };
   }
+  // Legacy comparison pipelines (DE405 / GeoC / VSOP87 / HelioC / Almagest),
+  // selectable in the Tracker for live ephemeris comparison. If the chosen
+  // pipeline can't deliver this body/date, fall through the chain and then the
+  // Tang frame so the rendered sky never goes blank.
+  const direct = _tryPipeline(source, name, date);
+  if (direct) return direct;
   for (const id of FALLBACK_ORDER) {
-    if (tried.has(id)) continue;
     const r = _tryPipeline(id, name, date);
     if (r) return r;
-    tried.add(id);
   }
-  // Nothing covered the request — surface NaN so downstream renderers
-  // can hide the body cleanly instead of pinning it at the vernal
-  // equinox.
-  return { ra: NaN, dec: NaN };
+  const { ra, dec } = bodyTang(name, date);
+  return { ra, dec };
 }
 
-// Same as `bodyRADec` but also reports which pipeline supplied the
-// value, so the UI can light up a fallback indicator when DE405
-// dropped to GeoC etc.
-export function bodyRADecRoute(name, date, source = 'astropixels') {
-  if (name === 'earth') return { reading: { ra: 0, dec: 0 }, used: source };
-  const tried = new Set();
-  if (source) {
-    const r = _tryPipeline(source, name, date);
-    if (r) return { reading: r, used: source };
-    tried.add(source);
+// As `bodyRADec`, plus the canonical Tang record (xiu / ru-xiu-du /
+// qu-ji-du) so HUD readouts can show the Chinese coordinate directly.
+export function bodyRADecTang(name, date) {
+  if (name === 'earth') {
+    return { ra: 0, dec: 0, tang: raDecRadToTang(0, 0) };
   }
-  for (const id of FALLBACK_ORDER) {
-    if (tried.has(id)) continue;
-    const r = _tryPipeline(id, name, date);
-    if (r) return { reading: r, used: id };
-    tried.add(id);
-  }
-  return { reading: { ra: NaN, dec: NaN }, used: null };
+  return bodyTang(name, date);
 }
 
-// Per-pipeline planet API (callers who already know which source they
-// want).
-export function planetEquatorial(name, date, source = 'geocentric') {
-  if (source === 'heliocentric') return helio.planetEquatorial(name, date);
-  if (source === 'ptolemy')      return ptol.planetEquatorial(name, date);
-  if (source === 'astropixels')  return apix.planetEquatorial(name, date);
-  if (source === 'vsop87')       return vsop.planetEquatorial(name, date);
-  return geo.planetEquatorial(name, date);
+// Same shape as the old multi-pipeline router; `used` is always the
+// active registry source now (ptolz).
+export function bodyRADecRoute(name, date, _source) {
+  if (name === 'earth') return { reading: { ra: 0, dec: 0 }, used: 'ptolemy' };
+  const { ra, dec } = bodyTang(name, date);
+  return { reading: { ra, dec }, used: 'ptolemy' };
 }
 
-// Sun / Moon routers. HelioC and GeoC pipelines both use Meeus; Ptolemy
-// has its own Almagest implementations; Astropixels uses DE405-derived
-// tabulated data.
-export function sunEquatorial(date, source = 'geocentric') {
-  if (source === 'ptolemy')     return ptol.sunEquatorial(date);
-  if (source === 'astropixels') return apix.sunEquatorial(date);
-  if (source === 'vsop87')      return vsop.sunEquatorial(date);
-  return geo.sunEquatorial(date);
+// Planet / Sun / Moon routers — all funnel through the Tang canonical
+// frame on the active registry source (ptolz). The `source` argument is
+// kept for compatibility but no longer selects a pipeline.
+export function planetEquatorial(name, date, _source) {
+  const { ra, dec } = bodyTang(name, date);
+  return { ra, dec };
 }
-export function moonEquatorial(date, source = 'geocentric') {
-  if (source === 'ptolemy')     return ptol.moonEquatorial(date);
-  if (source === 'astropixels') return apix.moonEquatorial(date);
-  if (source === 'vsop87')      return vsop.moonEquatorial(date);
-  return geo.moonEquatorial(date);
+export function sunEquatorial(date, _source) {
+  const { ra, dec } = bodyTang('sun', date);
+  return { ra, dec };
+}
+export function moonEquatorial(date, _source) {
+  const { ra, dec } = bodyTang('moon', date);
+  return { ra, dec };
 }
 
 // Legacy exports — downstream imports that pre-date the router.
@@ -213,5 +227,8 @@ export function moonEquatorial(date, source = 'geocentric') {
 // Kepler, the behaviour). `bodyFromHeliocentric` is retained as
 // an alias for compatibility; use `bodyRADec(name, date,
 // 'heliocentric')` explicitly to route through the HelioC pipeline.
-export function bodyGeocentric(name, date) { return geo.bodyGeocentric(name, date); }
+export function bodyGeocentric(name, date) {
+  const { ra, dec } = bodyTang(name, date);
+  return { ra, dec };
+}
 export const bodyFromHeliocentric = bodyGeocentric;

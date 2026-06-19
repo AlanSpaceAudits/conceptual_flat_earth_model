@@ -27,7 +27,7 @@
 // (`ephemerisPtolemy.js`). Sun and Moon delegate to Meeus via
 // `ephemerisCommon.js` (same as the GeoC pipeline).
 
-import { DEG, sunEquatorial, moonEquatorial } from './ephemerisCommon.js';
+import { DEG, sunEquatorial, moonEquatorial } from '../ephem/common.js';
 
 // --- Orbital elements (Schlyter epoch 1999-12-31 00:00 UT) --------------
 //

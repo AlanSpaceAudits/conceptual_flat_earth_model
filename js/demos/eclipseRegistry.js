@@ -20,7 +20,7 @@ import {
   moonEquatorial as commonMoonEq,
   greenwichSiderealDeg,
   refineEclipseByMinSeparation,
-} from '../core/ephemerisCommon.js';
+} from '../ephem/common.js';
 import { helio, geo, ptol, apix, vsop } from '../core/ephemeris.js';
 import {
   computeSolarEclipseShadowPath,

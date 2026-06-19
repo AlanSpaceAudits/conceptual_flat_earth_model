@@ -4,7 +4,7 @@
 //
 //   celest  - +z is the celestial pole (dome's axis of rotation);
 //             sun/moon directions live here as unit vectors
-//   globe   - local observer frame: +x zenith, +y east, +z north
+//   sky     - local observer frame: +x zenith, +y east, +z north
 //   fe-local- local flat-earth frame at observer: +z up, +x outward, +y east
 //   fe      - global stationary flat-earth disc: z=0 is the disc plane, +z up
 //   dome    - rotating sky frame: sky's current angular position about +z
@@ -15,9 +15,9 @@ import { M } from '../math/mat3.js';
 import { V } from '../math/vect3.js';
 import { canonicalLatLongToDisc } from './canonical.js';
 
-// Celest -> local-globe: rotate by -(observer-longitude + skyRotAngle) about Z,
+// Celest -> local-sky: rotate by -(observer-longitude + skyRotAngle) about Z,
 // then by +latitude about Y.
-export function compTransMatCelestToGlobe(obsLatDeg, obsLongDeg, skyRotAngleDeg) {
+export function compTransMatCelestToSky(obsLatDeg, obsLongDeg, skyRotAngleDeg) {
   const first = M.RotatingZ(ToRad(-obsLongDeg - skyRotAngleDeg));
   return M.RotatingY(ToRad(obsLatDeg), first);
 }
@@ -84,8 +84,8 @@ export function compTransMatVaultToFe(skyRotAngleDeg) {
 
 // --- Point conversions ----------------------------------------------------
 
-export function celestCoordToLocalGlobeCoord(celestCoord, transMatCelestToGlobe) {
-  return M.Trans(transMatCelestToGlobe, celestCoord);
+export function celestCoordToLocalSkyCoord(celestCoord, transMatCelestToSky) {
+  return M.Trans(transMatCelestToSky, celestCoord);
 }
 
 // Spherical (long, lat, r) -> cartesian.
@@ -134,9 +134,9 @@ export function raDecToAzEl(raRad, decRad, latDeg, lonDeg, gmstDeg) {
   return { azimuth: az, elevation: alt * 180 / Math.PI };
 }
 
-// Local-globe cartesian -> { azimuth, elevation } in degrees.
+// Local-sky cartesian -> { azimuth, elevation } in degrees.
 // Convention: x=zenith, y=east, z=north.
-export function localGlobeCoordToAngles(coord) {
+export function localSkyCoordToAngles(coord) {
   const yzLen = Math.hypot(coord[1], coord[2]);
   const norm = V.Norm(coord);
   let azimuth;
@@ -151,32 +151,32 @@ export function localGlobeCoordToAngles(coord) {
   return { azimuth, elevation };
 }
 
-// Swap of axis convention from local-globe (x-zenith, y-east, z-north) to
+// Swap of axis convention from local-sky (x-zenith, y-east, z-north) to
 // local-fe (x-north, y-east, z-up).
-export function localGlobeCoordToLocalFeCoord(v) {
+export function localSkyCoordToLocalFeCoord(v) {
   return [-v[2], v[1], v[0]];
 }
 
-export function localGlobeCoordToGlobalFeCoord(v, transMatLocalFeToGlobalFe) {
-  return M.Trans(transMatLocalFeToGlobalFe, localGlobeCoordToLocalFeCoord(v));
+export function localSkyCoordToGlobalFeCoord(v, transMatLocalFeToGlobalFe) {
+  return M.Trans(transMatLocalFeToGlobalFe, localSkyCoordToLocalFeCoord(v));
 }
 
 export function vaultCoordToGlobalFeCoord(v, transMatDomeToFe) {
   return M.Trans(transMatDomeToFe, v);
 }
 
-// FE-conceptual unit direction in the observer's local-globe frame
+// FE-conceptual unit direction in the observer's local-sky frame
 // (x = zenith, y = east, z = north).
 //
 // Given a body's vault position in global FE coords and the
 // observer's global FE position, this returns the unit ray
-// observer → body expressed in local-globe axes — i.e. what the
+// observer → body expressed in local-sky axes — i.e. what the
 // observer sees on a flat-earth conceptual model where the active
 // projection (currently DP) places both the observer and the vault
 // position on the disc. Drop-in replacement for
-// `celestCoordToLocalGlobeCoord(...)` when you want the optical
+// `celestCoordToLocalSkyCoord(...)` when you want the optical
 // vault to follow the FE projection rather than the sphere model.
-export function feConceptualLocalGlobeUnit(vaultGlobalFe, observerGlobalFe, transMatLocalFeToGlobalFe) {
+export function feConceptualLocalSkyUnit(vaultGlobalFe, observerGlobalFe, transMatLocalFeToGlobalFe) {
   const dx = vaultGlobalFe[0] - observerGlobalFe[0];
   const dy = vaultGlobalFe[1] - observerGlobalFe[1];
   const dz = vaultGlobalFe[2] - observerGlobalFe[2];
@@ -185,7 +185,7 @@ export function feConceptualLocalGlobeUnit(vaultGlobalFe, observerGlobalFe, tran
   const lfX = r[0][0] * dx + r[1][0] * dy + r[2][0] * dz; // local-FE x = south
   const lfY = r[0][1] * dx + r[1][1] * dy + r[2][1] * dz; // local-FE y = east
   const lfZ = r[0][2] * dx + r[1][2] * dy + r[2][2] * dz; // local-FE z = up
-  // local-FE (south, east, up) → local-globe (zenith, east, north) = (z, y, -x)
+  // local-FE (south, east, up) → local-sky (zenith, east, north) = (z, y, -x)
   const lgZenith = lfZ;
   const lgEast   = lfY;
   const lgNorth  = -lfX;

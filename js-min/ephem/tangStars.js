@@ -1,0 +1,3 @@
+import{CEL_NAV_STARS as m}from"../core/celnavStars.js";import{apparentStarPosition as s}from"./common.js";import{raDecRadToTang as u}from"../tang/frame.js";const T=Math.PI/12,d=Math.PI/180,c=m,g=new Map(c.map(t=>[t.id,t])),_={precession:!0,nutation:!0,aberration:!0};function i(t,r,n=_){const a=t.raH*T,p=t.decD*d,{ra:o,dec:e}=s(a,p,r,n);return{ra:o,dec:e,tang:u(o,e)}}function A(t,r,n){const a=g.get(t);return a?i(a,r,n):null}function D(t,r){return c.map(n=>({id:n.id,name:n.name,mag:n.mag,...i(n,t,r)}))}export{c as STARS,D as allStarsTang,i as starTang,A as starTangById};
+
+//# sourceMappingURL=tangStars.js.map

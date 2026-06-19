@@ -25,7 +25,7 @@
 // where each body lands at a given time; converting to AU adds
 // nothing to the angles.
 
-import { DEG, julianDay, sunEquatorial, moonEquatorial } from './ephemerisCommon.js';
+import { DEG, julianDay, sunEquatorial, moonEquatorial } from '../ephem/common.js';
 
 // --- Orbital elements (Schlyter epoch 1999-12-31 00:00 UT) ---------------
 //

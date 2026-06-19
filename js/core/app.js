@@ -12,11 +12,11 @@ import { CELESTIAL, GEOMETRY, FE_RADIUS, TIME_ORIGIN, initTimeOrigin } from './c
 import { dateTimeToDate } from './time.js';
 import {
   sunEquatorial, moonEquatorial, greenwichSiderealDeg, equatorialToCelestCoord,
-  planetEquatorial, PLANET_NAMES, bodyRADec, BODY_NAMES,
+  planetEquatorial, PLANET_NAMES, bodyRADec, BODY_NAMES, bodyParallaxSine,
   bodyGeocentric, geo as ephGeo, ptol as ephPtol,
   apix as ephApix, vsop as ephVsop,
 } from './ephemeris.js';
-import { apparentStarPosition, findSolarEclipseContactWindow } from './ephemerisCommon.js';
+import { apparentStarPosition, findSolarEclipseContactWindow } from '../ephem/common.js';
 import { besselianShadowPathFromElements } from './besselianEclipse.js';
 import { ECLIPSE_BESSELIAN } from '../data/eclipseBesselian.js';
 import { CEL_NAV_STARS, celNavStarById } from './celnavStars.js';
@@ -28,17 +28,30 @@ import { CEL_THEO_STARS, CEL_THEO_OWN } from './celTheoStars.js';
 import { SATELLITES,   satelliteById, satelliteSubPoint } from './satellites.js';
 import { SATELLITES_EXTRA } from './satellitesExtra.js';
 import {
-  compTransMatCelestToGlobe, compTransMatLocalFeToGlobalFe, compTransMatVaultToFe,
-  celestCoordToLocalGlobeCoord, coordToLatLong, localGlobeCoordToAngles,
-  localGlobeCoordToGlobalFeCoord, vaultCoordToGlobalFeCoord,
+  compTransMatCelestToSky, compTransMatLocalFeToGlobalFe, compTransMatVaultToFe,
+  celestCoordToLocalSkyCoord, coordToLatLong, localSkyCoordToAngles,
+  localSkyCoordToGlobalFeCoord, vaultCoordToGlobalFeCoord,
 } from './transforms.js';
 import {
   feLatLongToGlobalFeCoord, celestLatLongToVaultCoord, vaultCoordAt,
 } from './feGeometry.js';
 import { canonicalLatLongToDisc } from './canonical.js';
-import { applyRefractionLocalGlobe, refractionDeg } from './refraction.js';
+import { applyRefractionLocalSky, refractionDeg } from './refraction.js';
+import { parallaxAltitudeLocalSky } from './topocentric.js';
 import { findNearestSolarEclipse } from './solarEclipseSchedule.js';
 import { computeSolarEclipseShadowPath } from './besselianEclipse.js';
+// FE and GE geometry interpreters. Both consume the shared Tang-canonical
+// celestial sphere; neither imports the other. See js/core/interpret/.
+import * as feInterp from './interpret/fe.js';
+import * as geInterp from './interpret/ge.js';
+// Terrestrial Chinese coordinate frame: observer lat/long is canonically a
+// Chinese du ground record, decoded to modern degrees for the pipeline.
+import { groundDegToTang, groundTangToDeg } from '../tang/ground.js';
+
+// FE optical-cap primitives now live in the FE interpreter; alias the names
+// so the per-body call sites below stay unchanged.
+const opticalVaultProject  = feInterp.opticalVaultProject;
+const heavenlyVaultCeiling = feInterp.heavenlyVaultCeiling;
 
 // Mirrors PLANET_STYLE colours in render/index.js and the Tracker
 // button grid. Keep in sync.
@@ -66,20 +79,10 @@ const _UI_ONLY_STATE_KEYS = new Set([
   'ClearTraceCount',
   'MoonPhaseExpanded',
   'ShowLiveEphemeris',
+  // Pure display toggle: switches the Observer angular rows between degrees
+  // and du. Doesn't touch any computed value.
+  'ObserverUnitsChinese',
 ]);
-
-function opticalVaultProject(localGlobe, R, H) {
-  return [localGlobe[0] * H, localGlobe[1] * R, localGlobe[2] * R];
-}
-
-// z ≤ domeH · √(1 − (r/domeR)²) — ellipsoidal ceiling at a body's AE radius.
-function heavenlyVaultCeiling(latDeg, domeSize, domeHeight, feRadius) {
-  const r = feRadius * (90 - latDeg) / 180;
-  const domeR = domeSize * feRadius;
-  const rhoSq = (r * r) / (domeR * domeR);
-  if (rhoSq >= 1) return 0;
-  return domeHeight * Math.sqrt(1 - rhoSq);
-}
 
 // Default state. Distances in FE_RADIUS units.
 // Golden-section search over VaultHeight that lands the antipodal
@@ -340,6 +343,11 @@ function defaultState() {
 
     ObserverFigure: 'nikki',
 
+    // Observer angular rows (Lat / Long / Elevation / Azi) display in modern
+    // degrees by default; the Observer "Chinese du units" checkbox flips the
+    // readout + input to du. Display-only; stored values stay in degrees.
+    ObserverUnitsChinese: false,
+
     // Minutes east of UTC. -360 = CST.
     TimezoneOffsetMinutes: -360,
     StarfieldVaultHeight: 0.485,
@@ -369,8 +377,10 @@ function defaultState() {
     // 'random' | 'chart-dark' | 'chart-light' | 'celnav'
     StarfieldType: 'celnav',
 
-    // 'heliocentric' | 'geocentric' | 'ptolemy' | 'astropixels' | 'vsop87'
-    BodySource: 'astropixels',
+    // Active ephemeris source. 'tangMaster' (full sky, modern) is active;
+    // 'tangPtolz' (pure Almagest, no new bodies) is also registered. Every
+    // body position funnels through the Tang canonical frame. See registry.js.
+    BodySource: 'tangMaster',
 
     // StarTrepidation master forces all three on when true.
     StarApplyPrecession: false,
@@ -511,7 +521,7 @@ export class FeModel extends EventTarget {
     // Written by update(), read by renderer.
     this.computed = {
       TransMatSkyRot:            M.Unit(),
-      TransMatCelestToGlobe:     M.Unit(),
+      TransMatCelestToSky:     M.Unit(),
       TransMatLocalFeToGlobalFe: M.Unit(),
       TransMatVaultToFe:         M.Unit(),
 
@@ -525,7 +535,7 @@ export class FeModel extends EventTarget {
       SunCelestLatLong:      { lat: 0, lng: 0 },
       SunAnglesGlobe:        { azimuth: 0, elevation: 0 },
       SunVaultCoord:          [0, 0, 0],
-      SunLocalGlobeCoord:    [0, 0, 0],
+      SunLocalSkyCoord:    [0, 0, 0],
       SunOpticalVaultCoord:      [0, 0, 0],
 
       MoonCelestCoord:       [0, 0, 0],
@@ -533,7 +543,7 @@ export class FeModel extends EventTarget {
       MoonCelestLatLong:     { lat: 0, lng: 0 },
       MoonAnglesGlobe:       { azimuth: 0, elevation: 0 },
       MoonVaultCoord:         [0, 0, 0],
-      MoonLocalGlobeCoord:   [0, 0, 0],
+      MoonLocalSkyCoord:   [0, 0, 0],
       MoonOpticalVaultCoord:     [0, 0, 0],
 
       MoonPhase:             0,   // 0=new, PI=full
@@ -544,6 +554,11 @@ export class FeModel extends EventTarget {
       NightFactor: 0,
 
       ObserverFeCoord: [0, 0, 0],
+
+      // Observer position in the canonical Chinese ground frame
+      // (polar-altitude du + longitude du). Set each frame by update();
+      // the pipeline degrees are decoded from it.
+      ObserverGround: { polarAltDu: 0, lonDu: 0 },
 
       OpticalVaultRadius: GEOMETRY.OpticalVaultRadiusFar,
       OpticalVaultHeight: GEOMETRY.OpticalVaultHeightFar,
@@ -586,6 +601,18 @@ export class FeModel extends EventTarget {
     s.ObserverLat  = Clamp(s.ObserverLat, -90, 90);
     s.ObserverElevation = Clamp(s.ObserverElevation, 0, 0.5);
     s.ObserverLong = ((s.ObserverLong + 180) % 360 + 360) % 360 - 180;
+
+    // Terrestrial Chinese frame. The observer position is canonically a
+    // Chinese ground record (polar-altitude du + longitude du); the degrees
+    // the geometry pipeline reads are DECODED from it. Mirrors the celestial
+    // Tang funnel (ephemeris -> du/xiu -> degrees). Lossless to floating
+    // point, so geometry is unchanged; c.ObserverGround feeds the HUD.
+    c.ObserverGround = groundDegToTang(s.ObserverLat, s.ObserverLong);
+    {
+      const _obsDeg = groundTangToDeg(c.ObserverGround);
+      s.ObserverLat  = _obsDeg.latDeg;
+      s.ObserverLong = _obsDeg.lonDeg;
+    }
     s.CameraHeight = Clamp(s.CameraHeight, s.WorldModel === 'ge' ? -89.9 : -30, 89.9);
     s.CameraDirection = ((s.CameraDirection + 180) % 360 + 360) % 360 - 180;
     s.ObserverHeading = ((s.ObserverHeading % 360) + 360) % 360;
@@ -716,11 +743,16 @@ export class FeModel extends EventTarget {
     }
     const sunEq  = this._ephemCache.sun  || (this._ephemCache.sun  = bodyRADec('sun',  utcDate, bodySource));
     const moonEq = this._ephemCache.moon || (this._ephemCache.moon = bodyRADec('moon', utcDate, bodySource));
+    // sin(horizontal parallax) = R⊕/d (a ratio, no distance). Used below to push
+    // each body's local-sky direction to the observer's topocentric place. The
+    // Moon's ~1° shift is what makes eclipse magnitude vary by location.
+    const sunSinHP  = bodyParallaxSine('sun',  utcDate, bodySource);
+    const moonSinHP = bodyParallaxSine('moon', utcDate, bodySource);
     const gmstDeg = greenwichSiderealDeg(utcDate);
 
     c.SkyRotAngle      = gmstDeg;
     c.TransMatSkyRot   = M.RotatingZ(ToRad(-c.SkyRotAngle));
-    c.TransMatCelestToGlobe = compTransMatCelestToGlobe(
+    c.TransMatCelestToSky = compTransMatCelestToSky(
       s.ObserverLat, s.ObserverLong, c.SkyRotAngle,
     );
     c.TransMatVaultToFe = compTransMatVaultToFe(c.SkyRotAngle);
@@ -736,7 +768,7 @@ export class FeModel extends EventTarget {
     // sun / moon / planets / stars off-axis from their disc GPs.
     // Returns a global-FE coord at the body's vault height.
     const _bodyVault = (lat, lonCelest, height) =>
-      vaultCoordAt(lat, lonCelest - c.SkyRotAngle, height, FE_RADIUS);
+      feInterp.heavenlyVaultCoord(lat, lonCelest, height, c.SkyRotAngle, FE_RADIUS);
     // ObserverAtCenter teleports the camera to the world origin via
     // scene.js but keeps ObserverFeCoord / GlobeObserverCoord at the
     // surface lat / lon — the optical vault therefore stays anchored
@@ -751,103 +783,55 @@ export class FeModel extends EventTarget {
     // row-major 3x3 the renderer can copy directly into a Matrix4.
     {
       const GLOBE_RADIUS = FE_RADIUS;
-      const latR = ToRad(s.ObserverLat);
-      const lonR = ToRad(s.ObserverLong);
-      const cl = Math.cos(latR), sl = Math.sin(latR);
-      const co = Math.cos(lonR), so = Math.sin(lonR);
-      const px = GLOBE_RADIUS * cl * co;
-      const py = GLOBE_RADIUS * cl * so;
-      const pz = GLOBE_RADIUS * sl;
-      // Local axes at (lat, lon):
-      //   up    = ( cl*co,  cl*so,  sl)   radial outward
-      //   north = (-sl*co, -sl*so,  cl)   along ∂/∂lat
-      //   east  = (-so,     co,     0 )   along ∂/∂lon at the equator
-      // Local frame is always computed from the surface lat/lon —
-      // even when the observer is fictitiously placed at the globe
-      // centre, the optical vault keeps its surface tilt so the
-      // hemisphere "wraps inside" the globe in the same orientation
-      // it would have on the surface (zenith aligned with the GP's
-      // radial direction).
-      c.GlobeObserverFrame = {
-        northX: -sl * co, northY: -sl * so, northZ:  cl,
-        eastX:  -so,      eastY:   co,      eastZ:   0,
-        upX:     cl * co, upY:     cl * so, upZ:     sl,
-      };
-      // GE optical-vault anchor. The terrestrial sphere and celestial
-      // sphere share a common centre, so when ObserverAtCenter is on
-      // we collapse the GE observer coord to the world origin: the
-      // vault hemisphere wraps around the camera and bodies project
-      // at the angles a surface observer at (ObserverLat, ObserverLong)
-      // would see, only re-rooted at the centre. Dragging the orange
-      // dot updates GlobeObserverFrame which in turn rotates those
-      // projections in real time. FE has no such 1:1 sphere pairing,
-      // so its anchor stays at the surface (handled in scene.js via
-      // camObs).
-      c.GlobeObserverCoord = (s.ObserverAtCenter && s.WorldModel === 'ge')
-        ? [0, 0, 0]
-        : [px, py, pz];
-      // Celestial sphere expanded to 2·GLOBE_RADIUS so its surface
-      // grazes the apex of the observer's optical dome (the dome
-      // sits tangent at the observer with radius FE_RADIUS, so its
-      // apex is at 2·FE_RADIUS from the world origin).
+      // GE interpreter: observer basis (north/east/up) and surface position.
+      // The local frame is always built from the surface lat/lon, even when
+      // the observer is fictitiously placed at the globe centre, so the
+      // optical vault keeps its surface tilt. The centre case (GE +
+      // ObserverAtCenter) collapses the position to the world origin while
+      // the basis still rotates with the orange-dot lat/lon.
+      c.GlobeObserverFrame = geInterp.observerBasis(s.ObserverLat, s.ObserverLong);
+      c.GlobeObserverCoord = geInterp.observerCoord(
+        s.ObserverLat, s.ObserverLong, GLOBE_RADIUS,
+        s.ObserverAtCenter && s.WorldModel === 'ge',
+      );
+      // Celestial sphere expanded to 2·GLOBE_RADIUS so its surface grazes the
+      // apex of the observer's optical dome (tangent at the observer with
+      // radius FE_RADIUS, so its apex is 2·FE_RADIUS from the world origin).
       c.GlobeVaultRadius = GLOBE_RADIUS * 2;
     }
     // helper: place a celestial point on the globe heavenly-vault
     // shell at (declination, GP longitude). GP longitude folds GMST
     // out of RA so the vault co-rotates with Earth — same convention
     // the FE vault uses, just on a sphere instead of a dome.
-    const _globeVaultAt = (decDeg, gpLonDeg) => {
-      const R = c.GlobeVaultRadius;
-      const phi = ToRad(decDeg);
-      const lam = ToRad(gpLonDeg);
-      const cp = Math.cos(phi);
-      return [R * cp * Math.cos(lam), R * cp * Math.sin(lam), R * Math.sin(phi)];
-    };
+    const _globeVaultAt = (decDeg, gpLonDeg) =>
+      geInterp.heavenlyVaultCoord(decDeg, gpLonDeg, c.GlobeVaultRadius);
     const _wrapLon180 = (x) => ((x + 180) % 360 + 360) % 360 - 180;
 
-    // GE optical-vault projection. Takes a `localGlobe` vector
+    // GE optical-vault projection. Takes a `localSky` vector
     // (components: zenith, east, north) and returns the body's
     // world position on the GE optical cap (hemisphere of radius
     // FE_RADIUS tangent at the observer). Sub-horizon bodies
     // (zenith ≤ 0) are parked at the far-below sentinel so they
     // disappear as their elevation crosses the horizon — same
     // convention as the FE vault.
-    const _globeOpticalProject = (localGlobe) => {
-      const f = c.GlobeObserverFrame;
-      const obs = c.GlobeObserverCoord;
-      if (!f || !obs) return [0, 0, -1000];
-      // Cull sub-horizon (in the surface observer's local frame)
-      // in both modes, including the centre-observer case — the
-      // fictitious centre observer still sees only the surface
-      // observer's hemisphere, matching what a real observer at
-      // (ObserverLat, ObserverLong) would see at the current time.
-      if (localGlobe[0] <= 0) return [0, 0, -1000];
-      const R = FE_RADIUS;
-      const ax = localGlobe[2];   // north
-      const ay = localGlobe[1];   // east
-      const az = localGlobe[0];   // zenith
-      return [
-        obs[0] + R * (ax * f.northX + ay * f.eastX + az * f.upX),
-        obs[1] + R * (ax * f.northY + ay * f.eastY + az * f.upY),
-        obs[2] + R * (ax * f.northZ + ay * f.eastZ + az * f.upZ),
-      ];
-    };
+    const _globeOpticalProject = (localSky) =>
+      geInterp.opticalProject(localSky, c.GlobeObserverFrame, c.GlobeObserverCoord, FE_RADIUS);
 
-    // Refraction: lift every body's optical-vault local-globe vector
+    // Refraction: lift every body's optical-vault local-sky vector
     // by the apparent-altitude refraction. True positions
     // (`*VaultCoord`, `*GlobeVaultCoord`, `*OpticalVaultCoordTrue`,
     // `*GlobeOpticalVaultCoordTrue`) and HUD readouts
     // (`*AnglesGlobe`) remain unrefracted, so the user can compare
     // apparent vs true. `_opticalCoords(lg)` returns the pair:
-    //   { app: refracted local-globe (used for the rendered marker),
-    //     true: original local-globe (used by the geocentric ghost) }
+    //   { app: refracted local-sky (used for the rendered marker),
+    //     true: original local-sky (used by the geocentric ghost) }
     // Plus the refraction value in degrees so the HUD can display it.
     const _refrMode = s.Refraction || 'off';
     const _refrPressure = Number.isFinite(Number(s.RefractionPressureMbar))
       ? Number(s.RefractionPressureMbar) : 1013.25;
     const _refrTempC = Number.isFinite(Number(s.RefractionTemperatureC))
       ? Number(s.RefractionTemperatureC) : 15;
-    const _refr = (lg) => applyRefractionLocalGlobe(lg, _refrMode, _refrPressure, _refrTempC);
+    const _refr = (lg) => applyRefractionLocalSky(lg, _refrMode, _refrPressure, _refrTempC);
     const _opticalPair = (lg) => {
       const app = _refrMode === 'off' ? lg : _refr(lg);
       return { lgTrue: lg, lgApp: app };
@@ -880,20 +864,24 @@ export class FeModel extends EventTarget {
     c.SunVaultCoord = _bodyVault(
       c.SunCelestLatLong.lat, c.SunCelestLatLong.lng, s.SunVaultHeight,
     );
-    c.SunLocalGlobeCoord = celestCoordToLocalGlobeCoord(
-      c.SunCelestCoord, c.TransMatCelestToGlobe,
+    // Topocentric parallax: push the geocentric direction toward the horizon by
+    // the body's horizontal parallax (the R⊕/d ratio, no distance). Only the
+    // observer's local sky shifts; the shared geocentric vault is untouched.
+    c.SunLocalSkyCoord = parallaxAltitudeLocalSky(
+      celestCoordToLocalSkyCoord(c.SunCelestCoord, c.TransMatCelestToSky),
+      sunSinHP,
     );
-    c.SunAnglesGlobe     = localGlobeCoordToAngles(c.SunLocalGlobeCoord);
+    c.SunAnglesGlobe     = localSkyCoordToAngles(c.SunLocalSkyCoord);
     {
-      const { lgTrue, lgApp } = _opticalPair(c.SunLocalGlobeCoord);
-      c.SunOpticalVaultCoordTrue = localGlobeCoordToGlobalFeCoord(
+      const { lgTrue, lgApp } = _opticalPair(c.SunLocalSkyCoord);
+      c.SunOpticalVaultCoordTrue = localSkyCoordToGlobalFeCoord(
         opticalVaultProject(lgTrue, c.OpticalVaultRadius, c.OpticalVaultHeightEffective),
         c.TransMatLocalFeToGlobalFe,
       );
       c.SunGlobeOpticalVaultCoordTrue = _globeOpticalProject(lgTrue);
       c.SunOpticalVaultCoord = lgApp === lgTrue
         ? c.SunOpticalVaultCoordTrue
-        : localGlobeCoordToGlobalFeCoord(
+        : localSkyCoordToGlobalFeCoord(
             opticalVaultProject(lgApp, c.OpticalVaultRadius, c.OpticalVaultHeightEffective),
             c.TransMatLocalFeToGlobalFe,
           );
@@ -946,20 +934,22 @@ export class FeModel extends EventTarget {
     c.MoonVaultCoord = _bodyVault(
       c.MoonCelestLatLong.lat, c.MoonCelestLatLong.lng, s.MoonVaultHeight,
     );
-    c.MoonLocalGlobeCoord = celestCoordToLocalGlobeCoord(
-      c.MoonCelestCoord, c.TransMatCelestToGlobe,
+    // Topocentric parallax (the dominant one, up to ~1° at the horizon).
+    c.MoonLocalSkyCoord = parallaxAltitudeLocalSky(
+      celestCoordToLocalSkyCoord(c.MoonCelestCoord, c.TransMatCelestToSky),
+      moonSinHP,
     );
-    c.MoonAnglesGlobe     = localGlobeCoordToAngles(c.MoonLocalGlobeCoord);
+    c.MoonAnglesGlobe     = localSkyCoordToAngles(c.MoonLocalSkyCoord);
     {
-      const { lgTrue, lgApp } = _opticalPair(c.MoonLocalGlobeCoord);
-      c.MoonOpticalVaultCoordTrue = localGlobeCoordToGlobalFeCoord(
+      const { lgTrue, lgApp } = _opticalPair(c.MoonLocalSkyCoord);
+      c.MoonOpticalVaultCoordTrue = localSkyCoordToGlobalFeCoord(
         opticalVaultProject(lgTrue, c.OpticalVaultRadius, c.OpticalVaultHeightEffective),
         c.TransMatLocalFeToGlobalFe,
       );
       c.MoonGlobeOpticalVaultCoordTrue = _globeOpticalProject(lgTrue);
       c.MoonOpticalVaultCoord = lgApp === lgTrue
         ? c.MoonOpticalVaultCoordTrue
-        : localGlobeCoordToGlobalFeCoord(
+        : localSkyCoordToGlobalFeCoord(
             opticalVaultProject(lgApp, c.OpticalVaultRadius, c.OpticalVaultHeightEffective),
             c.TransMatLocalFeToGlobalFe,
           );
@@ -1138,8 +1128,8 @@ export class FeModel extends EventTarget {
     c.MoonPhaseFraction = 0.5 * (1 + Math.cos(c.MoonPhase));
 
     // Terminator rotation as seen from the observer.
-    const globeToMoon = V.Scale(celestCoordToLocalGlobeCoord(
-      V.Scale(moonToGlobe, -1), c.TransMatCelestToGlobe,
+    const globeToMoon = V.Scale(celestCoordToLocalSkyCoord(
+      V.Scale(moonToGlobe, -1), c.TransMatCelestToSky,
     ), 1);
     let camRight = V.Mult(globeToMoon, [1, 0, 0]);
     if (V.Length(camRight) === 0) {
@@ -1147,7 +1137,7 @@ export class FeModel extends EventTarget {
     }
     camRight = V.Norm(camRight);
     const camUp = V.Mult(camRight, globeToMoon);
-    const moonShadowUpLocal = celestCoordToLocalGlobeCoord(shadowUp, c.TransMatCelestToGlobe);
+    const moonShadowUpLocal = celestCoordToLocalSkyCoord(shadowUp, c.TransMatCelestToSky);
     let rot = Math.acos(Limit1(V.ScalarProd(camUp, moonShadowUpLocal)));
     if (V.ScalarProd(moonShadowUpLocal, camRight) > 0) rot = -rot;
     c.MoonRotation = rot;
@@ -1302,17 +1292,20 @@ export class FeModel extends EventTarget {
         ll.lat,
         _wrapLon180(eq.ra * 180 / Math.PI - c.SkyRotAngle),
       );
-      const localGlobe = celestCoordToLocalGlobeCoord(celestCoord, c.TransMatCelestToGlobe);
-      const anglesGlobe = localGlobeCoordToAngles(localGlobe);
-      const { lgTrue, lgApp } = _opticalPair(localGlobe);
-      const opticalVaultCoordTrue = localGlobeCoordToGlobalFeCoord(
+      const localSky = parallaxAltitudeLocalSky(
+        celestCoordToLocalSkyCoord(celestCoord, c.TransMatCelestToSky),
+        bodyParallaxSine(name, utcDate, bodySource),
+      );
+      const anglesGlobe = localSkyCoordToAngles(localSky);
+      const { lgTrue, lgApp } = _opticalPair(localSky);
+      const opticalVaultCoordTrue = localSkyCoordToGlobalFeCoord(
         opticalVaultProject(lgTrue, c.OpticalVaultRadius, c.OpticalVaultHeightEffective),
         c.TransMatLocalFeToGlobalFe,
       );
       const globeOpticalVaultCoordTrue = _globeOpticalProject(lgTrue);
       const opticalVaultCoord = lgApp === lgTrue
         ? opticalVaultCoordTrue
-        : localGlobeCoordToGlobalFeCoord(
+        : localSkyCoordToGlobalFeCoord(
             opticalVaultProject(lgApp, c.OpticalVaultRadius, c.OpticalVaultHeightEffective),
             c.TransMatLocalFeToGlobalFe,
           );
@@ -1341,7 +1334,7 @@ export class FeModel extends EventTarget {
     // Apparent (RA, Dec) per star is pure (J2000, date, starOpts);
     // observer-pan / camera drags don't change any of those, so
     // cache by (dateMs, starOptsKey) and reuse across drag ticks.
-    // The downstream projection (vault / local-globe / optical) is
+    // The downstream projection (vault / local-sky / optical) is
     // observer-dependent and still recomputes every frame.
     const _starOptsKey = `${starOpts.precession ? 1 : 0}${starOpts.nutation ? 1 : 0}${starOpts.aberration ? 1 : 0}`;
     const _starApparentKey = `${utcDate.getTime()}|${_starOptsKey}`;
@@ -1366,17 +1359,17 @@ export class FeModel extends EventTarget {
         celestLatLong.lat,
         _wrapLon180(ra * 180 / Math.PI - c.SkyRotAngle),
       );
-      const localGlobe  = celestCoordToLocalGlobeCoord(celestCoord, c.TransMatCelestToGlobe);
-      const anglesGlobe = localGlobeCoordToAngles(localGlobe);
-      const { lgTrue, lgApp } = _opticalPair(localGlobe);
-      const opticalVaultCoordTrue = localGlobeCoordToGlobalFeCoord(
+      const localSky  = celestCoordToLocalSkyCoord(celestCoord, c.TransMatCelestToSky);
+      const anglesGlobe = localSkyCoordToAngles(localSky);
+      const { lgTrue, lgApp } = _opticalPair(localSky);
+      const opticalVaultCoordTrue = localSkyCoordToGlobalFeCoord(
         opticalVaultProject(lgTrue, c.OpticalVaultRadius, c.OpticalVaultHeightEffective),
         c.TransMatLocalFeToGlobalFe,
       );
       const globeOpticalVaultCoordTrue = _globeOpticalProject(lgTrue);
       const opticalVaultCoord = lgApp === lgTrue
         ? opticalVaultCoordTrue
-        : localGlobeCoordToGlobalFeCoord(
+        : localSkyCoordToGlobalFeCoord(
             opticalVaultProject(lgApp, c.OpticalVaultRadius, c.OpticalVaultHeightEffective),
             c.TransMatLocalFeToGlobalFe,
           );
@@ -1421,7 +1414,7 @@ export class FeModel extends EventTarget {
 
     // Satellites: sub-point (lat, lon) computed per-frame from
     // two-body Kepler; projected through the same vault /
-    // local-globe / optical-vault machinery as stars. Built when
+    // local-sky / optical-vault machinery as stars. Built when
     // ShowSatellites is on OR when any `star:sat_*` id sits in the
     // tracker — so per-chip clicks alone are enough to make a
     // satellite render without also flipping the master.
@@ -1438,17 +1431,17 @@ export class FeModel extends EventTarget {
         const celestLatLong = coordToLatLong(celestCoord);
         const vaultCoord    = _bodyVault(celestLatLong.lat, celestLatLong.lng, SAT_VAULT_HEIGHT);
         const globeVaultCoord = _globeVaultAt(celestLatLong.lat, sub.lon);
-        const localGlobe  = celestCoordToLocalGlobeCoord(celestCoord, c.TransMatCelestToGlobe);
-        const anglesGlobe = localGlobeCoordToAngles(localGlobe);
-        const { lgTrue, lgApp } = _opticalPair(localGlobe);
-        const opticalVaultCoordTrue = localGlobeCoordToGlobalFeCoord(
+        const localSky  = celestCoordToLocalSkyCoord(celestCoord, c.TransMatCelestToSky);
+        const anglesGlobe = localSkyCoordToAngles(localSky);
+        const { lgTrue, lgApp } = _opticalPair(localSky);
+        const opticalVaultCoordTrue = localSkyCoordToGlobalFeCoord(
           opticalVaultProject(lgTrue, c.OpticalVaultRadius, c.OpticalVaultHeightEffective),
           c.TransMatLocalFeToGlobalFe,
         );
         const globeOpticalVaultCoordTrue = _globeOpticalProject(lgTrue);
         const opticalVaultCoord = lgApp === lgTrue
           ? opticalVaultCoordTrue
-          : localGlobeCoordToGlobalFeCoord(
+          : localSkyCoordToGlobalFeCoord(
               opticalVaultProject(lgApp, c.OpticalVaultRadius, c.OpticalVaultHeightEffective),
               c.TransMatLocalFeToGlobalFe,
             );

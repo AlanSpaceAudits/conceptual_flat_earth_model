@@ -1,0 +1,3 @@
+import{DEG_PER_DU as n,DU_PER_DEG as r}from"./units.js";function u(o){return o*r}function e(o){return o*r}function D(o){return o*n}function l(o){return o*n}function i(o,t){return{polarAltDu:u(o),lonDu:e(t)}}function p({polarAltDu:o,lonDu:t}){return{latDeg:D(o),lonDeg:l(t)}}function f(o){if(!o||!Number.isFinite(o.polarAltDu))return"\u2014";const t=o.lonDu>=0?"E":"W";return`${o.polarAltDu.toFixed(2)} du polar-alt / ${Math.abs(o.lonDu).toFixed(2)} du ${t}`}export{f as fmtGround,i as groundDegToTang,p as groundTangToDeg,u as latDegToPolarAltDu,e as lonDegToDu,l as lonDuToDeg,D as polarAltDuToLatDeg};
+
+//# sourceMappingURL=ground.js.map

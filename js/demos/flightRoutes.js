@@ -17,7 +17,7 @@ import {
 } from '../data/flightRoutes.js';
 import { FLIGHT_TRACKS } from '../data/flightTracks.js';
 import { canonicalLatLongToDisc } from '../core/canonical.js';
-import { fmtLiBu, KM_PER_LI, R_LI } from '../core/units.js';
+import { fmtLiBu, KM_PER_LI, R_LI } from '../tang/units.js';
 
 // Render an arc length expressed as a central angle (degrees) into
 // a Tang li / km string for the flight-info readouts. The arc is

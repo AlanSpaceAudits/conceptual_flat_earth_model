@@ -1,7 +1,7 @@
 // Flat-earth disc + dome geometry, all in unitless FE_RADIUS coordinates.
 
 import { ToRad, sqr } from '../math/utils.js';
-import { coordToLatLong, localGlobeCoordToGlobalFeCoord } from './transforms.js';
+import { coordToLatLong, localSkyCoordToGlobalFeCoord } from './transforms.js';
 import { latLongToCoord } from './transforms.js';
 
 // Routes (lat, lon) -> disc xy through the active map projection so the
@@ -77,13 +77,13 @@ export function celestCoordToVaultCoord(celestVect, domeSize, domeHeight, feRadi
 }
 
 export function celestLatLongToGlobalFeSphereCoord(
-  latDeg, longDeg, length, transMatCelestToGlobe, transMatLocalFeToGlobalFe,
+  latDeg, longDeg, length, transMatCelestToSky, transMatLocalFeToGlobalFe,
 ) {
-  // celest lat/long direction -> local globe at that length -> global fe frame
+  // celest lat/long direction -> local sky at that length -> global fe frame
   const celestCoord = latLongToCoord(latDeg, longDeg, length);
   // M.Trans import kept local to avoid cycles
-  const localGlobeCoord = _trans(transMatCelestToGlobe, celestCoord);
-  return localGlobeCoordToGlobalFeCoord(localGlobeCoord, transMatLocalFeToGlobalFe);
+  const localSkyCoord = _trans(transMatCelestToSky, celestCoord);
+  return localSkyCoordToGlobalFeCoord(localSkyCoord, transMatLocalFeToGlobalFe);
 }
 
 // Helper: avoid importing M here to keep the module small.

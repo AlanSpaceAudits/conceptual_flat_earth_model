@@ -1,0 +1,3 @@
+function f(t,o){if(!o)return t;const a=t[0],c=t[1],h=t[2],n=Math.hypot(a,c,h);if(n===0)return t;const r=Math.asin(Math.max(-1,Math.min(1,a/n))),s=Math.asin(Math.max(-1,Math.min(1,o*Math.cos(r)))),M=r-s,i=Math.hypot(c,h),e=Math.sin(M)*n,u=Math.cos(M)*n;if(i===0)return[e,c,h];const p=u/i;return[e,c*p,h*p]}function l(t,o,a,c,h){if(!a)return{ra:t,dec:o};const n=h-t,r=Math.sin(c),s=Math.cos(c),M=Math.atan2(-s*a*Math.sin(n),Math.cos(o)-s*a*Math.cos(n)),i=Math.atan2((Math.sin(o)-r*a)*Math.cos(M),Math.cos(o)-s*a*Math.cos(n));return{ra:t+M,dec:i}}export{f as parallaxAltitudeLocalSky,l as topocentricRaDec};
+
+//# sourceMappingURL=topocentric.js.map

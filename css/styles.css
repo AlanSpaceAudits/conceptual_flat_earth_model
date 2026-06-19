@@ -719,6 +719,15 @@ header .info-popup.legend-popup a { color: var(--accent); }
   display: block;
   margin: 0 auto;
 }
+/* Center the inline magnet glyph in its cell so it sits on the same grid
+   as the neighboring icon/text buttons instead of baseline-aligning low. */
+#bottom-bar .grids-stack .magnetic-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3px 8px;
+}
+#bottom-bar .grids-stack .magnetic-btn svg { display: block; }
 
 .dist-calc-panel { display: flex; flex-direction: column; gap: 4px; }
 .dist-calc-panel .row.action-group-row { gap: 4px; }

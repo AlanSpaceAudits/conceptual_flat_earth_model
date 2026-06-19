@@ -12,7 +12,7 @@
 // itself, so installing a fresh worker (here, S736) takes effect on
 // the next navigation cycle.
 
-const CACHE_VERSION = 'fcm2-v1-s021';
+const CACHE_VERSION = 'fcm2-v1-s029';
 const STATIC_CACHE  = `${CACHE_VERSION}-static`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 

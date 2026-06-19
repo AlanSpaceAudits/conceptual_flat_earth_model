@@ -793,6 +793,22 @@ const FIELD_GROUPS = [
         { key: 'StarApplyAberration', label: 'Aberration',  bool: true },
         { key: 'StarTrepidation',     label: 'Trepidation', bool: true },
       ]},
+      { title: 'Magnetic field', rows: [
+        { key: 'MagneticOverlay', label: 'Overlay', select: [
+          { value: 'off',         label: 'Off' },
+          { value: 'declination', label: 'Declination (isogonic)' },
+          { value: 'intensity',   label: 'Intensity (strength)' },
+        ]},
+        { key: 'MagneticModel', label: 'Model', select: [
+          { value: 'wmm',  label: 'WMM2025 (2025-2030)' },
+          { value: 'igrf', label: 'IGRF-14 (1900-2030)' },
+        ]},
+        { key: 'MagneticStyle', label: 'Style', select: [
+          { value: 'both',  label: 'Lines + bands' },
+          { value: 'lines', label: 'Contour lines' },
+          { value: 'bands', label: 'Color bands' },
+        ]},
+      ]},
       { title: 'Starfield', rows: [
         { key: 'StarfieldType', label: 'Starfield', select: [
           { value: 'random',      label: 'Default (random)' },
@@ -1814,6 +1830,19 @@ const GROUP_KEY = {
   'Language Select': 'grp_language_select',
 };
 
+// Themed icon per accordion group, rendered as its own span so the translated
+// label is untouched. Keyed by the raw (untranslated) group title.
+const GROUP_ICON = {
+  'Observer': '🧍', 'Camera': '🎥', 'Vault of the Heavens': '🌐', 'Optical Vault': '🔭',
+  'Body Vaults': '🪐', 'Rays': '🔆', 'Date / Time': '🕐', 'Heavenly Vault': '🌠',
+  'Ground / Disc': '🗺️', 'Cosmology': '🌀', 'Map Projection': '📽️', 'Misc': '⚙️',
+  'Ephemeris': '☄️', 'Magnetic field': '🧲', 'Starfield': '✨', 'Tracker Options': '🎯',
+  'Refraction': '🌈', 'Display Units': '📏', 'Celestial Bodies': '🌗', 'Cel Nav': '🧭',
+  'Constellations': '✴️', 'Black Holes': '🕳️', 'Quasars': '💫', 'Galaxies': '🌌',
+  'Cel Theo': '📐', 'Satellites': '🛰️', 'Bright Star Catalog': '⭐', 'Calendar': '📅',
+  'Autoplay': '▶️', 'Language Select': '🌍',
+};
+
 function buildGroup(model, title, rows, popupGroups) {
   const el = document.createElement('div');
   el.className = 'group';
@@ -1824,6 +1853,15 @@ function buildGroup(model, title, rows, popupGroups) {
   const arrow = document.createElement('span');
   arrow.className = 'group-arrow';
   arrow.textContent = '▸';
+  let iconSpan = null;
+  const icon = GROUP_ICON[title];
+  if (icon) {
+    iconSpan = document.createElement('span');
+    iconSpan.className = 'group-header-icon';
+    iconSpan.textContent = icon;
+    iconSpan.style.marginRight = '5px';
+    iconSpan.setAttribute('aria-hidden', 'true');
+  }
   const titleSpan = document.createElement('span');
   titleSpan.className = 'group-header-title';
   const titleKey = GROUP_KEY[title];
@@ -1831,7 +1869,7 @@ function buildGroup(model, title, rows, popupGroups) {
   if (titleKey) {
     onLangChange(() => { titleSpan.textContent = t(titleKey); });
   }
-  header.append(arrow, titleSpan);
+  header.append(arrow, ...(iconSpan ? [iconSpan] : []), titleSpan);
   const body = document.createElement('div');
   body.className = 'group-body';
   body.hidden = true;
@@ -2951,6 +2989,25 @@ export function buildControlPanel(host, model, demos) {
     if (header && header.classList.contains('collapsed')) header.click();
     groupEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
+
+  // Magnetic-field shortcut — fills the empty bottom-row slot (under the dist
+  // compass, beside clear-trace) so the cluster reads as a 2x3 box. Opens the
+  // Tracker tab at the Magnetic field group; re-click toggles it closed.
+  const btnMagnetic = document.createElement('button');
+  btnMagnetic.className = 'time-btn magnetic-btn';
+  btnMagnetic.type = 'button';
+  // Inline horseshoe magnet — red U-bar with silver pole tips, matching the
+  // 🧲 emoji used on the menu group.
+  btnMagnetic.innerHTML =
+    '<svg viewBox="0 0 16 16" width="14" height="14" fill="none" '
+    + 'stroke-linecap="round" aria-hidden="true">'
+    + '<path d="M4.3 13.2 V8 a3.7 3.7 0 0 1 7.4 0 V13.2" stroke="#e34b3f" stroke-width="2"/>'
+    + '<line x1="4.3" y1="13.3" x2="4.3" y2="10.7" stroke="#cfd4de" stroke-width="2.9"/>'
+    + '<line x1="11.7" y1="13.3" x2="11.7" y2="10.7" stroke="#cfd4de" stroke-width="2.9"/>'
+    + '</svg>';
+  btnMagnetic.title = 'Magnetic field — open the overlay controls';
+  btnMagnetic.addEventListener('click', () => featureOpen.fn('Tracker', 'Magnetic field'));
+  worldRow.replaceChild(btnMagnetic, worldSpacer);
 
   // Keep the open popup anchored if the window resizes.
   window.addEventListener('resize', () => {

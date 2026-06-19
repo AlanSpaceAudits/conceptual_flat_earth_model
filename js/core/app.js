@@ -210,7 +210,7 @@ function defaultState() {
     DarkBackground:          true,
     ShowLiveEphemeris:       false,
     MoonPhaseExpanded:       false,
-    ShowSatellites:          true,
+    ShowSatellites:          false,
     ShowAxisLine:            false,
     LastObserverLat:         null,
     LastObserverLong:        null,
@@ -373,6 +373,10 @@ function defaultState() {
     // always runs in the AE frame.
     MapProjection: 'ae',
     MapProjectionGe: 'hq_equirect_night',
+    // Geomagnetic overlay (WMM2025 / IGRF-14).
+    MagneticOverlay: 'off',     // 'off' | 'declination' | 'intensity'
+    MagneticModel: 'wmm',       // 'wmm' | 'igrf'
+    MagneticStyle: 'both',      // 'lines' | 'bands' | 'both'
 
     // 'random' | 'chart-dark' | 'chart-light' | 'celnav'
     StarfieldType: 'celnav',
@@ -484,7 +488,6 @@ function defaultState() {
       // NAMED_STARS_HYG, so duplicating them here would just stack
       // extra rows in the HUD pointing at the same id.
       ...CEL_THEO_OWN.map((x) => `star:${x.id}`),
-      ...SATELLITES.map((x) => `star:${x.id}`),
     ],
 
     ShowEphemerisReadings: false,
@@ -724,6 +727,7 @@ export class FeModel extends EventTarget {
     this._timeLast = s.Time;
 
     const utcDate = dateTimeToDate(s.DateTime);
+    c.utcDate = utcDate;   // exposed for the render layer (e.g. geomagnetic overlay date)
     // Legacy 'heliocentric' BodySource (removed) maps to 'geocentric'
     // — the underlying pipeline always returned geocentric apparent
     // anyway, so no behaviour shift for users with old URL state.

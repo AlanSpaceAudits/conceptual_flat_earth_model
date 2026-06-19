@@ -14,6 +14,8 @@ import {
   MonthMarkers, WorldGlobe, GlobeHeavenlyVault, DomeCausticOverlay,
 } from './worldObjects.js';
 import { loadLandGeo, buildGeoJsonLand, buildImageMap, buildBlankMap, buildLineArtMap } from './earthMap.js';
+import { buildGeomagOverlay, buildGeomagGlobe } from './geomag.js';
+import { computeContours } from '../geomag/contours.js';
 import { Constellations } from './constellations.js';
 import { FlightRoutes } from './flightRoutes.js';
 import { StarfieldChart } from './starfieldChart.js';
@@ -480,6 +482,40 @@ export class Renderer {
     this._landProjection = projectionId;
   }
 
+  // Geomagnetic overlay (WMM2025 / IGRF-14). Rebuilt only when its inputs
+  // change (projection / model / quantity / style / date), like the land map.
+  _rebuildMagnetic(projectionId, modelKey, quantity, year, style) {
+    if (this.geomag) {
+      this.sm.world.remove(this.geomag);
+      this.geomag.traverse((o) => {
+        o.geometry?.dispose();
+        if (o.material) (Array.isArray(o.material) ? o.material : [o.material]).forEach((mm) => mm.dispose());
+      });
+      this.geomag = null;
+    }
+    const projection = getProjection(projectionId);
+    if (!projection || typeof projection.project !== 'function') return;
+    const contour = computeContours(modelKey, quantity, year, 2);
+    this.geomag = buildGeomagOverlay(contour, projection, { feRadius: FE_RADIUS, style });
+    this.sm.world.add(this.geomag);
+  }
+
+  // GE globe variant: contours drawn on the 3D sphere, parented to the globe
+  // group so they inherit its transform/visibility.
+  _rebuildMagneticGlobe(modelKey, quantity, year, style) {
+    if (this.geomagGlobe) {
+      this.worldGlobe.group.remove(this.geomagGlobe);
+      this.geomagGlobe.traverse((o) => {
+        o.geometry?.dispose();
+        if (o.material) (Array.isArray(o.material) ? o.material : [o.material]).forEach((mm) => mm.dispose());
+      });
+      this.geomagGlobe = null;
+    }
+    const contour = computeContours(modelKey, quantity, year, 2);
+    this.geomagGlobe = buildGeomagGlobe(contour, FE_RADIUS, { style });
+    this.worldGlobe.group.add(this.geomagGlobe);
+  }
+
   _blankLine(color, opacity, clippingPlanes = []) {
     const m = new THREE.LineBasicMaterial({
       color, transparent: opacity < 1, opacity, clippingPlanes,
@@ -583,6 +619,30 @@ export class Renderer {
       : (s.MapProjection || 'ae');
     if (projId !== this._landProjection) {
       this._rebuildLand(projId);
+    }
+    // Geomagnetic overlay: flat-disc projections use the projected disc path;
+    // GE uses the 3D-sphere path. Each rebuilds only when its inputs change.
+    const magQuantity = s.MagneticOverlay || 'off';
+    if (magQuantity === 'off') {
+      if (this.geomag) this.geomag.visible = false;
+      if (this.geomagGlobe) this.geomagGlobe.visible = false;
+    } else {
+      const d = c.utcDate;
+      let year = 2025;
+      if (d) { const y = d.getUTCFullYear(), s0 = Date.UTC(y, 0, 1), s1 = Date.UTC(y + 1, 0, 1); year = y + (d.getTime() - s0) / (s1 - s0); }
+      year = Math.round(year * 4) / 4;   // quarter-year cache granularity
+      const magModel = s.MagneticModel || 'wmm', magStyle = s.MagneticStyle || 'both';
+      if (s.WorldModel === 'ge') {
+        const key = `${magQuantity}|${magModel}|${magStyle}|${year}`;
+        if (key !== this._magGlobeKey) { this._rebuildMagneticGlobe(magModel, magQuantity, year, magStyle); this._magGlobeKey = key; }
+        if (this.geomagGlobe) this.geomagGlobe.visible = true;
+        if (this.geomag) this.geomag.visible = false;
+      } else {
+        const key = `${magQuantity}|${magModel}|${magStyle}|${projId}|${year}`;
+        if (key !== this._magKey) { this._rebuildMagnetic(projId, magModel, magQuantity, year, magStyle); this._magKey = key; }
+        if (this.geomag) this.geomag.visible = true;
+        if (this.geomagGlobe) this.geomagGlobe.visible = false;
+      }
     }
     // FE disc geometry + FE-centric overlays hide whole-cloth in
     // Globe-Earth mode so only the sphere + observer + optical vault

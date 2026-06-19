@@ -1,8 +1,7 @@
-# fe_conceptual_model_2
+# FE Conceptual Model
 
-A browser-based conceptual astronomy simulation. It is a ground-up restructure
-of `fe_model`, carrying over that project's full feature set and re-basing every
-body position on a single new spine: the Tang canonical celestial frame.
+A browser-based conceptual astronomy simulation. Every body position is computed
+on a single spine: the Tang canonical celestial frame.
 
 There is one celestial sphere, computed once. Two independent interpreters read
 the same positions: a flat-earth (FE) interpretation on the stationary disc in

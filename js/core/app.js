@@ -16,7 +16,7 @@ import {
   bodyGeocentric, geo as ephGeo, ptol as ephPtol,
   apix as ephApix, vsop as ephVsop,
 } from './ephemeris.js';
-import { apparentStarPosition, findSolarEclipseContactWindow } from '../ephem/common.js';
+import { apparentStarPosition, findSolarEclipseContactWindow, refineEclipseByMinSeparation } from '../ephem/common.js';
 import { besselianShadowPathFromElements } from './besselianEclipse.js';
 import { ECLIPSE_BESSELIAN } from '../data/eclipseBesselian.js';
 import { CEL_NAV_STARS, celNavStarById } from './celnavStars.js';
@@ -1179,7 +1179,11 @@ export class FeModel extends EventTarget {
     // build the polynomial-driven shadow path from NASA's
     // published Besselian elements. Falls back to a per-pipeline
     // sublunar approximation for eclipses not in the Bessel table.
-    const HUNT_HALF_WINDOW_DAYS = 4 / 24;
+    // The catalogue anchor's time-of-day is coarse (cycle-derived, up to ~½ day
+    // from the true greatest), so the gate is wide enough that the clock can be
+    // at the real greatest while still matching the nearest catalogue anchor;
+    // the precise greatest + tight display window come from the path below.
+    const HUNT_HALF_WINDOW_DAYS = 18 / 24;
     const _liveEclipse = s.LiveEclipseShadows !== false
       ? findNearestSolarEclipse(s.DateTime) : null;
     if (_liveEclipse && _liveEclipse.distDays < HUNT_HALF_WINDOW_DAYS) {
@@ -1223,8 +1227,12 @@ export class FeModel extends EventTarget {
           // separation-threshold contact window.
           const sunFn  = (d) => bodyRADec('sun',  d, bodySource);
           const moonFn = (d) => bodyRADec('moon', d, bodySource);
-          const contact = findSolarEclipseContactWindow(
-            new Date(_liveEclipse.anchorMs), sunFn, moonFn);
+          // The catalogue anchor is coarse; refine to the true greatest in a
+          // wide window first so the contact-window walk starts at conjunction.
+          const approx = refineEclipseByMinSeparation(
+            new Date(_liveEclipse.anchorMs), sunFn, moonFn,
+            { kind: 'solar', halfWindowMinutes: 18 * 60 }).date;
+          const contact = findSolarEclipseContactWindow(approx, sunFn, moonFn);
           const halfWindowDays = contact.halfWindowMs / TIME_ORIGIN.msPerDay;
           const greatestDt = contact.greatestMs / TIME_ORIGIN.msPerDay - TIME_ORIGIN.ZeroDate;
           const path = computeSolarEclipseShadowPath(

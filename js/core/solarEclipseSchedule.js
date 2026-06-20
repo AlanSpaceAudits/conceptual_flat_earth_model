@@ -94,3 +94,13 @@ export function findNearestSolarEclipse(dt) { return nearest(solarEclipseSchedul
 export function findNearestLunarEclipse(dt) { return nearest(lunarEclipseSchedule(), dt); }
 export function findNextSolarEclipseAfter(dt) { return nextAfter(solarEclipseSchedule(), dt); }
 export function findNextLunarEclipseAfter(dt) { return nextAfter(lunarEclipseSchedule(), dt); }
+
+// The next eclipse of either luminary after `dt` — whichever (solar or lunar)
+// comes first in the cycle. Drives the single skip-to-next-eclipse button.
+export function findNextEclipseAfter(dt) {
+  const s = findNextSolarEclipseAfter(dt);
+  const l = findNextLunarEclipseAfter(dt);
+  if (!s) return l;
+  if (!l) return s;
+  return s.anchorDt <= l.anchorDt ? s : l;
+}

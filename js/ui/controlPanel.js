@@ -5,7 +5,9 @@ import { dateTimeToString, dateTimeToDate } from '../core/time.js';
 import { fmtDuDecimal, fmtLiBuFromLi, haversineLi, KM_PER_LI, R_LI, DU_PER_DEG, DEG_PER_DU } from '../tang/units.js';
 import { raDecRadToTang, fmtTang } from '../tang/frame.js';
 import { TIME_ORIGIN } from '../core/constants.js';
-import { findNextSolarEclipseAfter, findNextLunarEclipseAfter } from '../core/solarEclipseSchedule.js';
+import { findNextSolarEclipseAfter, findNextLunarEclipseAfter, findNextEclipseAfter } from '../core/solarEclipseSchedule.js';
+import { sunEquatorial, moonEquatorial } from '../core/ephemeris.js';
+import { refineEclipseByMinSeparation } from '../ephem/common.js';
 import { raDecToAzEl } from '../core/transforms.js';
 import { CEL_NAV_SELECT_OPTIONS, CEL_NAV_STARS } from '../core/celnavStars.js';
 import { CATALOGUED_STARS, CONSTELLATIONS } from '../core/constellations.js';
@@ -2416,64 +2418,62 @@ export function buildControlPanel(host, model, demos) {
   refreshCelTheoPresets();
   barLeft.appendChild(celTheoHops);
 
-  // Skip-to-next-eclipse shortcut. Sits in the same hop bar as the
-  // Cel-Theo PP button. Each click advances DateTime to the next
-  // catalogued solar eclipse (Espenak / DE405, 2021–2040), landing
-  // ~30 min before greatest eclipse so the auto-detected shadow
-  // path has time to sweep in. Tooltip carries the upcoming
-  // event's date / type so the user knows what they're jumping to.
+  // Skip-to-next-eclipse shortcut. Sits in the same hop bar as the Cel-Theo PP
+  // button. One button jumps to the next eclipse of either luminary (solar or
+  // lunar, whichever comes first) from the catalogue (js/data/shaneEclipses.js).
+  //
+  // The catalogue supplies WHICH eclipse and its date/type; its time-of-day is
+  // cycle-derived and coarse, so the exact greatest-eclipse instant is pinned
+  // from the model's own geometry (refineEclipseByMinSeparation, ±18 h around
+  // the catalogue anchor). Solar jumps land ~30 min before greatest so the live
+  // shadow path sweeps in; lunar jumps land at greatest.
+  const refinedGreatestDt = (ev) => {
+    const kind = ev.luminary === 'Solar' ? 'solar' : 'lunar';
+    const refined = refineEclipseByMinSeparation(
+      new Date(ev.anchorMs),
+      (d) => sunEquatorial(d),
+      (d) => moonEquatorial(d),
+      { kind, halfWindowMinutes: 18 * 60 },
+    );
+    return refined.date.getTime() / TIME_ORIGIN.msPerDay - TIME_ORIGIN.ZeroDate;
+  };
+  // Cache the refined instant per target eclipse so the tooltip refresh (fires
+  // on every model update) doesn't redo the ±18 h scan each frame.
+  let _skipTarget = null;
+  const skipTargetFor = (cur) => {
+    const ev = findNextEclipseAfter(cur);
+    if (!ev) { _skipTarget = null; return null; }
+    if (!_skipTarget || _skipTarget.ev.anchorMs !== ev.anchorMs) {
+      const greatestDt = refinedGreatestDt(ev);
+      _skipTarget = { ev, greatestDt, date: dateTimeToString(greatestDt).split(' / ')[0] };
+    }
+    return _skipTarget;
+  };
+
   const btnSkipEclipse = document.createElement('button');
   btnSkipEclipse.className = 'time-btn geo-hop cel-theo-hop skip-eclipse-btn';
   btnSkipEclipse.type = 'button';
-  btnSkipEclipse.textContent = '☀️◓';
+  btnSkipEclipse.textContent = '🌘';
   btnSkipEclipse.addEventListener('click', () => {
     const cur = model.state.DateTime || 0;
-    const next = findNextSolarEclipseAfter(cur);
-    if (!next) return;
-    // Drop the clock 30 min before greatest eclipse so the shadow
-    // sweep starts from "first contact" within the live window.
-    const leadIn = 0.5 / 24;
-    model.setState({ DateTime: next.anchorDt - leadIn });
+    const tgt = skipTargetFor(cur);
+    if (!tgt) return;
+    const leadIn = tgt.ev.luminary === 'Solar' ? 0.5 / 24 : 0;
+    model.setState({ DateTime: tgt.greatestDt - leadIn });
   });
   const refreshSkipEclipse = () => {
-    const cur = model.state.DateTime || 0;
-    const next = findNextSolarEclipseAfter(cur);
-    if (next) {
-      btnSkipEclipse.title = `Jump to next solar eclipse · ${next.date} ${next.type}`
-        + (next.magnitude != null ? ` · mag ${next.magnitude.toFixed(2)}` : '');
+    const tgt = skipTargetFor(model.state.DateTime || 0);
+    if (tgt) {
+      const lum = tgt.ev.luminary === 'Solar' ? 'solar' : 'lunar';
+      btnSkipEclipse.title = `Jump to next eclipse · ${tgt.date} ${lum} ${tgt.ev.type}`
+        + (tgt.ev.magnitude != null ? ` · mag ${tgt.ev.magnitude.toFixed(2)}` : '');
     } else {
-      btnSkipEclipse.title = 'Jump to next solar eclipse';
+      btnSkipEclipse.title = 'Jump to next eclipse';
     }
   };
   model.addEventListener('update', refreshSkipEclipse);
   refreshSkipEclipse();
   celTheoHops.appendChild(btnSkipEclipse);
-
-  // Skip-to-next-lunar-eclipse, mirroring the solar button. A lunar eclipse is
-  // visible from the whole night hemisphere, so there is no shadow path to
-  // sweep in; jump straight to ~30 min before greatest eclipse.
-  const btnSkipLunar = document.createElement('button');
-  btnSkipLunar.className = 'time-btn geo-hop cel-theo-hop skip-eclipse-btn skip-lunar-btn';
-  btnSkipLunar.type = 'button';
-  btnSkipLunar.textContent = '🌕◓';
-  btnSkipLunar.addEventListener('click', () => {
-    const cur = model.state.DateTime || 0;
-    const next = findNextLunarEclipseAfter(cur);
-    if (!next) return;
-    const leadIn = 0.5 / 24;
-    model.setState({ DateTime: next.anchorDt - leadIn });
-  });
-  const refreshSkipLunar = () => {
-    const cur = model.state.DateTime || 0;
-    const next = findNextLunarEclipseAfter(cur);
-    btnSkipLunar.title = next
-      ? `Jump to next lunar eclipse · ${next.date} ${next.type}`
-        + (next.magnitude != null ? ` · mag ${next.magnitude.toFixed(2)}` : '')
-      : 'Jump to next lunar eclipse';
-  };
-  model.addEventListener('update', refreshSkipLunar);
-  refreshSkipLunar();
-  celTheoHops.appendChild(btnSkipLunar);
 
   const compassControls = document.createElement('div');
   compassControls.className = 'compass-controls';

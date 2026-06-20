@@ -2422,11 +2422,11 @@ export function buildControlPanel(host, model, demos) {
   // button. One button jumps to the next eclipse of either luminary (solar or
   // lunar, whichever comes first) from the catalogue (js/data/shaneEclipses.js).
   //
-  // The catalogue supplies WHICH eclipse and its date/type; its time-of-day is
-  // cycle-derived and coarse, so the exact greatest-eclipse instant is pinned
-  // from the model's own geometry (refineEclipseByMinSeparation, ±18 h around
-  // the catalogue anchor). Solar jumps land ~30 min before greatest so the live
-  // shadow path sweeps in; lunar jumps land at greatest.
+  // The catalogue supplies which eclipse and its date/type; the exact
+  // greatest-eclipse instant is computed from the model's own geometry
+  // (refineEclipseByMinSeparation, ±18 h around the catalogue anchor). Solar
+  // jumps land ~30 min before greatest so the live shadow path sweeps in; lunar
+  // jumps land at greatest.
   const refinedGreatestDt = (ev) => {
     const kind = ev.luminary === 'Solar' ? 'solar' : 'lunar';
     const refined = refineEclipseByMinSeparation(
@@ -2437,17 +2437,29 @@ export function buildControlPanel(host, model, demos) {
     );
     return refined.date.getTime() / TIME_ORIGIN.msPerDay - TIME_ORIGIN.ZeroDate;
   };
-  // Cache the refined instant per target eclipse so the tooltip refresh (fires
-  // on every model update) doesn't redo the ±18 h scan each frame.
-  let _skipTarget = null;
+  // The refined instant is pure per eclipse; cache it (keyed by catalogue
+  // anchor) so the tooltip refresh, which fires on every model update, never
+  // redoes the ±18 h scan for an eclipse already seen.
+  const _greatestCache = new Map();
+  const greatestDtOf = (ev) => {
+    let g = _greatestCache.get(ev.anchorMs);
+    if (g === undefined) { g = refinedGreatestDt(ev); _greatestCache.set(ev.anchorMs, g); }
+    return g;
+  };
+  const leadInOf = (ev) => (ev.luminary === 'Solar' ? 0.5 / 24 : 0);
+  // Next eclipse whose landing point lies after `cur`. The catalogue anchor can
+  // sit later than the computed greatest, so the first entry "after cur" by
+  // anchor may be the one the clock is already parked on; step past it so each
+  // click advances to a new eclipse instead of re-selecting the current one.
   const skipTargetFor = (cur) => {
-    const ev = findNextEclipseAfter(cur);
-    if (!ev) { _skipTarget = null; return null; }
-    if (!_skipTarget || _skipTarget.ev.anchorMs !== ev.anchorMs) {
-      const greatestDt = refinedGreatestDt(ev);
-      _skipTarget = { ev, greatestDt, date: dateTimeToString(greatestDt).split(' / ')[0] };
+    let ev = findNextEclipseAfter(cur);
+    if (!ev) return null;
+    let greatestDt = greatestDtOf(ev);
+    if (greatestDt - leadInOf(ev) <= cur + 1e-4) {
+      const nxt = findNextEclipseAfter(ev.anchorDt);
+      if (nxt) { ev = nxt; greatestDt = greatestDtOf(ev); }
     }
-    return _skipTarget;
+    return { ev, greatestDt, date: dateTimeToString(greatestDt).split(' / ')[0] };
   };
 
   const btnSkipEclipse = document.createElement('button');
@@ -2458,8 +2470,7 @@ export function buildControlPanel(host, model, demos) {
     const cur = model.state.DateTime || 0;
     const tgt = skipTargetFor(cur);
     if (!tgt) return;
-    const leadIn = tgt.ev.luminary === 'Solar' ? 0.5 / 24 : 0;
-    model.setState({ DateTime: tgt.greatestDt - leadIn });
+    model.setState({ DateTime: tgt.greatestDt - leadInOf(tgt.ev) });
   });
   const refreshSkipEclipse = () => {
     const tgt = skipTargetFor(model.state.DateTime || 0);
